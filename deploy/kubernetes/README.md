@@ -39,7 +39,7 @@ Use immutable image tags for every deploy.
 
 ```powershell
 $tag = (git rev-parse --short HEAD)
-pwsh ./scripts/deploy/build-images.ps1 -Registry ghcr.io/Ivantech123 -Tag $tag -Push
+docker buildx build --push -t ghcr.io/Ivantech123/Astral-app:$tag .
 ```
 
 Required before Phase 1:
