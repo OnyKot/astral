@@ -1,0 +1,120 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.dmLayoutContainer {
+	--dm-layout-gap: 0px;
+	display: grid;
+	grid-template-columns: var(--layout-sidebar-width) minmax(0, 1fr);
+	grid-template-rows: 1fr;
+	column-gap: var(--dm-layout-gap);
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	background:
+		radial-gradient(circle at top left, color-mix(in srgb, var(--brand-primary) 10%, transparent) 0%, transparent 28%),
+		linear-gradient(180deg, var(--background-primary), color-mix(in srgb, var(--background-secondary) 12%, var(--background-primary) 88%));
+}
+
+.dmLayoutContainerMobile {
+	composes: dmLayoutContainer;
+	grid-template-columns: 1fr;
+	background-color: var(--background-secondary);
+}
+
+.dmListColumn {
+	display: flex;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	flex-direction: column;
+	background: transparent;
+	position: relative;
+}
+
+.contentColumn {
+	display: grid;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	overflow: hidden;
+	overscroll-behavior: contain;
+	border-radius: 0;
+	border: none;
+	background: transparent;
+	box-shadow: none;
+	position: relative;
+	isolation: isolate;
+}
+
+.contentColumn::before {
+	display: none;
+}
+
+.contentInner {
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	background-color: transparent;
+	will-change: transform;
+	transition:
+		transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+		box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+		opacity 200ms ease;
+}
+
+.contentColumn[data-edge-swipe-active='1'] .contentInner {
+	transition: none;
+}
+
+@keyframes dmMobileContentEnter {
+	from {
+		opacity: 0.84;
+		transform: translate3d(10px, 0, 0);
+	}
+	to {
+		opacity: 1;
+		transform: translate3d(0, 0, 0);
+	}
+}
+
+@media (max-width: 767px) {
+	.dmLayoutContainer {
+		background: var(--background-primary);
+	}
+
+	.contentColumn {
+		contain: layout paint;
+	}
+
+	.contentInner {
+		background-color: var(--background-primary);
+		animation: dmMobileContentEnter 180ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.contentInner {
+		animation: none;
+		transition: none;
+	}
+}

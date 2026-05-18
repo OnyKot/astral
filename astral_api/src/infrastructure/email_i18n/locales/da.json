@@ -1,0 +1,75 @@
+﻿{
+	"passwordReset": {
+		"subject": "Nulstil din Astral-adgangskode",
+		"body": "Hej {username},\n\nDu har anmodet om at nulstille din Astral-adgangskode. Følg venligst linket nedenfor for at vælge en ny adgangskode:\n\n{resetUrl}\n\nHvis du ikke har anmodet om denne nulstilling, kan du roligt ignorere denne e-mail.\n\nDette link udløber om 1 time.\n\n- Astral-teamet"
+	},
+	"emailVerification": {
+		"subject": "Bekræft din Astral-e-mailadresse",
+		"body": "Hej {username},\n\nBekræft venligst e-mailadressen til din Astral-konto ved at klikke på linket nedenfor:\n\n{verifyUrl}\n\nHvis du ikke har oprettet en Astral-konto, kan du roligt ignorere denne e-mail.\n\nDette link udløber om 24 timer.\n\n- Astral-teamet"
+	},
+	"emailChangeOriginal": {
+		"subject": "Bekræft ændring af din Astral-e-mail",
+		"body": "Hej {username},\n\nVi har modtaget en anmodning om at ændre e-mailadressen på din Astral-konto.\n\nFor at bekræfte ændringen skal du indtaste denne kode i appen:\n\n{code}\n\nDenne kode udløber {expiresAt, date, full} {expiresAt, time, short}.\n\nHvis du ikke har anmodet om dette, skal du straks sikre din konto.\n\n- Astral-teamet"
+	},
+	"emailChangeNew": {
+		"subject": "Bekræft din nye Astral-e-mail",
+		"body": "Hej {username},\n\nIndtast denne kode i appen for at bekræfte din nye Astral-e-mail:\n\n{code}\n\nDenne kode udløber {expiresAt, date, full} {expiresAt, time, short}.\n\nHvis du ikke har anmodet om dette, kan du ignorere denne e-mail."
+	},
+	"ipAuthorization": {
+		"subject": "Godkend login fra ny IP-adresse",
+		"body": "Hej {username},\n\nVi har registreret et loginforsøg på din Astral-konto fra en ny IP-adresse:\n\nIP-adresse: {ipAddress}\nPlacering: {location}\n\nHvis det var dig, kan du godkende denne IP-adresse ved at klikke på linket nedenfor:\n\n{authUrl}\n\nHvis du ikke forsøgte at logge ind, skal du straks ændre din adgangskode.\n\nDette godkendelseslink udløber om 30 minutter.\n\n- Astral Sikkerhedsteam"
+	},
+	"accountDisabledSuspicious": {
+		"subject": "Din Astral-konto er midlertidigt blevet deaktiveret",
+		"body": "Hej {username},\n\nDin Astral-konto er midlertidigt blevet deaktiveret på grund af mistænkelig aktivitet.\n\n{reason, select,\n\tnull {}\n\tother {Årsag: {reason}\n\n}}For at få adgang til din konto igen skal du nulstille din adgangskode:\n\n{forgotUrl}\n\nNår du har nulstillet din adgangskode, kan du logge ind igen.\n\nHvis du mener, at dette er sket ved en fejl, bedes du kontakte vores supportteam.\n\n- Astral Sikkerhedsteam"
+	},
+	"accountTempBanned": {
+		"subject": "Din Astral-konto er midlertidigt blevet suspenderet",
+		"body": "Hej {username},\n\nDin Astral-konto er midlertidigt blevet suspenderet for at overtræde vores Servicevilkår eller Retningslinjer for fællesskabet.\n\nVarighed: {durationHours, plural,\n\t=1 {1 time}\n\tother {# timer}\n}\nSuspenderet indtil: {bannedUntil, date, full} {bannedUntil, time, short}\n{reason, select,\n\tnull {}\n\tother {\nÅrsag: {reason}}\n}\n\nI denne periode vil du ikke kunne få adgang til din konto.\n\nVi opfordrer dig til at gennemgå vores:\n- Servicevilkår: {termsUrl}\n- Retningslinjer for fællesskabet: {guidelinesUrl}\n\nHvis du mener, at denne håndhævelsesbeslutning var forkert eller uberettiget, kan du indsende en appel til appeals@astraof.com fra denne e-mailadresse. Forklar tydeligt, hvorfor du mener, at beslutningen var forkert. Vi vil gennemgå din appel og svare med vores afgørelse.\n\n- Astral Sikkerhedsteam"
+	},
+	"accountScheduledDeletion": {
+		"subject": "Din Astral-konto er planlagt til sletning",
+		"body": "Hej {username},\n\nDin Astral-konto er blevet planlagt til permanent sletning på grund af overtrædelser af vores Servicevilkår eller Retningslinjer for fællesskabet.\n\nPlanlagt sletningsdato: {deletionDate, date, full} {deletionDate, time, short}\n{reason, select,\n\tnull {}\n\tother {\nÅrsag: {reason}}\n}\n\nDette er en alvorlig håndhævelsesforanstaltning. Dine kontodata vil blive permanent slettet på den planlagte dato.\n\nVi opfordrer dig til at gennemgå vores:\n- Servicevilkår: {termsUrl}\n- Retningslinjer for fællesskabet: {guidelinesUrl}\n\nAPPELPROCES:\nHvis du mener, at denne håndhævelsesbeslutning var forkert eller uberettiget, har du 30 dage til at indsende en appel til appeals@astraof.com fra denne e-mailadresse.\n\nI din appel bedes du:\n- Tydeligt forklare, hvorfor du mener, at håndhævelsesbeslutningen var forkert eller uberettiget\n- Give relevant dokumentation eller kontekst\n\nEt medlem af Astral Sikkerhedsteam vil gennemgå din appel og kan annullere den forestående sletning, indtil en endelig afgørelse er truffet.\n\n- Astral Sikkerhedsteam"
+	},
+	"selfDeletionScheduled": {
+		"subject": "Sletning af din Astral-konto er planlagt",
+		"body": "Hej {username},\n\nDet er trist at se dig gå! Din Astral-konto er blevet planlagt til sletning.\n\nPlanlagt sletningsdato: {deletionDate, date, full} {deletionDate, time, short}\n\nVIGTIGT: Du kan annullere denne sletning når som helst før {deletionDate, date, full} {deletionDate, time, short} ved blot at logge ind på din konto igen.\n\nFØR DU GÅR:\nDit Privatlivsdashboard i Brugerindstillinger giver dig mulighed for at:\n- Slette dine beskeder på platformen\n- Udtrække værdifulde data, før du forlader os\n\nBemærk: Når din konto er slettet, er der ingen måde at slette dine beskeder på. Hvis du vil slette dine beskeder, skal du gøre det via Privatlivsdashboardet, før sletningen af din konto er gennemført.\n\nHvis du ombestemmer dig, skal du bare logge ind igen for at annullere sletningen.\n\n- Astral-teamet"
+	},
+	"inactivityWarning": {
+		"subject": "Din Astral-konto vil blive slettet på grund af inaktivitet",
+		"body": "Hej {username},\n\nVi har bemærket, at du ikke har logget ind på din Astral-konto i over 2 år.\n\nSidste login: {lastActiveDate, date, full} {lastActiveDate, time, short}\n\nSom en del af vores politik for dataopbevaring planlægges inaktive konti automatisk til sletning. Din konto vil blive permanent slettet den:\n\nPlanlagt sletningsdato: {deletionDate, date, full} {deletionDate, time, short}\n\nSÅDAN BEHOLDER DU DIN KONTO:\nLog blot ind på din konto på {loginUrl} før sletningsdatoen for at annullere denne automatiske sletning. Ingen anden handling er nødvendig.\n\nHVAD DER SKER, HVIS DU IKKE LOGGER IND:\n- Din konto og alle tilknyttede data vil blive permanent slettet\n- Dine beskeder vil blive anonymiseret (tilskrevet \"Slettet bruger\")\n- Denne handling kan ikke fortrydes\n\nVIL DU SLETTE DINE BESKEDER?\nHvis du vil slette dine beskeder, før din konto slettes, bedes du logge ind og bruge Privatlivsdashboardet i Brugerindstillinger.\n\nVi håber at se dig tilbage på Astral!\n\n- Astral-teamet"
+	},
+	"harvestCompleted": {
+		"subject": "Din Astral-dataeksport er klar",
+		"body": "Hej {username},\n\nDin dataeksport er blevet gennemført og er klar til download!\n\nEksportoversigt:\n- Samlet antal beskeder: {totalMessages, number}\n- Filstørrelse: {fileSizeMB} MB\n- Format: ZIP-arkiv med JSON-filer\n\nDownload dine data: {downloadUrl}\n\nVIGTIGT: Dette downloadlink udløber {expiresAt, date, full} {expiresAt, time, short}\n\nHvad din eksport indeholder:\n- Alle dine beskeder organiseret efter kanal\n- Kanalmetadata\n- Din brugerprofil og kontooplysninger\n- Guild-medlemskaber og indstillinger\n- Godkendelsessessioner og sikkerhedsoplysninger\n\nDataene er organiseret i JSON-format for nem parsing og analyse.\n\nHvis du har spørgsmål til din dataeksport, bedes du kontakte support@astraof.com\n\n- Astral-teamet"
+	},
+	"unbanNotification": {
+		"subject": "Suspenderingen af din Astral-konto er ophævet",
+		"body": "Hej {username},\n\nGode nyheder! Suspenderingen af din Astral-konto er ophævet.\n\nÅrsag: {reason}\n\nDu kan nu logge ind på din konto igen og fortsætte med at bruge Astral.\n\n- Astral Sikkerhedsteam"
+	},
+	"scheduledDeletionNotification": {
+		"subject": "Din Astral-konto er planlagt til sletning",
+		"body": "Hej {username},\n\nDin Astral-konto er blevet planlagt til permanent sletning.\n\nPlanlagt sletningsdato: {deletionDate, date, full} {deletionDate, time, short}\nÅrsag: {reason}\n\nDette er en alvorlig håndhævelsesforanstaltning. Dine kontodata vil blive permanent slettet på den planlagte dato.\n\nHvis du mener, at denne håndhævelsesbeslutning var forkert, kan du indsende en appel til appeals@astraof.com fra denne e-mailadresse.\n\n- Astral Sikkerhedsteam"
+	},
+	"giftChargebackNotification": {
+		"subject": "Din Astral Premium-gave er blevet tilbagekaldt",
+		"body": "Hej {username},\n\nVi skriver for at informere dig om, at den Astral Premium-gave, du indløste, er blevet tilbagekaldt på grund af en betalingstvistsag (chargeback) indsendt af den oprindelige køber.\n\nDine premium-fordele er blevet fjernet fra din konto. Denne handling blev foretaget, fordi betalingen for gaven blev bestridt og tilbageført.\n\nHvis du har spørgsmål til dette, bedes du kontakte support@astraof.com.\n\n- Astral-teamet"
+	},
+	"reportResolved": {
+		"subject": "Din Astral-rapport er blevet gennemgået",
+		"body": "Hej {username},\n\nDin rapport (ID: {reportId}) er blevet gennemgået af vores Sikkerhedsteam.\n\nSvar fra Sikkerhedsteamet:\n{publicComment}\n\nTak fordi du hjælper med at holde Astral sikkert for alle. Vi tager alle rapporter alvorligt og sætter pris på dit bidrag til vores fællesskab.\n\nHvis du har spørgsmål eller bekymringer om denne afgørelse, bedes du kontakte safety@astraof.com.\n\n- Astral Sikkerhedsteam"
+	},
+	"dsaReportVerification": {
+		"subject": "Bekræft din e-mail til en DSA-rapport",
+		"body": "Hej,\n\nBrug følgende bekræftelseskode til at indsende din rapport efter Digital Services Act på Astral:\n\n{code}\n\nDenne kode udløber {expiresAt, date, full} {expiresAt, time, short}.\n\nHvis du ikke har anmodet om dette, bedes du ignorere denne e-mail.\n\n- Astral Sikkerhedsteam"
+	},
+	"registrationApproved": {
+		"subject": "Din Astral-registrering er blevet godkendt",
+		"body": "Hej {username},\n\nGode nyheder! Din Astral-registrering er blevet godkendt.\n\nDu kan nu logge ind i Astral-appen på:\n{channelsUrl}\n\nVelkommen til Astral-fællesskabet!\n\n- Astral-teamet"
+	},
+	"emailChangeRevert": {
+		"subject": "Din Astral-e-mail blev ændret",
+		"body": "Hej {username},\n\nE-mailadressen til din Astral-konto blev ændret til {newEmail}.\n\nHvis du foretog denne ændring, er der ikke behov for handling. Hvis ikke, kan du fortryde ændringen og sikre din konto via dette link:\n\n{revertUrl}\n\nDette gendanner din tidligere e-mail, logger dig ud overalt, fjerner tilknyttede telefonnumre, deaktiverer MFA og kræver en ny adgangskode.\n\n- Astral Sikkerhedsteam"
+	}
+}
+

@@ -1,0 +1,83 @@
+---
+title: Opcodes & Status Codes
+description: Opcodes & Status Codes
+---
+
+This page groups the most important protocol numbers and status families you will see while building an Astral bot.
+
+## Gateway opcodes
+
+These are the core public Gateway opcodes:
+
+| Opcode | Name | Meaning |
+| --- | --- | --- |
+| `0` | Dispatch | Event packet such as `READY` or `MESSAGE_CREATE` |
+| `1` | Heartbeat | Keep-alive sent by the client |
+| `2` | Identify | Initial authentication payload |
+| `6` | Resume | Resume an existing session |
+| `7` | Reconnect | Server asks the client to reconnect |
+| `9` | Invalid Session | Current session cannot be resumed as-is |
+| `10` | Hello | Initial server packet containing heartbeat interval |
+| `11` | Heartbeat ACK | Heartbeat confirmation |
+
+## Minimal Gateway sequence
+
+1. Connect to Gateway
+2. Receive `op: 10`
+3. Start heartbeats
+4. Send `op: 2`
+5. Process `op: 0` dispatch events
+
+## Common HTTP status codes
+
+| Status | Meaning |
+| --- | --- |
+| `200` | Request succeeded |
+| `201` | Resource created |
+| `204` | Request succeeded with no response body |
+| `400` | Invalid form body or malformed request |
+| `401` | Invalid or missing authentication |
+| `403` | Authenticated, but not allowed |
+| `404` | Resource not found |
+| `429` | Rate limited |
+| `500` | Server-side failure |
+
+## Common error codes
+
+You should treat `code` as the stable machine-readable field.
+
+Examples:
+
+```json
+{
+  "code": "INVALID_AUTH_TOKEN",
+  "message": "Invalid authentication token"
+}
+```
+
+```json
+{
+  "code": "ACCESS_DENIED",
+  "message": "Access denied"
+}
+```
+
+```json
+{
+  "code": "INVALID_FORM_BODY",
+  "message": "Input Validation Error",
+  "errors": [
+    {"path": "content", "message": "Content is too long"}
+  ]
+}
+```
+
+## What to branch on in code
+
+Branch on:
+
+- HTTP status
+- `code`
+- field-level `errors[*].path` for validation failures
+
+Do not branch on the human-readable `message` field.

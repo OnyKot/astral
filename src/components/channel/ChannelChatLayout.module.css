@@ -1,0 +1,189 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	--chat-shell-top: color-mix(in srgb, var(--app-surface-background) 82%, var(--background-primary) 18%);
+	--chat-shell-bottom: color-mix(in srgb, var(--background-secondary) 18%, var(--background-primary) 82%);
+	--mobile-composer-lift: 0px;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	min-width: 0;
+	overflow: hidden;
+	background: transparent;
+	contain: layout style;
+}
+
+.messagesArea {
+	display: flex;
+	flex: 1 1 0%;
+	min-height: 0;
+	min-width: 0;
+	position: relative;
+	overflow: hidden;
+	contain: strict;
+	padding: 0 12px;
+	isolation: isolate;
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-primary) 14%, transparent) 0%,
+			transparent 18%,
+			color-mix(in srgb, var(--background-secondary) 18%, transparent) 100%
+		);
+}
+
+.messagesArea::before,
+.messagesArea::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.messagesArea::before {
+	z-index: 0;
+	background-image: var(--chat-background-pattern-image, none);
+	background-repeat: repeat;
+	background-position: center top;
+	background-size:
+		calc(var(--chat-background-pattern-size, 360px) * var(--chat-background-pattern-scale, 1))
+		calc(var(--chat-background-pattern-size, 360px) * var(--chat-background-pattern-scale, 1));
+	opacity: var(--chat-background-pattern-opacity, 0);
+}
+
+.messagesArea::after {
+	z-index: 0;
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.03) 0%, transparent 20%, rgb(0 0 0 / 0.08) 100%),
+		var(--theme-preset-overlay-background, transparent);
+	opacity: calc(0.2 + (var(--theme-preset-overlay-opacity, 0) * 0.45));
+	mix-blend-mode: screen;
+}
+
+.messagesArea > * {
+	position: relative;
+	z-index: 1;
+}
+
+.typingArea {
+	flex-shrink: 0;
+	position: relative;
+	height: 0;
+	overflow: visible;
+	z-index: 1;
+	--typing-floating-offset: calc(
+		max(var(--typing-indicator-gap), 0px) +
+		var(--textarea-content-offset) +
+		var(--mobile-composer-lift)
+	);
+}
+
+.typingContent {
+	position: absolute;
+	left: var(--textarea-horizontal-padding);
+	right: var(--textarea-horizontal-padding);
+	bottom: var(--typing-floating-offset);
+	pointer-events: none;
+	font-size: 12px;
+	line-height: 16px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.35rem;
+	transition: bottom 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.typingAreaWithTopBar .typingContent {
+	bottom: calc(var(--typing-floating-offset) + 12px);
+}
+
+.typingLeft {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	min-width: 0;
+	order: 1;
+}
+
+.typingRight {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	pointer-events: auto;
+	order: 2;
+}
+
+.textareaArea {
+	flex-shrink: 0;
+	position: relative;
+	padding:
+		0
+		var(--desktop-dock-composer-inline-padding, 10px)
+		calc(var(--desktop-dock-composer-gap, 10px) + var(--desktop-dock-composer-lift, 0px));
+	overflow: visible;
+	background-color: transparent;
+	transition: padding-bottom 220ms cubic-bezier(0.22, 1, 0.36, 1);
+	z-index: 3;
+}
+
+@media (min-width: 768px) {
+	.containerPrivateDesktop {
+		--dm-desktop-typing-inline-offset: clamp(10px, 1.1vw, 18px);
+	}
+
+	.containerPrivateDesktop .textareaArea {
+		padding-left: calc(var(--desktop-dock-composer-inline-padding, 10px) + var(--dm-desktop-typing-inline-offset));
+		padding-right: calc(var(--desktop-dock-composer-inline-padding, 10px) + var(--dm-desktop-typing-inline-offset));
+	}
+
+	.containerPrivateDesktop .typingContent {
+		left: calc(var(--textarea-horizontal-padding) + var(--dm-desktop-typing-inline-offset));
+		right: calc(var(--textarea-horizontal-padding) + var(--dm-desktop-typing-inline-offset));
+	}
+}
+
+@media (max-width: 767px) {
+	.containerWithRaisedComposer {
+		--mobile-composer-lift: calc(min(58dvh, 468px) + max(var(--safe-area-bottom, 0px), 12px));
+	}
+
+	.messagesArea {
+		padding: 0;
+	}
+
+	.textareaArea {
+		padding: 0.25rem 0.5rem calc(0.5rem + var(--safe-area-bottom) + var(--mobile-composer-lift));
+	}
+
+	.typingContent {
+		left: max(0.75rem, var(--safe-area-left, 0px));
+		right: max(0.75rem, var(--safe-area-right, 0px));
+	}
+}
+
+@media (max-width: 480px) {
+	.typingContent {
+		left: max(0.6875rem, var(--safe-area-left, 0px));
+		right: max(0.6875rem, var(--safe-area-right, 0px));
+	}
+}

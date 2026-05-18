@@ -1,0 +1,240 @@
+name: deploy marketing
+
+on:
+  push:
+    branches:
+      - main
+      - canary
+    paths:
+      - Astral_marketing/**
+      - .github/workflows/deploy-marketing.yaml
+  workflow_dispatch:
+    inputs:
+      channel:
+        type: choice
+        options:
+          - stable
+          - canary
+        default: stable
+        description: Channel to deploy
+      ref:
+        type: string
+        required: false
+        default: ''
+        description: Optional git ref to deploy (defaults to main/canary based on channel)
+
+concurrency:
+  group: deploy-Astral-marketing-${{ github.event_name == 'workflow_dispatch' && inputs.channel || (github.ref_name == 'canary' && 'canary') || 'stable' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  channel-vars:
+    uses: ./.github/workflows/channel-vars.yaml
+    with:
+      github_event_name: ${{ github.event_name }}
+      github_ref_name: ${{ github.ref_name }}
+      github_ref: ${{ github.ref }}
+      workflow_dispatch_channel: ${{ github.event_name == 'workflow_dispatch' && inputs.channel || '' }}
+      workflow_dispatch_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || '' }}
+
+  deploy:
+    name: Deploy marketing
+    needs: channel-vars
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 10
+    env:
+      CHANNEL: ${{ needs.channel-vars.outputs.channel }}
+      IS_CANARY: ${{ needs.channel-vars.outputs.is_canary }}
+      SOURCE_REF: ${{ needs.channel-vars.outputs.source_ref }}
+      STACK_SUFFIX: ${{ needs.channel-vars.outputs.stack_suffix }}
+      STACK: ${{ format('Astral-marketing{0}', needs.channel-vars.outputs.stack_suffix) }}
+      IMAGE_NAME: ${{ format('Astral-marketing{0}', needs.channel-vars.outputs.stack_suffix) }}
+      CACHE_SCOPE: ${{ format('deploy-Astral-marketing{0}', needs.channel-vars.outputs.stack_suffix) }}
+      APP_REPLICAS: ${{ needs.channel-vars.outputs.is_canary == 'true' && 1 || 2 }}
+      API_PUBLIC_ENDPOINT: ${{ needs.channel-vars.outputs.is_canary == 'true' && 'https://api.asrtal.ru' || 'https://api.asrtal.ru' }}
+      API_HOST: ${{ needs.channel-vars.outputs.is_canary == 'true' && 'Astral-api-canary_app:8080' || 'Astral-api_app:8080' }}
+      APP_ENDPOINT: ${{ needs.channel-vars.outputs.is_canary == 'true' && 'https://asrtal.ru' || 'https://asrtal.ru' }}
+      MARKETING_ENDPOINT: ${{ needs.channel-vars.outputs.is_canary == 'true' && 'https://asrtal.ru' || 'https://asrtal.ru' }}
+      CADDY_DOMAIN: ${{ needs.channel-vars.outputs.is_canary == 'true' && 'asrtal.ru' || 'asrtal.ru' }}
+      RELEASE_CHANNEL: ${{ needs.channel-vars.outputs.channel }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 0
+
+      - name: Record deploy commit
+        run: |-
+          set -euo pipefail
+          sha=$(git rev-parse HEAD)
+          echo "Deploying commit ${sha}"
+          printf 'DEPLOY_SHA=%s\n' "$sha" >> "$GITHUB_ENV"
+
+      - name: Set build timestamp
+        run: echo "BUILD_TIMESTAMP=$(date -u +%s)" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: Astral_marketing
+          file: Astral_marketing/Dockerfile
+          tags: ${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+          load: true
+          platforms: linux/amd64
+          cache-from: type=gha,scope=${{ env.CACHE_SCOPE }}
+          cache-to: type=gha,mode=max,scope=${{ env.CACHE_SCOPE }}
+          build-args: |
+            BUILD_TIMESTAMP=${{ env.BUILD_TIMESTAMP }}
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+
+      - name: Install docker-pussh
+        run: |-
+          set -euo pipefail
+          mkdir -p ~/.docker/cli-plugins
+          curl -fsSL https://raw.githubusercontent.com/psviderski/unregistry/v0.3.1/docker-pussh \
+            -o ~/.docker/cli-plugins/docker-pussh
+          chmod +x ~/.docker/cli-plugins/docker-pussh
+
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_SERVER }}
+
+      - name: Add server to known hosts
+        run: |-
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+      - name: Push image and deploy
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+          SERVER: ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}
+          STACK: ${{ env.STACK }}
+          IS_CANARY: ${{ env.IS_CANARY }}
+          API_PUBLIC_ENDPOINT: ${{ env.API_PUBLIC_ENDPOINT }}
+          API_HOST: ${{ env.API_HOST }}
+          APP_ENDPOINT: ${{ env.APP_ENDPOINT }}
+          MARKETING_ENDPOINT: ${{ env.MARKETING_ENDPOINT }}
+          CADDY_DOMAIN: ${{ env.CADDY_DOMAIN }}
+          RELEASE_CHANNEL: ${{ env.RELEASE_CHANNEL }}
+          APP_REPLICAS: ${{ env.APP_REPLICAS }}
+        run: |-
+          set -euo pipefail
+          docker pussh "${IMAGE_TAG}" "${SERVER}"
+
+          ssh "${SERVER}" \
+            "IMAGE_TAG=${IMAGE_TAG} STACK=${STACK} IS_CANARY=${IS_CANARY} API_PUBLIC_ENDPOINT=${API_PUBLIC_ENDPOINT} API_HOST=${API_HOST} APP_ENDPOINT=${APP_ENDPOINT} MARKETING_ENDPOINT=${MARKETING_ENDPOINT} CADDY_DOMAIN=${CADDY_DOMAIN} RELEASE_CHANNEL=${RELEASE_CHANNEL} APP_REPLICAS=${APP_REPLICAS} bash" << 'EOF'
+          set -euo pipefail
+
+          sudo mkdir -p "/opt/${STACK}"
+          sudo chown -R "${USER}:${USER}" "/opt/${STACK}"
+          cd "/opt/${STACK}"
+
+          cat > compose.yaml << COMPOSEEOF
+          services:
+            app:
+              image: ${IMAGE_TAG}
+              env_file:
+                - /etc/Astral/Astral.env
+              environment:
+                - ASTRAL_API_PUBLIC_ENDPOINT=${API_PUBLIC_ENDPOINT}
+                - ASTRAL_API_HOST=${API_HOST}
+                - ASTRAL_APP_ENDPOINT=${APP_ENDPOINT}
+                - ASTRAL_CDN_ENDPOINT=https://asrtal.ru
+                - ASTRAL_MARKETING_ENDPOINT=${MARKETING_ENDPOINT}
+                - ASTRAL_MARKETING_PORT=8080
+                - ASTRAL_PATH_MARKETING=/
+                - RELEASE_CHANNEL=${RELEASE_CHANNEL}
+                - ASTRAL_METRICS_HOST=Astral-metrics_app:8080
+              deploy:
+                replicas: ${APP_REPLICAS}
+                restart_policy:
+                  condition: on-failure
+                  delay: 5s
+                  max_attempts: 3
+                update_config:
+                  parallelism: 1
+                  delay: 10s
+                  order: start-first
+                rollback_config:
+                  parallelism: 1
+                  delay: 10s
+                labels:
+                  caddy: "${CADDY_DOMAIN}"
+                  caddy.reverse_proxy: "{{upstreams 8080}}"
+                  caddy.header.Strict-Transport-Security: "max-age=31536000; includeSubDomains; preload"
+                  caddy.header.X-Xss-Protection: "1; mode=block"
+                  caddy.header.X-Content-Type-Options: "nosniff"
+                  caddy.header.Referrer-Policy: "strict-origin-when-cross-origin"
+                  caddy.header.X-Frame-Options: "DENY"
+          COMPOSEEOF
+
+          if [[ "${IS_CANARY}" == "true" ]]; then
+            cat >> compose.yaml << 'COMPOSEEOF'
+                  caddy.header.X-Robots-Tag: "noindex, nofollow, nosnippet, noimageindex"
+                  caddy.@channels.path: "/channels /channels/*"
+                  caddy.redir: "@channels https://asrtal.ru{uri}"
+          COMPOSEEOF
+          else
+            cat >> compose.yaml << 'COMPOSEEOF'
+                  caddy.redir_0: "/channels/* https://asrtal.ru{uri}"
+                  caddy.redir_1: "/channels https://asrtal.ru{uri}"
+                  caddy.redir_2: "/delete-my-account https://asrtal.ru/help/articles/1445724566704881664 302"
+                  caddy.redir_3: "/delete-my-data https://asrtal.ru/help/articles/1445730947679911936 302"
+                  caddy.redir_4: "/export-my-data https://asrtal.ru/help/articles/1445731738851475456 302"
+                  caddy.redir_5: "/bugs https://asrtal.ru/help/articles/1447264362996695040 302"
+                  caddy_1: "www.asrtal.ru"
+                  caddy_1.redir: "https://asrtal.ru{uri}"
+                  caddy_3: "asrtal.ru"
+                  caddy_3.redir: "https://asrtal.ru/invite{uri}"
+                  caddy_4: "asrtal.ru"
+                  caddy_4.redir: "https://asrtal.ru/gift{uri}"
+                  caddy_5: "asrtal.ru"
+                  caddy_5.redir: "https://asrtal.ru{uri}"
+                  caddy_6: "www.asrtal.ru"
+                  caddy_6.redir: "https://asrtal.ru{uri}"
+                  caddy_7: "Astral.dev"
+                  caddy_7.redir: "https://docs.asrtal.ru{uri}"
+                  caddy_8: "www.Astral.dev"
+                  caddy_8.redir: "https://docs.asrtal.ru{uri}"
+          COMPOSEEOF
+          fi
+
+          cat >> compose.yaml << 'COMPOSEEOF'
+              networks:
+                - Astral-shared
+              healthcheck:
+                test: ['CMD', 'curl', '-f', 'http://localhost:8080/']
+                interval: 30s
+                timeout: 10s
+                retries: 3
+                start_period: 40s
+
+          networks:
+            Astral-shared:
+              external: true
+          COMPOSEEOF
+
+          docker stack deploy \
+            --with-registry-auth \
+            --detach=false \
+            --resolve-image never \
+            -c compose.yaml \
+            "${STACK}"
+          EOF

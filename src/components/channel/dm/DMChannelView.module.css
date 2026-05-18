@@ -1,0 +1,833 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.emptyState {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+}
+
+.emptyStateIcon {
+    margin-bottom: 1rem;
+    height: 4rem;
+    width: 4rem;
+    color: var(--text-tertiary);
+}
+
+.emptyStateTitle {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    color: var(--text-primary);
+}
+
+.emptyStateDescription {
+    max-width: 28rem;
+    color: var(--text-tertiary);
+}
+
+.voiceCallContainer {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
+.minimizeButton {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 50;
+    display: flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background-color: rgb(0 0 0 / 0.5);
+    color: white;
+    backdrop-filter: blur(8px);
+    transition-property: color, background-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+    cursor: pointer;
+}
+
+.minimizeButton:hover {
+    background-color: rgb(0 0 0 / 0.7);
+}
+
+.minimizeButtonIcon {
+    height: 1.25rem;
+    width: 1.25rem;
+}
+
+.callParticipantsRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.56rem;
+    padding: 0.2rem 0 0;
+    min-height: 0;
+}
+
+.callParticipant {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--background-floating) 74%, var(--background-primary) 26%);
+    box-shadow: 0 10px 22px rgb(3 7 18 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.1);
+    cursor: context-menu;
+    transition: transform 190ms cubic-bezier(0.22, 1, 0.36, 1), border-color 190ms ease, box-shadow 190ms ease;
+}
+
+.callParticipant:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--brand-primary) 22%, transparent);
+    box-shadow: 0 14px 24px rgb(3 7 18 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+
+.callParticipantAvatar {
+    position: relative;
+    z-index: 1;
+    border-radius: 9999px;
+}
+
+.callParticipantRinging .callParticipantAvatar {
+    filter: saturate(0.82) brightness(0.9);
+}
+
+.callParticipantRipple {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    opacity: 0;
+    background-color: color-mix(in srgb, var(--brand-primary) 72%, white);
+    animation: callParticipantPulse 2.429s infinite ease-out;
+}
+
+.callParticipantRipple0 {
+    animation-delay: 20ms;
+}
+
+.callParticipantRipple1 {
+    animation-delay: 145ms;
+}
+
+.callParticipantRipple2 {
+    animation-delay: 270ms;
+}
+
+.callParticipantSpeaking {
+    border-color: color-mix(in srgb, var(--text-primary) 22%, transparent);
+}
+
+.callParticipantSpeaking .callParticipantAvatar {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--text-primary) 16%, transparent);
+}
+
+.callParticipantSpeakingPulse {
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    opacity: 0;
+    background: color-mix(in srgb, var(--text-secondary) 38%, transparent);
+    animation: callParticipantSpeakingPulse 1.4s ease-out infinite;
+}
+
+@keyframes callParticipantPulse {
+    0% {
+        opacity: 0.85;
+        transform: scale3d(0.7, 0.7, 1);
+    }
+    11.28% {
+        opacity: 0;
+        transform: scale3d(1.1, 1.1, 1);
+    }
+    12% {
+        transform: scale3d(0.7, 0.7, 1);
+    }
+    13% {
+        opacity: 0.85;
+    }
+    28.448% {
+        opacity: 0.85;
+        transform: scale3d(0.7, 0.7, 1);
+    }
+    39.728% {
+        opacity: 0;
+        transform: scale3d(1.1, 1.1, 1);
+    }
+    40% {
+        transform: scale3d(0.7, 0.7, 1);
+    }
+    41% {
+        opacity: 0.85;
+    }
+    to {
+        opacity: 0.85;
+        transform: scale3d(0.7, 0.7, 1);
+    }
+}
+
+@keyframes callParticipantSpeakingPulse {
+    0% {
+        opacity: 0.34;
+        transform: scale3d(0.94, 0.94, 1);
+    }
+    70% {
+        opacity: 0.04;
+        transform: scale3d(1.16, 1.16, 1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale3d(1.22, 1.22, 1);
+    }
+}
+
+.callBanner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 0 0.75rem 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+    border-radius: 1.2rem;
+    background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
+    box-shadow: 0 10px 22px rgb(3 7 18 / 0.12);
+    backdrop-filter: blur(10px) saturate(108%);
+}
+
+.callControls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.callBannerMobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 0 0.75rem 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+    border-radius: 1.2rem;
+    background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
+    box-shadow: 0 10px 22px rgb(3 7 18 / 0.12);
+    backdrop-filter: blur(10px) saturate(108%);
+}
+
+.callBannerHeader {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+}
+
+.callBannerEyebrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    gap: 0.35rem;
+    min-height: 1.875rem;
+    padding: 0.3125rem 0.75rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--background-floating) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+    box-shadow: none;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1rem;
+    color: color-mix(in srgb, var(--text-primary) 80%, var(--brand-primary) 20%);
+}
+
+.callBannerEyebrow::before,
+.callBannerEyebrow::after {
+    display: none;
+}
+
+.callBannerMeta {
+    display: none;
+}
+
+.callBannerPreview {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.callBannerActionRow {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+}
+
+.callControls button,
+.callControlsMobile button,
+.callBannerActionRow button,
+.callSheetControls button {
+    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1), filter 180ms ease;
+}
+
+.callControls button:hover,
+.callControlsMobile button:hover,
+.callBannerActionRow button:hover,
+.callSheetControls button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--background-primary) 24%, transparent);
+    filter: saturate(1.06);
+}
+
+.callControls button:active,
+.callControlsMobile button:active,
+.callBannerActionRow button:active,
+.callSheetControls button:active {
+    transform: translateY(0);
+}
+
+.callControlsMobile {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.callSheetContent {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 0 0.9rem calc(0.95rem + var(--safe-area-bottom, 0px));
+}
+
+.callSheetContentFull {
+	height: 100dvh;
+	min-height: 100dvh;
+	padding: 0;
+}
+
+.mobileCallFullSheetRoot {
+	height: 100dvh !important;
+	max-height: 100dvh !important;
+	border-top-left-radius: 0 !important;
+	border-top-right-radius: 0 !important;
+	box-shadow: none !important;
+	background:
+		radial-gradient(
+			140% 130% at 12% -8%,
+			color-mix(in srgb, var(--brand-primary) 10%, transparent) 0%,
+			transparent 66%
+		),
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-secondary) 86%, var(--background-primary) 14%) 0%,
+			color-mix(in srgb, var(--background-primary) 94%, var(--background-secondary) 6%) 100%
+		);
+	background-size: 142% 142%, 125% 125%;
+	background-position: 0% 0%, 50% 50%;
+	animation: dmCallAmbientDrift 42s ease-in-out infinite alternate;
+}
+
+.callSheetHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    align-items: center;
+    text-align: center;
+}
+
+.callSheetControls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.callSheetControls button {
+    min-height: 2.85rem;
+    border-radius: 0.95rem;
+    font-weight: 600;
+}
+
+.callSheetControls button svg {
+    height: 1.05rem;
+    width: 1.05rem;
+}
+
+.mobileCallStage {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.9rem;
+	padding: 0.45rem 0.35rem 0.2rem;
+	border-radius: 1.2rem;
+	background: linear-gradient(180deg, #2a4463 0%, #325074 100%);
+	color: #fff;
+}
+
+.mobileCallStageFull {
+	min-height: 100dvh;
+	width: 100%;
+	border-radius: 0;
+	padding: calc(1.2rem + var(--safe-area-top, 0px)) 0.9rem calc(1.05rem + var(--safe-area-bottom, 0px));
+	justify-content: space-between;
+	background:
+		radial-gradient(
+			130% 120% at 12% 2%,
+			color-mix(in srgb, var(--brand-primary) 12%, transparent) 0%,
+			transparent 66%
+		),
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-secondary) 84%, var(--background-primary) 16%) 0%,
+			color-mix(in srgb, var(--background-primary) 94%, var(--background-secondary) 6%) 100%
+		);
+	background-size: 150% 150%, 130% 130%;
+	background-position: 0% 0%, 50% 50%;
+	animation: dmCallAmbientDrift 40s ease-in-out infinite alternate;
+}
+
+.mobileCallStageHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	padding-top: 0.35rem;
+}
+
+.mobileCallBackButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.35rem;
+	height: 2.35rem;
+	border-radius: 999px;
+	border: 1px solid rgb(255 255 255 / 0.24);
+	background: rgb(255 255 255 / 0.12);
+	color: #fff;
+}
+
+.mobileCallHeaderIcon {
+	width: 1.14rem;
+	height: 1.14rem;
+}
+
+.mobileCallStatusPill {
+	padding: 0.36rem 0.78rem;
+	border-radius: 999px;
+	font-size: 0.8rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	background: rgb(255 255 255 / 0.15);
+	border: 1px solid rgb(255 255 255 / 0.2);
+}
+
+.mobileCallInfo {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.32rem;
+	text-align: center;
+	margin-top: 0.42rem;
+}
+
+.mobileCallName {
+	margin: 0;
+	font-size: 1.58rem;
+	line-height: 1.72rem;
+	font-weight: 800;
+}
+
+.mobileCallDuration {
+	font-size: 1rem;
+	line-height: 1.24rem;
+	color: rgb(255 255 255 / 0.82);
+}
+
+.mobileCallMainControls {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.9rem;
+	width: 100%;
+}
+
+.mobileCallCircleButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 3.35rem;
+	height: 3.35rem;
+	border-radius: 999px;
+	border: 1px solid rgb(255 255 255 / 0.18);
+	background: rgb(255 255 255 / 0.16);
+	color: #fff;
+}
+
+.mobileCallControlIcon {
+	width: 1.3rem;
+	height: 1.3rem;
+}
+
+.mobileCallHangupButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 3.55rem;
+	height: 3.55rem;
+	border-radius: 999px;
+	border: none;
+	background: #c0333b;
+	color: #fff;
+	box-shadow: 0 10px 22px rgb(0 0 0 / 0.22);
+}
+
+.mobileCallHangupIcon {
+	width: 1.35rem;
+	height: 1.35rem;
+	transform: rotate(135deg);
+}
+
+.mobileCallAdvancedBlock {
+	width: 100%;
+	padding-top: 0.4rem;
+}
+
+.mobileCallControlsMirror {
+	width: 100%;
+	max-width: 100%;
+	margin-inline: auto;
+	padding-top: 0.42rem;
+	overflow: visible;
+}
+
+.mobileCallControlsMirror :global([class*='container']) {
+	width: min(100%, 27rem);
+	min-width: 0;
+	grid-template-columns: repeat(5, minmax(4.15rem, 4.15rem));
+	justify-content: center;
+	gap: 0.88rem;
+	padding-inline: 0.2rem;
+	align-items: end;
+	margin-inline: auto;
+}
+
+.mobileCallControlsMirror :global([class*='button']) {
+	width: 4.15rem;
+	height: 4.15rem;
+	border-radius: 999px;
+}
+
+.mobileCallControlsMirror :global([class*='settingsButton']) {
+	display: inline-flex;
+	width: 1.28rem;
+	height: 1.28rem;
+	right: 0.12rem;
+	bottom: 0.12rem;
+	border-radius: 999px;
+	box-shadow: none;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 14%, transparent);
+}
+
+.mobileCallControlsMirror :global([class*='buttonMoreOptions']) {
+	display: none;
+}
+
+.mobileCallMinimizeButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.95rem;
+	height: 2.95rem;
+	padding: 0;
+	border-radius: 9999px;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 16%, transparent);
+	background: color-mix(in srgb, var(--background-floating) 20%, var(--background-primary) 80%);
+	color: color-mix(in srgb, var(--text-primary) 92%, white 8%);
+	box-shadow: 0 10px 22px rgb(3 7 18 / 0.2);
+}
+
+.mobileCallMinimizeIcon {
+	width: 1.22rem;
+	height: 1.22rem;
+}
+
+.mobileCallStageFull .callParticipantsRow {
+	gap: 0.64rem;
+	padding-top: 0.28rem;
+	max-width: 100%;
+	width: 100%;
+	justify-content: center;
+	align-content: flex-start;
+}
+
+.mobileCallStageFull .callParticipant {
+	padding: 4px;
+	box-shadow: 0 12px 24px rgb(3 7 18 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+
+.mobileCallStageFull .callParticipantAvatar {
+	transform: scale(1.02);
+}
+
+.mobileCallMediaStage {
+	width: min(100%, 52rem);
+	margin: 0.35rem auto 0;
+	padding: 0.24rem;
+	border-radius: 1.1rem;
+	background: color-mix(in srgb, var(--background-primary) 78%, black 22%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	box-shadow: 0 14px 30px rgb(0 0 0 / 0.28);
+}
+
+.mobileCallMediaView {
+	width: 100%;
+	min-height: 0;
+	border-radius: 0.9rem;
+	overflow: hidden;
+	background: transparent;
+}
+
+.androidCallTools {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--background-secondary) 92%, var(--background-primary) 8%);
+    border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+    box-shadow: 0 10px 20px rgb(3 7 18 / 0.1);
+}
+
+.androidCallToolsHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.androidCallToolsTitle {
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.25rem;
+    color: var(--text-primary);
+}
+
+.androidCallToolsDescription {
+    font-size: 0.8125rem;
+    line-height: 1.2rem;
+    color: color-mix(in srgb, var(--text-secondary) 86%, var(--text-primary));
+}
+
+.androidCallToolsActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.compactVoiceCallView {
+    border-radius: var(--radius-lg);
+    min-height: 0;
+    --compact-screenshare-width: clamp(14rem, 30vw, 22rem);
+    --compact-screenshare-max-width: 22rem;
+    --compact-screenshare-multi-width: clamp(12.5rem, 26vw, 18rem);
+    --compact-screenshare-multi-max-width: 18rem;
+}
+
+.compactVoiceCallViewInline {
+    border-radius: 1rem;
+    padding: 0.5rem;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.channelContainer {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+    min-width: 0;
+    background-color: var(--background-secondary-lighter);
+}
+
+.channelLayout {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+    min-width: 0;
+}
+
+@media (max-width: 767px) {
+    .callBanner,
+    .callBannerMobile {
+        margin: 0 0.55rem 0.55rem;
+    }
+
+    .callSheetContent {
+        gap: 0.75rem;
+        padding: 0 0.7rem calc(0.85rem + var(--safe-area-bottom, 0px));
+    }
+
+    .callParticipantsRow {
+        gap: 0.48rem;
+    }
+
+    .callControlsMobile button,
+    .callSheetControls button {
+        min-height: 2.95rem;
+    }
+
+    .callControlsMobile button {
+        width: auto;
+        flex: 1 1 9rem;
+    }
+
+    .callSheetControls button {
+        width: 100%;
+    }
+
+    .callParticipant {
+        padding: 2px;
+    }
+}
+
+@media (max-width: 480px) {
+    .callBannerMobile {
+        margin: 0 0.5rem 0.55rem;
+        padding: 0.68rem;
+        border-radius: 1rem;
+    }
+    .callBannerEyebrow {
+        padding-inline: 0.65rem;
+    }
+
+    .callBannerHeader {
+        gap: 0.45rem;
+    }
+
+    .callBannerMeta {
+        max-width: 9.5rem;
+    }
+    .callParticipant {
+        padding: 2px;
+    }
+
+    .callSheetControls button {
+        min-height: 3rem;
+        font-size: 0.9rem;
+    }
+
+    .compactVoiceCallView {
+        border-radius: 0.95rem;
+        --compact-screenshare-width: 100%;
+        --compact-screenshare-max-width: 100%;
+        --compact-screenshare-multi-width: 100%;
+        --compact-screenshare-multi-max-width: 100%;
+    }
+
+    .compactVoiceCallViewInline {
+        border-radius: 0.95rem;
+        padding: 0.4rem;
+    }
+
+	.mobileCallStage {
+		border-radius: 1rem;
+		padding: 0.4rem 0.2rem 0.15rem;
+	}
+
+	.mobileCallStageFull {
+		padding: calc(1rem + var(--safe-area-top, 0px)) 0.66rem calc(0.9rem + var(--safe-area-bottom, 0px));
+	}
+
+	.mobileCallControlsMirror :global([class*='container']) {
+		grid-template-columns: repeat(5, minmax(3.55rem, 3.55rem));
+		gap: 0.62rem;
+	}
+
+	.mobileCallControlsMirror :global([class*='button']) {
+		width: 3.55rem;
+		height: 3.55rem;
+	}
+
+	.mobileCallCircleButton {
+		width: 3.1rem;
+		height: 3.1rem;
+	}
+
+	.mobileCallHangupButton {
+		width: 3.3rem;
+		height: 3.3rem;
+	}
+    .androidCallToolsActions {
+        flex-direction: column;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .callBanner,
+    .callBannerMobile,
+    .callBannerEyebrow::before,
+    .callBannerEyebrow::after,
+    .callParticipant,
+    .callControls button,
+    .callControlsMobile button,
+    .callBannerActionRow button,
+    .callSheetControls button {
+        animation: none;
+        transition: none;
+    }
+
+	.mobileCallStageFull,
+	.mobileCallFullSheetRoot,
+	.mobileCallControlsMirror :global([class*='container']),
+	.mobileCallControlsMirror :global([class*='button']) {
+		animation: none !important;
+		transition: none !important;
+	}
+}
+
+@keyframes dmCallAmbientDrift {
+	0% {
+		background-position: 0% 0%, 50% 50%;
+	}
+	50% {
+		background-position: 18% 10%, 52% 49%;
+	}
+	100% {
+		background-position: 28% 16%, 50% 53%;
+	}
+}

@@ -1,0 +1,141 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, for example v1.2.18
+        required: true
+      target:
+        description: Git ref to release
+        required: false
+        default: production
+      prerelease:
+        description: Mark the GitHub release as prerelease
+        type: boolean
+        required: false
+        default: false
+      draft:
+        description: Create the GitHub release as draft
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Check and publish release
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.target || github.ref }}
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        env:
+          RELEASE_TAG_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          tag="${RELEASE_TAG_INPUT}"
+          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z._-]+)?$ ]]; then
+            echo "::error::Release tag must look like v1.2.18 or v1.2.18-rc.1; got ${tag}"
+            exit 1
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install root dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate CSS module types
+        run: pnpm generate:css-types
+
+      - name: Typecheck frontend
+        run: pnpm typecheck
+
+      - name: Set up Erlang
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "28"
+          rebar3-version: "3.24.0"
+
+      - name: Compile gateway
+        run: cd astral_gateway && rebar3 compile
+
+      - name: Create tag when started manually
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.release.outputs.tag }}"
+          sha="${{ steps.release.outputs.sha }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "refs/tags/${tag}:refs/tags/${tag}" || true
+          if git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
+            tag_sha="$(git rev-list -n 1 "${tag}")"
+            if [[ "${tag_sha}" != "${sha}" ]]; then
+              echo "::error::Tag ${tag} already exists at ${tag_sha}, not at ${sha}"
+              exit 1
+            fi
+          else
+            git tag -a "${tag}" -m "Release ${tag}" "${sha}"
+            git push origin "refs/tags/${tag}"
+          fi
+
+      - name: Publish GitHub release
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.release.outputs.tag }}"
+          sha="${{ steps.release.outputs.sha }}"
+          flags=(--title "${tag}" --target "${sha}" --generate-notes)
+          if [[ "${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}" == "true" ]]; then
+            flags+=(--prerelease)
+          fi
+          if [[ "${{ github.event_name == 'workflow_dispatch' && inputs.draft || false }}" == "true" ]]; then
+            flags+=(--draft)
+          fi
+
+          if gh release view "${tag}" >/dev/null 2>&1; then
+            echo "Release ${tag} already exists; leaving notes/assets intact."
+          else
+            gh release create "${tag}" "${flags[@]}"
+          fi
+
+          release_url="$(gh release view "${tag}" --json url --jq .url)"
+          {
+            echo "## Release"
+            echo ""
+            echo "- Tag: \`${tag}\`"
+            echo "- Commit: \`${sha}\`"
+            echo "- URL: ${release_url}"
+          } >> "$GITHUB_STEP_SUMMARY"

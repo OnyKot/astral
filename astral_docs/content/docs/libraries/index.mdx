@@ -1,0 +1,43 @@
+---
+title: Libraries
+description: Client libraries and SDKs for talking to Astral
+---
+
+You can call the Astral REST API and Gateway directly with any HTTP / WebSocket client. The pages here list **higher-level libraries** that wrap that surface for popular languages so you don't have to write the heartbeat loop, IDENTIFY payload, rate-limit handling and resume logic yourself.
+
+<Callout type="info" title="Astral is wire-compatible with Discord">
+The REST routes, gateway opcodes and event names match the Discord public API spec where possible. That means **almost any modern Discord library works as an Astral library** as long as you point its base URL at `https://astraof.com/api/v1` and its gateway URL at `wss://astraof.com/gateway`. The pages below show how to do that for the most popular library in each language.
+</Callout>
+
+## Pick a language
+
+| Language | Recommended library | Status |
+| --- | --- | --- |
+| [JavaScript / TypeScript](./libraries/javascript) | [`discord.js`](https://discord.js.org) | Works with config override |
+| [Python](./libraries/python) | [`discord.py`](https://discordpy.readthedocs.io) | Works with config override |
+| [Go](./libraries/go) | [`discordgo`](https://github.com/bwmarrin/discordgo) | Works with config override |
+| [Rust](./libraries/rust) | [`serenity`](https://github.com/serenity-rs/serenity) | Works with config override |
+| [Java / Kotlin](./libraries/java) | [`JDA`](https://github.com/discord-jda/JDA) | Works with config override |
+| [C# / .NET](./libraries/csharp) | [`Discord.Net`](https://github.com/discord-net/Discord.Net) | Works with config override |
+
+## Don't see your language?
+
+You can always talk to Astral with the language's standard HTTP and WebSocket primitives — see the [Quickstart](./quickstart) for a no-dependencies example using only `ws` from npm. The same recipe works in any language: open a WebSocket, handle opcodes 10 / 1 / 2 / 11, and POST messages with `Authorization: Bot <token>`.
+
+## What "wire-compatible" actually means
+
+Astral's public REST and Gateway match the Discord shape on:
+
+- HTTP routes (`/users/@me`, `/channels/:id/messages`, `/guilds/:id/members`, …)
+- Authentication header (`Authorization: Bot <token>`)
+- JSON object shapes for messages, guilds, channels, users
+- Gateway opcodes (`HELLO`, `HEARTBEAT`, `IDENTIFY`, `RESUME`, `DISPATCH`, `RECONNECT`, `INVALID_SESSION`, `HEARTBEAT_ACK`)
+- Common dispatch events (`READY`, `MESSAGE_CREATE`, `MESSAGE_UPDATE`, `MESSAGE_DELETE`, `GUILD_CREATE`, `GUILD_MEMBER_ADD`, `VOICE_STATE_UPDATE`, …)
+
+What's **different**:
+
+- The base URLs (`https://astraof.com/api/v1` and `wss://astraof.com/gateway` instead of `discord.com`).
+- Astral-specific endpoints under `/v1/payments/...`, `/v1/webhooks/...` and discovery routes — those have no Discord analogue.
+- Some Discord library features that depend on Discord-only services (Sharding negotiated through `gateway/bot`, certain admin endpoints) may behave differently or be unavailable.
+
+If a library exposes a "base URL" or "API endpoint" config option, you can repoint it at Astral. The per-language pages walk through exactly which option that is for each library.

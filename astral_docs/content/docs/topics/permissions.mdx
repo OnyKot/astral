@@ -1,0 +1,96 @@
+---
+title: Permissions
+description: Permissions
+---
+
+Permissions determine what a bot can do in a guild or channel.
+
+Even if a token is valid, Astral will still reject actions the bot is not allowed to perform.
+
+## Two levels matter
+
+### Guild-level permissions
+
+Examples:
+
+- `SEND_MESSAGES`
+- `MANAGE_MESSAGES`
+- `KICK_MEMBERS`
+- `BAN_MEMBERS`
+- `MANAGE_ROLES`
+- `ADMINISTRATOR`
+
+### Channel-level overrides
+
+Guild permissions can then be refined by channel overwrites:
+
+- allow specific actions
+- deny specific actions
+- target either roles or members
+
+## Common failure mode
+
+If your bot gets:
+
+```json
+{
+  "code": "ACCESS_DENIED",
+  "message": "Access denied"
+}
+```
+
+the most common reasons are:
+
+- missing guild permission
+- channel overwrite denies the action
+- role hierarchy prevents moderation
+- the bot is not present in the target guild/channel context
+
+## Common bot capabilities and what they usually need
+
+| Bot action | Typical permissions |
+| --- | --- |
+| Send a message | `SEND_MESSAGES` |
+| Read history | `READ_MESSAGE_HISTORY` |
+| Add reactions | `ADD_REACTIONS` |
+| Delete/moderate messages | `MANAGE_MESSAGES` |
+| Kick members | `KICK_MEMBERS` |
+| Ban members | `BAN_MEMBERS` |
+| Assign roles | `MANAGE_ROLES` |
+| Manage channels | `MANAGE_CHANNELS` or equivalent channel management authority |
+
+## Bot invite permissions
+
+When inviting a bot through OAuth2, pass the smallest permission set it needs:
+
+```text
+https://astraof.com/oauth2/authorize?client_id=<APP_ID>&scope=bot&permissions=<PERMISSIONS>
+```
+
+Do not default to administrator unless absolutely required.
+
+## Channel overwrite example
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": 0,
+    "allow": "1024",
+    "deny": "2048"
+  }' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/permissions/<OVERWRITE_ID>
+```
+
+## Moderation and role hierarchy
+
+For actions like:
+
+- kick
+- ban
+- role assignment
+
+permission bits alone are not always enough. Role ordering still matters.
+
+If your bot can ban some users but not others, check hierarchy first.

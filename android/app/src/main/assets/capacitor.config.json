@@ -1,0 +1,27 @@
+{
+	"appId": "app.astral",
+	"appName": "Astral",
+	"webDir": "dist",
+	"plugins": {
+		"Keyboard": {
+			"resize": "ionic",
+			"resizeOnFullScreen": true
+		}
+	},
+	"android": {
+		"backgroundColor": "#000000",
+		"allowMixedContent": false,
+		"overScrollMode": "never",
+		"webContentsDebuggingEnabled": true
+	},
+	"server": {
+		"url": "https://astraof.com/login",
+		"cleartext": false,
+		"allowNavigation": [
+			"astraof.com",
+			"*.astraof.com",
+			"asrtal.ru",
+			"*.asrtal.ru"
+		]
+	}
+}

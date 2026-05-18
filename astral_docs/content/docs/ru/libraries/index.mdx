@@ -1,0 +1,43 @@
+---
+title: Библиотеки
+description: Клиентские библиотеки и SDK для работы с Astral
+---
+
+С Astral REST API и Gateway можно работать через любой HTTP / WebSocket клиент. На страницах ниже собраны **высокоуровневые библиотеки**, которые оборачивают эту поверхность для популярных языков, чтобы вам не пришлось вручную писать heartbeat-цикл, IDENTIFY payload, обработку rate-limit'ов и логику resume.
+
+<Callout type="info" title="Astral wire-совместим с Discord">
+REST-маршруты, gateway opcodes и имена событий совпадают с публичной спецификацией Discord API там, где это возможно. Это значит, что **почти любая современная Discord-библиотека работает и как Astral-библиотека** — достаточно указать ей base URL `https://astraof.com/api/v1` и gateway URL `wss://astraof.com/gateway`. Страницы ниже показывают, как именно это сделать для самой популярной библиотеки в каждом языке.
+</Callout>
+
+## Выберите язык
+
+| Язык | Рекомендуемая библиотека | Статус |
+| --- | --- | --- |
+| [JavaScript / TypeScript](./libraries/javascript) | [`discord.js`](https://discord.js.org) | Работает с переопределением URL |
+| [Python](./libraries/python) | [`discord.py`](https://discordpy.readthedocs.io) | Работает с переопределением URL |
+| [Go](./libraries/go) | [`discordgo`](https://github.com/bwmarrin/discordgo) | Работает с переопределением URL |
+| [Rust](./libraries/rust) | [`serenity`](https://github.com/serenity-rs/serenity) | Работает с переопределением URL |
+| [Java / Kotlin](./libraries/java) | [`JDA`](https://github.com/discord-jda/JDA) | Работает с переопределением URL |
+| [C# / .NET](./libraries/csharp) | [`Discord.Net`](https://github.com/discord-net/Discord.Net) | Работает с переопределением URL |
+
+## Нет вашего языка?
+
+Astral всегда можно вызывать через стандартные HTTP- и WebSocket-примитивы языка — посмотрите [Быстрый старт](./quickstart) для примера без зависимостей с одним только `ws` из npm. Тот же подход работает в любом языке: открываете WebSocket, обрабатываете opcodes 10 / 1 / 2 / 11 и POST'ите сообщения с заголовком `Authorization: Bot <token>`.
+
+## Что значит «wire-совместим»
+
+Публичные REST и Gateway Astral совпадают с формой Discord по:
+
+- HTTP-маршрутам (`/users/@me`, `/channels/:id/messages`, `/guilds/:id/members`, …)
+- Заголовку аутентификации (`Authorization: Bot <token>`)
+- JSON-структурам объектов сообщений, гильдий, каналов, пользователей
+- Gateway opcodes (`HELLO`, `HEARTBEAT`, `IDENTIFY`, `RESUME`, `DISPATCH`, `RECONNECT`, `INVALID_SESSION`, `HEARTBEAT_ACK`)
+- Основным dispatch-событиям (`READY`, `MESSAGE_CREATE`, `MESSAGE_UPDATE`, `MESSAGE_DELETE`, `GUILD_CREATE`, `GUILD_MEMBER_ADD`, `VOICE_STATE_UPDATE`, …)
+
+Что **отличается**:
+
+- Базовые URL (`https://astraof.com/api/v1` и `wss://astraof.com/gateway` вместо `discord.com`).
+- Astral-специфичные эндпоинты под `/v1/payments/...`, `/v1/webhooks/...` и discovery — у них нет аналогов в Discord.
+- Часть фич Discord-библиотек, зависящих от Discord-only сервисов (sharding через `gateway/bot`, отдельные admin-эндпоинты), могут вести себя иначе или быть недоступны.
+
+Если у библиотеки есть опция «base URL» или «API endpoint», её можно перенаправить на Astral. Страницы по языкам показывают, какая именно опция нужна в каждой библиотеке.

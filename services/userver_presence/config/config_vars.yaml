@@ -1,0 +1,7 @@
+server-port: 8080
+monitor-port: 8081
+main-worker-threads: 4
+fs-worker-threads: 2
+monitor-worker-threads: 1
+http-client-threads: 2
+logger-level: info

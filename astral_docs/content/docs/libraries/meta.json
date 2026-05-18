@@ -1,0 +1,5 @@
+{
+	"title": "Libraries",
+	"pages": ["index", "javascript", "python", "go", "rust", "java", "csharp"],
+	"defaultOpen": false
+}

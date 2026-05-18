@@ -1,0 +1,153 @@
+---
+title: Gateway
+description: Gateway
+---
+
+Use Gateway to receive real-time events for bots and clients.
+
+## Endpoint
+
+- WebSocket URL: `wss://<your-domain>/gateway?v=1&encoding=json`
+- Version is currently `v=1`
+
+You can also query bot gateway info over HTTP:
+
+- `GET /gateway/bot` relative to your API base
+- Authorization: `Bot <token>`
+
+Full example:
+
+```text
+GET https://<your-domain>/api/v1/gateway/bot
+Authorization: Bot YOUR_BOT_TOKEN
+```
+
+<Callout type="info" title="Compression">
+If your client supports zstd stream decompression, you may connect with `compress=zstd-stream`. If it does not, stay on plain `encoding=json`.
+</Callout>
+
+Example response:
+
+```json
+{
+  "url": "wss://astraof.com/gateway",
+  "shards": 1,
+  "session_start_limit": {
+    "total": 1000,
+    "remaining": 999,
+    "reset_after": 14400000,
+    "max_concurrency": 1
+  }
+}
+```
+
+## Core opcodes
+
+- `0` Dispatch
+- `1` Heartbeat
+- `2` Identify
+- `6` Resume
+- `7` Reconnect
+- `9` Invalid Session
+- `10` Hello
+- `11` Heartbeat ACK
+
+## Basic flow
+
+1. Open WebSocket connection to `/gateway`.
+2. Wait for `HELLO` (`op: 10`) and heartbeat interval.
+3. Send `IDENTIFY` (`op: 2`) with token and client properties.
+4. Start periodic `HEARTBEAT` (`op: 1`).
+5. Handle incoming `DISPATCH` (`op: 0`) events.
+6. On disconnect, reconnect and `RESUME` (`op: 6`) using last sequence.
+
+## Hello example
+
+The server starts by sending a `HELLO` packet:
+
+```json
+{
+  "op": 10,
+  "d": {
+    "heartbeat_interval": 41250
+  }
+}
+```
+
+Start your heartbeat loop immediately after this packet.
+
+## Identify example
+
+```json
+{
+  "op": 2,
+  "d": {
+    "token": "Bot <your_token>",
+    "properties": {
+      "$os": "linux",
+      "$browser": "my-bot",
+      "$device": "my-bot"
+    },
+    "compress": true
+  }
+}
+```
+
+## Heartbeat example
+
+```json
+{
+  "op": 1,
+  "d": 42
+}
+```
+
+`d` is the last known sequence number, or `null` if you do not have one yet.
+
+## Dispatch packet shape
+
+Every normal event arrives as a dispatch packet:
+
+```json
+{
+  "op": 0,
+  "t": "MESSAGE_CREATE",
+  "s": 42,
+  "d": {
+    "id": "1470000000000000001",
+    "channel_id": "1470000000000000002",
+    "content": "hello"
+  }
+}
+```
+
+Fields:
+
+- `op`: opcode
+- `t`: event name
+- `s`: sequence number
+- `d`: event payload
+
+## Resume example
+
+On reconnect, try resuming before doing a fresh identify:
+
+```json
+{
+  "op": 6,
+  "d": {
+    "token": "Bot <your_token>",
+    "session_id": "<session_id>",
+    "seq": 42
+  }
+}
+```
+
+If the server responds with `Invalid Session`, do a new `Identify`.
+
+## Notes
+
+- Bot tokens are required for `GET /gateway/bot`.
+- A user token on that endpoint returns `401 INVALID_AUTH_TOKEN`.
+- Event names are documented on the next page.
+- Respect `session_start_limit` when reconnecting many bots or shards.

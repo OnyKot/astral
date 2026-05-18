@@ -1,0 +1,83 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.headerSection {
+	height: 140px;
+	position: relative;
+	overflow: visible;
+}
+
+.bannerWrapper {
+	flex-shrink: 0;
+	min-height: 105px;
+	position: relative;
+	overflow: hidden;
+	border-radius: var(--profile-card-radius, 0.75rem) var(--profile-card-radius, 0.75rem) 0 0;
+	isolation: isolate;
+	transform: translateZ(0);
+	backface-visibility: hidden;
+}
+
+.banner {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: var(--profile-banner-height, 105px);
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+	will-change: transform;
+}
+
+:where(.banner)::before {
+	border-bottom: 1px solid var(--background-modifier-accent);
+	bottom: 0;
+	content: '';
+	left: 0;
+	position: absolute;
+	width: 100%;
+}
+
+.bannerCutout {
+	position: absolute;
+	left: 10px;
+	bottom: -42px;
+	width: 92px;
+	height: 92px;
+	border-radius: 999px;
+	background: var(--background-primary);
+	border: 1px solid color-mix(in srgb, var(--background-modifier-accent) 70%, transparent);
+	pointer-events: none;
+	z-index: 1;
+}
+
+.avatarButton {
+	position: absolute;
+	left: 10px;
+	border: 6px solid var(--background-primary);
+	border-radius: 9999px;
+	background-color: var(--background-primary);
+	padding: 0;
+	outline: none;
+	z-index: 2;
+}
+
+.avatarButton:focus {
+	outline: none;
+}

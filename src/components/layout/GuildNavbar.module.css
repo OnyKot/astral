@@ -1,0 +1,189 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.guildNavbarContainer {
+	--guild-navbar-top: var(--background-secondary);
+	--guild-navbar-bottom: var(--background-secondary);
+	--guild-navbar-stroke: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	display: block;
+	height: calc(
+		100% -
+		var(--layout-user-area-reserved-height, 0px) -
+		var(--layout-mobile-bottom-nav-reserved-height, 0px)
+	);
+	min-height: 0;
+	width: var(--guild-channel-sidebar-width, var(--layout-sidebar-width));
+	min-width: 0;
+	user-select: none;
+	-webkit-user-select: none;
+	overflow: hidden;
+	background: var(--guild-navbar-top);
+	position: relative;
+	box-shadow: none;
+	border-right: 1px solid var(--guild-navbar-stroke);
+	transition:
+		width var(--motion-dur-medium) var(--motion-ease-smooth),
+		height var(--motion-dur-medium) var(--motion-ease-smooth);
+}
+
+.guildNavbarContainer::after {
+	display: none;
+}
+
+.sidebarInner {
+	display: grid;
+	grid-template-rows: auto 1fr;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	background: var(--guild-navbar-top);
+	transition:
+		opacity var(--motion-dur-medium) var(--motion-ease-smooth),
+		transform var(--motion-dur-medium) var(--motion-ease-smooth);
+}
+
+.guildNavbarContainerCollapsed {
+	width: 0;
+	overflow: visible;
+}
+
+.guildNavbarContainerCollapsed .sidebarInner {
+	opacity: 0;
+	transform: translateX(-0.75rem);
+	pointer-events: none;
+}
+
+.guildNavbarContainerMobile {
+	width: 100%;
+}
+
+.guildNavbarReserveMobileBottomNav {
+	--layout-mobile-bottom-nav-reserved-height: var(--mobile-bottom-nav-height);
+}
+
+:global(html.platform-native-desktop) .guildNavbarContainer {
+	border-top-left-radius: clamp(8px, 1.2vw, 14px);
+	border-top-right-radius: clamp(12px, 1.4vw, 18px);
+	background-clip: padding-box;
+	overflow: hidden;
+}
+
+:global(html.platform-native-desktop) .guildNavbarContainerCollapsed {
+	overflow: visible;
+}
+
+.collapsedDock {
+	position: absolute;
+	top: 0.875rem;
+	left: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	transform: translateX(0);
+	pointer-events: none;
+	transition:
+		opacity var(--motion-dur-medium) var(--motion-ease-smooth),
+		transform var(--motion-dur-medium) var(--motion-ease-smooth);
+	z-index: 5;
+}
+
+.guildNavbarContainerCollapsed .collapsedDock {
+	opacity: 1;
+	transform: translateX(0.18rem);
+	pointer-events: auto;
+}
+
+.collapsedDockButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.9rem;
+	height: 1.9rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	border-radius: 0.7rem;
+	background: color-mix(in srgb, var(--background-floating) 90%, var(--background-primary) 10%);
+	color: var(--text-primary);
+	cursor: pointer;
+	box-shadow: none;
+	transition:
+		transform var(--motion-dur-short) var(--motion-ease-smooth),
+		border-color var(--motion-dur-short) var(--motion-ease-snap),
+		background-color var(--motion-dur-short) var(--motion-ease-snap);
+}
+
+.collapsedDockButton:hover {
+	transform: none;
+	border-color: color-mix(in srgb, var(--brand-primary) 20%, transparent);
+	background: color-mix(in srgb, var(--background-floating) 84%, var(--brand-primary) 16%);
+}
+
+.collapsedDockIcon {
+	width: 1rem;
+	height: 1rem;
+}
+
+.hoverRoll {
+	display: inline-block;
+	vertical-align: top;
+	cursor: default;
+	text-align: left;
+	box-sizing: border-box;
+	position: relative;
+	width: 100%;
+	contain: paint;
+}
+
+.default,
+.hovered {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	display: block;
+	transform-style: preserve-3d;
+	pointer-events: none;
+	width: 100%;
+	transition:
+		opacity 0.22s ease,
+		transform 0.22s ease;
+}
+
+.hovered {
+	opacity: 0;
+	transform: translate3d(0, 107%, 0);
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+}
+
+.hoverRoll.forceHover:not(.disabled) .default,
+.hoverRoll:hover:not(.disabled) .default {
+	transform: translate3d(0, -107%, 0);
+	opacity: 0;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.hoverRoll.forceHover:not(.disabled) .hovered,
+.hoverRoll:hover:not(.disabled) .hovered {
+	transform: translatez(0);
+	opacity: 1;
+}

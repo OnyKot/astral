@@ -1,0 +1,165 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.nagbar {
+    --nagbar-text: var(--nagbar-text-color, var(--text-primary));
+    --nagbar-radius: 1.45rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    border-radius: var(--nagbar-radius);
+    border: 1px solid color-mix(in srgb, var(--background-modifier-accent) 52%, transparent);
+    color: var(--nagbar-text);
+    background: linear-gradient(
+        175deg,
+        color-mix(in srgb, var(--background-floating) 46%, transparent) 0%,
+        color-mix(in srgb, var(--background-floating) 54%, transparent) 100%
+    );
+    box-shadow: 0 10px 24px rgb(0 0 0 / 0.14);
+    backdrop-filter: blur(72px) saturate(132%) brightness(1.08);
+    -webkit-backdrop-filter: blur(72px) saturate(132%) brightness(1.08);
+    overflow: hidden;
+}
+
+.nagbar::before {
+	content: none;
+}
+
+.nagbar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background-image: repeating-radial-gradient(circle at 0 0, rgb(255 255 255 / 0.08) 0 0.7px, transparent 0.7px 2.6px), repeating-radial-gradient(circle at 100% 100%, rgb(0 0 0 / 0.08) 0 0.8px, transparent 0.8px 2.8px);
+    background-size: 3px 3px, 4px 4px;
+    opacity: 0.14;
+    mix-blend-mode: soft-light;
+    filter: blur(0.9px);
+}
+
+.nagbar>div {
+    border-radius: var(--nagbar-radius);
+}
+
+.nagbarDismissible {
+    padding-right: 2.625rem;
+}
+
+.nagbarDesktop {
+    min-height: 2.625rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-weight: 720;
+    font-size: 0.8rem;
+    letter-spacing: 0.01em;
+}
+
+.nagbarMobile {
+    min-height: 2.625rem;
+    padding-top: 0.46rem;
+    padding-bottom: 0.46rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.24;
+}
+
+.dismissButton {
+    position: absolute;
+    top: 50%;
+    right: 0.45rem;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.65rem;
+    width: 1.65rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--background-modifier-accent) 48%, transparent);
+    background: color-mix(in srgb, var(--background-tertiary) 30%, transparent);
+    cursor: pointer;
+    padding: 0;
+    -webkit-app-region: no-drag;
+}
+
+.dismissButton:hover {
+    background: color-mix(in srgb, var(--background-tertiary) 46%, transparent);
+}
+
+.dismissIcon {
+    height: 0.92rem;
+    width: 0.92rem;
+    display: block;
+}
+
+:global(.theme-light) .nagbar {
+    box-shadow: 0 10px 24px rgb(36 56 112 / 0.12);
+}
+
+@media (max-width: 768px) {
+    .nagbar {
+        --nagbar-radius: 1.1rem;
+        padding-left: 0.625rem;
+        padding-right: 0.625rem;
+        backdrop-filter: blur(58px) saturate(128%) brightness(1.06);
+        -webkit-backdrop-filter: blur(58px) saturate(128%) brightness(1.06);
+    }
+    .nagbarDismissible {
+        padding-right: 2.325rem;
+    }
+    .nagbarMobile {
+        min-height: 2.5rem;
+        padding-top: 0.42rem;
+        padding-bottom: 0.42rem;
+        font-size: 0.74rem;
+    }
+    .dismissButton {
+        right: 0.4rem;
+        height: 1.55rem;
+        width: 1.55rem;
+    }
+    .dismissIcon {
+        height: 0.84rem;
+        width: 0.84rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .nagbar {
+        --nagbar-radius: 1rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    .nagbarDismissible {
+        padding-right: 2.2rem;
+    }
+    .nagbarMobile {
+        min-height: 2.4rem;
+        padding-top: 0.38rem;
+        padding-bottom: 0.38rem;
+    }
+    .dismissButton {
+        right: 0.35rem;
+    }
+}

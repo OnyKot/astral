@@ -1,0 +1,49 @@
+---
+title: Python
+description: Use discord.py or pycord with Astral
+---
+
+`discord.py`, `pycord` and `nextcord` all share the same `BASE` constants you can monkey-patch to redirect at Astral. Below is the recipe for `discord.py` 2.x.
+
+```bash
+pip install -U discord.py
+```
+
+```python
+import os
+import discord
+from discord import http
+from discord.gateway import DiscordWebSocket
+
+# Repoint REST and Gateway at Astral.
+http.Route.BASE = "https://astraof.com/api/v1"
+DiscordWebSocket.DEFAULT_GATEWAY = "wss://astraof.com/gateway?v=1&encoding=json"
+
+intents = discord.Intents.default()
+intents.message_content = True
+
+client = discord.Client(intents=intents)
+
+@client.event
+async def on_ready():
+    print(f"Logged in as {client.user}")
+
+@client.event
+async def on_message(message: discord.Message):
+    if message.author.bot:
+        return
+    if message.content == "!ping":
+        await message.channel.send("pong")
+
+client.run(os.environ["ASTRAL_BOT_TOKEN"])
+```
+
+<Callout type="info" title="Same monkey-patch works for forks">
+`pycord` (`py-cord`) and `nextcord` use the same `Route.BASE` and `DiscordWebSocket.DEFAULT_GATEWAY` constants. The two lines above repoint any of them.
+</Callout>
+
+## Why monkey-patching?
+
+`discord.py` doesn't expose a constructor option for the API base URL — it embeds the discord.com URL as a class attribute. Replacing the attribute before any client is constructed is the standard approach for self-hosted Discord-compatible servers and works consistently across version 2.x.
+
+If you're targeting a long-running production bot, set the URLs once at module load (for example in your `__init__.py` or `bot.py` entry point) so every code path that imports `discord.http` sees the override.

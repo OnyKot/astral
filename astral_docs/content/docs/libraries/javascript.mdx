@@ -1,0 +1,88 @@
+---
+title: JavaScript / TypeScript
+description: Use discord.js or eris with Astral
+---
+
+The two most popular Node.js libraries for Discord-shaped APIs work with Astral once you point their base URL at the Astral deployment.
+
+## discord.js
+
+`discord.js` exposes its base URLs through the `rest` and `ws` constants in `@discordjs/rest` and `@discordjs/ws`. The `Client` constructor accepts a `rest` option you can use to override them.
+
+```bash
+npm install discord.js
+```
+
+```js
+import { Client, GatewayIntentBits } from "discord.js";
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+  rest: {
+    api: "https://astraof.com/api",
+    version: "1",
+  },
+  ws: {
+    gateway: "wss://astraof.com/gateway",
+  },
+});
+
+client.once("ready", () => {
+  console.log(`Logged in as ${client.user?.tag}`);
+});
+
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+  if (message.content === "!ping") {
+    await message.reply("pong");
+  }
+});
+
+client.login(process.env.ASTRAL_BOT_TOKEN);
+```
+
+<Callout type="info" title="Token format">
+discord.js automatically prefixes the token with `Bot ` when sending the `Authorization` header — pass the raw token to `client.login`, not `Bot <token>`.
+</Callout>
+
+## eris
+
+`eris` accepts `rest.baseURL` and `gateway.url` directly on the client constructor:
+
+```bash
+npm install eris
+```
+
+```js
+import Eris from "eris";
+
+const client = new Eris(process.env.ASTRAL_BOT_TOKEN, {
+  rest: {
+    baseURL: "https://astraof.com/api/v1",
+  },
+  gateway: {
+    url: "wss://astraof.com/gateway",
+  },
+});
+
+client.on("ready", () => {
+  console.log("Ready");
+});
+
+client.on("messageCreate", async (msg) => {
+  if (msg.author.bot) return;
+  if (msg.content === "!ping") {
+    await client.createMessage(msg.channel.id, "pong");
+  }
+});
+
+client.connect();
+```
+
+## No library at all
+
+If you want zero dependencies, the [Quickstart](../quickstart) shows the full WebSocket loop using only `ws`.

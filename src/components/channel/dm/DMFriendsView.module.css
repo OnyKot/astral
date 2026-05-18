@@ -1,0 +1,577 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	--friends-shell-surface: color-mix(in srgb, var(--background-secondary) 42%, var(--background-primary) 58%);
+	--friends-card-top: color-mix(in srgb, var(--background-floating) 14%, var(--friends-shell-surface) 86%);
+	--friends-card-bottom: color-mix(in srgb, var(--background-secondary) 8%, var(--friends-shell-surface) 92%);
+	--friends-card-hover-top: color-mix(in srgb, var(--background-floating) 18%, var(--friends-shell-surface) 82%);
+	--friends-card-hover-bottom: color-mix(in srgb, var(--background-secondary) 12%, var(--friends-shell-surface) 88%);
+	--friends-border: color-mix(in srgb, var(--text-primary) 10%, transparent);
+	--friends-border-strong: color-mix(in srgb, var(--text-primary) 16%, transparent);
+	--friends-highlight: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	display: grid;
+	grid-template-rows: var(--layout-header-height, 3.5rem) 1fr;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	background: transparent;
+}
+
+.containerMobile {
+	grid-template-rows: 1fr;
+}
+
+.content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 1.1rem;
+	padding: 1rem clamp(1rem, 4vw, 2.5rem) 1.25rem;
+	min-height: 0;
+	position: relative;
+	background: color-mix(in srgb, var(--background-primary) 96%, transparent);
+}
+
+.contentMobile {
+	padding-bottom: calc(var(--mobile-bottom-nav-height) + max(var(--safe-area-bottom, 0px), 0px) + 5.25rem);
+}
+
+.mobileTopBar {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 0.6rem;
+	width: min(100%, 1100px);
+	margin: 0 auto;
+	padding-top: 0.16rem;
+	padding-bottom: 0.34rem;
+}
+
+.mobileBackButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.1rem;
+	height: 2.1rem;
+	border-radius: 0.82rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: color-mix(in srgb, var(--background-floating) 10%, transparent);
+	color: var(--text-primary);
+}
+
+.mobileTopTitle {
+	margin: 0;
+	min-width: 0;
+	font-family:
+		'SF Pro Display',
+		'SF Pro Text',
+		-apple-system,
+		BlinkMacSystemFont,
+		'Segoe UI',
+		sans-serif;
+	font-size: 1.3rem;
+	font-weight: 800;
+	line-height: 1.58rem;
+	letter-spacing: -0.015em;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+}
+
+.mobileAddButton {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.42rem;
+	height: 2.1rem;
+	padding: 0 0.78rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 84%, var(--background-floating) 16%);
+	color: var(--text-on-brand-primary);
+	font-weight: 700;
+	font-size: 0.76rem;
+	white-space: nowrap;
+}
+
+.mobileTopIcon {
+	width: 1rem;
+	height: 1rem;
+	flex-shrink: 0;
+}
+
+/*
+ * Center the search + tab body in a single column so they share
+ * the same horizontal axis as the friends list (which centers at
+ * 1100px). Without this, the search bar floated against the left
+ * edge while the list sat in the middle, breaking the visual rhythm.
+ */
+.searchWrapper {
+	width: min(100%, 1100px);
+	max-width: 1100px;
+	margin: 0 auto;
+	padding-top: 0.125rem;
+	position: relative;
+	z-index: 1;
+}
+
+.searchWrapper input {
+	min-height: 3.1rem;
+	border-radius: 1.25rem;
+	border-color: var(--friends-border);
+	background: color-mix(in srgb, var(--friends-shell-surface) 90%, var(--background-floating) 10%);
+	box-shadow:
+		0 12px 28px color-mix(in srgb, var(--background-primary) 28%, transparent),
+		inset 0 1px 0 var(--friends-highlight);
+	color: var(--text-primary);
+	font-weight: 600;
+	transition:
+		border-color 0.2s ease,
+		box-shadow 0.2s ease,
+		transform 0.2s ease;
+}
+
+.searchWrapper input:hover {
+	border-color: color-mix(in srgb, var(--brand-primary) 14%, var(--friends-border));
+}
+
+.searchWrapper input:focus,
+.searchWrapper input:focus-within {
+	border-color: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+}
+
+.searchWrapper input::placeholder {
+	color: color-mix(in srgb, var(--text-primary-muted) 92%, var(--text-secondary));
+}
+
+.searchIcon {
+	height: 1.25rem;
+	width: 1.25rem;
+	color: color-mix(in srgb, var(--brand-primary) 42%, var(--text-primary));
+}
+
+.tabBody {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+	position: relative;
+	display: flex;
+	isolation: isolate;
+	background: transparent;
+}
+
+.tabBody > * {
+	position: relative;
+	z-index: 1;
+	height: 100%;
+	width: 100%;
+	min-height: 0;
+}
+
+.headerContent {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 1.3rem;
+}
+
+.titleSection {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	flex-shrink: 0;
+	padding: 0.25rem 0.25rem 0.25rem 0.1rem;
+	border-radius: 0.75rem;
+	border: none;
+	background: transparent;
+	box-shadow: none;
+	-webkit-app-region: no-drag;
+}
+
+.titleIcon {
+	height: 1.5rem;
+	width: 1.5rem;
+	color: color-mix(in srgb, var(--brand-primary) 70%, var(--text-primary));
+}
+
+.titleText {
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.divider {
+	display: none;
+}
+
+.tabsWrapper {
+	flex: 1;
+	min-width: 0;
+	height: 100%;
+	-webkit-app-region: no-drag;
+	overflow-x: auto;
+	overflow-y: hidden;
+	display: flex;
+	align-items: center;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+}
+
+.tabsWrapper::-webkit-scrollbar {
+	display: none;
+}
+
+.tabsInner {
+	display: flex;
+	gap: 0.78rem;
+	align-items: center;
+	width: max-content;
+	min-width: max-content;
+	padding: 0;
+	border-radius: 0;
+	border: none;
+	background: transparent;
+	box-shadow: none;
+	overflow-x: auto;
+	scrollbar-width: none;
+	/* Firefox scrollbar hidden */
+}
+
+.tabsInner::-webkit-scrollbar {
+	height: 8px;
+	background: transparent;
+}
+
+.tabsInner::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.tabsInner::-webkit-scrollbar-thumb {
+	background: transparent;
+	border-radius: 4px;
+}
+
+.tabsInner:hover::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.2);
+}
+
+.tabsInner:hover::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.3);
+}
+
+.tabButton {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.62rem 1.12rem;
+	border-radius: 0.6rem;
+	font-weight: 600;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	color: var(--text-primary-muted);
+	background: transparent;
+	border: 1px solid transparent;
+	cursor: pointer;
+	transition:
+		var(--button-motion-transition),
+		transform 180ms ease;
+	white-space: nowrap;
+	flex-shrink: 0;
+	position: relative;
+	overflow: hidden;
+}
+
+.tabButton:hover {
+	background: transparent;
+	color: var(--text-primary);
+	border-color: transparent;
+}
+
+.tabButton.active {
+	background: transparent;
+	color: var(--text-primary);
+	border-color: color-mix(in srgb, var(--text-primary) 18%, transparent);
+	box-shadow: none;
+}
+
+.tabButton.primary {
+	background: color-mix(in srgb, var(--brand-primary) 84%, var(--background-floating) 16%);
+	color: var(--text-on-brand-primary);
+	border-color: color-mix(in srgb, var(--brand-primary) 36%, transparent);
+	box-shadow: none;
+	isolation: auto;
+}
+
+.tabButton.primary:hover {
+	background: color-mix(in srgb, var(--brand-primary) 88%, var(--background-floating) 12%);
+	color: var(--text-on-brand-primary);
+	transform: none;
+}
+
+.tabButton.primary.active {
+	background: color-mix(in srgb, var(--brand-primary) 92%, var(--background-floating) 8%);
+	border-color: color-mix(in srgb, var(--text-on-brand-primary) 24%, transparent);
+	box-shadow: none;
+}
+
+.tabContent {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.mobileTabsDock {
+	position: fixed;
+	left: 50%;
+	bottom: calc(var(--mobile-bottom-nav-height) + 0.45rem);
+	transform: translateX(-50%);
+	width: min(100%, 33rem);
+	padding: 0 max(0.75rem, var(--safe-area-left, 0px)) 0 max(0.75rem, var(--safe-area-right, 0px));
+	z-index: 1200;
+	pointer-events: none;
+}
+
+.mobileTabsWrap {
+	pointer-events: auto;
+	display: flex;
+	justify-content: center;
+}
+
+.mobileTabsCapsule {
+	display: flex;
+	align-items: center;
+	gap: 0.32rem;
+	padding: 0.3rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--background-floating) 88%, var(--background-secondary) 12%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+	box-shadow: 0 10px 30px color-mix(in srgb, var(--background-primary) 38%, transparent);
+	max-width: 100%;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.mobileTabsCapsule::-webkit-scrollbar {
+	display: none;
+}
+
+@media (max-width: 980px) {
+	.content {
+		padding: 0.9rem 0.85rem 1rem;
+	}
+
+	.headerContent {
+		gap: 0.65rem;
+	}
+
+	.tabButton {
+		padding: 0.48rem 0.78rem;
+		font-size: 0.875rem;
+	}
+}
+
+@media (max-width: 760px) {
+	.tabButton {
+		padding: 0.44rem 0.7rem;
+	}
+}
+
+@media (max-width: 767px) {
+	.container {
+		grid-template-rows: 4rem 1fr;
+	}
+
+	.containerMobile {
+		grid-template-rows: 1fr;
+	}
+
+	.content {
+		gap: 0.85rem;
+		padding-top: 1.05rem;
+		padding-right: max(0.75rem, var(--safe-area-right, 0px));
+		padding-bottom: calc(var(--mobile-bottom-nav-height) + max(var(--safe-area-bottom, 0px), 0px) + 5rem);
+		padding-left: max(0.75rem, var(--safe-area-left, 0px));
+	}
+
+	.mobileTopBar {
+		padding-top: 0;
+	}
+
+	.searchWrapper {
+		padding-top: 0.4rem;
+	}
+
+	.searchWrapper input {
+		min-height: 2.75rem;
+		border-radius: 1rem;
+		font-size: 0.9375rem;
+		box-shadow: none;
+	}
+
+	.headerContent {
+		gap: 0.55rem;
+	}
+
+	.tabButton {
+		padding: 0.46rem 0.72rem;
+		border-radius: 0.82rem;
+		font-size: 0.83rem;
+		line-height: 1.1rem;
+	}
+
+	.tabButton.primary {
+		box-shadow: none;
+	}
+
+	.tabContent {
+		gap: 0.35rem;
+	}
+
+	.mobileTabsCapsule {
+		box-shadow: 0 8px 22px color-mix(in srgb, var(--background-primary) 32%, transparent);
+	}
+}
+
+@media (max-width: 560px) {
+	.mobileTopTitle {
+		font-size: 1.22rem;
+		line-height: 1.46rem;
+	}
+}
+
+@media (max-width: 480px) {
+	.content {
+		gap: 0.75rem;
+		padding-top: 0.95rem;
+	}
+
+	.mobileTopBar {
+		gap: 0.45rem;
+	}
+
+	.mobileTopTitle {
+		font-size: 1.16rem;
+		line-height: 1.38rem;
+	}
+
+	.mobileAddButton {
+		height: 1.95rem;
+		padding: 0 0.66rem;
+		font-size: 0.72rem;
+	}
+
+	.searchWrapper {
+		padding-top: 0.5rem;
+	}
+
+	.searchWrapper input {
+		min-height: 2.6rem;
+		border-radius: 0.95rem;
+		font-size: 0.9rem;
+	}
+
+	.tabButton {
+		padding: 0.42rem 0.62rem;
+		font-size: 0.79rem;
+		line-height: 1.02rem;
+	}
+
+	.mobileTabsDock {
+		bottom: calc(var(--mobile-bottom-nav-height) + 0.38rem);
+		padding-left: max(0.62rem, var(--safe-area-left, 0px));
+		padding-right: max(0.62rem, var(--safe-area-right, 0px));
+	}
+}
+
+@media (max-width: 420px) {
+	.content {
+		padding-top: 0.85rem;
+		padding-right: max(0.625rem, var(--safe-area-right, 0px));
+		padding-left: max(0.625rem, var(--safe-area-left, 0px));
+	}
+
+	.mobileTopBar {
+		grid-template-columns: minmax(0, 1fr);
+		padding-bottom: 0.2rem;
+	}
+
+	.mobileTopTitle {
+		font-size: 1.08rem;
+		line-height: 1.28rem;
+	}
+
+	.mobileAddButton {
+		display: none;
+	}
+
+	.searchWrapper {
+		padding-top: 0.4rem;
+	}
+
+	.searchWrapper input {
+		min-height: 2.45rem;
+		font-size: 0.84rem;
+	}
+
+	.tabButton {
+		padding: 0.38rem 0.52rem;
+		border-radius: 0.72rem;
+		font-size: 0.74rem;
+		line-height: 0.95rem;
+	}
+
+	.tabContent {
+		gap: 0.25rem;
+	}
+
+	.mobileTabsDock {
+		bottom: calc(var(--mobile-bottom-nav-height) + 0.32rem);
+	}
+
+	.mobileTabsCapsule {
+		padding: 0.22rem;
+		gap: 0.24rem;
+	}
+}
+
+@media (max-width: 360px) {
+	.content {
+		padding-top: 0.8rem;
+	}
+
+	.searchWrapper input {
+		min-height: 2.35rem;
+		font-size: 0.8rem;
+	}
+
+	.tabButton {
+		padding: 0.34rem 0.46rem;
+		font-size: 0.7rem;
+		line-height: 0.9rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tabButton {
+		transition: none;
+	}
+}

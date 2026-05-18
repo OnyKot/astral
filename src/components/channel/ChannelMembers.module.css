@@ -1,0 +1,156 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.groupContainer {
+	display: flex;
+	width: 100%;
+	min-width: 0;
+	flex: 0 0 auto;
+	flex-direction: column;
+	box-sizing: border-box;
+	border: 1px solid color-mix(in srgb, var(--background-modifier-accent) 78%, transparent);
+	border-radius: 0.95rem;
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-floating) 28%, transparent),
+			color-mix(in srgb, var(--background-primary) 94%, transparent)
+		);
+	overflow: hidden;
+}
+
+.memberFrame {
+	border: none;
+	background: transparent;
+	box-shadow: none;
+}
+
+@media (min-width: 768px) {
+	/*
+	 * Desktop-only entrance animation for the members panel.
+	 * We keep this subtle (short duration, small X offset) so it reads as
+	 * "panel appeared from the right rail" without pulling focus from chat.
+	 */
+	.memberFrame {
+		animation: memberListSlideIn var(--motion-dur-medium) var(--motion-ease-snap);
+		transform-origin: right center;
+	}
+}
+
+.groupHeader {
+	padding: 0.75rem 0.8rem 0.5rem;
+	font-size: 0.675rem;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	line-height: 0.95rem;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--text-primary-muted) 90%, var(--text-primary));
+}
+
+.membersList {
+	display: flex;
+	flex-direction: column;
+	padding: 0.12rem 0.3rem 0.4rem;
+}
+
+.groupSpacer {
+	height: 0.42rem;
+}
+
+.skeletonItem {
+	display: grid;
+	height: 44px;
+	min-width: 0;
+	grid-template-columns: 1fr auto;
+	align-items: center;
+	gap: 0.25rem;
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
+	margin-top: 1px;
+	margin-bottom: 1px;
+	border-radius: 0.75rem;
+}
+
+.skeletonContent {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 0.625rem;
+}
+
+.skeletonAvatar {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	background: var(--background-modifier-accent);
+	opacity: 0.45;
+}
+
+.skeletonUserInfoContainer {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	flex-grow: 1;
+	gap: 2px;
+}
+
+.skeletonName {
+	height: 10px;
+	width: 60%;
+	border-radius: 2px;
+	background: var(--background-modifier-accent);
+	opacity: 0.45;
+}
+
+.skeletonStatus {
+	height: 8px;
+	width: 40%;
+	border-radius: 2px;
+	background: var(--background-modifier-accent);
+	opacity: 0.35;
+}
+
+.skeletonHeader {
+	width: 80px;
+	height: 14px;
+	border-radius: 4px;
+	background: var(--background-modifier-accent);
+	opacity: 0.45;
+	margin-left: 0.8rem;
+	margin-top: 0.75rem;
+}
+
+.skeleton {
+	background: var(--background-modifier-accent);
+	opacity: 0.45;
+	border-radius: 4px;
+}
+
+@keyframes memberListSlideIn {
+	from {
+		opacity: 0;
+		transform: translateX(18px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}

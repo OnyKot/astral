@@ -1,0 +1,8 @@
+﻿{
+  "name": "Astral - Vercord Meet",
+  "description": "Защищенные голосовые комнаты, видеозвонки и чат в реальном времени.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

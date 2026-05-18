@@ -1,0 +1,154 @@
+---
+title: Message
+description: Message
+---
+
+Messages are the core write/read surface for most bots.
+
+Use message routes to:
+
+- read channel history
+- fetch one message
+- send a message
+- edit a message
+- delete a message
+- manage reactions and pins
+
+## Common public endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /channels/:channel_id/messages` | List messages in a channel |
+| `GET /channels/:channel_id/messages/:message_id` | Fetch one message |
+| `POST /channels/:channel_id/messages` | Send a message |
+| `PATCH /channels/:channel_id/messages/:message_id` | Edit a message |
+| `DELETE /channels/:channel_id/messages/:message_id` | Delete a message |
+| `DELETE /channels/:channel_id/messages/bulk-delete` | Bulk delete messages |
+| `POST /channels/:channel_id/typing` | Trigger typing indicator |
+| `GET /channels/:channel_id/messages/pins` | List pinned messages |
+| `PUT /channels/:channel_id/pins/:message_id` | Pin a message |
+| `DELETE /channels/:channel_id/pins/:message_id` | Unpin a message |
+
+Reaction routes:
+
+- `GET /channels/:channel_id/messages/:message_id/reactions/:emoji`
+- `PUT /channels/:channel_id/messages/:message_id/reactions/:emoji/@me`
+- `DELETE /channels/:channel_id/messages/:message_id/reactions/:emoji/@me`
+- `DELETE /channels/:channel_id/messages/:message_id/reactions/:emoji/:target_id`
+- `DELETE /channels/:channel_id/messages/:message_id/reactions/:emoji`
+- `DELETE /channels/:channel_id/messages/:message_id/reactions`
+
+## Fetch channel history
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  "https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages?limit=50"
+```
+
+Supported pagination parameters:
+
+- `limit`
+- `before`
+- `after`
+- `around`
+
+## Send a message
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Hello from Astral"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages
+```
+
+Typical fields bots use in the request body:
+
+- `content`
+- `embeds`
+- `attachments`
+- `nonce`
+- `flags` — bitfield (see below)
+- `components` — action rows containing buttons or select menus
+  (only accepted from webhooks / bot accounts; ignored on user-session
+  sends). See [Interactions](./interactions) for the full component
+  schema and click-delivery flow.
+
+For file uploads and attachment rules, see [API Reference](../api-reference#uploading-files).
+
+### Message flags
+
+`flags` is a bitfield. Recognised bits:
+
+| Bit | Value | Name | Effect |
+| --- | --- | --- | --- |
+| 1 &lt;&lt; 2 | `4` | `SUPPRESS_EMBEDS` | Do not unfurl links / render URL embeds |
+| 1 &lt;&lt; 6 | `64` | `EPHEMERAL` | Message is a private reply — clients hide it from everyone except the author and explicit `mentions`. Typically set by bots on interaction responses. See [ephemeral messages](./interactions#ephemeral-messages). |
+| 1 &lt;&lt; 12 | `4096` | `SUPPRESS_NOTIFICATIONS` | Silent send — users mentioned are not pinged |
+
+Unknown bits are preserved server-side but have no UI effect.
+
+## Edit a message
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Edited content"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages/<MESSAGE_ID>
+```
+
+## Delete a message
+
+```bash
+curl -X DELETE \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages/<MESSAGE_ID>
+```
+
+## Reactions
+
+Example: add a reaction for the current bot user.
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages/<MESSAGE_ID>/reactions/%F0%9F%91%8D/@me
+```
+
+Example: remove that reaction.
+
+```bash
+curl -X DELETE \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages/<MESSAGE_ID>/reactions/%F0%9F%91%8D/@me
+```
+
+## Pins
+
+Pin:
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/pins/<MESSAGE_ID>
+```
+
+Unpin:
+
+```bash
+curl -X DELETE \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/pins/<MESSAGE_ID>
+```
+
+## Typing indicator
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/typing
+```
+
+Use typing sparingly. It is a UX hint, not a durable state.

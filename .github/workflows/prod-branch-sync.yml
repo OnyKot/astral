@@ -1,0 +1,338 @@
+name: prod branch sync
+
+on:
+  push:
+    branches:
+      - production
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to deploy
+        required: false
+        default: production
+      dry_run:
+        description: Run checks and build the report without changing the server
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: prod-branch-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      changed_files_artifact: changed-files
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Detect changed files
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "push" && "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]]; then
+            base="${{ github.event.before }}"
+          else
+            base="$(git rev-parse HEAD~1)"
+          fi
+          echo "base=${base}" >> "$GITHUB_OUTPUT"
+          git diff --name-only --diff-filter=ACMR "${base}" HEAD > changed-files.txt
+          git diff --name-only --diff-filter=D "${base}" HEAD > deleted-files.txt
+          node scripts/deploy/ci-classify-compose-services.mjs changed-files.txt deploy-plan.env deploy-plan.md
+          cat deploy-plan.env >> "$GITHUB_ENV"
+          {
+            echo "## CI/CD input"
+            echo ""
+            echo "- Ref: \`${GITHUB_REF_NAME}\`"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Base: \`${base}\`"
+            echo ""
+            cat deploy-plan.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install root dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate CSS module types
+        run: pnpm generate:css-types
+
+      - name: Typecheck frontend
+        run: pnpm typecheck
+
+      - name: Set up Erlang
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "28"
+          rebar3-version: "3.24.0"
+
+      - name: Compile gateway when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -q '^astral_gateway/' changed-files.txt; then
+            (cd astral_gateway && rebar3 compile)
+          else
+            echo "No gateway changes."
+          fi
+
+      - name: Upload CI/CD report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-cd-report
+          path: |
+            changed-files.txt
+            deleted-files.txt
+            deploy-plan.env
+            deploy-plan.md
+
+  deploy:
+    name: Sync and restart changed services
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run == false) }}
+    env:
+      SSH_HOST: ${{ secrets.SERVER_IP || secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SERVER_USER || secrets.SSH_USER || 'root' }}
+      APP_DIR: ${{ secrets.SERVER_APP_DIR || secrets.APP_DIR || '/opt/Astral-clean' }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_SERVER }}
+      SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Prepare deploy package
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "push" && "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]]; then
+            base="${{ github.event.before }}"
+          else
+            base="$(git rev-parse HEAD~1)"
+          fi
+          git diff --name-only --diff-filter=ACMR "${base}" HEAD > changed-files.txt
+          git diff --name-only --diff-filter=D "${base}" HEAD > deleted-files.txt
+          node scripts/deploy/ci-classify-compose-services.mjs changed-files.txt deploy-plan.env deploy-plan.md
+          source deploy-plan.env
+          if [[ -s changed-files.txt ]]; then
+            tar -cf deploy.tar -T changed-files.txt
+          else
+            tar -cf deploy.tar --files-from /dev/null
+          fi
+          {
+            echo "## Deploy package"
+            echo ""
+            echo "- Target: \`${SSH_USER}@${SSH_HOST}:${APP_DIR}\`"
+            echo "- Build services: \`${BUILD_SERVICES:-none}\`"
+            echo "- Restart services: \`${RESTART_SERVICES:-none}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install SSH tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends rsync openssh-client sshpass
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${SSH_HOST}" ]]; then
+            echo "::error::Missing SSH host. Set SERVER_IP or SSH_HOST secret."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -H "${SSH_HOST}" >> ~/.ssh/known_hosts
+          if [[ -n "${SSH_PRIVATE_KEY}" ]]; then
+            printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/astral_prod_key
+            chmod 600 ~/.ssh/astral_prod_key
+            {
+              echo "Host astral-prod"
+              echo "  HostName ${SSH_HOST}"
+              echo "  User ${SSH_USER}"
+              echo "  IdentityFile ~/.ssh/astral_prod_key"
+              echo "  StrictHostKeyChecking yes"
+            } > ~/.ssh/config
+          else
+            {
+              echo "Host astral-prod"
+              echo "  HostName ${SSH_HOST}"
+              echo "  User ${SSH_USER}"
+              echo "  StrictHostKeyChecking yes"
+            } > ~/.ssh/config
+          fi
+
+      - name: Upload package
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_dir="/tmp/astral-ci-${GITHUB_RUN_ID}"
+          if [[ -n "${SSH_PRIVATE_KEY}" ]]; then
+            ssh astral-prod "mkdir -p '${remote_dir}'"
+            scp deploy.tar changed-files.txt deleted-files.txt deploy-plan.env deploy-plan.md "astral-prod:${remote_dir}/"
+          else
+            if [[ -z "${SSH_PASSWORD}" ]]; then
+              echo "::error::Missing SSH auth. Set SSH_PRIVATE_KEY_SERVER or SSH_PASSWORD secret."
+              exit 1
+            fi
+            sshpass -p "${SSH_PASSWORD}" ssh astral-prod "mkdir -p '${remote_dir}'"
+            sshpass -p "${SSH_PASSWORD}" scp deploy.tar changed-files.txt deleted-files.txt deploy-plan.env deploy-plan.md "astral-prod:${remote_dir}/"
+          fi
+          echo "REMOTE_DIR=${remote_dir}" >> "$GITHUB_ENV"
+
+      - name: Apply on server
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_script='
+          set -euo pipefail
+          cd "${REMOTE_DIR}"
+          source deploy-plan.env
+          mkdir -p /root/astral_deploy_backups
+          backup="/root/astral_deploy_backups/ci_${GITHUB_RUN_ID}_${GITHUB_SHA}_pre_$(date +%Y%m%d_%H%M%S).tar"
+
+          cd "${APP_DIR}"
+          if [[ -s "${REMOTE_DIR}/changed-files.txt" ]]; then
+            tar --ignore-failed-read -cf "${backup}" -T "${REMOTE_DIR}/changed-files.txt" 2>"${REMOTE_DIR}/backup.warn" || true
+          else
+            tar -cf "${backup}" --files-from /dev/null
+          fi
+          tar -xf "${REMOTE_DIR}/deploy.tar" -C "${APP_DIR}"
+
+          cd "${APP_DIR}/dev"
+          compose_profiles=()
+          for profile in ${COMPOSE_PROFILES:-}; do
+            compose_profiles+=(--profile "$profile")
+          done
+
+          if [[ -n "${BUILD_SERVICES:-}" ]]; then
+            docker compose "${compose_profiles[@]}" up -d --build ${BUILD_SERVICES}
+          fi
+
+          if [[ -n "${RESTART_SERVICES:-}" ]]; then
+            docker compose "${compose_profiles[@]}" restart ${RESTART_SERVICES}
+          fi
+
+          sleep 12
+
+          {
+            echo "# Server Deploy Report"
+            echo
+            echo "- Commit: ${GITHUB_SHA}"
+            echo "- Backup: ${backup}"
+            echo "- Build services: ${BUILD_SERVICES:-none}"
+            echo "- Restart services: ${RESTART_SERVICES:-none}"
+            echo
+            echo "## Compose status"
+            echo
+            echo "```"
+            docker compose --profile clickhouse --profile userver ps --format "table {{.Name}}\t{{.State}}\t{{.Status}}" | sed -n "1,80p"
+            echo "```"
+            echo
+            echo "## Health checks"
+            echo
+            for item in \
+              "root https://astraof.com/ 200" \
+              "api https://astraof.com/api/instance 200" \
+              "userver https://astraof.com/userver/health 200" \
+              "gateway https://astraof.com/gateway 426" \
+              "music https://music.astraof.com/ 200" \
+              "ai https://ai.astraof.com/sign-in 200"
+            do
+              set -- $item
+              name="$1"; url="$2"; expected="$3"
+              code="$(curl -k -sS -o /dev/null -w "%{http_code}" "$url" || true)"
+              if [[ "$code" == "$expected" ]]; then
+                echo "- ${name}: OK (${code})"
+              else
+                echo "- ${name}: FAIL expected ${expected}, got ${code}"
+                exit_code=1
+              fi
+            done
+            echo
+            echo "## Deleted files"
+            if [[ -s "${REMOTE_DIR}/deleted-files.txt" ]]; then
+              echo "Deleted files are reported only; automatic deletion is intentionally disabled."
+              sed "s/^/- \`/;s/$/\`/" "${REMOTE_DIR}/deleted-files.txt"
+            else
+              echo "_none_"
+            fi
+            if [[ -s "${REMOTE_DIR}/backup.warn" ]]; then
+              echo
+              echo "## Backup warnings"
+              echo "```"
+              cat "${REMOTE_DIR}/backup.warn"
+              echo "```"
+            fi
+          } > "${REMOTE_DIR}/server-report.md"
+
+          exit "${exit_code:-0}"
+          '
+
+          if [[ -n "${SSH_PRIVATE_KEY}" ]]; then
+            ssh astral-prod "REMOTE_DIR='${REMOTE_DIR}' APP_DIR='${APP_DIR}' GITHUB_RUN_ID='${GITHUB_RUN_ID}' GITHUB_SHA='${GITHUB_SHA}' bash -s" <<< "${remote_script}"
+            scp "astral-prod:${REMOTE_DIR}/server-report.md" server-report.md
+          else
+            sshpass -p "${SSH_PASSWORD}" ssh astral-prod "REMOTE_DIR='${REMOTE_DIR}' APP_DIR='${APP_DIR}' GITHUB_RUN_ID='${GITHUB_RUN_ID}' GITHUB_SHA='${GITHUB_SHA}' bash -s" <<< "${remote_script}"
+            sshpass -p "${SSH_PASSWORD}" scp "astral-prod:${REMOTE_DIR}/server-report.md" server-report.md
+          fi
+          cat server-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload deploy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-deploy-report
+          path: |
+            changed-files.txt
+            deleted-files.txt
+            deploy-plan.env
+            deploy-plan.md
+            server-report.md
+          if-no-files-found: ignore
+
+      - name: Telegram notification
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${TELEGRAM_BOT_TOKEN}" || -z "${TELEGRAM_CHAT_ID}" ]]; then
+            echo "Telegram secrets are not configured; skipping."
+            exit 0
+          fi
+          status="${{ job.status }}"
+          text="Astral prod sync: ${status}%0Abranch: ${GITHUB_REF_NAME}%0Acommit: ${GITHUB_SHA:0:8}%0Arun: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          curl -fsS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${text}" >/dev/null

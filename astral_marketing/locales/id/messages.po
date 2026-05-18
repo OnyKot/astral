@@ -1,0 +1,2068 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2026 Astral Contributors
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:190
+msgid " in Chrome"
+msgstr " di Chrome"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:288
+msgid " in Chrome or another browser with PWA support"
+msgstr " di Chrome atau browser lain yang mendukung PWA"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:236
+msgid " in Safari"
+msgstr " di Safari"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1032
+msgid "/forever"
+msgstr "/selamanya"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:66
+#: src/Astral_marketing/pages/plutonium_page.gleam:103
+#: src/Astral_marketing/pages/plutonium_page.gleam:225
+msgid "/mo"
+msgstr "/bln"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:233
+msgid "/year"
+msgstr "/tahun"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:71
+#: src/Astral_marketing/pages/plutonium_page.gleam:109
+msgid "/yr"
+msgstr "/thn"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:654
+msgid "500MB uploads, 4000 character messages, 300 bookmarks, 50 emoji packs, and much more."
+msgstr "Unggahan hingga 500MB, pesan hingga 4000 karakter, 300 bookmark, 50 paket emoji, dan banyak lagi."
+
+#: src/Astral_marketing/components/hero.gleam:59
+msgid "A chat app that puts you first"
+msgstr "Aplikasi chat yang mengutamakan Anda"
+
+#: src/Astral_marketing/components/communities_section.gleam:86
+msgid "A chat platform that answers to you, not investors. It's ad-free, independent, community-funded, and never sells your data or nags you with upgrade pop-ups."
+msgstr "Platform chat yang berpihak padamu, bukan investor. Bebas iklan, sumber terbuka, didanai komunitas, dan tidak pernah menjual datamu atau mengganggumu dengan pop-up untuk upgrade."
+
+#: src/Astral_marketing/pages/careers_page.gleam:219
+msgid "A non-paid role for recurring contributors who help shape Astral alongside the core team."
+msgstr "Peran sukarela (tanpa bayaran) untuk kontributor rutin yang membantu membentuk Astral bersama tim inti."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1074
+msgid "Access to Astral Operators community"
+msgstr "Akses ke komunitas Astral Operators"
+
+#: src/Astral_marketing/pages/partners_page.gleam:225
+msgid "Access to VIP voice servers reserved exclusively for partnered communities."
+msgstr "Akses ke server voice VIP yang khusus diperuntukkan bagi komunitas partner."
+
+#: src/Astral_marketing/components/coming_features.gleam:48
+msgid "Activity sharing"
+msgstr "Berbagi aktivitas"
+
+#: src/Astral_marketing/pages/download_page.gleam:228
+msgid "Add Astral to your home screen to hide the browser UI."
+msgstr "Tambahkan Astral ke layar utama untuk menyembunyikan antarmuka browser."
+
+#: src/Astral_marketing/components/current_features.gleam:133
+msgid "Add custom emojis, save media for later, and style the app with custom CSS."
+msgstr "Tambahkan emoji kustom, simpan media untuk nanti, dan ubah tampilan aplikasi dengan CSS kustom."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1124
+msgid "After the offer ends, Operator Access stays available on its own."
+msgstr "Setelah penawaran berakhir, Operator Access tetap tersedia secara terpisah."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:843
+msgid "All current and future Plutonium benefits, forever"
+msgstr "Semua benefit Plutonium sekarang dan yang akan datang, selamanya"
+
+#: src/Astral_marketing/components/current_features.gleam:55
+msgid "All the basics you expect, plus a few things you don't."
+msgstr "Semua hal dasar yang kamu harapkan, plus beberapa hal yang tak kamu sangka."
+
+#: src/Astral_marketing/components/locale_selector.gleam:102
+msgid "All translations are currently LLM-generated with minimal human revision. We'd love to get real people to help us out localizing Astral into your language! To do so, shoot an email to i18n@Astral.app and we'll be happy to accept your contributions."
+msgstr "Saat ini semua terjemahan dibuat oleh LLM dengan revisi manusia yang sangat minim. Kami ingin melibatkan orang sungguhan untuk membantu melokalkan Astral ke bahasamu! Untuk ikut berkontribusi, kirim email ke i18n@Astral.app dan kami akan dengan senang hati menerima kontribusimu."
+
+#: src/Astral_marketing/components/platform_download_button.gleam:524
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:97
+msgid "Android"
+msgstr "Android"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:236
+msgid "Android 8+"
+msgstr "Android 8+"
+
+#: src/Astral_marketing/pages/partners_page.gleam:178
+msgid "Animated Avatar & Banner"
+msgstr "Avatar & Banner Animasi"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:399
+#: src/Astral_marketing/pages/plutonium_page.gleam:591
+msgid "Animated avatars & banners"
+msgstr "Avatar & banner animasi"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:144
+#: src/Astral_marketing/components/platform_download_button.gleam:160
+msgid "Apple Silicon"
+msgstr "Apple Silicon"
+
+#: src/Astral_marketing/pages/partners_page.gleam:448
+msgid "Apply at partners@Astral.app"
+msgstr "Ajukan di partners@Astral.app"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:170
+msgid "Approved reports grant access to Astral Testers, where you can earn points for Plutonium codes and the Bug Hunter badge."
+msgstr "Laporan yang disetujui memberi akses ke Astral Testers, tempat kamu bisa mengumpulkan poin untuk mendapatkan kode Plutonium dan lencana Bug Hunter."
+
+#: src/Astral_marketing/components/locale_selector.gleam:118
+msgid "Arabic"
+msgstr "Arab"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:143
+msgid "Articles in "
+msgstr "Artikel di "
+
+#: src/Astral_marketing/pages/help_article_page.gleam:291
+msgid "Articles in this section"
+msgstr "Artikel di bagian ini"
+
+#: src/Astral_marketing/components/current_features.gleam:106
+msgid "Audit logs for transparency"
+msgstr "Log audit untuk transparansi"
+
+#: src/Astral_marketing/pages/donate_page.gleam:301
+msgid "Available for Swedish bank accounts"
+msgstr "Tersedia untuk rekening bank di Swedia"
+
+#: src/Astral_marketing/pages/download_page.gleam:67
+msgid "Available on your desktop — and on the web"
+msgstr "Tersedia di desktop — dan di web"
+
+#: src/Astral_marketing/pages/help_article_page.gleam:182
+msgid "Back to "
+msgstr "Kembali ke "
+
+#: src/Astral_marketing/pages/help_article_page.gleam:279
+#: src/Astral_marketing/pages/help_search_page.gleam:115
+msgid "Back to Help Center"
+msgstr "Kembali ke Pusat Bantuan"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:674
+msgid "Be the first to try new features before they're released to everyone else."
+msgstr "Jadilah yang pertama mencoba fitur baru sebelum dirilis untuk semua orang."
+
+#: src/Astral_marketing/components/partner_section.gleam:64
+#: src/Astral_marketing/pages/careers_page.gleam:173
+#: src/Astral_marketing/pages/partners_page.gleam:64
+msgid "Become a Astral Partner"
+msgstr "Jadi Partner Astral"
+
+#: src/Astral_marketing/components/partner_section.gleam:151
+msgid "Become a Partner"
+msgstr "Jadi Partner"
+
+#: src/Astral_marketing/pages/download_page.gleam:322
+#: src/Astral_marketing/pages/plutonium_page.gleam:876
+msgid "Become a Visionary"
+msgstr "Jadi Visionary"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:310
+#: src/Astral_marketing/pages/plutonium_page.gleam:311
+#: src/Astral_marketing/pages/plutonium_page.gleam:318
+#: src/Astral_marketing/pages/plutonium_page.gleam:325
+#: src/Astral_marketing/pages/plutonium_page.gleam:374
+#: src/Astral_marketing/pages/plutonium_page.gleam:626
+#: src/Astral_marketing/pages/plutonium_page.gleam:636
+#: src/Astral_marketing/pages/plutonium_page.gleam:646
+msgid "Beta"
+msgstr "Beta"
+
+#: src/Astral_marketing/components/coming_features.gleam:54
+msgid "Better noise cancellation"
+msgstr "Peredaman bising yang lebih baik"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:350
+msgid "Bio character limit"
+msgstr "Batas karakter bio"
+
+#: src/Astral_marketing/pages/press_page.gleam:235
+msgid "Black"
+msgstr "Hitam"
+
+#: src/Astral_marketing/pages/press_page.gleam:117
+msgid "Black Logo"
+msgstr "Logo Hitam"
+
+#: src/Astral_marketing/pages/press_page.gleam:171
+msgid "Black Symbol"
+msgstr "Simbol Hitam"
+
+#: src/Astral_marketing/pages/press_page.gleam:217
+msgid "Blue (Da Ba Dee)"
+msgstr "Biru (Da Ba Dee)"
+
+#: src/Astral_marketing/components/footer.gleam:157
+#: src/Astral_marketing/components/navigation.gleam:458
+msgid "Bluesky"
+msgstr "Bluesky"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:343
+msgid "Bookmarked messages"
+msgstr "Pesan yang di-bookmark"
+
+#: src/Astral_marketing/pages/donate_page.gleam:387
+msgid "Both donation types support the same cause equally. The only difference is that Business donations allow you to specify a tax ID (if applicable) and receive a PDF invoice when finalized, which can be useful for company accounting purposes."
+msgstr "Kedua jenis donasi mendukung tujuan yang sama secara setara. Bedanya hanya: donasi Bisnis memungkinkan kamu mencantumkan ID pajak (jika berlaku) dan menerima faktur PDF setelah diproses, yang bisa berguna untuk kebutuhan akuntansi perusahaan."
+
+#: src/Astral_marketing/pages/press_page.gleam:200
+msgid "Brand Colors"
+msgstr "Warna Brand"
+
+#: src/Astral_marketing/pages/partners_page.gleam:421
+msgid "Brief description of your audience and what you do"
+msgstr "Deskripsi singkat tentang audiensmu dan apa yang kamu lakukan"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:150
+msgid "Browse Categories"
+msgstr "Jelajahi Kategori"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:168
+msgid "Browse articles"
+msgstr "Jelajahi artikel"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:95
+msgid "Browse by category"
+msgstr "Jelajahi berdasarkan kategori"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:65
+msgid "Browse help articles about "
+msgstr "Jelajahi artikel bantuan tentang "
+
+#: src/Astral_marketing/components/communities_section.gleam:44
+msgid "Built for communities of all kinds."
+msgstr "Dibuat untuk segala jenis komunitas."
+
+#: src/Astral_marketing/components/locale_selector.gleam:119
+msgid "Bulgarian"
+msgstr "Bulgaria"
+
+#: src/Astral_marketing/pages/donate_page.gleam:177
+msgid "Business"
+msgstr "Bisnis"
+
+#: src/Astral_marketing/components/coming_features.gleam:56
+msgid "Call pop-out"
+msgstr "Jendela panggilan terpisah"
+
+#: src/Astral_marketing/components/footer.gleam:220
+#: src/Astral_marketing/components/navigation.gleam:358
+msgid "Careers"
+msgstr "Karier"
+
+#: src/Astral_marketing/pages/careers_page.gleam:46
+msgid "Careers at Astral"
+msgstr "Karier di Astral"
+
+#: src/Astral_marketing/components/locale_selector.gleam:38
+#: src/Astral_marketing/components/navigation.gleam:252
+#: src/Astral_marketing/components/navigation.gleam:257
+msgid "Change language"
+msgstr "Ganti bahasa"
+
+#: src/Astral_marketing/components/locale_selector.gleam:150
+msgid "Chinese (Simplified)"
+msgstr "Tionghoa (Sederhana)"
+
+#: src/Astral_marketing/components/locale_selector.gleam:151
+msgid "Chinese (Traditional)"
+msgstr "Tionghoa (Tradisional)"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:207
+msgid "Choose Linux distribution"
+msgstr "Pilih distro Linux"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:148
+msgid "Choose a guide below or search again if you don't see what you need."
+msgstr "Pilih panduan di bawah, atau cari lagi jika kamu belum melihat yang kamu butuhkan."
+
+#: src/Astral_marketing/components/platform_download_button.gleam:409
+msgid "Choose distribution"
+msgstr "Pilih distro"
+
+#: src/Astral_marketing/components/locale_selector.gleam:63
+msgid "Choose your language"
+msgstr "Pilih bahasa"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:564
+msgid "Choose your own 4-digit tag like #0001, #1337, or #9999 to make your username truly unique."
+msgstr "Pilih tag 4 digitmu sendiri seperti #0001, #1337, atau #9999 agar username-mu benar-benar unik."
+
+#: src/Astral_marketing/pages/help_category_page.gleam:136
+msgid "Clear search"
+msgstr "Hapus pencarian"
+
+#: src/Astral_marketing/pages/download_page.gleam:337
+msgid "Code, issues, docs, and reviews"
+msgstr "Kode, issue, dokumentasi, dan ulasan"
+
+#: src/Astral_marketing/pages/press_page.gleam:124
+msgid "Color Logo"
+msgstr "Logo Berwarna"
+
+#: src/Astral_marketing/pages/press_page.gleam:178
+msgid "Color Symbol"
+msgstr "Simbol Berwarna"
+
+#: src/Astral_marketing/pages/partners_page.gleam:297
+msgid "Coming Soon"
+msgstr "Segera Hadir"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:296
+#: src/Astral_marketing/pages/plutonium_page.gleam:297
+#: src/Astral_marketing/pages/plutonium_page.gleam:366
+#: src/Astral_marketing/pages/plutonium_page.gleam:367
+#: src/Astral_marketing/pages/plutonium_page.gleam:586
+msgid "Coming soon"
+msgstr "Segera hadir"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:329
+msgid "Communities"
+msgstr "Komunitas"
+
+#: src/Astral_marketing/pages/careers_page.gleam:140
+msgid "Community"
+msgstr "Komunitas"
+
+#: src/Astral_marketing/components/footer.gleam:260
+#: src/Astral_marketing/components/navigation.gleam:415
+#: src/Astral_marketing/pages/guidelines_page.gleam:41
+msgid "Community Guidelines"
+msgstr "Pedoman Komunitas"
+
+#: src/Astral_marketing/pages/partners_page.gleam:134
+msgid "Community Verification"
+msgstr "Verifikasi Komunitas"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1040
+msgid "Community support"
+msgstr "Dukungan komunitas"
+
+#: src/Astral_marketing/components/coming_features.gleam:38
+msgid "Community templates"
+msgstr "Template komunitas"
+
+#: src/Astral_marketing/components/current_features.gleam:139
+msgid "Compact mode and display options"
+msgstr "Mode ringkas dan opsi tampilan"
+
+#: src/Astral_marketing/components/navigation.gleam:348
+msgid "Company"
+msgstr "Perusahaan"
+
+#: src/Astral_marketing/components/footer.gleam:282
+#: src/Astral_marketing/components/navigation.gleam:376
+#: src/Astral_marketing/pages/company_page.gleam:41
+#: src/Astral_marketing/pages/company_page.gleam:44
+msgid "Company Information"
+msgstr "Informasi Perusahaan"
+
+#: src/Astral_marketing/components/footer.gleam:289
+#: src/Astral_marketing/components/navigation.gleam:435
+msgid "Connect"
+msgstr "Terhubung"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1038
+msgid "Connect from any client"
+msgstr "Terhubung dari klien apa pun"
+
+#: src/Astral_marketing/pages/help_article_page.gleam:233
+#: src/Astral_marketing/pages/help_article_page.gleam:375
+msgid "Contact Support"
+msgstr "Hubungi Dukungan"
+
+#: src/Astral_marketing/components/partner_section.gleam:70
+msgid "Content creators and community owners: unlock exclusive perks including free Plutonium, a Partner badge, custom vanity URLs, and more."
+msgstr "Kreator konten dan pemilik komunitas: buka benefit eksklusif seperti Plutonium gratis, lencana Partner, vanity URL kustom, dan banyak lagi."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:178
+msgid "Contribute code"
+msgstr "Kontribusi kode"
+
+#: src/Astral_marketing/pages/download_page.gleam:336
+msgid "Contribute on GitHub"
+msgstr "Berkontribusi di GitHub"
+
+#: src/Astral_marketing/components/final_cta.gleam:69
+msgid "Create an account and help us build something good."
+msgstr "Buat akun dan bantu kami membangun sesuatu yang baik."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1191
+msgid "Create your Astral account to get that sweet Plutonium while it's hot."
+msgstr "Buat akun Astral-mu untuk mendapatkan Plutonium selagi masih ada."
+
+#: src/Astral_marketing/pages/partners_page.gleam:211
+msgid "Creator Monetization"
+msgstr "Monetisasi Kreator"
+
+#: src/Astral_marketing/components/coming_features.gleam:50
+msgid "Creator monetization"
+msgstr "Monetisasi kreator"
+
+#: src/Astral_marketing/components/communities_section.gleam:62
+msgid "Creators"
+msgstr "Kreator"
+
+#: src/Astral_marketing/components/locale_selector.gleam:132
+msgid "Croatian"
+msgstr "Kroasia"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:280
+msgid "Custom 4-digit username tag"
+msgstr "Tag username 4 digit kustom"
+
+#: src/Astral_marketing/components/current_features.gleam:138
+msgid "Custom CSS themes"
+msgstr "Tema CSS kustom"
+
+#: src/Astral_marketing/pages/partners_page.gleam:145
+msgid "Custom Vanity URL"
+msgstr "Vanity URL Kustom"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:315
+#: src/Astral_marketing/pages/plutonium_page.gleam:631
+msgid "Custom entrance sounds"
+msgstr "Suara masuk kustom"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:127
+msgid "Custom identity"
+msgstr "Identitas kustom"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:322
+#: src/Astral_marketing/pages/plutonium_page.gleam:641
+msgid "Custom notification sounds"
+msgstr "Suara notifikasi kustom"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:413
+msgid "Custom themes"
+msgstr "Tema kustom"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:561
+msgid "Custom username tag"
+msgstr "Tag username kustom"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:308
+msgid "Custom video backgrounds"
+msgstr "Latar video kustom"
+
+#: src/Astral_marketing/components/current_features.gleam:130
+msgid "Customization"
+msgstr "Kustomisasi"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:574
+msgid "Customize your profile differently for each community you're part of."
+msgstr "Kustomisasi profilmu berbeda untuk setiap komunitas yang kamu ikuti."
+
+#: src/Astral_marketing/components/locale_selector.gleam:120
+msgid "Czech"
+msgstr "Ceko"
+
+#: src/Astral_marketing/components/coming_features.gleam:35
+msgid "DM folders"
+msgstr "Folder DM"
+
+#: src/Astral_marketing/components/current_features.gleam:69
+msgid "DM your friends, chat with groups, or build communities with channels."
+msgstr "Kirim DM ke temanmu, ngobrol bareng grup, atau bangun komunitas lewat kanal."
+
+#: src/Astral_marketing/components/locale_selector.gleam:121
+msgid "Danish"
+msgstr "Denmark"
+
+#: src/Astral_marketing/pages/careers_page.gleam:250
+msgid "Design & branding"
+msgstr "Desain & branding"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:99
+msgid "Desktop"
+msgstr "Desktop"
+
+#: src/Astral_marketing/components/footer.gleam:209
+msgid "Developer Docs"
+msgstr "Dokumentasi Pengembang"
+
+#: src/Astral_marketing/components/communities_section.gleam:74
+msgid "Developers"
+msgstr "Pengembang"
+
+#: src/Astral_marketing/components/partner_section.gleam:137
+#: src/Astral_marketing/pages/partners_page.gleam:156
+msgid "Direct Team Access"
+msgstr "Akses Langsung ke Tim"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1076
+msgid "Direct team support"
+msgstr "Dukungan tim langsung"
+
+#: src/Astral_marketing/components/coming_features.gleam:44
+msgid "Discovery"
+msgstr "Discovery"
+
+#: src/Astral_marketing/pages/partners_page.gleam:126
+msgid "Display an exclusive Partner badge on your profile to stand out."
+msgstr "Tampilkan lencana Partner eksklusif di profilmu agar makin menonjol."
+
+#: src/Astral_marketing/pages/donate_page.gleam:366
+msgid "Do I get anything in return?"
+msgstr "Apakah saya mendapatkan sesuatu sebagai balasan?"
+
+#: src/Astral_marketing/components/navigation.gleam:111
+#: src/Astral_marketing/components/navigation.gleam:319
+msgid "Docs"
+msgstr "Dokumentasi"
+
+#: src/Astral_marketing/components/navigation.gleam:120
+#: src/Astral_marketing/components/navigation.gleam:367
+msgid "Donate"
+msgstr "Donasi"
+
+#: src/Astral_marketing/pages/donate_page.gleam:216
+#: src/Astral_marketing/pages/donate_page.gleam:255
+msgid "Donate in EUR"
+msgstr "Donasi dalam EUR"
+
+#: src/Astral_marketing/pages/donate_page.gleam:203
+#: src/Astral_marketing/pages/donate_page.gleam:242
+msgid "Donate in USD"
+msgstr "Donasi dalam USD"
+
+#: src/Astral_marketing/components/footer.gleam:78
+#: src/Astral_marketing/pages/download_page.gleam:329
+msgid "Donate to Astral"
+msgstr "Donasi ke Astral"
+
+#: src/Astral_marketing/pages/donate_page.gleam:297
+msgid "Donate with Swish"
+msgstr "Donasi dengan Swish"
+
+#: src/Astral_marketing/pages/donate_page.gleam:369
+msgid "Donations are voluntary gifts and do not provide you with any product, service, ownership, or special rights. If you're looking for premium features, check out {0}."
+msgstr "Donasi adalah pemberian sukarela dan tidak memberikan produk, layanan, kepemilikan, atau hak istimewa apa pun. Jika kamu mencari fitur premium, lihat {0}."
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:308
+msgid "Done! You can now open Astral as if it were a regular program."
+msgstr "Selesai! Sekarang kamu bisa membuka Astral seperti program biasa."
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:206
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:256
+msgid "Done! You can open Astral from your home screen."
+msgstr "Selesai! Kamu bisa membuka Astral dari layar beranda."
+
+#: src/Astral_marketing/components/footer.gleam:132
+#: src/Astral_marketing/components/navigation.gleam:84
+#: src/Astral_marketing/components/navigation.gleam:280
+#: src/Astral_marketing/components/platform_download_button.gleam:223
+#: src/Astral_marketing/pages/press_page.gleam:359
+msgid "Download"
+msgstr "Unduh"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:276
+#: src/Astral_marketing/pages/download_page.gleam:46
+#: src/Astral_marketing/pages/download_page.gleam:66
+msgid "Download Astral"
+msgstr "Unduh Astral"
+
+#: src/Astral_marketing/pages/download_page.gleam:49
+msgid "Download Astral for Windows, macOS, and Linux. Mobile apps are underway."
+msgstr "Unduh Astral untuk Windows, macOS, dan Linux. Aplikasi mobile sedang dikerjakan."
+
+#: src/Astral_marketing/pages/press_page.gleam:48
+msgid "Download Astral logos, brand assets, and get in touch with our press team"
+msgstr "Unduh logo Astral, aset brand, dan hubungi tim pers kami"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:428
+#: src/Astral_marketing/components/platform_download_button.gleam:538
+msgid "Download for "
+msgstr "Unduh untuk "
+
+#: src/Astral_marketing/components/platform_download_button.gleam:191
+msgid "Download for Windows"
+msgstr "Unduh untuk Windows"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:199
+msgid "Download for macOS"
+msgstr "Unduh untuk macOS"
+
+#: src/Astral_marketing/pages/press_page.gleam:68
+msgid "Download our logos, learn about our brand colors, and get in touch with our press team."
+msgstr "Unduh logo kami, pelajari warna brand kami, dan hubungi tim pers kami."
+
+#: src/Astral_marketing/components/locale_selector.gleam:139
+msgid "Dutch"
+msgstr "Belanda"
+
+#: src/Astral_marketing/components/coming_features.gleam:55
+msgid "E2EE calls"
+msgstr "Panggilan E2EE"
+
+#: src/Astral_marketing/pages/partners_page.gleam:200
+msgid "Early Feature Access"
+msgstr "Akses Fitur Lebih Awal"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:671
+msgid "Early access"
+msgstr "Akses lebih awal"
+
+#: src/Astral_marketing/pages/partners_page.gleam:214
+msgid "Early access to creator monetization features with lower platform fees than non-partners."
+msgstr "Akses lebih awal ke fitur monetisasi kreator dengan biaya platform lebih rendah dibanding non-partner."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:406
+msgid "Early access to new features"
+msgstr "Akses lebih awal ke fitur baru"
+
+#: src/Astral_marketing/components/communities_section.gleam:67
+msgid "Education"
+msgstr "Pendidikan"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:364
+msgid "Emoji & sticker packs"
+msgstr "Paket emoji & stiker"
+
+#: src/Astral_marketing/components/locale_selector.gleam:124
+msgid "English"
+msgstr "Inggris"
+
+#: src/Astral_marketing/components/locale_selector.gleam:125
+msgid "English (US)"
+msgstr "Inggris (AS)"
+
+#: src/Astral_marketing/components/coming_features.gleam:43
+msgid "Event tickets"
+msgstr "Tiket acara"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1071
+msgid "Everything in Free, plus:"
+msgstr "Semua yang ada di Gratis, ditambah:"
+
+#: src/Astral_marketing/pages/partners_page.gleam:233
+msgid "Exclusive Merch"
+msgstr "Merch Eksklusif"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:863
+msgid "Exclusive communities"
+msgstr "Komunitas eksklusif"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:181
+msgid "Exclusive features"
+msgstr "Fitur eksklusif"
+
+#: src/Astral_marketing/pages/partners_page.gleam:67
+msgid "Exclusive perks and benefits for content creators and large community owners."
+msgstr "Benefit eksklusif untuk kreator konten dan pemilik komunitas besar."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:257
+msgid "Feature"
+msgstr "Fitur"
+
+#: src/Astral_marketing/pages/partners_page.gleam:167
+msgid "Featured in Discovery"
+msgstr "Ditampilkan di Discovery"
+
+#: src/Astral_marketing/components/coming_features.gleam:30
+msgid "Federation"
+msgstr "Federasi"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:357
+msgid "File upload size"
+msgstr "Ukuran unggahan file"
+
+#: src/Astral_marketing/components/current_features.gleam:121
+msgid "Filter by users, dates, and more"
+msgstr "Filter berdasarkan pengguna, tanggal, dan lainnya"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:49
+msgid "Find answers to common questions and learn how to use Astral."
+msgstr "Temukan jawaban untuk pertanyaan umum dan pelajari cara menggunakan Astral."
+
+#: src/Astral_marketing/components/current_features.gleam:117
+msgid "Find old messages or jump between communities and channels in seconds."
+msgstr "Temukan pesan lama atau pindah antar komunitas dan kanal dalam hitungan detik."
+
+#: src/Astral_marketing/pages/help_center_page.gleam:104
+msgid "Find step-by-step guides and answers, organized by topic."
+msgstr "Temukan panduan langkah demi langkah dan jawaban, tersusun berdasarkan topik."
+
+#: src/Astral_marketing/components/locale_selector.gleam:128
+msgid "Finnish"
+msgstr "Finlandia"
+
+#: src/Astral_marketing/pages/careers_page.gleam:121
+msgid "Fix bugs, ship features, or polish the experience in our main repo."
+msgstr "Perbaiki bug, rilis fitur, atau poles pengalaman pengguna di repo utama kami."
+
+#: src/Astral_marketing/components/footer.gleam:99
+msgid "Astral"
+msgstr "Astral"
+
+#: src/Astral_marketing/pages/guidelines_page.gleam:44
+msgid "Astral Community Guidelines"
+msgstr "Pedoman Komunitas Astral"
+
+#: src/Astral_marketing/pages/careers_page.gleam:207
+msgid "Astral Community Team"
+msgstr "Tim Komunitas Astral"
+
+#: src/Astral_marketing/pages/partners_page.gleam:44
+msgid "Astral Partner"
+msgstr "Partner Astral"
+
+#: src/Astral_marketing/pages/donate_page.gleam:371
+#: src/Astral_marketing/pages/plutonium_page.gleam:51
+#: src/Astral_marketing/pages/plutonium_page.gleam:76
+msgid "Astral Plutonium"
+msgstr "Astral Plutonium"
+
+#: src/Astral_marketing/pages/privacy_page.gleam:44
+msgid "Astral Privacy Policy"
+msgstr "Kebijakan Privasi Astral"
+
+#: src/Astral_marketing/pages/security_page.gleam:44
+msgid "Astral Security Bug Bounty"
+msgstr "Astral Keamanan Bug Bounty"
+
+#: src/Astral_marketing/pages/terms_page.gleam:44
+msgid "Astral Terms of Service"
+msgstr "Ketentuan Layanan Astral"
+
+#: src/Astral_marketing/components/hero.gleam:64
+msgid "Astral is an independent, independent instant messaging and VoIP platform. Built for friends, groups, and communities."
+msgstr "Astral adalah platform pesan instan dan VoIP independen berbasis independent. Dibuat untuk teman, grup, dan komunitas."
+
+#: src/Astral_marketing/pages/careers_page.gleam:105
+msgid "Astral is built in the open. Pick the path that fits how you like to help."
+msgstr "Astral dibangun secara terbuka. Pilih jalur yang paling cocok dengan cara kamu ingin membantu."
+
+#: src/Astral_marketing/pages/download_page.gleam:303
+msgid "Astral is community-funded. If you'd like to help support iOS and Android development:"
+msgstr "Astral didanai komunitas. Jika kamu ingin membantu mendukung pengembangan iOS dan Android:"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:991
+msgid "Astral stays independent and community-funded."
+msgstr "Astral tetap independen dan didanai komunitas."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:181
+msgid "Astral is independent (AGPLv3). Contribute directly on GitHub by opening pull requests."
+msgstr "Astral bersifat sumber terbuka (AGPLv3). Berkontribusilah langsung di GitHub dengan membuat pull request."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:158
+msgid "Follow @Astral.app"
+msgstr "Ikuti @Astral.app"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:120
+msgid "Follow us on Bluesky"
+msgstr "Ikuti kami di Bluesky"
+
+#: src/Astral_marketing/pages/press_page.gleam:230
+msgid "For backgrounds, text on dark surfaces, and creating contrast."
+msgstr "Untuk latar belakang, teks di permukaan gelap, dan menciptakan kontras."
+
+#: src/Astral_marketing/pages/press_page.gleam:111
+#: src/Astral_marketing/pages/press_page.gleam:165
+msgid "For dark backgrounds"
+msgstr "Untuk latar belakang gelap"
+
+#: src/Astral_marketing/pages/press_page.gleam:118
+#: src/Astral_marketing/pages/press_page.gleam:172
+msgid "For light backgrounds"
+msgstr "Untuk latar belakang terang"
+
+#: src/Astral_marketing/pages/press_page.gleam:237
+msgid "For text, icons on light surfaces, and creating depth."
+msgstr "Untuk teks, ikon di permukaan terang, dan memberi kesan kedalaman."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:189
+msgid "Forever"
+msgstr "Selamanya"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:189
+msgid "Found a security issue?"
+msgstr "Menemukan masalah keamanan?"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:175
+#: src/Astral_marketing/pages/plutonium_page.gleam:265
+msgid "Free"
+msgstr "Gratis"
+
+#: src/Astral_marketing/components/partner_section.gleam:97
+#: src/Astral_marketing/pages/partners_page.gleam:112
+msgid "Free Plutonium"
+msgstr "Plutonium Gratis"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1024
+msgid "Astral Standard"
+msgstr "Operator Access Gratis"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:152
+msgid "Free vs Plutonium"
+msgstr "Gratis vs Plutonium"
+
+#: src/Astral_marketing/components/locale_selector.gleam:129
+msgid "French"
+msgstr "Prancis"
+
+#: src/Astral_marketing/pages/donate_page.gleam:345
+msgid "Frequently Asked Questions"
+msgstr "Pertanyaan yang Sering Diajukan"
+
+#: src/Astral_marketing/components/current_features.gleam:72
+msgid "Full Markdown support in messages"
+msgstr "Dukungan Markdown penuh di pesan"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1037
+msgid "Full access to all features"
+msgstr "Akses penuh ke semua fitur"
+
+#: src/Astral_marketing/pages/press_page.gleam:125
+#: src/Astral_marketing/pages/press_page.gleam:179
+msgid "Full color version"
+msgstr "Versi warna penuh"
+
+#: src/Astral_marketing/components/current_features.gleam:152
+msgid "Fully independent (AGPLv3)"
+msgstr "Sepenuhnya sumber terbuka (AGPLv3)"
+
+#: src/Astral_marketing/components/communities_section.gleam:57
+msgid "Gaming"
+msgstr "Gaming"
+
+#: src/Astral_marketing/components/locale_selector.gleam:122
+msgid "German"
+msgstr "Jerman"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:430
+msgid "Get Plutonium"
+msgstr "Dapatkan Plutonium"
+
+#: src/Astral_marketing/components/plutonium_banner.gleam:79
+msgid "Get Visionary"
+msgstr "Dapatkan Visionary"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1135
+msgid "Get Visionary + Operator Access"
+msgstr "Dapatkan Visionary + Operator Access"
+
+#: src/Astral_marketing/pages/partners_page.gleam:148
+msgid "Get an exclusive custom vanity URL like Astral.gg/yourcommunity."
+msgstr "Dapatkan vanity URL kustom eksklusif seperti Astral.gg/komunitasmu."
+
+#: src/Astral_marketing/pages/partners_page.gleam:236
+msgid "Get exclusive Astral Partner-only merchandise and swag."
+msgstr "Dapatkan merchandise dan swag eksklusif khusus Partner Astral."
+
+#: src/Astral_marketing/pages/partners_page.gleam:115
+msgid "Get free Plutonium for your account to enjoy all premium features."
+msgstr "Dapatkan Plutonium gratis untuk akunmu agar bisa menikmati semua fitur premium."
+
+#: src/Astral_marketing/pages/partners_page.gleam:170
+msgid "Get heightened visibility by being featured in Community Discovery."
+msgstr "Dapatkan visibilitas lebih tinggi dengan ditampilkan di Community Discovery."
+
+#: src/Astral_marketing/pages/not_found_page.gleam:87
+msgid "Get help"
+msgstr "Minta bantuan"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:51
+msgid "Get involved"
+msgstr "Ikut terlibat"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:956
+msgid "Get lifetime Plutonium on Astral.app plus Operator Access. Pay {0} one-time. Available until October 1, 2026 or when {1} slots are claimed."
+msgstr "Dapatkan Plutonium seumur hidup di Astral.app plus Operator Access untuk Operator Access. Bayar {0} sekali saja. Tersedia hingga 1 Oktober 2026 atau sampai {1} slot habis."
+
+#: src/Astral_marketing/components/plutonium_section.gleam:51
+msgid "Get more with Astral Plutonium"
+msgstr "Dapatkan lebih banyak dengan Astral Plutonium"
+
+#: src/Astral_marketing/pages/download_page.gleam:316
+msgid "Get perks and help fund development"
+msgstr "Dapatkan benefit dan bantu mendanai pengembangan"
+
+#: src/Astral_marketing/pages/download_page.gleam:237
+msgid "Get push notifications when you're away from the app."
+msgstr "Dapatkan notifikasi push saat kamu tidak sedang membuka aplikasi."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:89
+msgid "Get updates, see upcoming features, discuss suggestions, and chat with the team."
+msgstr "Dapatkan pembaruan, lihat fitur yang akan datang, bahas saran, dan ngobrol dengan tim."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:385
+#: src/Astral_marketing/pages/plutonium_page.gleam:601
+msgid "Global emoji & sticker access"
+msgstr "Akses emoji & stiker global"
+
+#: src/Astral_marketing/components/coming_features.gleam:53
+msgid "Global voice regions"
+msgstr "Wilayah voice global"
+
+#: src/Astral_marketing/pages/not_found_page.gleam:78
+msgid "Go home"
+msgstr "Ke beranda"
+
+#: src/Astral_marketing/components/current_features.gleam:104
+msgid "Granular roles and permissions"
+msgstr "Peran dan izin yang lebih rinci"
+
+#: src/Astral_marketing/components/locale_selector.gleam:123
+msgid "Greek"
+msgstr "Yunani"
+
+#: src/Astral_marketing/pages/press_page.gleam:285
+msgid "Have a story about Astral? Need more information or high-resolution assets?"
+msgstr "Punya cerita tentang Astral? Butuh info tambahan atau aset resolusi tinggi?"
+
+#: src/Astral_marketing/components/locale_selector.gleam:130
+msgid "Hebrew"
+msgstr "Ibrani"
+
+#: src/Astral_marketing/components/navigation.gleam:102
+msgid "Help"
+msgstr "Bantuan"
+
+#: src/Astral_marketing/components/footer.gleam:187
+#: src/Astral_marketing/components/navigation.gleam:328
+#: src/Astral_marketing/pages/help_article_page.gleam:56
+#: src/Astral_marketing/pages/help_article_page.gleam:86
+#: src/Astral_marketing/pages/help_article_page.gleam:117
+#: src/Astral_marketing/pages/help_category_page.gleam:64
+#: src/Astral_marketing/pages/help_center_page.gleam:46
+#: src/Astral_marketing/pages/help_components.gleam:48
+#: src/Astral_marketing/pages/help_search_page.gleam:48
+msgid "Help Center"
+msgstr "Pusat Bantuan"
+
+#: src/Astral_marketing/pages/download_page.gleam:291
+msgid "Help make the mobile app a reality"
+msgstr "Bantu wujudkan aplikasi mobile"
+
+#: src/Astral_marketing/components/footer.gleam:66
+#: src/Astral_marketing/pages/donate_page.gleam:53
+msgid "Help support an independent communication platform. Your donation funds the platform's infrastructure and development."
+msgstr "Dukung platform komunikasi independen. Donasimu mendanai infrastruktur dan pengembangan platform."
+
+#: src/Astral_marketing/pages/donate_page.gleam:134
+msgid "Help support an independent communication platform. Your donation funds the platform's infrastructure and development. It is a voluntary gift and does not constitute payment for any product or service or give you any ownership or special rights."
+msgstr "Dukung platform komunikasi independen. Donasimu mendanai infrastruktur dan pengembangan platform. Donasi bersifat sukarela, bukan pembayaran untuk produk atau layanan apa pun, serta tidak memberikan kepemilikan atau hak istimewa apa pun."
+
+#: src/Astral_marketing/pages/careers_page.gleam:132
+msgid "Help translate Astral and its docs so it feels native everywhere."
+msgstr "Bantu terjemahkan Astral dan dokumentasinya agar terasa benar-benar lokal di mana pun."
+
+#: src/Astral_marketing/pages/careers_page.gleam:69
+msgid "Help us build a different kind of communication platform — independent, community-funded, and built with care."
+msgstr "Bantu kami membangun platform komunikasi yang berbeda — sumber terbuka, didanai komunitas, dan dibuat dengan penuh perhatian."
+
+#: src/Astral_marketing/pages/donate_page.gleam:89
+msgid "Help us build an independent communication platform that puts users first."
+msgstr "Bantu kami membangun platform komunikasi independen yang mengutamakan pengguna."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:651
+msgid "Higher limits everywhere"
+msgstr "Batas lebih tinggi di mana-mana"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:92
+msgid "Higher limits, exclusive features, and early access to new updates"
+msgstr "Batas lebih tinggi, fitur eksklusif, dan akses lebih awal ke pembaruan baru"
+
+#: src/Astral_marketing/components/locale_selector.gleam:131
+msgid "Hindi"
+msgstr "Hindi"
+
+#: src/Astral_marketing/components/communities_section.gleam:72
+msgid "Hobbyists"
+msgstr "Hobiis"
+
+#: src/Astral_marketing/components/current_features.gleam:85
+msgid "Hop in a call with friends or share your screen to work together."
+msgstr "Langsung masuk panggilan dengan teman atau bagikan layar untuk bekerja bareng."
+
+#: src/Astral_marketing/components/current_features.gleam:153
+msgid "Host your own instance"
+msgstr "Host instance-mu sendiri"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:64
+#: src/Astral_marketing/pages/help_search_page.gleam:63
+msgid "How can we help?"
+msgstr "Ada yang bisa kami bantu?"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:39
+msgid "How to install as an app"
+msgstr "Cara menginstal sebagai aplikasi"
+
+#: src/Astral_marketing/pages/partners_page.gleam:434
+msgid "How you plan to use Astral with your community"
+msgstr "Rencana kamu menggunakan Astral untuk komunitasmu"
+
+#: src/Astral_marketing/components/locale_selector.gleam:133
+msgid "Hungarian"
+msgstr "Hungaria"
+
+#: src/Astral_marketing/pages/help_article_page.gleam:223
+#: src/Astral_marketing/pages/help_article_page.gleam:365
+msgid "If you couldn't find what you're looking for, our support team is here to help."
+msgstr "Kalau kamu belum menemukan yang kamu cari, tim dukungan kami siap membantu."
+
+#: src/Astral_marketing/pages/careers_page.gleam:176
+msgid "If you're a creator or community owner, explore the Partner program and its perks."
+msgstr "Kalau kamu kreator atau pemilik komunitas, jelajahi program Partner dan benefitnya."
+
+#: src/Astral_marketing/pages/partners_page.gleam:189
+msgid "Increased Limits"
+msgstr "Batas yang Ditingkatkan"
+
+#: src/Astral_marketing/pages/donate_page.gleam:160
+msgid "Individual"
+msgstr "Individu"
+
+#: src/Astral_marketing/components/locale_selector.gleam:134
+msgid "Indonesian"
+msgstr "Indonesia"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:59
+msgid "Install Astral as an app"
+msgstr "Instal Astral sebagai aplikasi"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:145
+#: src/Astral_marketing/components/platform_download_button.gleam:161
+msgid "Intel"
+msgstr "Intel"
+
+#: src/Astral_marketing/pages/donate_page.gleam:376
+msgid "Is my donation tax-deductible?"
+msgstr "Apakah donasi saya bisa dikurangkan dari pajak?"
+
+#: src/Astral_marketing/pages/donate_page.gleam:358
+msgid "Is this a subscription?"
+msgstr "Apakah ini berlangganan?"
+
+#: src/Astral_marketing/components/locale_selector.gleam:135
+msgid "Italian"
+msgstr "Italia"
+
+#: src/Astral_marketing/components/locale_selector.gleam:136
+msgid "Japanese"
+msgstr "Jepang"
+
+#: src/Astral_marketing/components/final_cta.gleam:80
+#: src/Astral_marketing/pages/plutonium_page.gleam:1202
+msgid "Join Astral"
+msgstr "Gabung Astral"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:86
+#: src/Astral_marketing/components/get_involved_section.gleam:91
+#: src/Astral_marketing/pages/careers_page.gleam:145
+msgid "Join Astral HQ"
+msgstr "Gabung Astral HQ"
+
+#: src/Astral_marketing/pages/careers_page.gleam:442
+msgid "Join Astral HQ community"
+msgstr "Gabung komunitas Astral HQ"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:75
+msgid "Join and spread the word"
+msgstr "Gabung dan sebarkan kabarnya"
+
+#: src/Astral_marketing/components/current_features.gleam:88
+msgid "Join from multiple devices at once"
+msgstr "Masuk dari beberapa perangkat sekaligus"
+
+#: src/Astral_marketing/pages/partners_page.gleam:47
+msgid "Join the Astral Partner Program and unlock exclusive benefits for you and your community"
+msgstr "Gabung Program Partner Astral dan buka benefit eksklusif untuk kamu dan komunitasmu"
+
+#: src/Astral_marketing/pages/careers_page.gleam:49
+msgid "Join the Astral community and help build the future of communication through independent and community contributions."
+msgstr "Gabung komunitas Astral dan bantu membangun masa depan komunikasi lewat sumber terbuka dan kontribusi komunitas."
+
+#: src/Astral_marketing/pages/partners_page.gleam:159
+msgid "Join the exclusive Partners community with direct access to the Astral team."
+msgstr "Gabung komunitas Partner eksklusif dengan akses langsung ke tim Astral."
+
+#: src/Astral_marketing/pages/careers_page.gleam:66
+msgid "Join the team behind Astral"
+msgstr "Gabung tim di balik Astral"
+
+#: src/Astral_marketing/components/current_features.gleam:101
+msgid "Keep your community running smoothly with roles, permissions, and logs."
+msgstr "Jaga komunitasmu tetap berjalan lancar dengan peran, izin, dan log."
+
+#: src/Astral_marketing/components/locale_selector.gleam:137
+msgid "Korean"
+msgstr "Korea"
+
+#: src/Astral_marketing/pages/company_page.gleam:42
+msgid "Learn about Astral and our mission"
+msgstr "Pelajari tentang Astral dan misi kami"
+
+#: src/Astral_marketing/pages/careers_page.gleam:178
+msgid "Learn about Partners"
+msgstr "Pelajari tentang Partner"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:195
+msgid "Learn more"
+msgstr "Pelajari lebih lanjut"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:848
+msgid "Lifetime Operator Access"
+msgstr "Operator Access Seumur Hidup"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:842
+msgid "Lifetime Plutonium"
+msgstr "Plutonium Seumur Hidup"
+
+#: src/Astral_marketing/components/plutonium_banner.gleam:38
+msgid "Lifetime Plutonium + Operator Access with Visionary - limited slots"
+msgstr "Plutonium Seumur Hidup + Operator Access dengan Visionary — slot terbatas"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1103
+msgid "Limited Offer: Visionary includes Operator Access"
+msgstr "Penawaran Terbatas: Visionary termasuk Operator Access"
+
+#: src/Astral_marketing/pages/partners_page.gleam:408
+msgid "Links to your content or community (YouTube, Twitch, Discord, etc.)"
+msgstr "Tautan ke konten atau komunitasmu (YouTube, Twitch, Discord, dll.)"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:364
+msgid "Linux"
+msgstr "Linux"
+
+#: src/Astral_marketing/components/locale_selector.gleam:138
+msgid "Lithuanian"
+msgstr "Lituania"
+
+#: src/Astral_marketing/pages/careers_page.gleam:129
+msgid "Localization"
+msgstr "Lokalisasi"
+
+#: src/Astral_marketing/pages/press_page.gleam:93
+msgid "Logo"
+msgstr "Logo"
+
+#: src/Astral_marketing/pages/donate_page.gleam:123
+msgid "Make a Donation"
+msgstr "Beri Donasi"
+
+#: src/Astral_marketing/components/current_features.gleam:123
+msgid "Manage friends and block users"
+msgstr "Kelola teman dan blokir pengguna"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:336
+msgid "Message character limit"
+msgstr "Batas karakter pesan"
+
+#: src/Astral_marketing/components/coming_features.gleam:34
+msgid "Message components"
+msgstr "Komponen pesan"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:294
+#: src/Astral_marketing/pages/plutonium_page.gleam:581
+msgid "Message scheduling"
+msgstr "Penjadwalan pesan"
+
+#: src/Astral_marketing/components/current_features.gleam:66
+msgid "Messaging"
+msgstr "Perpesanan"
+
+#: src/Astral_marketing/pages/donate_page.gleam:265
+msgid "Minimum donation: $5 / €5"
+msgstr "Donasi minimum: $5 / €5"
+
+#: src/Astral_marketing/pages/download_page.gleam:203
+msgid "Mobile apps are on the way"
+msgstr "Aplikasi mobile segera hadir"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:213
+#: src/Astral_marketing/components/platform_download_button.gleam:218
+#: src/Astral_marketing/components/platform_download_button.gleam:311
+msgid "Mobile apps are underway"
+msgstr "Aplikasi mobile sedang dikerjakan"
+
+#: src/Astral_marketing/components/current_features.gleam:105
+msgid "Moderation actions and tools"
+msgstr "Tindakan dan alat moderasi"
+
+#: src/Astral_marketing/components/current_features.gleam:98
+msgid "Moderation tools"
+msgstr "Alat moderasi"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:206
+msgid "Most popular"
+msgstr "Paling populer"
+
+#: src/Astral_marketing/components/current_features.gleam:91
+msgid "Mute, deafen, and camera controls"
+msgstr "Kontrol mute, deafen, dan kamera"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:135
+msgid "No articles found"
+msgstr "Tidak ada artikel yang ditemukan"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:163
+msgid "No articles found."
+msgstr "Tidak ada artikel yang ditemukan."
+
+#: src/Astral_marketing/pages/help_search_page.gleam:94
+msgid "No results found for"
+msgstr "Tidak ada hasil untuk"
+
+#: src/Astral_marketing/pages/donate_page.gleam:379
+msgid "No, donations to Astral are not tax-deductible as we are not a registered charitable organization."
+msgstr "Tidak, donasi ke Astral tidak bisa dikurangkan dari pajak karena kami bukan organisasi amal terdaftar."
+
+#: src/Astral_marketing/pages/donate_page.gleam:361
+msgid "No, this is a one-time donation. You choose the amount you want to give, and there are no recurring charges."
+msgstr "Tidak, ini donasi satu kali. Kamu memilih nominal yang ingin kamu berikan, dan tidak ada tagihan berulang."
+
+#: src/Astral_marketing/components/current_features.gleam:90
+msgid "Noise suppression and echo cancellation"
+msgstr "Peredam bising dan pembatalan gema"
+
+#: src/Astral_marketing/components/locale_selector.gleam:140
+msgid "Norwegian"
+msgstr "Norwegia"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:295
+msgid "Not available"
+msgstr "Tidak tersedia"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:91
+msgid "Note: Plutonium and Visionary benefits are available on the official Astral service."
+msgstr "Catatan: benefit Plutonium dan Visionary hanya berlaku untuk instance resmi Astral.app, bukan instance pihak ketiga atau third-party."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:788
+msgid "Numbered badge (1-{0}) showing your Visionary status"
+msgstr "Lencana bernomor (1-{0}) yang menunjukkan status Visionary-mu"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:786
+msgid "Numbered badge showing your Visionary status"
+msgstr "Lencana bernomor yang menunjukkan status Visionary-mu"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:828
+msgid "One-time purchase, lifetime access"
+msgstr "Pembelian sekali, akses seumur hidup"
+
+#: src/Astral_marketing/components/plutonium_banner.gleam:43
+msgid "Only {0} of {1} Visionary lifetime slots left - lifetime Plutonium + Operator Access"
+msgstr "Tersisa {0} dari {1} slot Visionary seumur hidup — Plutonium seumur hidup + Operator Access"
+
+#: src/Astral_marketing/components/navigation.gleam:172
+msgid "Open Astral"
+msgstr "Buka Astral"
+
+#: src/Astral_marketing/components/hero.gleam:82
+#: src/Astral_marketing/components/navigation.gleam:482
+msgid "Open in Browser"
+msgstr "Buka di browser"
+
+#: src/Astral_marketing/pages/careers_page.gleam:118
+msgid "independent"
+msgstr "Sumber terbuka"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1039
+msgid "independent (AGPL-3.0)"
+msgstr "Sumber terbuka (AGPL-3.0)"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:188
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:234
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:284
+msgid "Open the web app"
+msgstr "Buka aplikasi web"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1059
+msgid "Operator Access"
+msgstr "Operator Access"
+
+#: src/Astral_marketing/components/coming_features.gleam:31
+msgid "Opt-in E2EE messaging"
+msgstr "Pesan E2EE (opsional)"
+
+#: src/Astral_marketing/components/current_features.gleam:74
+msgid "Organized channels for communities"
+msgstr "Kanal yang rapi untuk komunitas"
+
+#: src/Astral_marketing/pages/press_page.gleam:209
+msgid "Our carefully selected color palette that represents the Astral brand."
+msgstr "Palet warna pilihan kami yang merepresentasikan brand Astral."
+
+#: src/Astral_marketing/pages/press_page.gleam:102
+msgid "Our full logo including the wordmark. Use this as the primary representation of our brand."
+msgstr "Logo lengkap kami termasuk wordmark. Gunakan ini sebagai representasi utama brand kami."
+
+#: src/Astral_marketing/pages/press_page.gleam:221
+msgid "Our primary brand color. Use this for key brand elements and accents."
+msgstr "Warna brand utama kami. Gunakan untuk elemen brand penting dan aksen."
+
+#: src/Astral_marketing/pages/press_page.gleam:156
+msgid "Our standalone symbol. Use this only when our brand is clearly visible or well-established elsewhere in the context."
+msgstr "Simbol mandiri kami. Gunakan hanya ketika brand kami sudah jelas terlihat atau sudah mapan di konteks lain."
+
+#: src/Astral_marketing/components/communities_section.gleam:106
+msgid "Over time, we'd love to explore optional monetization tools that help creators and communities earn, with a small, transparent fee that keeps the app sustainable."
+msgstr "Seiring waktu, kami ingin mengeksplor alat monetisasi opsional yang membantu kreator dan komunitas mendapatkan penghasilan, dengan biaya kecil yang transparan agar aplikasi tetap berkelanjutan."
+
+#: src/Astral_marketing/pages/not_found_page.gleam:101
+msgid "Page Not Found"
+msgstr "Halaman Tidak Ditemukan"
+
+#: src/Astral_marketing/pages/not_found_page.gleam:55
+msgid "Page not found"
+msgstr "Halaman tidak ditemukan"
+
+#: src/Astral_marketing/pages/partners_page.gleam:123
+msgid "Partner Badge"
+msgstr "Lencana Partner"
+
+#: src/Astral_marketing/pages/partners_page.gleam:90
+msgid "Partner Perks"
+msgstr "Benefit Partner"
+
+#: src/Astral_marketing/components/footer.gleam:121
+#: src/Astral_marketing/components/navigation.gleam:298
+msgid "Partners"
+msgstr "Partner"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:287
+#: src/Astral_marketing/pages/plutonium_page.gleam:571
+msgid "Per-community profiles"
+msgstr "Profil per komunitas"
+
+#: src/Astral_marketing/pages/download_page.gleam:315
+#: src/Astral_marketing/pages/plutonium_page.gleam:215
+#: src/Astral_marketing/pages/plutonium_page.gleam:273
+msgid "Plutonium"
+msgstr "Plutonium"
+
+#: src/Astral_marketing/components/footer.gleam:227
+#: src/Astral_marketing/components/navigation.gleam:387
+msgid "Policies"
+msgstr "Kebijakan"
+
+#: src/Astral_marketing/components/locale_selector.gleam:141
+msgid "Polish"
+msgstr "Polandia"
+
+#: src/Astral_marketing/components/coming_features.gleam:41
+msgid "Polls & events"
+msgstr "Polling & acara"
+
+#: src/Astral_marketing/components/locale_selector.gleam:142
+msgid "Portuguese (Brazil)"
+msgstr "Portugis (Brasil)"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:154
+msgid "Premium quality"
+msgstr "Kualitas premium"
+
+#: src/Astral_marketing/components/footer.gleam:198
+#: src/Astral_marketing/components/navigation.gleam:337
+msgid "Press"
+msgstr "Pers"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:246
+msgid "Press \"Add to Home Screen\""
+msgstr "Tekan \"Tambah ke Layar Beranda\""
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:249
+msgid "Press \"Add\" in the upper-right corner"
+msgstr "Tekan \"Tambah\" di pojok kanan atas"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:200
+msgid "Press \"Install app\""
+msgstr "Tekan \"Instal aplikasi\""
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:301
+msgid "Press \"Install\" in the popup that appears"
+msgstr "Tekan \"Instal\" di pop-up yang muncul"
+
+#: src/Astral_marketing/pages/press_page.gleam:45
+#: src/Astral_marketing/pages/press_page.gleam:65
+msgid "Press & Brand Assets"
+msgstr "Pers & Aset Brand"
+
+#: src/Astral_marketing/pages/press_page.gleam:273
+msgid "Press Contact"
+msgstr "Kontak Pers"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:197
+msgid "Press the \"More\" (\\u{22EE}) button in the top-right corner"
+msgstr "Tekan tombol \"Lainnya\" (\\u{22EE}) di pojok kanan atas"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:243
+msgid "Press the Share button (rectangle with upwards-pointing arrow)"
+msgstr "Tekan tombol Bagikan (persegi panjang dengan panah mengarah ke atas)"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:296
+msgid "Press the install button (downwards-pointing arrow on monitor) in the address bar"
+msgstr "Tekan tombol instal (panah mengarah ke bawah pada monitor) di bilah alamat"
+
+#: src/Astral_marketing/components/footer.gleam:110
+#: src/Astral_marketing/components/navigation.gleam:93
+#: src/Astral_marketing/components/navigation.gleam:289
+msgid "Pricing"
+msgstr "Harga"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:851
+msgid "Priority support and Operators community access"
+msgstr "Dukungan prioritas dan akses komunitas Operators untuk Operator Access"
+
+#: src/Astral_marketing/components/footer.gleam:249
+#: src/Astral_marketing/components/navigation.gleam:406
+#: src/Astral_marketing/pages/privacy_page.gleam:41
+msgid "Privacy Policy"
+msgstr "Kebijakan Privasi"
+
+#: src/Astral_marketing/components/current_features.gleam:73
+msgid "Private DMs and group chats"
+msgstr "DM privat dan chat grup"
+
+#: src/Astral_marketing/components/navigation.gleam:270
+msgid "Product"
+msgstr "Produk"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:301
+#: src/Astral_marketing/pages/plutonium_page.gleam:661
+msgid "Profile badge"
+msgstr "Lencana profil"
+
+#: src/Astral_marketing/components/coming_features.gleam:47
+msgid "Profile connections"
+msgstr "Koneksi profil"
+
+#: src/Astral_marketing/components/hero.gleam:55
+msgid "Public Beta"
+msgstr "Beta Publik"
+
+#: src/Astral_marketing/components/coming_features.gleam:46
+msgid "Public profile URLs"
+msgstr "URL profil publik"
+
+#: src/Astral_marketing/components/coming_features.gleam:39
+msgid "Publish forums to the web"
+msgstr "Terbitkan forum ke web"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:883
+msgid "Purchase Visionary directly in the app after creating your account. Your purchase date and order number will be displayed on your profile (can be hidden in privacy settings)."
+msgstr "Beli Visionary langsung di aplikasi setelah membuat akun. Tanggal pembelian dan nomor pesanan akan ditampilkan di profilmu (bisa disembunyikan di pengaturan privasi)."
+
+#: src/Astral_marketing/components/current_features.gleam:122
+msgid "Quick switcher with keyboard shortcuts"
+msgstr "Quick switcher dengan pintasan keyboard"
+
+#: src/Astral_marketing/components/coming_features.gleam:40
+msgid "RSS/Atom feeds for forums"
+msgstr "Feed RSS/Atom untuk forum"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:228
+msgid "Read article"
+msgstr "Baca artikel"
+
+#: src/Astral_marketing/pages/guidelines_page.gleam:42
+msgid "Read the Astral Community Guidelines"
+msgstr "Baca Pedoman Komunitas Astral"
+
+#: src/Astral_marketing/pages/privacy_page.gleam:42
+msgid "Read the Astral Privacy Policy"
+msgstr "Baca Kebijakan Privasi Astral"
+
+#: src/Astral_marketing/pages/terms_page.gleam:42
+msgid "Read the Astral Terms of Service"
+msgstr "Baca Ketentuan Layanan Astral"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:172
+msgid "Read the Guide"
+msgstr "Baca panduannya"
+
+#: src/Astral_marketing/pages/partners_page.gleam:362
+msgid "Ready to become a Partner?"
+msgstr "Siap jadi Partner?"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1180
+msgid "Ready to upgrade?"
+msgstr "Siap upgrade?"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:80
+msgid "Register now"
+msgstr "Daftar sekarang"
+
+#: src/Astral_marketing/components/footer.gleam:322
+msgid "Report a bug"
+msgstr "Laporkan bug"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:167
+msgid "Report bugs"
+msgstr "Laporkan bug"
+
+#: src/Astral_marketing/pages/careers_page.gleam:165
+msgid "Report people or communities so we can keep Astral safe for everyone."
+msgstr "Laporkan orang atau komunitas agar kami bisa menjaga Astral tetap aman untuk semua."
+
+#: src/Astral_marketing/pages/security_page.gleam:42
+msgid "Report security issues responsibly"
+msgstr "Laporkan masalah keamanan dengan tanggung jawab"
+
+#: src/Astral_marketing/pages/careers_page.gleam:154
+msgid "Report vulnerabilities and help us keep the platform secure."
+msgstr "Laporkan kerentanan dan bantu kami menjaga platform tetap aman."
+
+#: src/Astral_marketing/components/navigation.gleam:309
+msgid "Resources"
+msgstr "Sumber Daya"
+
+#: src/Astral_marketing/pages/partners_page.gleam:99
+msgid "Rewards that recognize your impact, help your community grow, and give you a direct line to the Astral team."
+msgstr "Reward yang mengakui dampakmu, membantu komunitasmu berkembang, dan memberimu jalur langsung ke tim Astral."
+
+#: src/Astral_marketing/pages/careers_page.gleam:344
+msgid "Right now we're focused on shipping a great product and keeping Astral independent and bootstrapped."
+msgstr "Saat ini kami fokus merilis produk yang hebat dan menjaga Astral tetap independen serta bootstrapped."
+
+#: src/Astral_marketing/components/locale_selector.gleam:143
+msgid "Romanian"
+msgstr "Rumania"
+
+#: src/Astral_marketing/components/current_features.gleam:149
+msgid "Run the Astral backend on your own hardware and connect with our apps."
+msgstr "Jalankan backend Astral di hardware-mu sendiri dan sambungkan dengan aplikasi kami."
+
+#: src/Astral_marketing/components/locale_selector.gleam:144
+msgid "Russian"
+msgstr "Rusia"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:81
+#: src/Astral_marketing/pages/plutonium_page.gleam:117
+msgid "Save 17%"
+msgstr "Hemat 17%"
+
+#: src/Astral_marketing/components/current_features.gleam:137
+msgid "Save images, videos, GIFs, and audio"
+msgstr "Simpan gambar, video, GIF, dan audio"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:371
+msgid "Saved media"
+msgstr "Media tersimpan"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:584
+msgid "Schedule messages to be sent at a specific time in the future. No DeLorean required."
+msgstr "Jadwalkan pesan untuk dikirim pada waktu tertentu di masa depan. Tanpa perlu DeLorean."
+
+#: src/Astral_marketing/components/current_features.gleam:89
+msgid "Screen sharing built in"
+msgstr "Berbagi layar bawaan"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:132
+msgid "Screenshots courtesy of "
+msgstr "Tangkapan layar disediakan oleh "
+
+#: src/Astral_marketing/pages/help_components.gleam:93
+msgid "Search"
+msgstr "Cari"
+
+#: src/Astral_marketing/components/current_features.gleam:114
+msgid "Search & quick switcher"
+msgstr "Pencarian & quick switcher"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:46
+msgid "Search Results"
+msgstr "Hasil Pencarian"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:67
+#: src/Astral_marketing/pages/help_search_page.gleam:66
+msgid "Search for help..."
+msgstr "Cari bantuan..."
+
+#: src/Astral_marketing/pages/help_category_page.gleam:92
+msgid "Search in "
+msgstr "Cari di "
+
+#: src/Astral_marketing/pages/help_category_page.gleam:90
+#: src/Astral_marketing/pages/help_center_page.gleam:65
+#: src/Astral_marketing/pages/help_search_page.gleam:64
+msgid "Search our help articles or browse by category."
+msgstr "Cari artikel bantuan kami atau jelajahi berdasarkan kategori."
+
+#: src/Astral_marketing/pages/help_category_page.gleam:126
+msgid "Search results for"
+msgstr "Hasil pencarian untuk"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:49
+msgid "Search results for: "
+msgstr "Hasil pencarian untuk: "
+
+#: src/Astral_marketing/components/current_features.gleam:120
+msgid "Search through message history"
+msgstr "Cari di riwayat pesan"
+
+#: src/Astral_marketing/components/footer.gleam:271
+#: src/Astral_marketing/components/get_involved_section.gleam:194
+#: src/Astral_marketing/components/navigation.gleam:424
+#: src/Astral_marketing/pages/careers_page.gleam:156
+#: src/Astral_marketing/pages/security_page.gleam:41
+msgid "Security Bug Bounty"
+msgstr "Keamanan Bug Bounty"
+
+#: src/Astral_marketing/pages/careers_page.gleam:151
+msgid "Security reports"
+msgstr "Laporan keamanan"
+
+#: src/Astral_marketing/pages/download_page.gleam:232
+msgid "See badge counts on the app icon."
+msgstr "Lihat jumlah badge di ikon aplikasi."
+
+#: src/Astral_marketing/pages/partners_page.gleam:312
+msgid "See perks"
+msgstr "Lihat benefit"
+
+#: src/Astral_marketing/components/current_features.gleam:146
+msgid "Multi-device sync"
+msgstr "Multi-device sync"
+
+#: src/Astral_marketing/pages/download_page.gleam:330
+msgid "Send a one-time gift"
+msgstr "Kirim hadiah satu kali"
+
+#: src/Astral_marketing/pages/partners_page.gleam:374
+msgid "Send us an email with the following information to get started:"
+msgstr "Kirim email kepada kami dengan informasi berikut untuk memulai:"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:634
+msgid "Set personalized sounds when you join voice channels to make your presence known."
+msgstr "Atur suara khusus saat kamu bergabung ke kanal voice agar kehadiranmu lebih terasa."
+
+#: src/Astral_marketing/pages/careers_page.gleam:408
+msgid "Share a bit about yourself, what you'd like to work on, and links to any relevant work."
+msgstr "Ceritakan sedikit tentang dirimu, apa yang ingin kamu kerjakan, dan tautan ke karya yang relevan."
+
+#: src/Astral_marketing/pages/careers_page.gleam:143
+msgid "Share feedback, report bugs, and help make Astral welcoming for everyone."
+msgstr "Bagikan feedback, laporkan bug, dan bantu buat Astral terasa ramah untuk semua."
+
+#: src/Astral_marketing/components/current_features.gleam:75
+msgid "Share files and preview links"
+msgstr "Bagikan file dan pratinjau tautan"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:490
+msgid "Show download options"
+msgstr "Tampilkan opsi unduhan"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:664
+msgid "Show off your Plutonium status with an exclusive badge on your profile."
+msgstr "Pamerkan status Plutonium-mu dengan lencana eksklusif di profil."
+
+#: src/Astral_marketing/components/coming_features.gleam:33
+msgid "Slash commands"
+msgstr "Slash command"
+
+#: src/Astral_marketing/pages/careers_page.gleam:236
+msgid "Software development"
+msgstr "Pengembangan software"
+
+#: src/Astral_marketing/components/coming_features.gleam:57
+msgid "Soundboard"
+msgstr "Soundboard"
+
+#: src/Astral_marketing/components/footer.gleam:143
+#: src/Astral_marketing/components/navigation.gleam:447
+msgid "Source Code"
+msgstr "Kode Sumber"
+
+#: src/Astral_marketing/components/locale_selector.gleam:127
+msgid "Spanish (Latin America)"
+msgstr "Spanyol (Amerika Latin)"
+
+#: src/Astral_marketing/components/locale_selector.gleam:126
+msgid "Spanish (Spain)"
+msgstr "Spanyol (Spanyol)"
+
+#: src/Astral_marketing/pages/download_page.gleam:323
+msgid "Sponsor the roadmap for mobile"
+msgstr "Sponsori roadmap untuk mobile"
+
+#: src/Astral_marketing/components/coming_features.gleam:42
+msgid "Stage channels"
+msgstr "Kanal Stage"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:594
+msgid "Stand out with animated profile pictures and banners to express your personality."
+msgstr "Tampil menonjol dengan foto profil dan banner animasi untuk mengekspresikan kepribadianmu."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:127
+msgid "Stay updated on news, service status, and what's happening. You can also follow "
+msgstr "Tetap mengikuti berita terbaru, status layanan, dan yang sedang terjadi. Kamu juga bisa mengikuti "
+
+#: src/Astral_marketing/pages/help_article_page.gleam:218
+#: src/Astral_marketing/pages/help_article_page.gleam:360
+msgid "Still need help?"
+msgstr "Masih butuh bantuan?"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:624
+msgid "Store up to 15 video backgrounds for calls. No more Downloads folder scavenger hunts!"
+msgstr "Simpan hingga 15 latar video untuk panggilan. Tidak perlu lagi bongkar-bongkar folder Downloads!"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:614
+msgid "Stream in up to 4K resolution at 60fps so others can see you in stunning clarity."
+msgstr "Streaming hingga resolusi 4K di 60fps agar orang lain bisa melihatmu dengan kejernihan luar biasa."
+
+#: src/Astral_marketing/components/coming_features.gleam:58
+msgid "Streamer mode"
+msgstr "Mode streamer"
+
+#: src/Astral_marketing/pages/donate_page.gleam:50
+#: src/Astral_marketing/pages/donate_page.gleam:86
+msgid "Support Astral"
+msgstr "Dukung Astral"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1077
+msgid "Support future development"
+msgstr "Dukung pengembangan ke depan"
+
+#: src/Astral_marketing/components/locale_selector.gleam:145
+msgid "Swedish"
+msgstr "Swedia"
+
+#: src/Astral_marketing/components/current_features.gleam:155
+msgid "Switch between multiple instances"
+msgstr "Beralih antar beberapa instance"
+
+#: src/Astral_marketing/pages/press_page.gleam:147
+msgid "Symbol"
+msgstr "Simbol"
+
+#: src/Astral_marketing/components/footer.gleam:238
+#: src/Astral_marketing/components/navigation.gleam:397
+#: src/Astral_marketing/pages/terms_page.gleam:41
+msgid "Terms of Service"
+msgstr "Ketentuan Layanan"
+
+#: src/Astral_marketing/components/locale_selector.gleam:146
+msgid "Thai"
+msgstr "Thai"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:998
+msgid "The Operator Access is optional: pay for support and community access."
+msgstr "Operator Access bersifat opsional: bayar untuk dukungan dan akses komunitas."
+
+#: src/Astral_marketing/components/coming_features.gleam:89
+msgid "The future is being built right now. These features are coming soon."
+msgstr "Masa depan sedang dibangun sekarang. Fitur-fitur ini akan segera hadir."
+
+#: src/Astral_marketing/pages/careers_page.gleam:313
+msgid "The future of paid roles"
+msgstr "Masa depan peran berbayar"
+
+#: src/Astral_marketing/components/coming_features.gleam:51
+msgid "Theme marketplace"
+msgstr "Marketplace tema"
+
+#: src/Astral_marketing/pages/download_page.gleam:255
+msgid "This isn't a full replacement for the desktop app yet, and some things you'd expect from a mobile chat app are still missing."
+msgstr "Ini belum sepenuhnya menggantikan aplikasi desktop, dan beberapa hal yang kamu harapkan dari aplikasi chat mobile masih belum tersedia."
+
+#: src/Astral_marketing/pages/not_found_page.gleam:60
+#: src/Astral_marketing/pages/not_found_page.gleam:104
+msgid "This page doesn't exist. But there's plenty more to explore."
+msgstr "Halaman ini tidak ada. Tapi masih banyak hal lain yang bisa kamu jelajahi."
+
+#: src/Astral_marketing/components/footer.gleam:342
+msgid "This product includes GeoLite2 Data created by MaxMind, available from "
+msgstr "Produk ini mencakup Data GeoLite2 yang dibuat oleh MaxMind, tersedia dari "
+
+#: src/Astral_marketing/components/coming_features.gleam:37
+msgid "Threads and forums"
+msgstr "Thread dan forum"
+
+#: src/Astral_marketing/pages/careers_page.gleam:243
+msgid "Translation & localization"
+msgstr "Terjemahan & lokalisasi"
+
+#: src/Astral_marketing/pages/careers_page.gleam:162
+#: src/Astral_marketing/pages/careers_page.gleam:257
+msgid "Trust & safety"
+msgstr "Trust & safety"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:140
+msgid "Try different keywords or browse our categories."
+msgstr "Coba kata kunci lain atau jelajahi kategori kami."
+
+#: src/Astral_marketing/components/hackernews_banner.gleam:36
+msgid "Try it without an email at"
+msgstr "Coba tanpa email di"
+
+#: src/Astral_marketing/components/locale_selector.gleam:147
+msgid "Turkish"
+msgstr "Turki"
+
+#: src/Astral_marketing/components/locale_selector.gleam:148
+msgid "Ukrainian"
+msgstr "Ukraina"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:857
+msgid "Unique profile badge"
+msgstr "Lencana profil unik"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1036
+msgid "Unlimited users"
+msgstr "Pengguna tanpa batas"
+
+#: src/Astral_marketing/pages/partners_page.gleam:203
+msgid "Unlock and test new features before they're available to everyone."
+msgstr "Buka dan uji fitur baru sebelum tersedia untuk semua orang."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:79
+msgid "Unlock higher limits and exclusive features while supporting an independent communication platform."
+msgstr "Buka batas yang lebih tinggi dan fitur eksklusif sambil mendukung platform komunikasi independen."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:611
+msgid "Up to 4K video quality"
+msgstr "Kualitas video hingga 4K"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:54
+msgid "Upgrade to Plutonium for $4.99/mo: custom username tags, per-community profiles, message scheduling, 4K streaming, 500MB uploads, and more exclusive features."
+msgstr "Upgrade ke Plutonium seharga $4.99/bln: tag username kustom, profil per komunitas, penjadwalan pesan, streaming 4K, unggahan 500MB, dan lebih banyak fitur eksklusif."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:644
+msgid "Upload and use your own notification sounds to personalize your Astral experience."
+msgstr "Unggah dan gunakan suara notifikasi milikmu sendiri untuk mempersonalisasi pengalaman Astral."
+
+#: src/Astral_marketing/pages/partners_page.gleam:181
+msgid "Upload animated GIFs as your community's avatar and banner."
+msgstr "Unggah GIF animasi sebagai avatar dan banner komunitasmu."
+
+#: src/Astral_marketing/components/current_features.gleam:136
+msgid "Upload custom emojis and stickers"
+msgstr "Unggah emoji dan stiker kustom"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:315
+msgid "Use Astral in your mobile browser for now"
+msgstr "Untuk sementara, gunakan Astral lewat browser di ponselmu"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:378
+msgid "Use animated emojis"
+msgstr "Gunakan emoji animasi"
+
+#: src/Astral_marketing/components/current_features.gleam:154
+msgid "Use our desktop client (mobile coming soon)"
+msgstr "Gunakan klien desktop kami (mobile segera hadir)"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:604
+msgid "Use your favorite emojis and stickers from any community, anywhere across Astral."
+msgstr "Gunakan emoji dan stiker favoritmu dari komunitas mana pun, di mana pun di Astral."
+
+#: src/Astral_marketing/pages/partners_page.gleam:222
+msgid "VIP Voice Servers"
+msgstr "Server Voice VIP"
+
+#: src/Astral_marketing/components/partner_section.gleam:117
+msgid "Verified Community"
+msgstr "Komunitas Terverifikasi"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:621
+msgid "Video backgrounds"
+msgstr "Latar video"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:392
+msgid "Video quality"
+msgstr "Kualitas video"
+
+#: src/Astral_marketing/components/locale_selector.gleam:149
+msgid "Vietnamese"
+msgstr "Vietnam"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:172
+msgid "View all articles"
+msgstr "Lihat semua artikel"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:183
+#: src/Astral_marketing/pages/careers_page.gleam:123
+msgid "View repository"
+msgstr "Lihat repositori"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:822
+msgid "Visionary"
+msgstr "Visionary"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:864
+msgid "Visionary & Operators communities with team access"
+msgstr "Komunitas Visionary & Operators dengan akses ke tim"
+
+#: src/Astral_marketing/components/current_features.gleam:82
+msgid "Voice & video"
+msgstr "Voice & video"
+
+#: src/Astral_marketing/pages/careers_page.gleam:396
+msgid "Want to help build Astral?"
+msgstr "Ingin membantu membangun Astral?"
+
+#: src/Astral_marketing/pages/careers_page.gleam:94
+msgid "Ways to contribute"
+msgstr "Cara berkontribusi"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:192
+msgid "We appreciate responsible disclosure via our Security Bug Bounty page. We offer Plutonium codes and Bug Hunter badges based on severity."
+msgstr "Kami menghargai pengungkapan yang bertanggung jawab melalui halaman Keamanan Bug Bounty kami. Kami menawarkan kode Plutonium dan lencana Pemburu Bug berdasarkan tingkat keparahan."
+
+#: src/Astral_marketing/components/final_cta.gleam:56
+msgid "We need your support to make this work."
+msgstr "Kami butuh dukunganmu agar ini bisa berjalan."
+
+#: src/Astral_marketing/pages/partners_page.gleam:453
+msgid "We review all applications and will get back to you as soon as possible."
+msgstr "Kami meninjau semua pendaftaran dan akan menghubungimu secepat mungkin."
+
+#: src/Astral_marketing/pages/press_page.gleam:301
+msgid "We typically respond within 24 hours during business days."
+msgstr "Biasanya kami merespons dalam 24 jam pada hari kerja."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:62
+msgid "We're building a complete platform with all the features you'd expect. But we can't do it without your help!"
+msgstr "Kami sedang membangun platform lengkap dengan semua fitur yang kamu harapkan. Tapi kami tidak bisa melakukannya tanpa bantuanmu!"
+
+#: src/Astral_marketing/pages/download_page.gleam:214
+msgid "We're building apps for iOS and Android. Until they're ready, Astral works in your mobile browser — and we've put a lot of effort into making it feel as app-like as possible."
+msgstr "Kami sedang membuat aplikasi untuk iOS dan Android. Sampai siap, Astral bisa digunakan lewat browser di ponsel — dan kami sudah berusaha keras agar rasanya semirip mungkin dengan aplikasi."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:78
+msgid "We're limiting registrations during beta. Once you're in, you can give friends a code to skip the queue."
+msgstr "Kami membatasi pendaftaran selama beta. Setelah kamu masuk, kamu bisa memberi teman kode untuk melewati antrean."
+
+#: src/Astral_marketing/pages/careers_page.gleam:324
+msgid "We're still building the business around Astral and aren't quite ready for paid roles yet."
+msgstr "Kami masih membangun bisnis di sekitar Astral dan belum cukup siap untuk peran berbayar."
+
+#: src/Astral_marketing/components/current_features.gleam:107
+msgid "Webhooks and bot support"
+msgstr "Dukungan webhook dan bot"
+
+#: src/Astral_marketing/pages/donate_page.gleam:350
+msgid "What does my donation support?"
+msgstr "Donasi saya mendukung apa?"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:549
+msgid "What you get with Plutonium"
+msgstr "Yang kamu dapatkan dengan Plutonium"
+
+#: src/Astral_marketing/components/current_features.gleam:45
+msgid "What's available today"
+msgstr "Yang tersedia hari ini"
+
+#: src/Astral_marketing/components/coming_features.gleam:77
+msgid "What's coming next"
+msgstr "Yang akan datang berikutnya"
+
+#: src/Astral_marketing/pages/donate_page.gleam:384
+msgid "What's the difference between Individual and Business?"
+msgstr "Apa bedanya Individu dan Bisnis?"
+
+#: src/Astral_marketing/pages/press_page.gleam:226
+msgid "White"
+msgstr "Putih"
+
+#: src/Astral_marketing/pages/press_page.gleam:110
+msgid "White Logo"
+msgstr "Logo Putih"
+
+#: src/Astral_marketing/pages/press_page.gleam:164
+msgid "White Symbol"
+msgstr "Simbol Putih"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:346
+msgid "Windows"
+msgstr "Windows"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:232
+msgid "Windows 10+"
+msgstr "Windows 10+"
+
+#: src/Astral_marketing/pages/careers_page.gleam:357
+msgid "With your support, we hope to make this independent communication platform sustainable and start offering paid roles in the future."
+msgstr "Dengan dukunganmu, kami berharap platform komunikasi independen ini bisa berkelanjutan dan mulai membuka peran berbayar di masa depan."
+
+#: src/Astral_marketing/pages/partners_page.gleam:137
+msgid "Your community gets verified status for authenticity and trust."
+msgstr "Komunitasmu mendapatkan status terverifikasi untuk keaslian dan kepercayaan."
+
+#: src/Astral_marketing/pages/partners_page.gleam:192
+msgid "Your community receives increased limits when you need them."
+msgstr "Komunitasmu mendapatkan batas yang ditingkatkan saat kamu membutuhkannya."
+
+#: src/Astral_marketing/pages/donate_page.gleam:353
+msgid "Your donation helps fund Astral's infrastructure costs, including servers, bandwidth, storage, and ongoing development of new features. It helps us maintain and improve the platform for everyone."
+msgstr "Donasimu membantu mendanai biaya infrastruktur Astral, termasuk server, bandwidth, penyimpanan, serta pengembangan fitur baru yang berkelanjutan. Ini membantu kami menjaga dan meningkatkan platform untuk semua orang."
+
+#: src/Astral_marketing/pages/partners_page.gleam:395
+msgid "Your name and platform username"
+msgstr "Nama kamu dan username platform"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:949
+msgid "all"
+msgstr "semua"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:156
+msgid "article"
+msgstr "artikel"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:157
+msgid "articles"
+msgstr "artikel"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:518
+msgid "iOS"
+msgstr "iOS"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:98
+msgid "iOS / iPadOS"
+msgstr "iOS / iPadOS"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:235
+msgid "iOS 15+"
+msgstr "iOS 15+"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:355
+msgid "macOS"
+msgstr "macOS"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:233
+msgid "macOS 10.15+"
+msgstr "macOS 10.15+"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1067
+msgid "one-time purchase"
+msgstr "pembelian sekali"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:68
+#: src/Astral_marketing/pages/donate_page.gleam:282
+#: src/Astral_marketing/pages/plutonium_page.gleam:106
+#: src/Astral_marketing/pages/plutonium_page.gleam:230
+msgid "or"
+msgstr "atau"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:140
+msgid "our RSS feed"
+msgstr "feed RSS kami"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:96
+msgid "result for"
+msgstr "hasil untuk"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:100
+msgid "results for"
+msgstr "hasil untuk"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:801
+msgid "{0} of {1} slots left"
+msgstr "Tersisa {0} dari {1} slot"
+
+#: src/Astral_marketing/components/footer.gleam:336
+msgid "© Astral Platform AB (Swedish limited liability company: 559537-3993)"
+msgstr "© Astral Platform AB (perseroan terbatas Swedia: 559537-3993)"

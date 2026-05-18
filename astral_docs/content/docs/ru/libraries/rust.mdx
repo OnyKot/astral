@@ -1,0 +1,106 @@
+---
+title: Rust
+description: serenity и twilight с Astral
+---
+
+Две основные экосистемы — `serenity` (high-level, всё в комплекте) и `twilight` (модульная, низкоуровневая, async-first).
+
+## serenity
+
+serenity читает базовый URL из поля `serenity::http::Http::api_url`. Создавайте `Http` вручную, чтобы переопределить URL до передачи в `Client::builder`.
+
+```toml
+[dependencies]
+serenity = { version = "0.12", features = ["client", "gateway", "rustls_backend", "model"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+```
+
+```rust
+use std::env;
+use serenity::all::*;
+use serenity::async_trait;
+
+struct Handler;
+
+#[async_trait]
+impl EventHandler for Handler {
+    async fn ready(&self, _ctx: Context, ready: Ready) {
+        println!("Logged in as {}", ready.user.name);
+    }
+
+    async fn message(&self, ctx: Context, msg: Message) {
+        if msg.author.bot { return; }
+        if msg.content == "!ping" {
+            let _ = msg.channel_id.say(&ctx.http, "pong").await;
+        }
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let token = env::var("ASTRAL_BOT_TOKEN").expect("ASTRAL_BOT_TOKEN");
+    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+
+    let mut client = Client::builder(&token, intents)
+        .event_handler(Handler)
+        .await
+        .expect("client");
+
+    if let Err(err) = client.start().await {
+        eprintln!("client error: {err:?}");
+    }
+}
+```
+
+<Callout type="warning" title="Override URL у serenity неудобный">
+serenity жёстко закодирован на `https://discord.com/api/v10` в модуле `http`. Самый чистый путь сегодня — либо (а) маленький patch-fork, заменяющий константу на `https://astraof.com/api/v1`, либо (б) использовать `twilight`, у которого есть first-class `Client::builder().proxy(...)`.
+</Callout>
+
+## twilight
+
+```toml
+[dependencies]
+twilight-http = "0.16"
+twilight-gateway = "0.16"
+twilight-model = "0.16"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+futures-util = "0.3"
+```
+
+```rust
+use std::env;
+use twilight_http::Client as HttpClient;
+use twilight_gateway::{Intents, Shard, ShardId};
+use futures_util::StreamExt;
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let token = env::var("ASTRAL_BOT_TOKEN")?;
+
+    let http = HttpClient::builder()
+        .token(token.clone())
+        .proxy("https://astraof.com".to_string(), true)
+        .build();
+
+    let intents = Intents::GUILD_MESSAGES | Intents::MESSAGE_CONTENT;
+    let mut shard = Shard::new(ShardId::ONE, token, intents);
+
+    while let Some(event) = shard.next_event().await {
+        let event = match event {
+            Ok(event) => event,
+            Err(err) => { eprintln!("error: {err:?}"); continue; }
+        };
+
+        if let twilight_model::gateway::event::Event::MessageCreate(msg) = event {
+            if msg.author.bot { continue; }
+            if msg.content == "!ping" {
+                http.create_message(msg.channel_id).content("pong")?.await?;
+            }
+        }
+    }
+
+    Ok(())
+}
+```
+
+`Client::builder().proxy(...)` в twilight был спроектирован именно под этот случай. Второй аргумент (`true`) говорит twilight использовать proxy и для WebSocket negotiation.

@@ -1,0 +1,183 @@
+---
+title: Gateway Events
+description: Gateway Events
+---
+
+Below are common dispatch events you should handle in bots and integrations.
+
+## Dispatch packet anatomy
+
+Gateway events are delivered inside a dispatch envelope:
+
+```json
+{
+  "op": 0,
+  "t": "MESSAGE_CREATE",
+  "s": 42,
+  "d": {}
+}
+```
+
+Important fields:
+
+- `t`: event name
+- `s`: sequence number used for resume
+- `d`: event payload
+
+## The events most bots need first
+
+If you are building a normal moderation, utility, or automation bot, start with:
+
+- `READY`
+- `MESSAGE_CREATE`
+- `MESSAGE_UPDATE`
+- `MESSAGE_DELETE`
+- `GUILD_CREATE`
+- `GUILD_MEMBER_ADD`
+- `GUILD_MEMBER_REMOVE`
+- `INVITE_CREATE`
+- `INVITE_DELETE`
+- `VOICE_STATE_UPDATE`
+
+## Session
+
+- `READY`
+- `RESUMED`
+- `SESSIONS_REPLACE`
+
+## User and presence
+
+- `USER_UPDATE`
+- `USER_SETTINGS_UPDATE`
+- `USER_GUILD_SETTINGS_UPDATE`
+- `PRESENCE_UPDATE`
+- `AUTH_SESSION_CHANGE`
+
+## Guild
+
+- `GUILD_CREATE`
+- `GUILD_UPDATE`
+- `GUILD_DELETE`
+- `GUILD_MEMBER_ADD`
+- `GUILD_MEMBER_UPDATE`
+- `GUILD_MEMBER_REMOVE`
+- `GUILD_ROLE_CREATE`
+- `GUILD_ROLE_UPDATE`
+- `GUILD_ROLE_UPDATE_BULK`
+- `GUILD_ROLE_DELETE`
+- `GUILD_BAN_ADD`
+- `GUILD_BAN_REMOVE`
+- `GUILD_MEMBERS_CHUNK`
+- `GUILD_MEMBER_LIST_UPDATE`
+- `GUILD_SYNC`
+
+## Channel and invite
+
+- `CHANNEL_CREATE`
+- `CHANNEL_UPDATE`
+- `CHANNEL_UPDATE_BULK`
+- `CHANNEL_DELETE`
+- `CHANNEL_RECIPIENT_ADD`
+- `CHANNEL_RECIPIENT_REMOVE`
+- `CHANNEL_PINS_UPDATE`
+- `CHANNEL_PINS_ACK`
+- `INVITE_CREATE`
+- `INVITE_DELETE`
+- `WEBHOOKS_UPDATE`
+
+## Messages
+
+- `MESSAGE_CREATE`
+- `MESSAGE_UPDATE`
+- `MESSAGE_DELETE`
+- `MESSAGE_DELETE_BULK`
+- `MESSAGE_REACTION_ADD`
+- `MESSAGE_REACTION_REMOVE`
+- `MESSAGE_REACTION_REMOVE_ALL`
+- `MESSAGE_REACTION_REMOVE_EMOJI`
+- `MESSAGE_ACK`
+- `TYPING_START`
+
+### Typical `MESSAGE_CREATE` fields
+
+Most bots care about:
+
+- `id`
+- `channel_id`
+- `guild_id?`
+- `author`
+- `content`
+- `attachments`
+- `embeds`
+- `referenced_message?`
+
+Minimal example:
+
+```json
+{
+  "id": "1470000000000000001",
+  "channel_id": "1470000000000000002",
+  "guild_id": "1470000000000000003",
+  "content": "!ping",
+  "author": {
+    "id": "1470000000000000004",
+    "username": "ice"
+  }
+}
+```
+
+## Voice and calls
+
+- `VOICE_STATE_UPDATE`
+- `VOICE_SERVER_UPDATE`
+- `CALL_CREATE`
+- `CALL_UPDATE`
+- `CALL_DELETE`
+
+### Voice events
+
+The most important voice event for state tracking is usually `VOICE_STATE_UPDATE`.
+
+Use it to detect:
+
+- channel joins
+- channel leaves
+- mute/deaf changes
+- active voice participation changes
+
+## Handling strategy
+
+### Good default pattern
+
+1. Use Gateway to detect the event
+2. Inspect `d`
+3. Decide what action to take
+4. Use REST to perform the action
+
+Example:
+
+- receive `MESSAGE_CREATE`
+- if content is `!ping`
+- `POST /channels/:channel_id/messages`
+
+### Idempotency
+
+Your handlers should tolerate reconnects and duplicate work safely:
+
+- avoid assuming an event is seen only once
+- guard state transitions carefully
+- use message IDs and sequence numbers for deduplication if needed
+
+## Other
+
+- `RELATIONSHIP_ADD`
+- `RELATIONSHIP_UPDATE`
+- `RELATIONSHIP_REMOVE`
+- `FAVORITE_MEME_CREATE`
+- `FAVORITE_MEME_UPDATE`
+- `FAVORITE_MEME_DELETE`
+- `PASSIVE_UPDATES`
+
+<Callout type="info" title="Event casing">
+Event names are uppercase strings (for example `MESSAGE_CREATE`, `VOICE_STATE_UPDATE`).
+</Callout>

@@ -1,0 +1,27 @@
+---
+title: Emoji
+description: Публичные маршруты для emoji в guild
+---
+
+## Основные публичные маршруты
+
+| Endpoint | Для чего нужен |
+| --- | --- |
+| `POST /guilds/:guild_id/emojis` | Создать emoji |
+| `POST /guilds/:guild_id/emojis/bulk` | Массово создать emoji |
+| `GET /guilds/:guild_id/emojis` | Получить emoji сервера |
+| `PATCH /guilds/:guild_id/emojis/:emoji_id` | Обновить emoji |
+| `DELETE /guilds/:guild_id/emojis/:emoji_id` | Удалить emoji |
+
+## Создать emoji
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name":"party_blob",
+    "image":"data:image/png;base64,<BASE64_DATA>"
+  }' \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/emojis
+```

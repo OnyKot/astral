@@ -1,0 +1,156 @@
+---
+title: Webhook
+description: Webhook
+---
+
+Astral webhooks let you post messages into channels without running a persistent bot process.
+
+## API base
+
+Use your API base URL:
+
+- `https://<your-domain>/api/v1`
+
+Examples below use `https://astraof.com/api/v1`.
+
+## Webhook object
+
+```json
+{
+  "id": "1470000000000000001",
+  "guild_id": "1470000000000000002",
+  "channel_id": "1470000000000000003",
+  "user": {
+    "id": "1470000000000000004",
+    "username": "owner",
+    "discriminator": "0001"
+  },
+  "name": "CI Webhook",
+  "avatar": null,
+  "token": "webhook_token_here",
+  "interaction_url": "https://my-bot.example.com/interactions"
+}
+```
+
+### Fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | snowflake | Webhook ID |
+| `guild_id` | snowflake | Guild the webhook is scoped to |
+| `channel_id` | snowflake | Default channel this webhook posts into |
+| `user` | user partial | Who created the webhook |
+| `name` | string | Display name shown on posted messages |
+| `avatar` | string\|null | Avatar hash (optional) |
+| `token` | string | Secret — part of the execute URL, treat as credential |
+| `interaction_url` | string\|null | Optional HTTPS endpoint that receives [interaction events](./interactions) when a user clicks a button or submits a select menu on a message this webhook posted. Null disables interactive components. |
+
+## Management endpoints (auth required)
+
+These require a logged-in account (or token) with `MANAGE_WEBHOOKS` in target guild/channel.
+
+- `GET /guilds/:guild_id/webhooks`
+- `GET /channels/:channel_id/webhooks`
+- `POST /channels/:channel_id/webhooks`
+- `GET /webhooks/:webhook_id`
+- `PATCH /webhooks/:webhook_id`
+- `DELETE /webhooks/:webhook_id`
+
+Create payload:
+
+```json
+{
+  "name": "Deploy Hook",
+  "avatar": null,
+  "interaction_url": "https://my-bot.example.com/interactions"
+}
+```
+
+`interaction_url` is optional. If set, Astral POSTs interaction events to
+it when users click components on messages this webhook posts. The URL
+must be HTTPS and reachable from Astral's network. See
+[Interactions](./interactions) for the payload shape and signature.
+
+Update payload (partial):
+
+```json
+{
+  "name": "Deploy Hook v2",
+  "channel_id": "1470000000000000003",
+  "interaction_url": "https://my-bot.example.com/interactions/v2"
+}
+```
+
+Passing `"interaction_url": null` removes the handler; subsequent clicks
+become no-ops until you re-set one.
+
+## Token endpoints (no user auth header)
+
+- `GET /webhooks/:webhook_id/:token`
+- `PATCH /webhooks/:webhook_id/:token`
+- `DELETE /webhooks/:webhook_id/:token`
+
+## Execute webhook
+
+`POST /webhooks/:webhook_id/:token`
+
+Optional query:
+
+- `?wait=true` - returns created message JSON
+- default - returns `204 No Content`
+
+Request body supports normal message fields plus:
+
+- `username` — override sender name
+- `avatar_url` — override avatar URL
+- `components` — action rows with buttons / select menus ([details](./interactions#sending-components))
+- `flags` — bitfield; set `64` (1 &lt;&lt; 6) to mark the message as
+  [ephemeral](./interactions#ephemeral-messages) so clients hide it
+  from everyone except the author and explicit mentions
+
+The execute endpoint is deliberately unauthenticated: the secret token
+in the URL is the authentication. External callers (curl, GitHub
+Actions, n8n, Make.com, Zapier, …) can POST from any origin without
+setting `Origin` or `Authorization` headers. CSRF protection is applied
+only to calls coming from Astral's own web app origins.
+
+Example:
+
+```bash
+curl -X POST "https://astraof.com/api/v1/webhooks/<id>/<token>?wait=true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Build finished",
+    "username": "CI",
+    "avatar_url": "https://example.com/ci.png"
+  }'
+```
+
+Example with a button:
+
+```bash
+curl -X POST "https://astraof.com/api/v1/webhooks/<id>/<token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Approve this deploy?",
+    "components": [{
+      "type": 1,
+      "components": [
+        {"type": 2, "style": 3, "label": "Approve", "custom_id": "deploy_approve"},
+        {"type": 2, "style": 4, "label": "Reject",  "custom_id": "deploy_reject"}
+      ]
+    }]
+  }'
+```
+
+For the button click to actually reach your bot you must have set the
+webhook's `interaction_url`. Without it the components render but
+clicks are no-ops. See [Interactions](./interactions).
+
+## Provider adapters
+
+- GitHub: `POST /webhooks/:webhook_id/:token/github`
+  - reads `X-GitHub-Event` and `X-GitHub-Delivery`
+- Slack style: `POST /webhooks/:webhook_id/:token/slack`
+  - accepts Slack-like incoming webhook body
+

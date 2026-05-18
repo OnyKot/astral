@@ -1,0 +1,49 @@
+---
+title: Python
+description: discord.py и pycord с Astral
+---
+
+`discord.py`, `pycord` и `nextcord` используют одни и те же `BASE`-константы, которые можно monkey-patch'ить, чтобы перенаправить на Astral. Ниже — рецепт для `discord.py` 2.x.
+
+```bash
+pip install -U discord.py
+```
+
+```python
+import os
+import discord
+from discord import http
+from discord.gateway import DiscordWebSocket
+
+# Перенаправляем REST и Gateway на Astral.
+http.Route.BASE = "https://astraof.com/api/v1"
+DiscordWebSocket.DEFAULT_GATEWAY = "wss://astraof.com/gateway?v=1&encoding=json"
+
+intents = discord.Intents.default()
+intents.message_content = True
+
+client = discord.Client(intents=intents)
+
+@client.event
+async def on_ready():
+    print(f"Logged in as {client.user}")
+
+@client.event
+async def on_message(message: discord.Message):
+    if message.author.bot:
+        return
+    if message.content == "!ping":
+        await message.channel.send("pong")
+
+client.run(os.environ["ASTRAL_BOT_TOKEN"])
+```
+
+<Callout type="info" title="Тот же monkey-patch работает в форках">
+`pycord` (`py-cord`) и `nextcord` используют те же константы `Route.BASE` и `DiscordWebSocket.DEFAULT_GATEWAY`. Две строки выше перенаправляют любую из этих библиотек.
+</Callout>
+
+## Почему monkey-patching?
+
+`discord.py` не выставляет конструкторную опцию для базового URL — он зашит как class attribute. Замена атрибута до создания клиента — стандартный подход для self-hosted Discord-совместимых серверов и стабильно работает в версии 2.x.
+
+Если вы пишете долгоживущего production-бота, выставляйте URL'ы один раз при загрузке модуля (например, в `__init__.py` или entry-point `bot.py`), чтобы каждое место, импортирующее `discord.http`, видело override.

@@ -1,0 +1,165 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	position: relative;
+	overflow: visible;
+}
+
+.clickable {
+	cursor: pointer;
+}
+
+.clickable:hover {
+	opacity: 0.9;
+}
+
+.overlay {
+	position: absolute;
+	inset: 0;
+}
+
+.hoverOverlay {
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: radial-gradient(circle at 30% 22%, rgb(255 255 255 / 12%), rgb(0 0 0 / 34%));
+	opacity: 0;
+	transition: opacity 0.16s ease;
+	pointer-events: none;
+}
+
+.clickable:hover .hoverOverlay,
+.clickable:has(:focus-visible) .hoverOverlay {
+	opacity: 0.28;
+}
+
+.statusContainer {
+	pointer-events: auto;
+	position: absolute;
+	border: 2px solid color-mix(in srgb, var(--background-primary) 86%, transparent);
+	box-shadow:
+		0 0 0 1px color-mix(in srgb, var(--background-primary) 30%, transparent),
+		0 4px 10px rgb(0 0 0 / 0.34);
+	backdrop-filter: blur(8px) saturate(125%);
+	transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.16s ease;
+}
+
+.statusContainer::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+	background: linear-gradient(180deg, rgb(255 255 255 / 0.25) 0%, rgb(255 255 255 / 0) 66%);
+	opacity: 0.5;
+}
+
+.statusContainer::after {
+	content: '';
+	position: absolute;
+	inset: 1px;
+	border-radius: inherit;
+	border: 1px solid rgb(255 255 255 / 0.16);
+	pointer-events: none;
+	opacity: 0.78;
+}
+
+.container:hover .statusContainer,
+.container:has(:focus-visible) .statusContainer {
+	transform: scale(1.045);
+	box-shadow:
+		0 0 0 1px color-mix(in srgb, var(--brand-primary) 28%, transparent),
+		0 6px 14px rgb(0 0 0 / 0.38);
+}
+
+.statusOnline {
+	--status-cosmic-core: color-mix(in srgb, var(--status-online) 84%, #ffffff 16%);
+}
+
+.statusIdle {
+	--status-cosmic-core: color-mix(in srgb, var(--status-idle) 82%, #ffffff 18%);
+}
+
+.statusDnd {
+	--status-cosmic-core: color-mix(in srgb, var(--status-dnd) 82%, #ffffff 18%);
+}
+
+.statusOffline {
+	--status-cosmic-core: color-mix(in srgb, var(--status-offline) 82%, #ffffff 18%);
+}
+
+.statusMobileOnline {
+	--status-cosmic-core: color-mix(in srgb, var(--status-online) 84%, #ffffff 16%);
+}
+
+.statusTyping {
+	--status-cosmic-core: color-mix(in srgb, var(--status-online) 80%, #ffffff 20%);
+}
+
+.statusInCall {
+	--status-cosmic-core: color-mix(in srgb, var(--brand-primary) 82%, #ffffff 18%);
+}
+
+.inCallIndicator {
+	width: 100%;
+	height: 100%;
+	background: var(--status-cosmic-core);
+	border-radius: inherit;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.inCallIcon {
+	width: 62%;
+	height: 62%;
+	color: var(--text-on-brand-primary);
+}
+
+.typingDots {
+	display: flex;
+	gap: 2px;
+	align-items: center;
+	justify-content: center;
+}
+
+.typingDot {
+	background-color: white;
+	border-radius: 50%;
+	animation: typingDotPulse 1.05s ease-in-out infinite;
+}
+
+@keyframes typingDotPulse {
+	0%,
+	60%,
+	100% {
+		opacity: 0.95;
+		transform: translateY(0);
+	}
+	30% {
+		opacity: 0.55;
+		transform: translateY(-1px);
+	}
+}
+
+:global(html:not(.window-focused)) .typingDot {
+	animation-play-state: paused;
+	opacity: 1;
+}

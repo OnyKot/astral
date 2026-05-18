@@ -1,0 +1,80 @@
+/*
+ * Floating "scroll to the latest message" button. Appears in the
+ * bottom-right of the message list when the user has scrolled up
+ * from the latest message within the already-loaded window.
+ * Different from JumpToPresentBar (shown only when hasMoreAfter)
+ * and NewMessagesBar (shown at the top when there are unreads).
+ */
+
+.button {
+	position: absolute;
+	right: 16px;
+	bottom: 16px;
+	z-index: 5;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	border: 1px solid var(--background-modifier-accent);
+	background: var(--background-secondary);
+	color: var(--text-primary);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.28),
+		0 2px 6px rgba(0, 0, 0, 0.18);
+	transition:
+		transform var(--motion-dur-short) var(--motion-ease-smooth),
+		opacity var(--motion-dur-short) var(--motion-ease-smooth),
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		border-color var(--motion-dur-short) var(--motion-ease-snap),
+		box-shadow var(--motion-dur-short) var(--motion-ease-smooth);
+	animation: scale-in var(--motion-dur-medium) var(--motion-ease-springy) both;
+}
+
+.button:hover {
+	background: var(--background-modifier-hover);
+	border-color: var(--background-modifier-active);
+	transform: translateY(-2px) scale(1.03);
+	box-shadow:
+		0 12px 32px rgba(0, 0, 0, 0.32),
+		0 3px 8px rgba(0, 0, 0, 0.22);
+}
+
+.button:active {
+	transform: translateY(0) scale(0.94);
+	transition-duration: var(--motion-dur-instant);
+}
+
+.icon {
+	width: 20px;
+	height: 20px;
+}
+
+.unreadBadge {
+	position: absolute;
+	top: -4px;
+	right: -4px;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 9999px;
+	background: var(--status-danger, #f23f43);
+	color: white;
+	font-size: 11px;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 0 0 2px var(--background-primary);
+}
+
+@media (pointer: coarse) {
+	.button {
+		width: 48px;
+		height: 48px;
+		right: 16px;
+		bottom: calc(16px + var(--safe-area-bottom, 0px));
+	}
+}

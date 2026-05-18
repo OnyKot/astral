@@ -1,0 +1,42 @@
+---
+title: Java / Kotlin
+description: JDA с Astral
+---
+
+[JDA](https://github.com/discord-jda/JDA) (Java Discord API) — самая популярная Discord-библиотека для JVM, работает и для Java, и для Kotlin. Она выставляет REST и gateway URL через `RestConfig` builder.
+
+```kotlin
+import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.requests.GatewayIntent
+
+class PingHandler : ListenerAdapter() {
+    override fun onMessageReceived(event: MessageReceivedEvent) {
+        if (event.author.isBot) return
+        if (event.message.contentRaw == "!ping") {
+            event.channel.sendMessage("pong").queue()
+        }
+    }
+}
+
+fun main() {
+    val token = System.getenv("ASTRAL_BOT_TOKEN")
+
+    val jda = JDABuilder.createDefault(token)
+        .setRestConfig(net.dv8tion.jda.api.requests.RestConfig().setBaseUrl("https://astraof.com/api/v1"))
+        .setGatewayEncoding(net.dv8tion.jda.api.utils.GatewayEncoding.JSON)
+        .enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
+        .addEventListeners(PingHandler())
+        .build()
+
+    jda.awaitReady()
+    println("Logged in as ${jda.selfUser.asTag}")
+}
+```
+
+Для Java (без Kotlin) — те же call sites со стандартным Java-синтаксисом: `JDABuilder.createDefault(...)`, `.setRestConfig(...)`, `.enableIntents(...)`, и т.д.
+
+<Callout type="info" title="Gateway URL получается через GET /gateway/bot">
+JDA узнаёт gateway URL, обращаясь к `/gateway/bot` через настроенный REST base. Поскольку `RestConfig.baseUrl` уже указан на Astral, gateway URL, который JDA получит, тоже будет Astral'овский — отдельный WebSocket-override не нужен.
+</Callout>

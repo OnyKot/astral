@@ -1,0 +1,79 @@
+.f7f987c18505d351-container{
+	text-align:center;
+}
+
+.f7f987c18505d351-iconContainer{
+	margin-bottom:1.5rem;
+}
+
+.f7f987c18505d351-iconCircle{
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	height:3rem;
+	width:3rem;
+	margin:0 auto;
+	border-radius:9999px;
+}
+
+.f7f987c18505d351-iconCircleSuccess{
+	background-color:var(--status-online);
+}
+
+.f7f987c18505d351-iconCircleError{
+	background-color:var(--status-danger);
+}
+
+.f7f987c18505d351-icon{
+	height:1.5rem;
+	width:1.5rem;
+	color:var(--text-primary);
+}
+
+.f7f987c18505d351-title{
+	margin-bottom:1rem;
+	font-size:1.25rem;
+	line-height:1.75rem;
+	font-weight:600;
+	letter-spacing:0.025em;
+	color:var(--text-primary);
+}
+
+.f7f987c18505d351-description{
+	margin-bottom:1.5rem;
+	color:var(--text-tertiary);
+}
+
+.f7f987c18505d351-footer{
+	padding-top:1rem;
+	display:flex;
+	flex-direction:column;
+	gap:0.75rem;
+}
+
+.f7f987c18505d351-link{
+	font-size:0.875rem;
+	line-height:1.25rem;
+	color:var(--text-link);
+	text-decoration:none;
+	transition-property:color;
+	transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration:150ms;
+	cursor:pointer;
+}
+
+.f7f987c18505d351-link:hover{
+	color:var(--text-link);
+	text-decoration:underline;
+}
+
+.f7f987c18505d351-loadingPlaceholder{
+	margin-bottom:1rem;
+	height:1.75rem;
+}
+
+.f7f987c18505d351-descriptionPlaceholder{
+	margin-bottom:1.5rem;
+	height:1.5rem;
+}
+

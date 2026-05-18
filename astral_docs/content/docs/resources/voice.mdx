@@ -1,0 +1,107 @@
+---
+title: Voice
+description: Voice
+---
+
+Voice on Astral uses a mix of:
+
+- public REST helpers
+- Gateway voice events
+- real-time media transport
+
+This page documents only the public developer-facing HTTP layer for voice and calls.
+
+It intentionally does not document infrastructure webhooks or private service internals.
+
+## Common public endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /channels/:channel_id/rtc-regions` | List available RTC regions for a channel |
+| `GET /channels/:channel_id/call` | Check whether a call is ringable/silent |
+| `PATCH /channels/:channel_id/call` | Update call settings such as region |
+| `POST /channels/:channel_id/call/ring` | Ring one or more recipients |
+| `POST /channels/:channel_id/call/stop-ringing` | Stop ringing one or more recipients |
+
+## RTC regions
+
+Fetch available regions:
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/rtc-regions
+```
+
+Example response:
+
+```json
+[
+  {
+    "id": "eu-central",
+    "name": "EU Central",
+    "emoji": "🇩🇪"
+  }
+]
+```
+
+## Check call eligibility
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/call
+```
+
+Example response:
+
+```json
+{
+  "ringable": true,
+  "silent": false
+}
+```
+
+## Update call region
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"region":"eu-central"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/call
+```
+
+## Ring recipients
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"recipients":["1470000000000000001","1470000000000000002"]}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/call/ring
+```
+
+## Stop ringing
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"recipients":["1470000000000000001"]}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/call/stop-ringing
+```
+
+## Important
+
+The HTTP routes above are only part of the voice story.
+
+For real voice state handling, your bot or client also needs:
+
+- Gateway events
+- the public Gateway connection flow
+
+Start with:
+
+- [Gateway](../events/gateway)
+- [Gateway Events](../events/gateway-events)

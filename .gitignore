@@ -1,0 +1,117 @@
+# Build artifacts
+**/_build
+**/_checkouts
+**/_vendor
+**/.astro/
+**/coverage
+**/dist
+**/generated
+**/target
+**/ebin
+**/certificates
+/astral_admin/build
+/astral_marketing/build
+
+# Caches & editor metadata
+**/.cache
+**/.*cache
+**/.pnpm-store
+**/.swc
+**/.DS_Store
+**/Thumbs.db
+**/.idea
+**/.vscode
+
+# Environment and credentials
+**/.env
+**/.env.local
+**/.env.*.local
+**/.dev.vars
+**/*.jks
+**/*.keystore
+**/*.p12
+**/.erlang.cookie
+**/.eunit
+**/.rebar
+**/.rebar3
+**/astral.env
+**/secrets.env
+/dev/astral.env
+/astral_app/android/signing/*.env
+/astral_app/android/signing/*.pem
+/astral_app/android/signing/*-info.txt
+
+# Logs, temporary files, and binaries
+**/*.beam
+**/*.dump
+**/*.iml
+**/*.log
+**/*.apk
+**/*.o
+**/*.plt
+**/*.swo
+**/*.swp
+**/*.tmp
+**/*~
+**/log
+**/logs
+**/npm-debug.log*
+**/pnpm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/rebar3.crashdump
+**/erl_crash.dump
+
+## Dependencies
+**/node_modules
+
+# Framework & tooling buckets
+**/.next
+**/.next/cache
+**/.vercel
+**/out
+**/.pnp
+**/.pnp.js
+*.tsbuildinfo
+next-env.d.ts
+
+# Source files we never want tracked
+**/.source
+**/*.source
+
+# Project-specific artifacts
+/astral_admin/priv/static/app.css
+/astral_app/src/assets/emoji-sprites/
+/astral_app/src/locales/*/messages.js
+/astral_app/src/locales/*/messages.mjs
+/astral_app/dist-electron
+/astral_app/dist-electron-*/
+/astral_app/dist-installer-*/
+/astral_app/release
+/astral_app/android/app/build/
+/astral_app/android/build/
+/astral_app/android/.gradle/
+/astral_app/android/capacitor-cordova-android-plugins/
+/astral_app/android/local.properties
+/astral_gateway/config/sys.config
+/astral_gateway/config/vm.args
+/astral_marketing/priv/static/app.css
+/astral_marketing/priv/locales
+.codex_tmp/
+.codex_deploy_files.txt
+geoip_data
+livekit.yaml
+astral.yaml
+
+# Generated CSS type definitions
+**/*.css.d.ts
+
+# Generated UI components
+/astral_app/src/components/uikit/AvatarStatusGeometry.ts
+/astral_app/src/components/uikit/SVGMasks.tsx
+
+# Local-only data and test artifacts
+/backend/data/
+/output/
+/.tmp_*.html
+node_modules

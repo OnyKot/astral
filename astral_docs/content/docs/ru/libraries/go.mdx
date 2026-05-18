@@ -1,0 +1,55 @@
+---
+title: Go
+description: discordgo с Astral
+---
+
+`discordgo` — стандартная Go-библиотека для Discord. Она выставляет базовые URL через переменные пакета, которые можно переопределить до создания сессии.
+
+```bash
+go get github.com/bwmarrin/discordgo
+```
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+
+	"github.com/bwmarrin/discordgo"
+)
+
+func init() {
+	// Перенаправляем REST и Gateway на Astral.
+	discordgo.EndpointDiscord = "https://astraof.com/"
+	discordgo.EndpointAPI = discordgo.EndpointDiscord + "api/v1/"
+}
+
+func main() {
+	dg, err := discordgo.New("Bot " + os.Getenv("ASTRAL_BOT_TOKEN"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dg.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		if m.Author.Bot {
+			return
+		}
+		if m.Content == "!ping" {
+			s.ChannelMessageSend(m.ChannelID, "pong")
+		}
+	})
+
+	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent
+
+	if err := dg.Open(); err != nil {
+		log.Fatal(err)
+	}
+
+	select {}
+}
+```
+
+<Callout type="info" title="Gateway URL получается в runtime">
+discordgo запрашивает gateway URL через `GET /gateway`. Поскольку мы уже перенаправили `EndpointAPI`, этот запрос идёт на Astral и возвращает Astral gateway URL — отдельный override для WebSocket-эндпоинта не нужен.
+</Callout>

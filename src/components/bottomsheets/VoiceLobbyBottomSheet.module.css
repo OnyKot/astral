@@ -1,0 +1,413 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 0.8rem;
+	padding: 0.85rem 0.95rem calc(1rem + var(--safe-area-bottom, 0px));
+}
+
+.heroCard {
+	display: flex;
+	flex-direction: column;
+	gap: 0.45rem;
+	padding: 0.8rem 0.9rem;
+	border-radius: 0.95rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: color-mix(in srgb, var(--background-floating) 10%, transparent);
+}
+
+.heroTopRow {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.6rem;
+}
+
+.heroTitleWrap {
+	min-width: 0;
+}
+
+.heroTitle {
+	font-size: 0.95rem;
+	font-weight: 700;
+	line-height: 1.25rem;
+	color: var(--text-primary);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.heroSubtitle {
+	font-size: 0.75rem;
+	line-height: 1rem;
+	color: var(--text-primary-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.connectionBadge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.24rem 0.55rem;
+	border-radius: 999px;
+	font-size: 0.68rem;
+	font-weight: 700;
+	line-height: 1;
+	color: color-mix(in srgb, var(--text-primary) 85%, var(--background-floating));
+	background: color-mix(in srgb, var(--background-tertiary) 88%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+	flex-shrink: 0;
+}
+
+.connectionBadgeConnected {
+	color: color-mix(in srgb, var(--status-online) 80%, var(--text-primary));
+	border-color: color-mix(in srgb, var(--status-online) 30%, transparent);
+	background: color-mix(in srgb, var(--status-online) 14%, transparent);
+}
+
+.connectionBadgeConnecting {
+	color: color-mix(in srgb, var(--status-idle) 86%, var(--text-primary));
+	border-color: color-mix(in srgb, var(--status-idle) 30%, transparent);
+	background: color-mix(in srgb, var(--status-idle) 14%, transparent);
+}
+
+.heroHint {
+	font-size: 0.72rem;
+	line-height: 1rem;
+	color: var(--text-primary-muted);
+}
+
+.buttonRow {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.actionButtons {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 0.5rem;
+}
+
+.actionButton {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.38rem;
+	padding: 0.56rem 0.45rem;
+	border-radius: 0.8rem;
+	background: color-mix(in srgb, var(--background-floating) 10%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	transition: background-color 0.14s ease;
+	cursor: pointer;
+	min-height: 4.4rem;
+}
+
+.fullWidth {
+	width: 100%;
+	flex: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.actionButton:hover {
+		background-color: var(--background-modifier-hover);
+	}
+}
+
+.iconContainer {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.3rem;
+	height: 2.3rem;
+	border-radius: 9999px;
+}
+
+.iconContainerBrand {
+	background-color: var(--brand-primary);
+}
+
+.iconContainerDanger {
+	background-color: var(--status-danger);
+}
+
+.iconContainerTertiary {
+	background-color: var(--background-tertiary);
+}
+
+.iconContainerSuccess {
+	background-color: #22c55e;
+}
+
+.actionIcon {
+	color: white;
+	width: 1.1rem;
+	height: 1.1rem;
+}
+
+.actionIconSecondary {
+	color: var(--text-primary);
+	width: 1.1rem;
+	height: 1.1rem;
+}
+
+.actionText {
+	font-weight: 500;
+	color: var(--text-secondary);
+	font-size: 0.68rem;
+	line-height: 0.95rem;
+	text-align: center;
+}
+
+.devicesSection {
+	display: flex;
+	flex-direction: column;
+	gap: 0.45rem;
+	padding: 0.65rem 0.7rem;
+	border-radius: 0.85rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: color-mix(in srgb, var(--background-floating) 8%, transparent);
+}
+
+.devicesHeader {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.devicesHeaderText {
+	min-width: 0;
+}
+
+.devicesTitle {
+	font-size: 0.78rem;
+	font-weight: 700;
+	line-height: 1rem;
+	color: var(--text-primary);
+}
+
+.devicesDescription {
+	font-size: 0.68rem;
+	line-height: 0.95rem;
+	color: var(--text-primary-muted);
+}
+
+.refreshButton {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.22rem;
+	padding: 0.25rem 0.45rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: color-mix(in srgb, var(--background-tertiary) 88%, transparent);
+	color: var(--text-primary);
+	font-size: 0.66rem;
+	font-weight: 600;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.refreshButton:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.deviceList {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.deviceButton {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.1rem;
+	width: 100%;
+	padding: 0.45rem 0.55rem;
+	border-radius: 0.65rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: color-mix(in srgb, var(--background-tertiary) 82%, transparent);
+	text-align: left;
+	cursor: pointer;
+}
+
+.deviceButtonSelected {
+	border-color: color-mix(in srgb, var(--brand-primary) 34%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+}
+
+.deviceButtonLabel {
+	font-size: 0.73rem;
+	font-weight: 600;
+	line-height: 1rem;
+	color: var(--text-primary);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 100%;
+}
+
+.deviceButtonMeta {
+	font-size: 0.64rem;
+	line-height: 0.9rem;
+	color: var(--text-primary-muted);
+}
+
+.deviceEmpty {
+	font-size: 0.72rem;
+	line-height: 1rem;
+	color: var(--text-primary-muted);
+	padding: 0.35rem 0.1rem;
+}
+
+.connectionInfo {
+	border-radius: 0.85rem;
+	background: color-mix(in srgb, var(--background-floating) 8%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	padding: 0.75rem;
+}
+
+.connectionHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-bottom: 0.45rem;
+}
+
+.connectionStatusInfo {
+	flex: 1;
+}
+
+.connectionTitle {
+	font-weight: 700;
+	color: var(--text-primary);
+	font-size: 0.78rem;
+}
+
+.connectionSubtitle {
+	font-size: 0.68rem;
+	line-height: 0.95rem;
+	color: var(--text-primary-muted);
+}
+
+.connectionStatusDot {
+	width: 0.6rem;
+	height: 0.6rem;
+	border-radius: 9999px;
+	background-color: var(--status-online);
+	flex-shrink: 0;
+}
+
+.statsGrid {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+	margin-top: 0.2rem;
+	color: var(--text-primary-muted);
+}
+
+.statItem {
+	font-size: 0.68rem;
+	line-height: 0.95rem;
+	color: var(--text-primary-muted);
+	word-break: break-word;
+}
+
+.statItemLabel {
+	color: var(--text-secondary);
+}
+
+.endpointValue {
+	display: block;
+	font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+	font-size: 0.67rem;
+	font-weight: 600;
+	color: #22c55e;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.connectionIdValue {
+	display: block;
+	font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+	font-size: 0.67rem;
+	color: var(--text-primary);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+	.container {
+		gap: 0.75rem;
+		padding: 0.82rem 0.82rem calc(0.92rem + var(--safe-area-bottom, 0px));
+	}
+
+	.buttonRow {
+		flex-direction: column;
+	}
+
+	.actionButtons {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.45rem;
+	}
+
+	.actionButton {
+		min-height: 4.2rem;
+		padding: 0.5rem 0.35rem;
+		gap: 0.33rem;
+	}
+
+	.iconContainer {
+		width: 2.18rem;
+		height: 2.18rem;
+	}
+
+	.actionText {
+		font-size: 0.64rem;
+		line-height: 0.9rem;
+	}
+
+	.devicesSection {
+		padding: 0.58rem 0.62rem;
+	}
+
+	.deviceButton {
+		padding: 0.4rem 0.48rem;
+	}
+
+	.deviceButtonLabel {
+		font-size: 0.7rem;
+	}
+
+	.deviceButtonMeta,
+	.devicesDescription,
+	.statItem,
+	.heroHint {
+		font-size: 0.63rem;
+		line-height: 0.88rem;
+	}
+}

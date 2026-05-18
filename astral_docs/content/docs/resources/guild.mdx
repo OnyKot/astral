@@ -1,0 +1,119 @@
+---
+title: Guild
+description: Guild
+---
+
+Guilds are Astral servers.
+
+Bots usually interact with guilds to:
+
+- inspect server metadata
+- list or manage channels
+- inspect or moderate members
+- manage bans, roles, stickers, or emojis
+
+## Common public endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /guilds` | Create a guild |
+| `GET /users/@me/guilds` | List guilds visible to the current token |
+| `DELETE /users/@me/guilds/:guild_id` | Leave a guild |
+| `GET /guilds/:guild_id` | Fetch a guild |
+| `PATCH /guilds/:guild_id` | Update a guild |
+| `POST /guilds/:guild_id/delete` | Delete a guild |
+| `GET /guilds/:guild_id/channels` | List channels in a guild |
+| `POST /guilds/:guild_id/channels` | Create a channel in a guild |
+| `PATCH /guilds/:guild_id/channels` | Bulk update channel ordering/structure |
+| `GET /guilds/:guild_id/members` | List members |
+| `GET /guilds/:guild_id/members/:user_id` | Fetch one member |
+| `PATCH /guilds/:guild_id/members/:user_id` | Update a member |
+| `DELETE /guilds/:guild_id/members/:user_id` | Kick a member |
+| `GET /guilds/:guild_id/bans` | List bans |
+| `PUT /guilds/:guild_id/bans/:user_id` | Ban a user |
+| `DELETE /guilds/:guild_id/bans/:user_id` | Unban a user |
+
+Related resource pages:
+
+- [Channel](./channel)
+- [Emoji](./emoji)
+- [Sticker](./sticker)
+- [Audit Log](./audit-log)
+
+## Fetch a guild
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>
+```
+
+Typical fields include:
+
+```json
+{
+  "id": "1470000000000000001",
+  "name": "Astral Developers",
+  "icon": "abc123",
+  "owner_id": "1470000000000000002",
+  "member_count": 42
+}
+```
+
+## List guild channels
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/channels
+```
+
+## Moderate a member
+
+Fetch one member:
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/members/<USER_ID>
+```
+
+Kick a member:
+
+```bash
+curl -X DELETE \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/members/<USER_ID>
+```
+
+Ban a member:
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "X-Audit-Log-Reason: Spam" \
+  -d '{"delete_message_days":1}' \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/bans/<USER_ID>
+```
+
+## Roles on members
+
+Add a role:
+
+- `PUT /guilds/:guild_id/members/:user_id/roles/:role_id`
+
+Remove a role:
+
+- `DELETE /guilds/:guild_id/members/:user_id/roles/:role_id`
+
+These operations still respect permissions and role hierarchy.
+
+## Vanity URL and guild settings
+
+Public guild settings routes also include:
+
+- `GET /guilds/:guild_id/vanity-url`
+- `PATCH /guilds/:guild_id/vanity-url`
+
+Guild update routes should only be used when your bot or token has the corresponding permissions.

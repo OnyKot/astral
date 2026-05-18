@@ -1,0 +1,1076 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.themeButtonGroup {
+	display: grid;
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+	gap: 0.5rem;
+	padding: 0.58rem;
+	border-radius: 0.95rem;
+	background: color-mix(in srgb, var(--background-floating) 14%, var(--background-primary) 86%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 7%, transparent);
+	max-width: 44rem;
+}
+
+@media (min-width: 680px) {
+	.themeButtonGroup {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1020px) {
+	.themeButtonGroup {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+.themeButton {
+	position: relative;
+	display: grid;
+	grid-template-columns: 54px minmax(0, 1fr);
+	align-items: center;
+	gap: 0.56rem;
+	width: 100%;
+	min-height: 4.1rem;
+	padding: 0.42rem 0.5rem;
+	border-radius: 0.82rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	outline: none;
+	cursor: pointer;
+	background: color-mix(in srgb, var(--background-secondary) 86%, var(--background-primary) 14%);
+	transition:
+		border-color 150ms ease,
+		background-color 150ms ease,
+		transform 150ms ease;
+}
+
+.themeButton:hover {
+	background: color-mix(in srgb, var(--background-secondary) 80%, var(--brand-primary) 20%);
+	border-color: color-mix(in srgb, var(--brand-primary) 26%, transparent);
+	transform: translateY(-1px);
+}
+
+.themeButton:active {
+	transform: scale(0.98);
+}
+
+.themeSwatch {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 54px;
+	height: 44px;
+	border-radius: 0.64rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 14%, transparent);
+	box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+	overflow: hidden;
+}
+
+.themeButtonContent {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.1rem;
+	min-width: 0;
+}
+
+.themeButtonLabel {
+	font-size: 0.79rem;
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	color: var(--text-primary);
+	text-align: left;
+	line-height: 1.2;
+}
+
+.themeButtonDescription {
+	font-size: 0.68rem;
+	color: var(--text-tertiary);
+	text-align: left;
+	line-height: 1.2;
+	display: none;
+}
+
+.themeButtonSelected {
+	border-color: var(--brand-primary);
+	background: color-mix(in srgb, var(--background-secondary) 76%, var(--brand-primary) 24%);
+}
+
+.themeButtonIcon {
+	position: absolute;
+	inset: 0 auto auto 0;
+	top: 0.35rem;
+	left: 0.45rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0.92;
+}
+
+.themeButtonCheckmark {
+	position: absolute;
+	top: 0.24rem;
+	right: 0.24rem;
+	display: flex;
+	height: 1rem;
+	width: 1rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 9999px;
+	background-color: var(--brand-primary);
+	box-shadow: 0 6px 14px color-mix(in srgb, var(--brand-primary) 28%, transparent);
+}
+
+.themeButtonCheckmarkIcon {
+	color: white;
+}
+
+.colorGrid {
+	display: grid;
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+	gap: 1rem;
+}
+
+@media (min-width: 768px) {
+	.colorGrid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+.colorSection {
+	border-top: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
+	padding-top: 1rem;
+	padding-inline: 1rem;
+	padding-bottom: 1rem;
+	border-radius: 1.35rem;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--background-floating) 10%, transparent), transparent 68%);
+}
+
+.colorSectionHeading {
+	margin-bottom: 0.75rem;
+	font-weight: 600;
+	font-size: 1rem;
+	color: var(--text-primary);
+}
+
+.cssSection {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	border-top: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
+	padding: 1rem;
+	border-radius: 1.35rem;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--background-floating) 10%, transparent), transparent 68%);
+}
+
+.studioLayout {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.72rem;
+}
+
+.studioTitle {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.betaBadge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.12rem 0.44rem;
+	border-radius: 9999px;
+	font-size: 0.64rem;
+	font-weight: 700;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--text-primary) 90%, white 10%);
+	background: color-mix(in srgb, var(--brand-primary) 28%, transparent);
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 45%, transparent);
+}
+
+.previewCard {
+	display: flex;
+	flex-direction: column;
+	gap: 0.65rem;
+	padding: 0.8rem;
+	border-radius: 1.25rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--background-floating) 16%, var(--background-primary) 84%), color-mix(in srgb, var(--background-secondary) 12%, var(--background-primary) 88%));
+	box-shadow:
+		0 16px 36px rgb(6 10 21 / 0.12),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.previewCompactWrap {
+	display: flex;
+	justify-content: flex-start;
+}
+
+.previewCardMinimal {
+	width: min(23rem, 100%);
+	padding: 0.62rem;
+	gap: 0.45rem;
+}
+
+.previewCardMinimal .previewCanvas {
+	grid-template-columns: 48px 1fr;
+	min-height: 108px;
+	padding: 0.5rem;
+}
+
+.previewCardMinimal .previewMain {
+	gap: 0.45rem;
+	padding: 0.5rem;
+}
+
+.previewCardMinimal .previewBubblePrimary,
+.previewCardMinimal .previewBubbleSecondary,
+.previewCardMinimal .previewBubbleSecondaryShort {
+	height: 1.75rem;
+	border-radius: 0.74rem;
+}
+
+.previewHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.6rem;
+}
+
+.previewTitle {
+	font-size: 0.84rem;
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	color: var(--text-primary);
+	text-transform: uppercase;
+}
+
+.previewBadge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.22rem 0.6rem;
+	border-radius: 9999px;
+	font-size: 0.72rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	background: color-mix(in srgb, var(--background-tertiary) 76%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.previewCanvas {
+	position: relative;
+	display: grid;
+	grid-template-columns: 64px 1fr;
+	gap: 0.72rem;
+	padding: 0.74rem;
+	border-radius: 1rem;
+	min-height: 156px;
+	overflow: hidden;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+	box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+.previewSidebar {
+	border-radius: 0.8rem;
+	background:
+		linear-gradient(180deg, rgb(0 0 0 / 18%), transparent 60%),
+		color-mix(in srgb, var(--background-secondary) 82%, #080b14 18%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.previewMain {
+	display: flex;
+	flex-direction: column;
+	gap: 0.65rem;
+	padding: 0.72rem;
+	border-radius: 0.82rem;
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 7%), transparent 65%),
+		color-mix(in srgb, var(--background-primary) 84%, #0d1018 16%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.previewMainHeader {
+	height: 0.86rem;
+	width: 54%;
+	border-radius: 0.5rem;
+	background: color-mix(in srgb, var(--text-primary) 18%, transparent);
+}
+
+.previewBubbleRow {
+	display: flex;
+	gap: 0.52rem;
+}
+
+.previewBubblePrimary,
+.previewBubbleSecondary,
+.previewBubbleSecondaryShort {
+	display: block;
+	height: 2.25rem;
+	border-radius: 0.9rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.previewBubblePrimary {
+	width: 58%;
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 9%), transparent 65%),
+		color-mix(in srgb, var(--brand-primary) 26%, var(--background-secondary) 74%);
+}
+
+.previewBubbleSecondary {
+	width: 42%;
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 7%), transparent 65%),
+		color-mix(in srgb, var(--background-secondary) 90%, #121621 10%);
+}
+
+.previewBubbleSecondaryShort {
+	width: 34%;
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 7%), transparent 65%),
+		color-mix(in srgb, var(--background-secondary) 90%, #121621 10%);
+}
+
+.previewHint {
+	margin: 0;
+	font-size: 0.8rem;
+	color: var(--text-tertiary);
+	line-height: 1.4;
+}
+
+.studioControls {
+	display: flex;
+	flex-direction: column;
+	gap: 0.85rem;
+}
+
+.nestedAccordion {
+	margin-top: 0.4rem;
+}
+
+.presetGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+	.presetGrid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1100px) {
+	.presetGrid {
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+	}
+}
+
+/*
+ * Whole card is a button. The 68px preview strip at the top shows the live
+ * gradient that the preset applies, so users see what they are getting before
+ * clicking. The content area below holds the title and description.
+ */
+.presetCard {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 0;
+	padding: 0.38rem;
+	aspect-ratio: 1 / 1;
+	border-radius: 0.82rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: color-mix(in srgb, var(--background-primary) 94%, var(--background-secondary) 6%);
+	text-align: left;
+	cursor: pointer;
+	overflow: clip;
+	transition:
+		border-color 160ms ease,
+		background-color 160ms ease;
+	color: inherit;
+	font: inherit;
+}
+
+.chatBackgroundGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.66rem;
+}
+
+@media (min-width: 720px) {
+	.chatBackgroundGrid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1180px) {
+	.chatBackgroundGrid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+.chatBackgroundCard {
+	display: flex;
+	flex-direction: column;
+	gap: 0.36rem;
+	padding: 0.42rem;
+	border-radius: 0.82rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: color-mix(in srgb, var(--background-primary) 94%, var(--background-secondary) 6%);
+	cursor: pointer;
+	text-align: left;
+	color: inherit;
+	font: inherit;
+	transition:
+		border-color 160ms ease,
+		background-color 160ms ease;
+}
+
+.chatBackgroundCard:hover {
+	border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+}
+
+.chatBackgroundCard:focus-visible {
+	outline: none;
+	border-color: var(--brand-primary);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary) 20%, transparent);
+}
+
+.chatBackgroundCard:active {
+	background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
+}
+
+.chatBackgroundCardSelected {
+	border-color: color-mix(in srgb, var(--brand-primary) 74%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-primary) 28%, transparent);
+	background: color-mix(in srgb, var(--background-primary) 90%, var(--background-secondary) 10%);
+}
+
+.chatBackgroundPreview {
+	position: relative;
+	display: block;
+	height: 96px;
+	border-radius: 0.68rem;
+	overflow: hidden;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background-color: color-mix(in srgb, var(--background-primary) 88%, #0b1018 12%);
+	filter: saturate(0.86) brightness(0.93);
+}
+
+.chatBackgroundPattern,
+.chatBackgroundPreviewOverlay {
+	position: absolute;
+	inset: 0;
+}
+
+.chatBackgroundPattern {
+	background-image: var(--chat-preview-image, none);
+	background-repeat: repeat;
+	background-position: center top;
+	background-size: var(--chat-preview-size, 148px) var(--chat-preview-size, 148px);
+	opacity: var(--chat-preview-opacity, 0);
+}
+
+.chatBackgroundPreviewOverlay {
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.03) 0%, transparent 20%, rgb(0 0 0 / 0.08) 100%),
+		var(--theme-preset-overlay-background, transparent);
+	opacity: calc(0.2 + (var(--theme-preset-overlay-opacity, 0) * 0.45));
+	mix-blend-mode: screen;
+}
+
+.chatBackgroundPreviewIncoming,
+.chatBackgroundPreviewOutgoing {
+	position: absolute;
+	height: 12px;
+	border-radius: 0.6rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.chatBackgroundPreviewIncoming {
+	left: 0.65rem;
+	right: 3.4rem;
+	bottom: 1.8rem;
+	background: color-mix(in srgb, var(--background-secondary) 92%, #111723 8%);
+}
+
+.chatBackgroundPreviewOutgoing {
+	left: 3.5rem;
+	right: 0.65rem;
+	bottom: 0.8rem;
+	background: color-mix(in srgb, var(--brand-primary) 20%, var(--background-secondary) 80%);
+}
+
+.chatBackgroundCheck {
+	position: absolute;
+	top: 0.55rem;
+	right: 0.55rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	border-radius: 9999px;
+	background: color-mix(in srgb, var(--brand-primary) 86%, white 14%);
+	color: white;
+	box-shadow: 0 10px 20px color-mix(in srgb, var(--brand-primary) 28%, transparent);
+}
+
+.chatBackgroundContent {
+	display: flex;
+	flex-direction: column;
+	gap: 0.12rem;
+	min-width: 0;
+}
+
+.chatBackgroundLabel {
+	font-size: 0.74rem;
+	font-weight: 700;
+	line-height: 1.2;
+	color: var(--text-primary);
+}
+
+.chatBackgroundDescription {
+	font-size: 0.64rem;
+	line-height: 1.2;
+	color: var(--text-tertiary);
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+}
+
+.presetCard:hover {
+	border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+}
+
+.presetCard:active {
+	background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
+}
+
+.presetCard:focus-visible {
+	outline: none;
+	border-color: var(--brand-primary);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary) 20%, transparent);
+}
+
+.presetCardSelected {
+	border-color: var(--brand-primary);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-primary) 28%, transparent);
+}
+
+/*
+ * Gradient preview strip. Each preset has a data-preset-gradient attribute
+ * that drives which gradient shows up here. We keep the gradients roughly
+ * matching the real app-shell backgrounds in global.css so the preview
+ * actually looks like the thing you're about to apply.
+ */
+.presetPreview {
+	position: relative;
+	display: block;
+	flex: 1 1 auto;
+	min-height: 0;
+	width: 100%;
+	border-radius: 0.6rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: linear-gradient(135deg, #1e1e28 0%, #11111a 100%);
+	overflow: hidden;
+	filter: saturate(0.84) brightness(0.92);
+}
+
+.presetPreview::after {
+	position: absolute;
+	content: '';
+	inset: 0;
+	pointer-events: none;
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.03) 0%, transparent 20%, rgb(0 0 0 / 0.08) 100%),
+		var(--preset-overlay-background, transparent);
+	opacity: calc(0.2 + (var(--preset-overlay-opacity, 0) * 0.45));
+	mix-blend-mode: screen;
+}
+
+.presetPreviewMessageLeft,
+.presetPreviewMessageRight {
+	position: absolute;
+	z-index: 1;
+	height: 11px;
+	border-radius: 0.56rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.presetPreviewMessageLeft {
+	left: 0.48rem;
+	right: 2.5rem;
+	bottom: 1.32rem;
+	background: color-mix(in srgb, var(--background-secondary) 92%, #111723 8%);
+}
+
+.presetPreviewMessageRight {
+	left: 2.6rem;
+	right: 0.48rem;
+	bottom: 0.48rem;
+	background: color-mix(in srgb, var(--brand-primary) 20%, var(--background-secondary) 80%);
+}
+
+.presetCard[data-preset-gradient='default'] .presetPreview {
+	background: linear-gradient(145deg, var(--theme-shell-start) 0%, var(--theme-shell-end) 100%);
+	--preset-overlay-opacity: 0;
+	--preset-overlay-background: transparent;
+}
+
+.presetCard[data-preset-gradient='legacy'] .presetPreview {
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--theme-shell-start) 92%, #2f3136 8%) 0%,
+		color-mix(in srgb, var(--theme-shell-end) 92%, #2b2d31 8%) 100%
+	);
+	--preset-overlay-opacity: 0.16;
+	--preset-overlay-background: radial-gradient(
+		920px 560px at 12% 6%,
+		color-mix(in srgb, #7289da 18%, transparent),
+		transparent 72%
+	);
+}
+
+.presetCard[data-preset-gradient='aurora'] .presetPreview {
+	background:
+		radial-gradient(680px 420px at 8% -14%, rgb(34 197 94 / 24%), transparent 62%),
+		radial-gradient(620px 400px at 95% -6%, rgb(129 140 248 / 24%), transparent 62%),
+		linear-gradient(
+			138deg,
+			color-mix(in srgb, var(--theme-shell-start) 82%, #0f473b 18%) 0%,
+			color-mix(in srgb, var(--theme-shell-end) 76%, #1c3d63 24%) 52%,
+			color-mix(in srgb, var(--theme-shell-end) 70%, #36255b 30%) 100%
+		);
+	--preset-overlay-opacity: 0.3;
+	--preset-overlay-background: radial-gradient(
+		880px 540px at 12% 8%,
+		color-mix(in srgb, #22c55e 18%, transparent),
+		transparent 72%
+	);
+}
+
+.presetCard[data-preset-gradient='sunset'] .presetPreview {
+	background:
+		radial-gradient(620px 380px at 98% -12%, rgb(249 115 22 / 26%), transparent 62%),
+		radial-gradient(540px 360px at 0% 110%, rgb(244 63 94 / 24%), transparent 64%),
+		linear-gradient(
+			145deg,
+			color-mix(in srgb, var(--theme-shell-start) 82%, #512127 18%) 0%,
+			color-mix(in srgb, var(--theme-shell-end) 76%, #6f3027 24%) 44%,
+			color-mix(in srgb, var(--theme-shell-end) 70%, #6a2141 30%) 100%
+		);
+	--preset-overlay-opacity: 0.29;
+	--preset-overlay-background: radial-gradient(
+		860px 520px at 16% 10%,
+		color-mix(in srgb, #f97316 18%, transparent),
+		transparent 72%
+	);
+}
+
+.presetCard[data-preset-gradient='ocean'] .presetPreview {
+	background:
+		radial-gradient(660px 420px at 100% -10%, rgb(6 182 212 / 24%), transparent 60%),
+		radial-gradient(620px 360px at -8% 104%, rgb(14 165 233 / 24%), transparent 62%),
+		linear-gradient(
+			138deg,
+			color-mix(in srgb, var(--theme-shell-start) 82%, #053550 18%) 0%,
+			color-mix(in srgb, var(--theme-shell-end) 76%, #0c5570 24%) 48%,
+			color-mix(in srgb, var(--theme-shell-end) 70%, #1a2b64 30%) 100%
+		);
+	--preset-overlay-opacity: 0.28;
+	--preset-overlay-background: radial-gradient(
+		860px 520px at 14% 8%,
+		color-mix(in srgb, #06b6d4 18%, transparent),
+		transparent 72%
+	);
+}
+
+.presetCard[data-preset-gradient='midnight'] .presetPreview {
+	background:
+		radial-gradient(620px 360px at 95% -18%, rgb(168 85 247 / 20%), transparent 60%),
+		radial-gradient(500px 320px at 8% 108%, rgb(79 70 229 / 20%), transparent 62%),
+		linear-gradient(
+			136deg,
+			color-mix(in srgb, var(--theme-shell-start) 84%, #1a143f 16%) 0%,
+			color-mix(in srgb, var(--theme-shell-end) 80%, #2c2461 20%) 46%,
+			color-mix(in srgb, var(--theme-shell-end) 74%, #3b275d 26%) 100%
+		);
+	--preset-overlay-opacity: 0.27;
+	--preset-overlay-background: radial-gradient(
+		860px 520px at 14% 8%,
+		color-mix(in srgb, #a855f7 18%, transparent),
+		transparent 72%
+	);
+}
+
+.presetCard[data-preset-gradient='forest'] .presetPreview {
+	background:
+		radial-gradient(620px 380px at 10% -18%, rgb(34 197 94 / 24%), transparent 60%),
+		radial-gradient(560px 340px at 92% 2%, rgb(16 185 129 / 22%), transparent 62%),
+		linear-gradient(
+			140deg,
+			color-mix(in srgb, var(--theme-shell-start) 82%, #134028 18%) 0%,
+			color-mix(in srgb, var(--theme-shell-end) 76%, #1f5a37 24%) 44%,
+			color-mix(in srgb, var(--theme-shell-end) 70%, #335d2a 30%) 100%
+		);
+	--preset-overlay-opacity: 0.28;
+	--preset-overlay-background: radial-gradient(
+		860px 520px at 12% 8%,
+		color-mix(in srgb, #16a34a 18%, transparent),
+		transparent 72%
+	);
+}
+
+.presetCard[data-preset-gradient='ember'] .presetPreview {
+	background:
+		radial-gradient(640px 390px at 92% -16%, rgb(239 68 68 / 30%), transparent 60%),
+		radial-gradient(580px 360px at 5% 8%, rgb(234 88 12 / 24%), transparent 62%),
+		linear-gradient(
+			145deg,
+			color-mix(in srgb, var(--theme-shell-start) 82%, #5a1816 18%) 0%,
+			color-mix(in srgb, var(--theme-shell-end) 76%, #7a2e16 24%) 42%,
+			color-mix(in srgb, var(--theme-shell-end) 70%, #7c1f34 30%) 100%
+		);
+	--preset-overlay-opacity: 0.31;
+	--preset-overlay-background: radial-gradient(
+		860px 520px at 14% 8%,
+		color-mix(in srgb, #ef4444 18%, transparent),
+		transparent 72%
+	);
+}
+
+.presetCard[data-preset-gradient='nebula'] .presetPreview {
+	background:
+		radial-gradient(620px 380px at 90% -20%, rgb(217 70 239 / 24%), transparent 60%),
+		radial-gradient(560px 340px at 0% 18%, rgb(99 102 241 / 22%), transparent 62%),
+		linear-gradient(
+			138deg,
+			color-mix(in srgb, var(--theme-shell-start) 84%, #34155f 16%) 0%,
+			color-mix(in srgb, var(--theme-shell-end) 78%, #4a2175 22%) 46%,
+			color-mix(in srgb, var(--theme-shell-end) 72%, #5a246b 28%) 100%
+		);
+	--preset-overlay-opacity: 0.3;
+	--preset-overlay-background: radial-gradient(
+		860px 520px at 12% 8%,
+		color-mix(in srgb, #d946ef 18%, transparent),
+		transparent 72%
+	);
+}
+
+.presetContent {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1rem;
+	padding: 0.38rem 0.12rem 0.02rem;
+}
+
+.presetHeader {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.2rem;
+	position: relative;
+}
+
+.presetSoonBadge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.12rem 0.42rem;
+	border-radius: 9999px;
+	font-size: 0.62rem;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--text-primary) 92%, white 8%);
+	background: color-mix(in srgb, var(--button-danger-fill, #da373c) 26%, transparent);
+	border: 1px solid color-mix(in srgb, var(--button-danger-fill, #da373c) 40%, transparent);
+}
+
+.presetTitle {
+	font-weight: 600;
+	font-size: 0.72rem;
+	color: var(--text-primary);
+	letter-spacing: -0.01em;
+	text-align: center;
+}
+
+.presetCheck {
+	position: absolute;
+	right: 0.1rem;
+	top: -0.05rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 1rem;
+	width: 1rem;
+	border-radius: 9999px;
+	background: var(--brand-primary);
+	color: white;
+	font-size: 0.62rem;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.presetDescription {
+	margin: 0;
+	font-size: 0.72rem;
+	line-height: 1.28;
+	color: var(--text-tertiary);
+	display: none;
+}
+
+.optionSection {
+	display: flex;
+	flex-direction: column;
+	gap: 0.45rem;
+	border-top: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
+	padding: 0.72rem 0.8rem 0.85rem;
+	border-radius: 1.35rem;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--background-floating) 10%, transparent), transparent 68%);
+}
+
+.optionHeading {
+	font-size: 0.83rem;
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.optionChipRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.optionDescription {
+	margin: 0;
+	font-size: 0.74rem;
+	color: var(--text-tertiary);
+}
+
+@media (max-width: 767px) {
+	.optionSection {
+		gap: 0.34rem;
+		padding: 0.58rem 0.58rem 0.66rem;
+		border-radius: 1rem;
+	}
+
+	.presetGrid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.42rem;
+	}
+
+	.presetCard {
+		padding: 0.3rem;
+		border-radius: 0.7rem;
+	}
+
+	.presetPreview {
+		border-radius: 0.5rem;
+	}
+
+	.presetPreviewMessageLeft,
+	.presetPreviewMessageRight {
+		height: 9px;
+		border-radius: 0.5rem;
+	}
+
+	.presetPreviewMessageLeft {
+		left: 0.4rem;
+		right: 2rem;
+		bottom: 1.12rem;
+	}
+
+	.presetPreviewMessageRight {
+		left: 2.05rem;
+		right: 0.4rem;
+		bottom: 0.4rem;
+	}
+
+	.presetContent {
+		padding: 0.3rem 0.08rem 0;
+	}
+
+	.presetTitle {
+		font-size: 0.66rem;
+	}
+
+	.chatBackgroundGrid {
+		gap: 0.45rem;
+	}
+
+	.chatBackgroundCard {
+		gap: 0.3rem;
+		padding: 0.34rem;
+		border-radius: 0.72rem;
+	}
+
+	.chatBackgroundPreview {
+		height: 72px;
+		border-radius: 0.58rem;
+	}
+
+	.chatBackgroundPreviewIncoming,
+	.chatBackgroundPreviewOutgoing {
+		height: 10px;
+	}
+
+	.chatBackgroundPreviewIncoming {
+		left: 0.45rem;
+		right: 2.2rem;
+		bottom: 1.35rem;
+	}
+
+	.chatBackgroundPreviewOutgoing {
+		left: 2.2rem;
+		right: 0.45rem;
+		bottom: 0.58rem;
+	}
+
+	.chatBackgroundCheck {
+		top: 0.4rem;
+		right: 0.4rem;
+		width: 1.2rem;
+		height: 1.2rem;
+	}
+
+	.chatBackgroundLabel {
+		font-size: 0.69rem;
+		line-height: 1.15;
+	}
+
+	.chatBackgroundDescription {
+		display: none;
+	}
+
+	.optionDescription {
+		font-size: 0.68rem;
+	}
+}
+
+@media (max-width: 430px) {
+	.presetGrid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+
+.gradientColorGrid {
+	display: grid;
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+	gap: 0.7rem;
+}
+
+.quickTokenGrid {
+	display: grid;
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+	gap: 0.7rem;
+}
+
+.quickTokenGridCompact {
+	display: grid;
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+	gap: 0.5rem;
+}
+
+@media (min-width: 720px) {
+	.gradientColorGrid,
+	.quickTokenGrid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.quickTokenGridCompact {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1080px) {
+	.quickTokenGridCompact {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+.compactTokenField {
+	padding: 0.35rem 0.45rem;
+	border-radius: 0.85rem;
+	background: color-mix(in srgb, var(--background-floating) 12%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.compactTokenField legend {
+	font-size: 0.74rem;
+	font-weight: 600;
+}
+
+.compactTokenField input {
+	min-height: 2rem;
+	padding-block: 0.4rem;
+	font-size: 0.82rem;
+}
+
+.sliderField {
+	display: flex;
+	flex-direction: column;
+	gap: 0.65rem;
+	padding: 0.4rem 0.2rem 0.7rem;
+}
+
+.sliderHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.4rem;
+	font-size: 0.82rem;
+	font-weight: 600;
+	color: var(--text-secondary);
+}
+
+.buttonGroup {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	padding: 0.35rem;
+	border-radius: 1.1rem;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--background-floating) 12%, var(--background-primary) 88%), color-mix(in srgb, var(--background-secondary) 14%, var(--background-primary) 86%));
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.loadingContainer {
+	display: flex;
+	flex: 1;
+	align-items: center;
+	justify-content: center;
+	min-height: 16rem;
+	padding-top: 2.5rem;
+	padding-bottom: 2.5rem;
+}

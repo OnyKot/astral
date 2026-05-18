@@ -1,0 +1,52 @@
+---
+title: Приглашение
+description: Публичные invite-маршруты и bot install flow
+---
+
+Invites используются для входа на серверы, в каналы и для приглашения бота через OAuth2.
+
+## Основные публичные маршруты
+
+| Endpoint | Для чего нужен |
+| --- | --- |
+| `GET /invites/:invite_code` | Получить данные приглашения |
+| `POST /invites/:invite_code` | Принять приглашение |
+| `DELETE /invites/:invite_code` | Удалить приглашение |
+| `POST /channels/:channel_id/invites` | Создать приглашение канала |
+| `GET /channels/:channel_id/invites` | Получить приглашения канала |
+| `GET /guilds/:guild_id/invites` | Получить приглашения сервера |
+
+## Получить invite
+
+```bash
+curl -s https://astraof.com/api/v1/invites/<INVITE_CODE>
+```
+
+## Принять invite
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/invites/<INVITE_CODE>
+```
+
+## Создать invite канала
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "max_uses": 10,
+    "max_age": 3600,
+    "unique": true,
+    "temporary": false
+  }' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/invites
+```
+
+## Ссылка для приглашения бота
+
+```text
+https://astraof.com/oauth2/authorize?client_id=<APP_ID>&scope=bot&permissions=<PERMISSIONS>
+```

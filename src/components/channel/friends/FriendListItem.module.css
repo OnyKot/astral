@@ -1,0 +1,262 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.friendListItem {
+	--friend-card-top: color-mix(in srgb, var(--background-floating) 10%, var(--background-primary) 90%);
+	--friend-card-bottom: color-mix(in srgb, var(--background-secondary) 4%, var(--background-primary) 96%);
+	--friend-card-hover-top: color-mix(in srgb, var(--background-floating) 16%, var(--background-primary) 84%);
+	--friend-card-hover-bottom: color-mix(in srgb, var(--background-secondary) 8%, var(--background-primary) 92%);
+	--friend-border: color-mix(in srgb, var(--text-primary) 10%, transparent);
+	--friend-highlight: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	cursor: pointer;
+	padding: 0.9rem 1rem;
+	position: relative;
+	overflow: hidden;
+	max-width: 100%;
+	border: 1px solid transparent;
+	border-radius: 1rem;
+	background: transparent;
+	box-shadow: none;
+	transition:
+		var(--button-motion-transition),
+		transform 180ms ease;
+}
+
+.friendListItem::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background:
+		linear-gradient(145deg, color-mix(in srgb, var(--text-primary) 5%, transparent), transparent 45%, transparent 72%);
+	pointer-events: none;
+	opacity: 0.42;
+}
+
+.friendListItem:hover::before {
+	opacity: 0.95;
+}
+
+.contextMenuActive::before {
+	opacity: 0.95 !important;
+}
+
+.friendListItem:hover,
+.contextMenuActive {
+	background: color-mix(in srgb, var(--background-primary) 88%, var(--background-floating) 12%);
+	border-color: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+	transform: translateY(-1px);
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.friendInfo {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 0.875rem;
+	flex: 1 1 0;
+	width: 0;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.friendInfo > :first-child {
+	flex-shrink: 0;
+}
+
+.friendDetails {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	margin-top: 0;
+	gap: 0.0625rem;
+	flex: 1 1 0;
+	min-width: 0;
+	max-width: 100%;
+	overflow: hidden;
+}
+
+.friendNameRow {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	min-width: 0;
+}
+
+.friendName {
+	font-weight: 700;
+	color: var(--text-primary);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	line-height: 1.25rem;
+	max-height: 1.25rem;
+	min-width: 0;
+}
+
+.friendTag {
+	font-size: 0.75rem;
+	line-height: 1rem;
+	color: color-mix(in srgb, var(--text-tertiary) 86%, var(--text-secondary));
+	flex-shrink: 0;
+	opacity: 0.72;
+	transition:
+		opacity var(--transition-fast),
+		color var(--transition-fast);
+}
+
+.friendListItem:hover .friendTag,
+.contextMenuActive .friendTag {
+	opacity: 1;
+	color: var(--text-secondary);
+}
+
+.friendSubtext {
+	font-size: 0.75rem;
+	line-height: 1rem;
+	color: color-mix(in srgb, var(--text-primary-muted) 92%, var(--text-secondary));
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	margin-top: -0.0625rem;
+	opacity: 0.85;
+	width: 100%;
+	min-width: 0;
+}
+
+.friendListItem:hover .friendSubtext {
+	--emoji-show-animated: 1;
+}
+
+.contextMenuActive .friendSubtext {
+	--emoji-show-animated: 1;
+}
+
+.friendStatusOffline {
+	color: color-mix(in srgb, var(--text-tertiary) 90%, var(--text-secondary));
+}
+
+.friendStatusOnline {
+	color: color-mix(in srgb, var(--status-online) 68%, var(--text-primary));
+}
+
+.friendActions {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	flex-shrink: 0;
+}
+
+.actionButtonMessage {
+	background: color-mix(in srgb, var(--background-primary) 88%, var(--background-floating) 12%);
+	color: color-mix(in srgb, var(--brand-primary) 62%, var(--text-primary));
+	cursor: pointer;
+}
+
+.actionButtonMessage:hover {
+	background: color-mix(in srgb, var(--background-primary) 80%, var(--background-floating) 20%);
+	color: var(--text-primary);
+}
+
+.actionButtonMore {
+	background: color-mix(in srgb, var(--background-primary) 88%, var(--background-floating) 12%);
+	color: var(--text-primary-muted);
+	cursor: pointer;
+}
+
+.actionButtonMore:hover {
+	background: color-mix(in srgb, var(--background-primary) 80%, var(--background-floating) 20%);
+	color: var(--text-primary);
+}
+
+.actionButtonAccept {
+	background:
+		linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--brand-primary) 88%, var(--background-floating) 12%),
+			color-mix(in srgb, var(--brand-primary) 72%, var(--background-primary) 28%)
+		),
+		var(--brand-primary);
+	padding: 0.5rem;
+	color: var(--text-on-brand-primary);
+	cursor: pointer;
+}
+
+.actionButtonAccept:hover {
+	filter: brightness(1.05);
+}
+
+.actionButtonIgnore {
+	background: color-mix(in srgb, var(--background-primary) 88%, var(--background-floating) 12%);
+	padding: 0.5rem;
+	color: var(--text-primary);
+	cursor: pointer;
+}
+
+.actionButtonIgnore:hover {
+	background: color-mix(in srgb, var(--background-primary) 80%, var(--background-floating) 20%);
+}
+
+.actionButtonCancel {
+	background:
+		linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--status-danger) 82%, var(--background-floating) 18%),
+			color-mix(in srgb, var(--status-danger) 70%, var(--background-primary) 30%)
+		),
+		var(--status-danger);
+	padding: 0.5rem;
+	color: var(--text-primary);
+	cursor: pointer;
+}
+
+.actionButtonCancel:hover {
+	filter: brightness(1.05);
+}
+
+.iconSize {
+	height: 1.25rem;
+	width: 1.25rem;
+}
+
+@media (max-width: 767px) {
+	.friendListItem {
+		border: none;
+		box-shadow: none;
+		background: transparent;
+	}
+
+	.friendListItem::before {
+		display: none;
+	}
+
+	.friendListItem:hover,
+	.contextMenuActive {
+		transform: none;
+		border-color: transparent;
+		box-shadow: none;
+	}
+}

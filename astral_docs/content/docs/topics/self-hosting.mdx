@@ -1,0 +1,204 @@
+---
+title: Self-Hosting
+description: Deploy your own Astral instance with Docker Compose
+---
+
+Astral is fully self-hostable. This guide uses the `dev` Docker Compose stack for local testing and evaluation, and is **not production-ready as-is**.
+
+## Prerequisites
+
+- A Linux server (Ubuntu 22.04+ recommended) with at least 4 GB RAM and 2 CPU cores
+- Docker Engine 24+ and Docker Compose v2
+- A domain name with DNS pointed to your server
+- A TLS certificate (Caddy handles this automatically via Let's Encrypt)
+
+## Architecture
+
+A standard Astral deployment consists of these services:
+
+| Service | Role | Port |
+| --- | --- | --- |
+| **API** | HTTP REST API + WebSocket handlers | 3000 |
+| **Gateway** | Erlang-based real-time event system | 4000 |
+| **App** | Frontend web client (rspack dev or static) | 7001 |
+| **Caddy** | Reverse proxy, TLS termination | 80, 443 |
+| **Cassandra** | Primary database (ScyllaDB compatible) | 9042 |
+| **PostgreSQL** | Relational data (OAuth, billing) | 5432 |
+| **Redis** | Cache, sessions, pub/sub | 6379 |
+| **MinIO** | S3-compatible object storage (avatars, attachments) | 9000 |
+| **MeiliSearch** | Full-text message search | 7700 |
+| **LiveKit** | WebRTC voice and video | 7880 |
+| **ClamAV** | Attachment virus scanning | 3310 |
+
+## Quick Start
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Ivantech123/Astro-.git
+cd Astro-
+```
+
+### 2. Configure environment
+
+```bash
+cp dev/.env.example dev/.env
+```
+
+Edit `dev/.env` and set at minimum:
+
+```text
+# Domain
+PUBLIC_DOMAIN=your-domain.com
+PUBLIC_API_ENDPOINT=https://your-domain.com/api
+
+# Secrets (generate random strings)
+JWT_SECRET=<random-64-char-string>
+SESSION_SECRET=<random-64-char-string>
+
+# Database
+CASSANDRA_CONTACT_POINTS=cassandra
+CASSANDRA_KEYSPACE=astral
+POSTGRES_URL=postgresql://astral:astral_dev@postgres:5432/astral
+
+# Redis
+REDIS_URL=redis://redis:6379
+
+# Storage
+S3_ENDPOINT=http://minio:9000
+S3_ACCESS_KEY=<random-access-key>
+S3_SECRET_KEY=<random-secret-key>
+S3_BUCKET=astral
+
+# Voice
+LIVEKIT_API_KEY=<random-livekit-key>
+LIVEKIT_API_SECRET=<random-livekit-secret>
+LIVEKIT_URL=wss://your-domain.com
+
+# Optional
+STRIPE_ENABLED=false
+FREE_PREMIUM=false
+CAPTCHA_ENABLED=true
+```
+
+> Never deploy with default or placeholder credentials (for example `minioadmin` / `devkey`). Generate unique secrets before starting the stack.
+
+### 3. Start the stack
+
+> Security note: `dev/compose.yaml` exposes several backing services and enables development settings. Do not expose this stack directly to the public internet without hardening network bindings, credentials, and service configs.
+
+```bash
+cd dev
+docker compose up -d
+```
+
+Wait for Cassandra to become healthy (takes 30–60 seconds on first boot):
+
+```bash
+docker compose logs -f cassandra
+# Wait for "listening for clients" message
+```
+
+### 4. Run migrations
+
+Cassandra tables are created automatically by the migration container. Verify:
+
+```bash
+docker compose logs cassandra-migrate
+```
+
+### 5. Access the app
+
+Open `https://your-domain.com` in a browser. Register the first account — it becomes the instance administrator.
+
+## Production Hardening
+
+### TLS with Caddy
+
+Edit the Caddyfile to use your domain:
+
+```text
+your-domain.com {
+    handle /api/* {
+        reverse_proxy api:3000
+    }
+    handle /gateway* {
+        reverse_proxy gateway:4000
+    }
+    handle {
+        reverse_proxy app:7001
+    }
+}
+```
+
+Caddy automatically obtains and renews Let's Encrypt certificates.
+
+### Resource Limits
+
+Add memory limits in `compose.yaml`:
+
+```yaml
+services:
+  api:
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+  cassandra:
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+```
+
+### Backups
+
+**Cassandra:**
+```bash
+docker exec cassandra nodetool snapshot astral
+# Snapshots stored in /var/lib/cassandra/data/astral/*/snapshots/
+```
+
+**PostgreSQL:**
+```bash
+docker exec postgres pg_dump -U astral astral > backup.sql
+```
+
+**MinIO:**
+```bash
+docker exec minio mc mirror /data /backup
+```
+
+### Monitoring
+
+Enable the metrics stack with ClickHouse:
+
+```bash
+docker compose --profile clickhouse up -d
+```
+
+This starts ClickHouse + the Astral metrics collector. View metrics at `/status/summary`.
+
+## Updating
+
+```bash
+git pull origin main
+docker compose build
+docker compose up -d
+```
+
+The API and Gateway will restart with the new code. Database migrations run automatically.
+
+## Troubleshooting
+
+| Problem | Solution |
+| --- | --- |
+| API crashes on start | Check Cassandra is healthy: `docker compose logs cassandra` |
+| Gateway won't connect | Verify Erlang cookie matches and the gateway can reach Cassandra |
+| Voice calls fail | Check LiveKit logs and ensure UDP ports 7882 are open |
+| Attachments don't upload | Verify MinIO is healthy and S3 credentials are correct |
+| Search returns nothing | MeiliSearch needs indexing: check `docker compose logs meilisearch` |
+
+## Environment Reference
+
+See `dev/.env.example` for the complete list of configuration variables with descriptions.

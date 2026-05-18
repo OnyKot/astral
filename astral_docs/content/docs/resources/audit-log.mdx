@@ -1,0 +1,209 @@
+---
+title: Audit Log
+description: Audit Log
+---
+
+Guild audit logs let you inspect moderation and configuration actions recorded for a server. These logs are essential for tracking changes, ensuring accountability, and maintaining server security in Astral, which is compatible with Discord's API structure. Audit logs capture a wide range of events, including guild updates, channel creations or deletions, member kicks or bans, role updates, and more.
+
+## Endpoints
+
+Astral provides endpoints to retrieve and interact with audit logs. The primary endpoint allows you to fetch audit log entries for a specific guild. Below is a comprehensive table of available endpoints:
+
+| Method | Route                        | Description |
+|--------|------------------------------|-------------|
+| GET    | `/guilds/\{guild.id\}/audit-logs` | Retrieves a list of audit log entries for the specified guild. You can filter results using query parameters to narrow down the entries based on criteria like time, user, or action type. This endpoint requires the `VIEW_AUDIT_LOG` permission for the bot or user making the request. |
+
+<Callout type="note">
+  Ensure your bot has the necessary permissions to access audit logs. In Astral, this typically means the bot must have the `VIEW_AUDIT_LOG` scope granted via OAuth or explicit guild permissions.
+</Callout>
+
+## Query Parameters
+
+The GET endpoint supports several query parameters to filter and paginate results. These parameters help in efficiently retrieving relevant data without overwhelming the response.
+
+| Parameter   | Type    | Description |
+|-------------|---------|-------------|
+| `limit`    | Integer | The maximum number of audit log entries to return. The default is 50, and the maximum is 100 to prevent abuse. |
+| `before`   | String  | Fetches entries before a specific audit log entry ID. This is useful for pagination. |
+| `after`    | String  | Fetches entries after a specific audit log entry ID. This is also for pagination. |
+| `user_id`  | String  | Filters entries by the ID of the user who performed the actions. |
+| `action_type` | Integer | Filters entries by the type of action. For example, `22` might represent a message delete action. Refer to the action types section below for a full list. |
+
+<Callout type="warning">
+  The `before` and `after` parameters cannot be used together in the same request, as they represent opposite directions of pagination.
+</Callout>
+
+## Audit Log Objects and Fields
+
+Audit log responses contain structured objects that describe each logged event. The main object is an `AuditLog` object, which includes an array of `AuditLogEntry` objects. Below are the detailed fields for these objects.
+
+### AuditLog Object
+
+The top-level response object for the GET endpoint.
+
+| Field          | Type          | Description |
+|---------------|---------------|-------------|
+| `entries`     | Array of AuditLogEntry | An array of audit log entries. |
+| `webhooks`    | Array of Webhook | An array of webhooks involved in the actions (if any). |
+| `users`       | Array of User | An array of users referenced in the entries, such as the actor or target. |
+| `integrations`| Array of Integration | An array of integrations (e.g., bots or apps) involved. |
+
+### AuditLogEntry Object
+
+Each entry in the audit log represents a single action.
+
+| Field          | Type          | Description |
+|---------------|---------------|-------------|
+| `id`          | String        | The unique ID of the audit log entry. |
+| `action_type` | Integer       | The type of action performed. See the action types table below for details. |
+| `target_id`   | String        | The ID of the target of the action (e.g., a channel, role, or user). |
+| `changes`     | Array of Change | An array of changes made, if the action involved modifications (e.g., updates to a role). |
+| `options`     | Object        | Additional options for the action, such as delete message days for a prune. |
+| `user_id`     | String        | The ID of the user who performed the action. |
+| `reason`      | String        | The reason provided for the action, if any. |
+| `timestamp`   | String (ISO 8601) | The time when the action occurred. |
+
+### Change Object (within AuditLogEntry)
+
+Represents individual changes in an action.
+
+| Field          | Type          | Description |
+|---------------|---------------|-------------|
+| `key`         | String        | The key of the changed field (e.g., "name" for a role name change). |
+| `old_value`   | Any           | The previous value of the field. |
+| `new_value`   | Any           | The new value of the field. |
+
+### Action Types
+
+Audit logs track various events. Here's a table of common action types, based on Astral's compatibility with Discord:
+
+| Action Type (Integer) | Description |
+|-----------------------|-------------|
+| 1                    | Guild update. |
+| 10                   | Channel create. |
+| 11                   | Channel update. |
+| 12                   | Channel delete. |
+| 20                   | Member kick. |
+| 21                   | Member prune. |
+| 22                   | Member ban add. |
+| 23                   | Member ban remove. |
+| 24                   | Member update (e.g., role changes). |
+| 25                   | Member disconnect (voice). |
+| 30                   | Role create. |
+| 31                   | Role update. |
+| 32                   | Role delete. |
+| 40                   | Invite create. |
+| 41                   | Invite update. |
+| 42                   | Invite delete. |
+| 50                   | Webhook create. |
+| 51                   | Webhook update. |
+| 52                   | Webhook delete. |
+| 72                   | Emoji create. |
+| 73                   | Emoji update. |
+| 74                   | Emoji delete. |
+
+<Callout type="info">
+  Action types may evolve with platform updates. Always refer to the latest API documentation for the most accurate list.
+</Callout>
+
+## JSON Examples
+
+Below are examples of how to make requests and what responses might look like.
+
+### Request Example
+
+For a GET request to fetch the last 50 audit logs filtered by a specific action type:
+
+```json
+GET /guilds/1234567890/audit-logs?limit=50&action_type=22
+Headers:
+{
+  "Authorization": "Bot YOUR_BOT_TOKEN"
+}
+```
+
+### Response Example
+
+A successful response might look like this:
+
+```json
+{
+  "entries": [
+    {
+      "id": "9876543210",
+      "action_type": 22,
+      "target_id": "1122334455",
+      "changes": [],
+      "options": {
+        "delete_member_days": "7",
+        "count": 0
+      },
+      "user_id": "6677889900",
+      "reason": "Violated community guidelines",
+      "timestamp": "2023-10-01T12:00:00.000Z"
+    }
+  ],
+  "webhooks": [],
+  "users": [
+    {
+      "id": "6677889900",
+      "username": "moderator_bot",
+      "discriminator": "0001"
+    }
+  ],
+  "integrations": []
+}
+```
+
+<Callout type="tip">
+  Handle pagination in your application by using the `before` or `after` parameters based on the `id` from previous responses.
+</Callout>
+
+## Rate Limits
+
+This endpoint is subject to Astral's standard rate limits to prevent abuse. Specifically:
+
+- **Global Limit:** Up to 5 requests per 10 seconds per guild.
+- **Burst Limit:** You may burst up to 10 requests, but sustained usage will be throttled.
+- **Headers:** Responses include rate limit headers such as `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` for precise tracking.
+
+If you exceed these limits, you will receive a 429 Too Many Requests response. Implement exponential backoff in your client to handle retries gracefully.
+
+<Callout type="warning">
+  Rate limits are enforced per IP and per bot token. Monitor your usage to avoid disruptions.
+</Callout>
+
+## Supplying an Audit Reason on Write Routes
+
+Many moderation and management routes support the public header to provide a reason for actions, which will be recorded in the audit logs.
+
+```text
+X-Audit-Log-Reason: Spam cleanup
+```
+
+### Example
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "X-Audit-Log-Reason: Spam" \
+  -d '{"delete_message_days":1}' \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/bans/<USER_ID>
+```
+
+Use this header whenever your bot performs actions like banning users, deleting channels, or updating roles to ensure traceability.
+
+## Best Practices
+
+To effectively use audit logs in your Astral applications, consider the following guidelines:
+
+- **Efficient Querying:** Use filters like `user_id` and `action_type` to minimize data transfer. Avoid fetching large unfiltered sets, as this can hit rate limits quickly.
+- **Pagination Handling:** Always implement pagination to handle large logs. Start with a reasonable `limit` (e.g., 50) and use `before` or `after` for subsequent requests.
+- **Security and Privacy:** Audit logs may contain sensitive information. Ensure that your application processes and stores this data securely, complying with relevant data protection regulations.
+- **Logging Actions:** When your bot performs actions, always include an `X-Audit-Log-Reason` header to provide context, making it easier for server administrators to review logs.
+- **Error Handling:** Check for permission errors (e.g., 403 Forbidden) if your bot lacks access. Also, handle 429 responses by implementing retry logic with increasing delays.
+- **Monitoring Changes:** Use audit logs to monitor for unusual activity, such as mass deletions or role changes, and integrate with alerting systems if needed.
+- **Testing:** In development, test your integration with a test guild to understand the response structures and avoid affecting live servers.
+
+By following these practices, you can leverage audit logs to enhance moderation, improve accountability, and build more robust applications on Astral.

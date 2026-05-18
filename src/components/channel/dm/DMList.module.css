@@ -1,0 +1,2016 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.dmListContainer,
+.mobileContainer {
+	--dm-shell-top: color-mix(in srgb, var(--background-secondary) 94%, var(--background-primary) 6%);
+	--dm-shell-bottom: color-mix(in srgb, var(--background-secondary) 94%, var(--background-primary) 6%);
+	--dm-card-top: color-mix(in srgb, var(--background-floating) 78%, var(--background-primary) 22%);
+	--dm-card-bottom: color-mix(in srgb, var(--background-floating) 78%, var(--background-primary) 22%);
+	--dm-card-hover-top: color-mix(in srgb, var(--background-floating) 88%, var(--background-primary) 12%);
+	--dm-card-hover-bottom: color-mix(in srgb, var(--background-floating) 88%, var(--background-primary) 12%);
+	--dm-border: color-mix(in srgb, var(--text-primary) 10%, transparent);
+	--dm-border-strong: color-mix(in srgb, var(--text-primary) 16%, transparent);
+	--dm-shadow: rgb(15 23 42 / 0.12);
+	--dm-highlight: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	--dm-icon-top: color-mix(in srgb, var(--background-floating) 82%, var(--background-primary) 18%);
+	--dm-icon-bottom: color-mix(in srgb, var(--background-secondary) 78%, var(--background-primary) 22%);
+	--dm-primary-top: color-mix(in srgb, var(--brand-primary) 76%, var(--background-primary) 24%);
+	--dm-primary-bottom: color-mix(in srgb, var(--brand-primary) 76%, var(--background-primary) 24%);
+	--dm-selected-top: color-mix(in srgb, var(--brand-primary) 16%, var(--dm-card-top));
+	--dm-selected-bottom: color-mix(in srgb, var(--brand-primary) 16%, var(--dm-card-top));
+	--dm-unread-dot: color-mix(in srgb, var(--brand-primary) 82%, var(--text-primary));
+	--dm-divider: color-mix(in srgb, var(--text-primary) 18%, transparent);
+	--dm-fab-top: color-mix(in srgb, var(--brand-primary) 74%, var(--background-primary) 26%);
+	--dm-fab-bottom: color-mix(in srgb, var(--brand-primary) 74%, var(--background-primary) 26%);
+	--dm-on-accent: var(--text-on-brand-primary);
+	--pluto-violet-strong: #8d63ff;
+	--pluto-violet-soft: #6f43de;
+	--pluto-violet-deep: #4f2aa8;
+	--pluto-violet-glow: rgb(129 86 255 / 0.58);
+}
+
+.dmListContainer {
+	position: relative;
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	height: calc(100% - var(--layout-user-area-reserved-height, 0px));
+	min-height: 0;
+	width: var(--layout-sidebar-width);
+	min-width: 0;
+	user-select: none;
+	-webkit-user-select: none;
+	overflow: hidden;
+	background: var(--dm-shell-top);
+	border-right: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	padding-bottom: 0;
+	isolation: isolate;
+	transition: height var(--motion-dur-medium) var(--motion-ease-smooth);
+}
+
+.dmListContainer::before {
+	display: none;
+}
+
+.dmListHeader {
+	display: flex;
+	align-items: center;
+	height: auto;
+	min-height: 0;
+	background-color: transparent;
+	padding: 0.875rem 0.75rem 0.5rem;
+	width: 100%;
+	border: none;
+	border-bottom: none;
+	cursor: pointer;
+	text-align: left;
+	transition: transform 180ms ease;
+}
+
+.dmListHeaderButton {
+	position: relative;
+	display: flex;
+	align-items: center;
+	width: 100%;
+	height: 2.75rem;
+	padding: 0 4.5rem 0 0.9375rem;
+	border: 1px solid transparent;
+	border-radius: 1.125rem;
+	background: color-mix(in srgb, var(--background-floating) 10%, transparent);
+	color: color-mix(in srgb, var(--text-primary-muted) 78%, var(--text-primary));
+	font-size: 0.875rem;
+	font-weight: 600;
+	box-shadow: none;
+	backdrop-filter: blur(18px);
+	transition:
+		var(--button-motion-transition),
+		transform 180ms ease;
+}
+
+.dmListHeader:hover {
+	transform: translateY(-1px);
+}
+
+.dmListHeader:hover .dmListHeaderButton {
+	color: var(--text-primary);
+	border-color: transparent;
+	box-shadow: none;
+}
+
+.dmListHeaderText {
+	display: block;
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dmListHeaderShortcut {
+	position: absolute;
+	right: var(--spacing-2);
+	display: flex;
+	align-items: center;
+	gap: 0.125rem;
+	flex-shrink: 0;
+}
+
+.dmListHeaderShortcut kbd {
+	display: inline-flex;
+	height: 1.125rem;
+	min-width: 1.125rem;
+	align-items: center;
+	justify-content: center;
+	padding: 0 0.25rem;
+	border-radius: 999px;
+	background: linear-gradient(180deg, var(--dm-card-hover-top), var(--dm-card-hover-bottom));
+	color: var(--text-primary);
+	font-size: 0.625rem;
+	font-weight: 700;
+	font-family: inherit;
+	border: 1px solid var(--dm-border);
+	box-shadow: inset 0 1px 0 var(--dm-highlight);
+}
+
+.theme-light .dmListHeaderShortcut kbd {
+	border-color: var(--dm-border);
+	background: linear-gradient(180deg, var(--dm-card-hover-top), var(--dm-card-hover-bottom));
+	color: var(--text-primary);
+	box-shadow: inset 0 1px 0 var(--dm-highlight);
+}
+
+.mobileContainer {
+	position: relative;
+	display: grid;
+	grid-template-rows: auto 1fr;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	contain: layout paint;
+	overflow-x: clip;
+	background: var(--background-primary);
+}
+
+.mobileContainer,
+.mobileContainer * {
+	box-sizing: border-box;
+}
+
+.mobileHeader {
+	display: flex;
+	height: auto;
+	min-height: 3.5rem;
+	flex-shrink: 0;
+	align-items: center;
+	border-bottom: none;
+	padding: calc(0.92rem + (var(--safe-area-top, 0px) * 0.12)) 1rem 0.88rem;
+	min-width: 0;
+	box-sizing: border-box;
+	width: 100%;
+	overflow-x: clip;
+}
+
+.mobileHeaderInner {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	align-items: center;
+	width: min(100%, 28rem);
+	min-width: 0;
+	gap: 0;
+	margin-left: auto;
+	margin-right: auto;
+	padding: 0.125rem 0;
+}
+
+.mobileHeaderTitle {
+	margin: 0;
+	font-family:
+		'SF Pro Display',
+		'SF Pro Text',
+		-apple-system,
+		BlinkMacSystemFont,
+		'Segoe UI',
+		sans-serif;
+	font-weight: 800;
+	font-size: 1.3rem;
+	line-height: 1.58rem;
+	letter-spacing: -0.015em;
+	color: var(--text-primary);
+	min-width: 0;
+	flex: 1 1 auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+}
+
+.mobileHeaderActions {
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: max-content;
+	align-items: center;
+	gap: 0.625rem;
+	min-width: 0;
+	flex: 0 0 auto;
+	justify-content: flex-end;
+	flex-wrap: nowrap;
+	max-width: 100%;
+}
+
+.mobileHeaderButton {
+	display: flex;
+	height: 2.25rem;
+	width: 2.25rem;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.95rem;
+	background:
+		linear-gradient(180deg, var(--dm-card-top), var(--dm-card-bottom)),
+		color-mix(in srgb, var(--brand-primary) 5%, transparent);
+	color: var(--text-primary);
+	border: 1px solid var(--dm-border);
+	cursor: pointer;
+	box-shadow:
+		0 10px 22px rgb(15 23 42 / 0.12),
+		inset 0 1px 0 var(--dm-highlight);
+	transition:
+		var(--button-motion-transition),
+		transform 180ms ease;
+}
+
+.mobileHeaderButton .iconSize5 {
+	width: 1.2rem;
+	height: 1.2rem;
+}
+
+.mobileHeaderButton:hover {
+	background:
+		linear-gradient(180deg, var(--dm-card-hover-top), var(--dm-card-hover-bottom)),
+		color-mix(in srgb, var(--brand-primary) 7%, transparent);
+	border-color: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+	transform: translateY(-1px);
+}
+
+.mobileAddFriendButton {
+	position: relative;
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	flex: 0 1 auto;
+	flex-shrink: 1;
+	gap: 0.56rem;
+	border-radius: 999px;
+	background:
+		linear-gradient(135deg, var(--dm-primary-top), var(--dm-primary-bottom)),
+		var(--brand-primary);
+	padding-left: 0.95rem;
+	padding-right: 0.95rem;
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+	max-width: min(64vw, 11.5rem);
+	min-height: 2.25rem;
+	white-space: nowrap;
+	font-weight: 600;
+	font-size: 0.84rem;
+	line-height: 1.15rem;
+	color: var(--dm-on-accent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+	cursor: pointer;
+	box-shadow:
+		0 16px 34px color-mix(in srgb, var(--brand-primary) 38%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
+	transition:
+		var(--button-motion-transition),
+		transform 180ms ease;
+}
+
+.mobileAddFriendButton > span {
+	display: block;
+	min-width: 0;
+	max-width: 7.9rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mobileAddFriendButton .iconSize4 {
+	width: 1.12rem;
+	height: 1.12rem;
+	flex-shrink: 0;
+}
+
+.mobileSwipeRow {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	overflow: visible;
+	border-radius: 1rem;
+}
+
+.mobileAddFriendButton:hover {
+	transform: translateY(-1px);
+	background:
+		linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--brand-primary) 88%, var(--background-floating) 12%),
+			color-mix(in srgb, var(--brand-primary) 72%, var(--background-primary) 28%)
+		),
+		var(--brand-primary);
+	box-shadow:
+		0 22px 38px color-mix(in srgb, var(--brand-primary) 48%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 14%, transparent);
+}
+
+.mobileAddFriendBadge {
+	position: absolute;
+	top: -0.25rem;
+	right: -0.25rem;
+	display: flex;
+	height: 1.25rem;
+	min-width: 1.25rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--radius-full);
+	background-color: var(--status-danger);
+	padding-left: 0.25rem;
+	padding-right: 0.25rem;
+	color: white;
+	font-size: 0.75rem;
+	line-height: 1rem;
+}
+
+.mobileScrollerContent {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	padding: 0.45rem max(0px, var(--safe-area-right, 0px)) var(--mobile-bottom-nav-height)
+		max(0px, var(--safe-area-left, 0px));
+	max-width: 100%;
+	margin-left: 0;
+	margin-right: 0;
+	width: 100%;
+	min-height: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	transform: translateZ(0);
+	overflow-x: clip;
+}
+
+.mobileQuickSection {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4375rem;
+	padding-bottom: 0.4rem;
+}
+
+.mobileChatsSection {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	gap: 0;
+	margin-top: 0;
+	padding: 0;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+.mobileTopQuickRow {
+	display: flex;
+	align-items: flex-end;
+	gap: 0.95rem;
+	width: 100%;
+	max-width: 100%;
+	overflow-x: auto;
+	padding: 0.12rem 0.78rem 0.42rem 0.78rem;
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+	scrollbar-width: none;
+}
+
+.mobileTopQuickShell {
+	width: min(100%, 28rem);
+	max-width: 28rem;
+	margin: 0 auto;
+	padding-top: 0.1rem;
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	background: color-mix(in srgb, var(--background-primary) 95%, transparent);
+	backdrop-filter: blur(14px);
+	-webkit-backdrop-filter: blur(14px);
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.mobileTopQuickItem {
+	flex: 0 0 auto;
+	animation: dmQuickTabReveal 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mobileTopQuickItem:nth-child(2) {
+	animation-delay: 55ms;
+}
+
+.mobileTopQuickItem:nth-child(3) {
+	animation-delay: 110ms;
+}
+
+.mobileTopQuickRow::-webkit-scrollbar {
+	display: none;
+}
+
+.mobileSearchWrapper {
+	width: 100%;
+	padding: 0.52rem 0.78rem 0.6rem;
+	animation: dmMobileSearchReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mobileSearchWrapper input {
+	min-height: 3.1rem;
+	border-radius: 1.25rem;
+	border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-floating) 10%);
+	box-shadow:
+		0 12px 28px color-mix(in srgb, var(--background-primary) 28%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+	color: var(--text-primary);
+	font-weight: 600;
+	transition:
+		border-color 0.2s ease,
+		box-shadow 0.2s ease,
+		transform 0.2s ease;
+}
+
+.mobileSearchWrapper input:focus,
+.mobileSearchWrapper input:focus-within {
+	border-color: color-mix(in srgb, var(--brand-primary) 20%, transparent);
+	transform: translateY(-1px);
+}
+
+.mobileSearchWrapper input::placeholder {
+	color: color-mix(in srgb, var(--text-primary-muted) 92%, var(--text-secondary));
+}
+
+.mobileSearchIcon {
+	height: 1.25rem;
+	width: 1.25rem;
+	color: color-mix(in srgb, var(--brand-primary) 42%, var(--text-primary));
+}
+
+.mobileQuickSection,
+.mobileChatsSection {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	overflow-x: clip;
+}
+
+.mobileQuickSection > *,
+.mobileChatsSection > * {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.mobileChatsSectionHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	padding: 0.1rem 0.1rem 0.25rem;
+}
+
+.mobileChatsSectionTitleWrap {
+	display: flex;
+	min-width: 0;
+	align-items: baseline;
+	gap: 0.45rem;
+	flex-wrap: wrap;
+}
+
+.mobileChatsSectionTitle {
+	font-size: 0.95rem;
+	line-height: 1.2;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	color: var(--text-primary);
+}
+
+.mobileChatsSectionMeta {
+	font-size: 0.72rem;
+	line-height: 1rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--text-secondary) 84%, var(--text-primary));
+}
+
+.mobileRefreshStatus {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.2rem 0.1rem 0.3rem;
+	color: color-mix(in srgb, var(--brand-primary) 68%, var(--text-primary));
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+
+.mobileRefreshDot {
+	width: 0.5rem;
+	height: 0.5rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 88%, var(--text-primary) 12%);
+	box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--brand-primary) 22%, transparent);
+	animation: dmRefreshDotPulse 900ms ease-in-out infinite;
+}
+
+.mobileRefreshLabel {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.desktopScroller {
+	background-color: transparent;
+}
+
+.mobileScroller {
+	background-color: transparent;
+	overscroll-behavior-y: contain;
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	overflow-x: clip;
+}
+
+.mobileFAB {
+	position: fixed;
+	right: 1rem;
+	bottom: calc(60px + var(--safe-area-bottom, 0px) + 1rem);
+	z-index: 50;
+	display: flex;
+	height: 3.5rem;
+	width: 3.5rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 1.25rem;
+	background:
+		linear-gradient(135deg, var(--dm-fab-top), var(--dm-fab-bottom)),
+		var(--brand-primary);
+	color: var(--dm-on-accent);
+	box-shadow:
+		0 22px 44px color-mix(in srgb, var(--brand-primary) 34%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	cursor: pointer;
+}
+
+.scrollerContent {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	padding-top: 0.125rem;
+	padding-bottom: 0.625rem;
+	padding-left: 0.75rem;
+	padding-right: max(0px, calc(0.75rem - var(--scroller-track-size, 8px)));
+}
+
+.clickableItem {
+	display: flex;
+	height: 3rem;
+	width: 100%;
+	cursor: pointer;
+	align-items: center;
+	border-radius: 1.125rem;
+	border: 1px solid transparent;
+	padding-left: 0.75rem;
+	padding-right: 0.75rem;
+	text-align: left;
+	background: color-mix(in srgb, var(--background-floating) 8%, transparent);
+	color: var(--text-primary-muted);
+	box-shadow: none;
+	transition:
+		var(--button-motion-transition),
+		transform 180ms ease;
+}
+
+.clickableItemPlutonium {
+	position: relative;
+	overflow: hidden;
+	background:
+		linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--pluto-violet-strong) 84%, var(--background-floating) 16%),
+			color-mix(in srgb, var(--pluto-violet-soft) 82%, var(--pluto-violet-deep) 18%)
+		),
+		var(--pluto-violet-soft);
+	border: none;
+	box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
+	color: rgb(247 243 255);
+}
+
+.clickableItemPlutonium::before {
+	content: '';
+	position: absolute;
+	inset: -28% 0;
+	pointer-events: none;
+	background-image:
+		radial-gradient(circle at 22% 16%, rgb(255 255 255 / 0.9) 0 1px, transparent 1.35px),
+		radial-gradient(circle at 58% 38%, rgb(226 208 255 / 0.75) 0 1px, transparent 1.4px),
+		radial-gradient(circle at 84% 14%, rgb(210 229 255 / 0.72) 0 1px, transparent 1.35px),
+		radial-gradient(circle at 44% 82%, rgb(255 255 255 / 0.62) 0 0.9px, transparent 1.3px);
+	background-size: 130px 74px, 158px 92px, 146px 84px, 138px 88px;
+	background-position: 10% 14%, 58% 26%, 82% 8%, 42% 82%;
+	opacity: 0;
+	animation: none;
+}
+
+.clickableItemPlutonium > * {
+	position: relative;
+	z-index: 1;
+}
+
+.clickableItemPlutonium .clickableItemText {
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	color: inherit;
+}
+
+.clickableItemPlutonium .plutoniumMenuIcon {
+	background:
+		radial-gradient(circle at 34% 26%, rgb(255 255 255 / 0.42), transparent 58%),
+		linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--pluto-violet-strong) 74%, white 26%),
+			color-mix(in srgb, var(--pluto-violet-deep) 84%, black 16%)
+		);
+	color: white;
+	box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.clickableItemPlutonium:hover {
+		transform: none;
+		box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.24);
+	}
+
+	.clickableItemPlutonium:hover::before {
+		opacity: 0.52;
+		animation: plutoniumButtonStarsDrift 6.2s linear infinite;
+	}
+}
+
+.clickableItemIcon {
+	display: flex;
+	height: 2.125rem;
+	width: 2.125rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.875rem;
+	background: color-mix(in srgb, var(--background-floating) 12%, transparent);
+	color: var(--text-primary);
+	transition:
+		background-color var(--transition-fast),
+		color var(--transition-fast),
+		var(--button-motion-transition),
+		transform 180ms ease;
+	box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.clickableItem:hover:not(.clickableItemSelected) .clickableItemIcon {
+		background-color: var(--dm-card-hover-top);
+		transform: scale(1.03);
+	}
+}
+
+.clickableItemSelected .clickableItemIcon {
+	background:
+		linear-gradient(135deg, var(--dm-primary-top), var(--dm-primary-bottom)),
+		var(--brand-primary);
+	color: var(--dm-on-accent);
+	box-shadow:
+		0 14px 28px color-mix(in srgb, var(--brand-primary) 34%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.clickableItem:hover:not(.clickableItemSelected) {
+		background: linear-gradient(180deg, var(--dm-card-hover-top), var(--dm-card-hover-bottom));
+		color: var(--text-primary);
+		border-color: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+		transform: translateY(-1px);
+	}
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.clickableItem.clickableItemPlutonium:hover:not(.clickableItemSelected) {
+		background:
+			linear-gradient(
+				135deg,
+				color-mix(in srgb, var(--pluto-violet-strong) 88%, white 12%),
+				color-mix(in srgb, var(--pluto-violet-soft) 82%, var(--pluto-violet-deep) 18%)
+			),
+			var(--pluto-violet-soft);
+		color: rgb(251 248 255);
+		border-color: transparent;
+		box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.24);
+		transform: none;
+	}
+
+	.clickableItem.clickableItemPlutonium:hover:not(.clickableItemSelected) .clickableItemIcon {
+		background:
+			radial-gradient(circle at 34% 26%, rgb(255 255 255 / 0.48), transparent 58%),
+			linear-gradient(
+				135deg,
+				color-mix(in srgb, var(--pluto-violet-strong) 80%, white 20%),
+				color-mix(in srgb, var(--pluto-violet-deep) 80%, black 20%)
+			);
+		transform: none;
+	}
+}
+
+.clickableItemPressed:not(.clickableItemSelected) {
+	background: linear-gradient(180deg, var(--dm-card-hover-top), var(--dm-card-hover-bottom));
+	color: var(--text-primary);
+}
+
+.clickableItemSelected {
+	composes: clickableItem;
+	background:
+		linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, var(--dm-card-top)), var(--dm-card-bottom)),
+		color-mix(in srgb, var(--surface-interactive-selected-bg) 35%, transparent);
+	color: var(--surface-interactive-selected-color);
+	border-color: transparent;
+	box-shadow: none;
+}
+
+.clickableItemInner {
+	display: flex;
+	width: 100%;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.clickableItemContent {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.callIcon {
+	height: 1rem;
+	width: 1rem;
+	color: currentColor;
+}
+
+.sendIcon {
+	height: 1.5rem;
+	width: 1.5rem;
+	color: currentColor;
+}
+
+.clickableItemText {
+	font-weight: 500;
+}
+
+.dmSectionSeparator {
+	height: 1px;
+	margin: 0.5rem 0.75rem 0.25rem;
+	background: color-mix(in srgb, var(--dm-divider) 36%, transparent);
+}
+
+.dmSectionHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 0.5rem;
+	margin-bottom: 0;
+	padding-left: 0.75rem;
+	padding-right: 0.75rem;
+}
+
+.dmSectionHeaderText {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	color: color-mix(in srgb, var(--text-primary-muted) 82%, var(--text-primary));
+}
+
+.dmSectionHeaderLabel {
+	font-size: 0.75rem;
+	line-height: 1rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.dmCreateButton {
+	display: flex;
+	height: 1.5rem;
+	width: 1.5rem;
+	cursor: pointer;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid transparent;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--background-floating) 10%, transparent);
+	color: color-mix(in srgb, var(--text-primary-muted) 80%, var(--text-primary));
+	box-shadow: none;
+}
+
+.dmCreateButton:hover {
+	color: var(--text-primary);
+	background: color-mix(in srgb, var(--background-floating) 16%, transparent);
+}
+
+.dmCreateButtonActive {
+	composes: dmCreateButton;
+	color: var(--text-primary);
+}
+
+.dmFriendsButton {
+	display: flex;
+	align-items: center;
+	gap: 0.7rem;
+	width: 100%;
+	margin: 0.45rem 0 0.2rem;
+	padding: 0.52rem 0.62rem;
+	border-radius: 0.95rem;
+	border: 1px solid transparent;
+	background: color-mix(in srgb, var(--background-floating) 8%, transparent);
+	color: var(--text-primary-muted);
+	cursor: pointer;
+	transition: var(--button-motion-transition);
+	box-sizing: border-box;
+}
+
+.dmFriendsButton:hover {
+	color: var(--text-primary);
+	background: color-mix(in srgb, var(--background-floating) 14%, transparent);
+	border-color: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+}
+
+.dmFriendsButtonSelected {
+	background: color-mix(in srgb, var(--brand-primary) 16%, var(--background-floating) 84%);
+	color: var(--text-primary);
+	border-color: color-mix(in srgb, var(--brand-primary) 24%, transparent);
+}
+
+.dmFriendsButtonIcon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 1.9rem;
+	width: 1.9rem;
+	border-radius: 0.75rem;
+	background: color-mix(in srgb, var(--background-primary) 86%, var(--background-secondary) 14%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	color: var(--text-primary);
+	flex-shrink: 0;
+}
+
+.dmFriendsButtonSelected .dmFriendsButtonIcon {
+	background: color-mix(in srgb, var(--brand-primary) 24%, var(--background-primary) 76%);
+	border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+}
+
+.dmFriendsButtonText {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	min-width: 0;
+	width: 100%;
+	flex: 1 1 0;
+	text-align: left;
+}
+
+.dmFriendsButtonLabel {
+	display: block;
+	font-weight: 600;
+	font-size: 0.86rem;
+	line-height: 1.2rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.dmChannelList {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	contain: layout paint;
+}
+
+.dmItemMobile {
+	position: relative;
+	display: flex;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	cursor: pointer;
+	align-items: center;
+	justify-content: space-between;
+	border-radius: 0;
+	padding-left: 0.95rem;
+	padding-right: 0.95rem;
+	text-align: left;
+	min-height: 4.35rem;
+	height: auto;
+	background: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	border-left: none;
+	border-right: none;
+	color: var(--text-primary-muted);
+	overflow: hidden;
+	box-shadow: none;
+	-webkit-tap-highlight-color: transparent;
+	tap-highlight-color: transparent;
+	touch-action: pan-y;
+	content-visibility: auto;
+	contain-intrinsic-size: 70px;
+	transition:
+		background var(--motion-dur-short) var(--motion-ease-snap),
+		border-color var(--motion-dur-short) var(--motion-ease-snap),
+		box-shadow var(--motion-dur-short) var(--motion-ease-smooth),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth),
+		opacity var(--motion-dur-short) var(--motion-ease-smooth);
+}
+
+.dmItemMobileSelected {
+	composes: dmItemMobile;
+	background: color-mix(in srgb, var(--brand-primary) 14%, var(--background-secondary) 86%);
+	color: var(--text-primary);
+	border-color: color-mix(in srgb, var(--brand-primary) 26%, transparent);
+	box-shadow: none;
+}
+
+.dmItemMobileUnread {
+	composes: dmItemMobile;
+	background-color: transparent;
+	color: var(--text-primary);
+}
+
+.dmItemMobileMuted {
+	opacity: 0.5;
+	color: var(--text-tertiary-muted);
+}
+
+.dmItem {
+	position: relative;
+	display: flex;
+	width: 100%;
+	cursor: pointer;
+	align-items: center;
+	justify-content: space-between;
+	border-radius: 1.25rem;
+	border: 1px solid transparent;
+	padding-left: 0.75rem;
+	padding-right: 0.75rem;
+	text-align: left;
+	height: 3.5rem;
+	background: color-mix(in srgb, var(--background-floating) 8%, transparent);
+	color: var(--text-primary-muted);
+	box-shadow: none;
+	content-visibility: auto;
+	contain-intrinsic-size: 56px;
+	transition:
+		var(--button-motion-transition),
+		transform 180ms ease;
+}
+
+.dmItemUnread {
+	composes: dmItem;
+	background-color: transparent;
+	color: var(--text-primary);
+}
+
+.dmItemMuted {
+	opacity: 0.5;
+	color: var(--text-tertiary-muted);
+}
+
+.dmItemUnreadIndicatorContainer {
+	contain: layout size;
+	pointer-events: none;
+	position: absolute;
+	top: 50%;
+	left: 0.5rem;
+	display: flex;
+	width: 0.75rem;
+	align-items: center;
+	justify-content: flex-start;
+	transform: translateY(-50%);
+}
+
+.dmItemUnreadIndicatorContainerMobile {
+	composes: dmItemUnreadIndicatorContainer;
+	height: auto;
+}
+
+.dmItemUnreadIndicatorContainerDesktop {
+	composes: dmItemUnreadIndicatorContainer;
+	height: auto;
+}
+
+.dmItemUnreadIndicator {
+	position: absolute;
+	margin-left: 0;
+	height: 0.45rem;
+	width: 0.45rem;
+	border-radius: 999px;
+	background-color: var(--dm-unread-dot);
+	box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--brand-primary) 16%, transparent);
+}
+
+.dmItemContent {
+	position: relative;
+	display: flex;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	align-items: center;
+	gap: 0.75rem;
+	overflow: hidden;
+}
+
+.dmItemAvatarWrapper {
+	position: relative;
+	filter: drop-shadow(0 12px 20px rgb(15 23 42 / 0.08));
+}
+
+.dmItemInfo {
+	min-width: 0;
+	flex: 1 1 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 0.16rem;
+	overflow: hidden;
+}
+
+.dmItemName {
+	display: flex;
+	align-items: center;
+	gap: 0.15rem;
+	min-width: 0;
+	font-weight: 600;
+	font-size: 0.9375rem;
+	line-height: 20px;
+	overflow: hidden;
+}
+
+.dmItemNameText {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	flex: 0 1 auto;
+	min-width: 0;
+	font-size: inherit;
+	line-height: inherit;
+}
+
+.dmItemUserTag {
+	margin-left: 0.25rem;
+}
+
+.dmItemPinIcon {
+	height: 0.875rem;
+	width: 0.875rem;
+	flex-shrink: 0;
+}
+
+.dmItemSubtext {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: color-mix(in srgb, var(--text-primary-muted) 88%, var(--text-primary));
+	font-size: 0.74rem;
+	line-height: 1.08rem;
+	font-weight: 500;
+	margin-top: 0.0625rem;
+	opacity: 0.82;
+}
+
+.dmItemMobile .dmItemSubtext,
+.dmItemMobileSelected .dmItemSubtext,
+.dmItemMobileUnread .dmItemSubtext {
+	display: -webkit-box;
+	overflow: hidden;
+	white-space: normal;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+
+.dmItemCustomStatus {
+	composes: dmItemSubtext;
+	width: fit-content;
+	max-width: 100%;
+}
+
+.dmItem:hover .dmItemCustomStatus,
+.dmItemMobile:hover .dmItemCustomStatus,
+.dmItemSelected .dmItemCustomStatus,
+.dmItemMobileSelected .dmItemCustomStatus {
+	--emoji-show-animated: 1;
+}
+
+.dmItemMembersSubtext {
+	composes: dmItemSubtext;
+	line-height: 0.875rem;
+	margin-top: -0.125rem;
+}
+
+.dmItemSubtextItalic {
+	font-style: italic;
+	opacity: 0.7;
+}
+
+.dmItemPreviewMarkdown {
+	display: inline;
+}
+
+.dmItemPreviewMarkdown * {
+	display: inline !important;
+	white-space: nowrap !important;
+}
+
+.dmItemPreviewMarkdown a {
+	pointer-events: none;
+}
+
+.dmItemTimestamp {
+	color: color-mix(in srgb, var(--text-primary-muted) 82%, var(--text-primary));
+	font-size: 0.6875rem;
+	line-height: 1rem;
+	padding: 0.25rem 0.45rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--background-floating) 12%, transparent);
+	border: 1px solid transparent;
+	flex-shrink: 0;
+}
+
+.dmItemSelected {
+	composes: dmItem;
+	background:
+		linear-gradient(135deg, var(--dm-selected-top), var(--dm-selected-bottom)),
+		color-mix(in srgb, var(--surface-interactive-selected-bg) 35%, transparent);
+	color: var(--surface-interactive-selected-color);
+	border-color: transparent;
+	box-shadow: none;
+}
+
+.dmItemSelected .dmItemSubtext,
+.dmItemSelected .dmItemMembersSubtext,
+.dmItemSelected .dmItemTimestamp {
+	color: var(--surface-interactive-selected-color);
+}
+
+.dmItemMobileSelected .dmItemSubtext,
+.dmItemMobileSelected .dmItemMembersSubtext,
+.dmItemMobileSelected .dmItemTimestamp {
+	color: var(--text-primary);
+}
+
+.dmItemCallBadge {
+	display: flex;
+	height: 1.875rem;
+	width: 1.875rem;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.875rem;
+	background:
+		linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--status-online) 78%, var(--background-floating) 22%),
+			color-mix(in srgb, var(--status-online) 64%, var(--background-primary) 36%)
+		),
+		var(--status-online);
+	color: var(--text-primary);
+	box-shadow:
+		0 12px 24px color-mix(in srgb, var(--status-online) 26%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
+}
+
+.dmItemCloseButton {
+	display: flex;
+	height: 1.875rem;
+	width: 1.875rem;
+	flex-shrink: 0;
+	cursor: pointer;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.875rem;
+	background: color-mix(in srgb, var(--background-floating) 12%, transparent);
+	border: 1px solid transparent;
+	box-shadow: none;
+	opacity: 0;
+	transform: translateY(2px);
+	transition:
+		opacity 180ms ease,
+		var(--button-motion-transition),
+		transform 180ms ease;
+}
+
+.dmItem:hover .dmItemCloseButton {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.mobileSpecialButton {
+	composes: dmItemMobile;
+	background-color: transparent;
+	box-shadow: none;
+	-webkit-tap-highlight-color: transparent;
+	tap-highlight-color: transparent;
+}
+
+.mobileTopQuickButton {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	min-height: 2rem;
+	padding: 0.25rem 0.05rem;
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	color: color-mix(in srgb, var(--text-secondary) 86%, var(--text-primary));
+	white-space: nowrap;
+	cursor: pointer;
+	transition:
+		color 180ms ease,
+		transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+		filter 180ms ease;
+}
+
+.mobileTopQuickButtonSelected {
+	color: color-mix(in srgb, var(--brand-primary) 70%, var(--text-primary));
+	filter: saturate(1.08);
+}
+
+.mobileTopQuickButtonSelected::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: -0.42rem;
+	height: 0.14rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 78%, var(--text-primary));
+	transform-origin: center;
+	animation: dmQuickTabUnderlineIn 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mobileTopQuickTabLabel {
+	display: block;
+	font-size: 0.88rem;
+	line-height: 1.12rem;
+	font-weight: 700;
+	letter-spacing: 0.008em;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.mobileTopQuickButton:hover {
+		color: color-mix(in srgb, var(--text-primary) 90%, var(--brand-primary));
+		transform: translateY(-1px);
+	}
+}
+
+.mobileSpecialButtonSelected {
+	composes: dmItemMobileSelected;
+}
+
+.mobilePersonalNotesButton {
+	composes: mobileSpecialButton;
+}
+
+.mobilePersonalNotesButtonSelected {
+	composes: mobileSpecialButtonSelected;
+}
+
+.mobileAIAssistantButton {
+	composes: mobileSpecialButton;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.dmItemMobile:hover:not(.dmItemMobileSelected) {
+		background: color-mix(in srgb, var(--surface-interactive-hover-bg) 78%, var(--background-secondary) 22%);
+		color: var(--text-primary);
+		border-color: color-mix(in srgb, var(--text-primary) 14%, transparent);
+		transform: none;
+	}
+
+	.dmItem:hover:not(.dmItemSelected) {
+		background: color-mix(in srgb, var(--background-floating) 16%, transparent);
+		color: var(--text-primary);
+		border-color: transparent;
+		transform: translateY(-1px);
+	}
+}
+
+.dmItemMobilePressed:not(.dmItemMobileSelected) {
+	background: color-mix(in srgb, var(--surface-interactive-hover-bg) 82%, var(--background-secondary) 18%);
+	color: var(--text-primary);
+}
+
+.dmItemMobile:active:not(.dmItemMobileSelected),
+.mobileSpecialButton:active:not(.mobileSpecialButtonSelected) {
+	background: color-mix(in srgb, var(--surface-interactive-hover-bg) 82%, var(--background-secondary) 18%);
+	border-color: color-mix(in srgb, var(--text-primary) 14%, transparent);
+	transform: none;
+}
+
+.dmItemPressed:not(.dmItemSelected) {
+	background: linear-gradient(180deg, var(--dm-card-hover-top), var(--dm-card-hover-bottom));
+	color: var(--text-primary);
+}
+
+.mobileSpecialButtonContent {
+	position: relative;
+	display: flex;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	align-items: center;
+	gap: 0.75rem;
+	overflow: hidden;
+}
+
+.mobileSpecialButtonIcon {
+	display: flex;
+	height: 2.5rem;
+	width: 2.5rem;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	border-radius: 1rem;
+	background: color-mix(in srgb, var(--background-primary) 86%, var(--background-secondary) 14%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	color: var(--text-primary);
+	transition:
+		background-color var(--transition-fast),
+		color var(--transition-fast),
+		border-color var(--transition-fast);
+	box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.mobileSpecialButton:hover:not(.mobileSpecialButtonSelected) .mobileSpecialButtonIcon {
+		background-color: var(--dm-card-hover-top);
+	}
+}
+
+.mobileSpecialButtonSelected .mobileSpecialButtonIcon {
+	background: color-mix(in srgb, var(--brand-primary) 20%, var(--background-primary) 80%);
+	border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+	color: var(--text-primary);
+}
+
+.mobilePlutoniumButton .mobileSpecialButtonIcon {
+	background:
+		radial-gradient(circle at 34% 26%, rgb(255 255 255 / 0.42), transparent 58%),
+		linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--pluto-violet-strong) 76%, white 24%),
+			color-mix(in srgb, var(--pluto-violet-deep) 82%, black 18%)
+		);
+	color: white;
+	box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25);
+}
+
+.plutoniumPlanetIcon {
+	position: relative;
+	display: block;
+	width: 1.28rem;
+	height: 1.28rem;
+	filter: drop-shadow(0 5px 9px rgb(0 0 0 / 0.24));
+}
+
+.plutoniumPlanetCore,
+.plutoniumPlanetRing,
+.plutoniumPlanetMoon {
+	position: absolute;
+	pointer-events: none;
+}
+
+.plutoniumPlanetCore {
+	inset: 0.16rem;
+	border-radius: 999px;
+	background:
+		radial-gradient(circle at 32% 27%, rgb(255 255 255 / 0.95), transparent 52%),
+		linear-gradient(155deg, #dac7ff 6%, #a682ff 48%, #7447e4 100%);
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.6),
+		0 0 0 1px rgb(86 54 170 / 0.56);
+}
+
+.plutoniumPlanetRing {
+	left: 50%;
+	top: 50%;
+	width: 1.24rem;
+	height: 0.44rem;
+	border: 1px solid rgb(233 220 255 / 0.84);
+	border-radius: 999px;
+	transform: translate(-50%, -50%) rotate(13deg);
+	box-shadow: 0 0 0 1px rgb(108 73 201 / 0.35);
+	transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.plutoniumPlanetMoon {
+	top: 0.2rem;
+	right: 0.03rem;
+	width: 0.24rem;
+	height: 0.24rem;
+	border-radius: 999px;
+	background: rgb(235 225 255);
+	box-shadow:
+		0 0 0 1px rgb(89 58 176 / 0.48),
+		0 0 8px rgb(183 150 255 / 0.75);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.clickableItemPlutonium::before,
+	.plutoniumPlanetRing {
+		transition: none;
+		animation: none;
+	}
+}
+
+@keyframes plutoniumButtonStarsDrift {
+	0% {
+		transform: translate3d(0, -5%, 0);
+	}
+	100% {
+		transform: translate3d(0, 9%, 0);
+	}
+}
+
+.mobileSpecialButtonText {
+	min-width: 0;
+	flex: 1 1 0;
+	overflow: hidden;
+}
+
+.mobileSpecialButtonLabel {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-weight: 500;
+}
+
+.iconSize5 {
+	height: 1.25rem;
+	width: 1.25rem;
+}
+
+.iconSize4 {
+	height: 1rem;
+	width: 1rem;
+}
+
+@keyframes dmMobileItemReveal {
+	from {
+		opacity: 0;
+		transform: translate3d(0, 8px, 0);
+	}
+	to {
+		opacity: 1;
+		transform: translate3d(0, 0, 0);
+	}
+}
+
+@keyframes dmQuickTabReveal {
+	from {
+		opacity: 0;
+		transform: translate3d(0, 8px, 0);
+	}
+	to {
+		opacity: 1;
+		transform: translate3d(0, 0, 0);
+	}
+}
+
+@keyframes dmQuickTabUnderlineIn {
+	from {
+		opacity: 0;
+		transform: scaleX(0.65);
+	}
+	to {
+		opacity: 1;
+		transform: scaleX(1);
+	}
+}
+
+@keyframes dmMobileSearchReveal {
+	from {
+		opacity: 0;
+		transform: translate3d(0, -6px, 0);
+	}
+	to {
+		opacity: 1;
+		transform: translate3d(0, 0, 0);
+	}
+}
+
+@keyframes dmRefreshDotPulse {
+	0%,
+	100% {
+		transform: scale(1);
+		opacity: 0.72;
+	}
+	50% {
+		transform: scale(1.18);
+		opacity: 1;
+	}
+}
+
+@keyframes dmChatsRefreshSheen {
+	0% {
+		background-position: -120% 50%, 0 0;
+	}
+	100% {
+		background-position: 220% 50%, 0 0;
+	}
+}
+
+.mobileChatsSectionRefreshing .dmItemMobile,
+.mobileChatsSectionRefreshing .dmItemMobileUnread,
+.mobileChatsSectionRefreshing .dmItemMobileSelected,
+.mobileChatsSectionRefreshing .mobileSpecialButton,
+.mobileChatsSectionRefreshing .mobileSpecialButtonSelected {
+	opacity: 0.86;
+	animation: none;
+}
+
+@media (max-width: 767px) {
+	.mobileHeader {
+		padding: calc(0.82rem + (var(--safe-area-top, 0px) * 0.1)) max(0.875rem, var(--safe-area-right, 0px)) 0.56rem
+			max(0.875rem, var(--safe-area-left, 0px));
+	}
+
+	.mobileHeaderInner {
+		width: min(100%, 28rem);
+	}
+
+	.mobileHeaderButton,
+	.mobileAddFriendButton,
+	.mobileFAB,
+	.dmItemMobile,
+	.mobileSpecialButton {
+		box-shadow: none;
+	}
+
+	.mobileHeaderButton,
+	.mobileFAB {
+		border-color: transparent;
+	}
+
+	.mobileQuickSection > :nth-child(-n + 4) {
+		animation: dmMobileItemReveal 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	.mobileQuickSection > :nth-child(2) {
+		animation-delay: 20ms;
+	}
+
+	.mobileQuickSection > :nth-child(3) {
+		animation-delay: 36ms;
+	}
+
+	.mobileQuickSection > :nth-child(4) {
+		animation-delay: 52ms;
+	}
+
+	.mobileChatsSection > :nth-child(-n + 6) {
+		animation: dmMobileItemReveal 210ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	.mobileChatsSection > :nth-child(2) {
+		animation-delay: 68ms;
+	}
+
+	.mobileChatsSection > :nth-child(3) {
+		animation-delay: 84ms;
+	}
+
+	.mobileChatsSection > :nth-child(4) {
+		animation-delay: 100ms;
+	}
+
+	.mobileChatsSection > :nth-child(5) {
+		animation-delay: 116ms;
+	}
+
+	.mobileChatsSection > :nth-child(6) {
+		animation-delay: 132ms;
+	}
+
+.mobileScrollerContent {
+		padding: 0.42rem max(0px, var(--safe-area-right, 0px))
+			calc(var(--mobile-bottom-nav-height) + 0.5rem) max(0px, var(--safe-area-left, 0px));
+		gap: 0;
+		max-width: 100%;
+	}
+
+	.mobileQuickSection {
+		gap: 0.5rem;
+		padding-bottom: 0.1rem;
+	}
+
+	.mobileChatsSection {
+		margin-top: 0;
+		padding: 0;
+	}
+
+	.dmItemMobile,
+	.mobileSpecialButton {
+		min-height: 4.2rem;
+		border-radius: 0;
+	}
+
+	.dmItemContent,
+	.mobileSpecialButtonContent {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0.625rem;
+	}
+
+	.dmItemTimestamp {
+		max-width: 4.25rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.mobileSpecialButtonIcon {
+		width: 2.375rem;
+		height: 2.375rem;
+		border-radius: 0.875rem;
+	}
+
+	.mobileAddFriendButton {
+		max-width: min(60vw, 10.75rem);
+	}
+
+	.mobileAddFriendButton > span {
+		max-width: 7.2rem;
+	}
+}
+
+@media (max-width: 560px) {
+	.mobileHeader {
+		min-height: 3.2rem;
+		padding-top: calc(0.72rem + (var(--safe-area-top, 0px) * 0.06));
+		padding-bottom: 0.5rem;
+	}
+
+	.mobileHeaderInner {
+		gap: 0.5rem;
+	}
+
+	.mobileHeaderTitle {
+		font-size: 1.22rem;
+		line-height: 1.46rem;
+	}
+
+	.mobileHeaderActions {
+		gap: 0.44rem;
+	}
+
+	.mobileHeaderButton {
+		height: 2.05rem;
+		width: 2.05rem;
+		border-radius: 0.82rem;
+	}
+
+	.mobileHeaderButton .iconSize5,
+	.mobileAddFriendButton .iconSize4 {
+		width: 1.08rem;
+		height: 1.08rem;
+	}
+
+	.mobileAddFriendButton {
+		min-height: 2.05rem;
+		max-width: min(58vw, 8.9rem);
+		padding: 0.4rem 0.72rem;
+		font-size: 0.75rem;
+	}
+
+	.dmItemTimestamp {
+		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mobileQuickSection > *,
+	.mobileChatsSection > *,
+	.mobileTopQuickItem,
+	.mobileSearchWrapper,
+	.mobileChatsSectionRefreshing .dmItemMobile,
+	.mobileChatsSectionRefreshing .dmItemMobileUnread,
+	.mobileChatsSectionRefreshing .dmItemMobileSelected,
+	.mobileChatsSectionRefreshing .mobileSpecialButton,
+	.mobileChatsSectionRefreshing .mobileSpecialButtonSelected,
+	.mobileRefreshDot {
+		animation: none !important;
+	}
+
+	.mobileTopQuickButton,
+	.mobileTopQuickButtonSelected::after,
+	.mobileSearchWrapper input {
+		transition: none;
+	}
+}
+
+@media (max-width: 480px) {
+	.mobileHeader {
+		padding-top: calc(0.62rem + (var(--safe-area-top, 0px) * 0.05));
+		padding-bottom: 0.44rem;
+	}
+
+	.mobileHeaderInner {
+		gap: 0.44rem;
+	}
+
+	.mobileHeaderTitle {
+		font-size: 1.16rem;
+		line-height: 1.38rem;
+	}
+
+	.mobileHeaderActions {
+		gap: 0.375rem;
+	}
+
+	.mobileHeaderButton {
+		height: 1.95rem;
+		width: 1.95rem;
+	}
+
+	.mobileAddFriendButton {
+		gap: 0.375rem;
+		padding: 0.4rem 0.72rem;
+		font-size: 0.75rem;
+		max-width: min(56vw, 8.9rem);
+		min-height: 1.95rem;
+	}
+
+	.mobileAddFriendButton > span {
+		max-width: 6.3rem;
+	}
+
+	.mobileQuickSection {
+		padding-bottom: 0.05rem;
+	}
+
+	.mobileTopQuickRow {
+		gap: 0.8rem;
+		padding-left: 0.7rem;
+		padding-right: 0.7rem;
+	}
+
+	.mobileTopQuickTabLabel {
+		font-size: 0.84rem;
+		line-height: 1.08rem;
+	}
+
+	.mobileSearchWrapper {
+		padding-left: 0.7rem;
+		padding-right: 0.7rem;
+		padding-bottom: 0.54rem;
+	}
+
+	.mobileSearchWrapper input {
+		min-height: 2.95rem;
+		border-radius: 1.18rem;
+	}
+
+	.mobileChatsSection {
+		margin-top: 0;
+		padding-top: 0;
+	}
+
+	.dmItemMobile,
+	.mobileSpecialButton {
+		min-height: 4rem;
+		padding-left: 0.6875rem;
+		padding-right: 0.6875rem;
+	}
+
+	.dmItemTimestamp {
+		font-size: 0.625rem;
+		padding: 0.1875rem 0.35rem;
+	}
+
+	.dmItemName {
+		font-size: 0.875rem;
+	}
+
+	.dmItemSubtext {
+		font-size: 0.6875rem;
+	}
+
+	.mobileFAB {
+		height: 3.25rem;
+		width: 3.25rem;
+		right: 0.875rem;
+	}
+}
+
+@media (max-width: 420px) {
+	.mobileHeader {
+		height: auto;
+		min-height: 2.45rem;
+		padding-top: 0.4rem;
+		padding-bottom: 0.24rem;
+		gap: 0.35rem;
+	}
+
+	.mobileHeaderTitle {
+		font-size: 1.08rem;
+		line-height: 1.28rem;
+	}
+
+	.mobileHeaderActions {
+		gap: 0.3rem;
+	}
+
+	.mobileHeaderButton {
+		height: 1.8rem;
+		width: 1.8rem;
+		border-radius: 0.75rem;
+	}
+
+	.mobileAddFriendButton {
+		width: 1.8rem;
+		min-width: 1.8rem;
+		max-width: 1.8rem;
+		min-height: 1.8rem;
+		padding: 0;
+		border-radius: 0.75rem;
+		justify-content: center;
+		gap: 0;
+	}
+
+	.mobileAddFriendButton > span {
+		display: none;
+	}
+
+	.mobileAddFriendBadge {
+		top: -0.2rem;
+		right: -0.2rem;
+		height: 1.05rem;
+		min-width: 1.05rem;
+		font-size: 0.625rem;
+		line-height: 0.875rem;
+	}
+
+	.mobileScrollerContent {
+		padding-top: 0.22rem;
+		padding-right: max(0px, var(--safe-area-right, 0px));
+		padding-left: max(0px, var(--safe-area-left, 0px));
+	}
+
+	.mobileSpecialButtonLabel {
+		font-size: 0.8125rem;
+	}
+
+	.dmItemTimestamp {
+		display: none;
+	}
+
+	.dmItemName {
+		font-size: 0.84rem;
+	}
+
+	.dmItemSubtext {
+		font-size: 0.66rem;
+	}
+}
+
+@media (max-width: 360px) {
+	.mobileScrollerContent {
+		padding-right: max(0px, var(--safe-area-right, 0px));
+		padding-left: max(0px, var(--safe-area-left, 0px));
+	}
+
+	.dmItemMobile,
+	.mobileSpecialButton {
+		height: 2.85rem;
+		padding-left: 0.625rem;
+		padding-right: 0.625rem;
+	}
+
+	.dmItemContent,
+	.mobileSpecialButtonContent {
+		gap: 0.5rem;
+	}
+
+	.mobileSpecialButtonIcon {
+		width: 2.125rem;
+		height: 2.125rem;
+		border-radius: 0.75rem;
+	}
+
+	.mobileSpecialButtonLabel {
+		font-size: 0.775rem;
+	}
+
+	.mobileTopQuickTabLabel {
+		font-size: 0.79rem;
+		line-height: 1rem;
+	}
+
+	.mobileSearchWrapper {
+		padding-left: 0.62rem;
+		padding-right: 0.62rem;
+	}
+
+	.mobileSearchWrapper input {
+		min-height: 2.82rem;
+	}
+
+	.dmItemName {
+		font-size: 0.8125rem;
+	}
+
+	.dmItemSubtext {
+		font-size: 0.64rem;
+	}
+}
+
+@media (hover: none), (pointer: coarse) {
+	.dmListHeaderButton {
+		backdrop-filter: none;
+	}
+
+	.dmItemAvatarWrapper,
+	.plutoniumPlanetIcon {
+		filter: none;
+	}
+
+	.mobileQuickSection > *,
+	.mobileChatsSection > *,
+	.mobileRefreshDot,
+	.mobileChatsSectionRefreshing .dmItemMobile,
+	.mobileChatsSectionRefreshing .dmItemMobileUnread,
+	.mobileChatsSectionRefreshing .dmItemMobileSelected,
+	.mobileChatsSectionRefreshing .mobileSpecialButton,
+	.mobileChatsSectionRefreshing .mobileSpecialButtonSelected {
+		animation: none !important;
+	}
+
+	.mobileChatsSectionRefreshing .dmItemMobile,
+	.mobileChatsSectionRefreshing .dmItemMobileUnread,
+	.mobileChatsSectionRefreshing .dmItemMobileSelected,
+	.mobileChatsSectionRefreshing .mobileSpecialButton,
+	.mobileChatsSectionRefreshing .mobileSpecialButtonSelected {
+		background-size: 100% 100%, 100% 100%;
+	}
+
+	.dmItemMobile,
+	.dmItem,
+	.clickableItem,
+	.mobileSpecialButton,
+	.mobileHeaderButton,
+	.mobileAddFriendButton,
+	.mobileFAB,
+	.dmItemCloseButton {
+		transition-duration: 0ms;
+	}
+}

@@ -1,0 +1,242 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.menuItem {
+	display: flex;
+	width: 100%;
+	align-items: center;
+	gap: 1.05rem;
+	min-height: 3.5rem;
+	padding: 1.05rem 1rem;
+	text-align: left;
+	transition: background-color 0.15s;
+	appearance: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.menuItem:hover {
+		background-color: var(--background-modifier-hover);
+	}
+
+	.menuItem:not(.disabled):not(.danger):active {
+		background-color: var(--background-modifier-hover);
+	}
+
+	.menuItem.danger:not(.disabled):active {
+		background-color: color-mix(in srgb, var(--status-danger) 8%, transparent);
+	}
+}
+
+.menuItem:not(.disabled):not(.danger) {
+	color: var(--text-primary);
+}
+
+.menuItem.danger:not(.disabled) {
+	color: var(--status-danger);
+}
+
+.menuItem.disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.menuItem.pressed {
+	background-color: var(--background-modifier-hover);
+}
+
+.menuItem.pressedDanger {
+	background-color: color-mix(in srgb, var(--status-danger) 8%, transparent);
+}
+
+.iconContainer {
+	display: flex;
+	height: 1.5rem;
+	width: 1.5rem;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+}
+
+.label {
+	flex: 1;
+	font-weight: 500;
+	font-size: 0.98rem;
+	line-height: 1.35rem;
+}
+
+.checkboxContainer {
+	display: flex;
+	height: 1.25rem;
+	width: 1.25rem;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+}
+
+.checkbox {
+	display: flex;
+	height: 1.25rem;
+	width: 1.25rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.25rem;
+	border: 2px solid var(--background-header-secondary);
+	transition:
+		border-color 0.15s,
+		background-color 0.15s;
+}
+
+.checkbox.checked {
+	border-color: var(--brand-primary);
+	background-color: var(--brand-primary);
+}
+
+.checkIcon {
+	height: 0.75rem;
+	width: 0.75rem;
+	color: white;
+}
+
+.radioContainer {
+	display: flex;
+	height: 1.25rem;
+	width: 1.25rem;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+}
+
+.radio {
+	display: flex;
+	height: 1.25rem;
+	width: 1.25rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	border: 2px solid var(--background-header-secondary);
+	transition:
+		border-color 0.15s,
+		background-color 0.15s;
+}
+
+.radio.radioSelected {
+	border-color: var(--brand-primary);
+}
+
+.radioInner {
+	height: 0.625rem;
+	width: 0.625rem;
+	border-radius: 50%;
+	background-color: var(--brand-primary);
+}
+
+.labelColumn {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: 0.125rem;
+}
+
+.subtext {
+	font-size: 0.75rem;
+	line-height: 1rem;
+	color: var(--text-muted);
+}
+
+.divider {
+	margin-left: 1.05rem;
+	margin-right: 1.05rem;
+	height: 1px;
+	background-color: var(--background-header-secondary);
+	opacity: 0.3;
+}
+
+.sliderContainer {
+	display: flex;
+	flex-direction: column;
+	gap: 0.85rem;
+	min-height: 4.35rem;
+	padding: 1.1rem 1rem;
+}
+
+.sliderLabel {
+	font-weight: 500;
+	font-size: 0.98rem;
+	line-height: 1.35rem;
+	color: var(--text-primary);
+}
+
+.groupContainer {
+	overflow: hidden;
+	border-radius: 0.95rem;
+	background-color: var(--background-secondary-alt);
+}
+
+.groupSpacer {
+	height: 0.85rem;
+}
+
+.bottomSheetContent {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.headerSlot {
+	padding-bottom: 0.5rem;
+}
+
+.groupStack {
+	display: flex;
+	flex-direction: column;
+}
+
+.groupStackWithHeader {
+	padding-top: 0.5rem;
+}
+
+@media (pointer: coarse) {
+	.menuItem {
+		gap: 1.1rem;
+		min-height: 3.75rem;
+		padding: 1.12rem 1rem;
+	}
+
+	.iconContainer,
+	.radioContainer,
+	.checkboxContainer,
+	.radio,
+	.checkbox {
+		height: 1.55rem;
+		width: 1.55rem;
+	}
+
+	.label,
+	.sliderLabel {
+		font-size: 1rem;
+		line-height: 1.38rem;
+	}
+
+	.sliderContainer {
+		gap: 0.95rem;
+		min-height: 4.6rem;
+		padding: 1.15rem 1rem;
+	}
+}

@@ -1,0 +1,27 @@
+---
+title: Permissions
+description: Как права влияют на работу бота
+---
+
+Даже если токен валиден, бот всё равно может получить `403 ACCESS_DENIED`, если у него нет нужных прав.
+
+## На что смотреть
+
+- права в guild
+- channel overwrites
+- иерархия ролей
+
+## Типичные права
+
+- `SEND_MESSAGES`
+- `READ_MESSAGE_HISTORY`
+- `MANAGE_MESSAGES`
+- `KICK_MEMBERS`
+- `BAN_MEMBERS`
+- `MANAGE_ROLES`
+
+## Ссылка приглашения бота
+
+```text
+https://astraof.com/oauth2/authorize?client_id=<APP_ID>&scope=bot&permissions=<PERMISSIONS>
+```

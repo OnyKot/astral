@@ -1,0 +1,22 @@
+[Unit]
+Description=Astral memory pressure guard
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/Astral-clean
+Environment=REPO_ROOT=/opt/Astral-clean
+Environment="COMPOSE_PROFILES=userver"
+Environment=CHECK_INTERVAL=30
+Environment=WARN_AVAILABLE_MB=2048
+Environment=CRITICAL_AVAILABLE_MB=1024
+Environment=RECOVERY_COOLDOWN=300
+Environment=LOG_FILE=/var/log/astral-memory-guard.log
+ExecStart=/opt/Astral-clean/scripts/deploy/memory-guard.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

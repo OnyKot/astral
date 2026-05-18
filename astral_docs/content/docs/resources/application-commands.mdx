@@ -1,0 +1,170 @@
+---
+title: Application Commands
+description: Register and manage slash commands, user commands, and message commands for your bot
+---
+
+Application Commands are the primary way for users to interact with your bot through Astral's interface. They appear in the command picker when a user types `/` in a text channel.
+
+## Command Types
+
+| Type | Value | Description |
+| --- | --- | --- |
+| CHAT_INPUT | 1 | Slash command that appears when typing `/` |
+| USER | 2 | Appears in the user context menu (right-click) |
+| MESSAGE | 3 | Appears in the message context menu (right-click) |
+
+## Command Object
+
+| Field | Type | Description |
+| --- | --- | --- |
+| id | snowflake | Unique ID of the command |
+| application_id | snowflake | ID of the parent application |
+| guild_id | ?snowflake | Guild ID if guild-scoped, `null` for global |
+| name | string | 1–32 character name (lowercase, no spaces for CHAT_INPUT) |
+| description | string | 1–100 character description (empty for USER/MESSAGE) |
+| type | integer | One of the command types above |
+| options | ?array | Parameters for the command (max 25) |
+| default_member_permissions | ?string | Permissions required to use the command |
+| dm_permission | ?boolean | Whether the command is available in DMs (default `true`) |
+| version | integer | Auto-incrementing version counter |
+
+## Command Options
+
+Options define the parameters your slash command accepts.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| type | integer | Type of option (see below) |
+| name | string | 1–32 character name |
+| description | string | 1–100 character description |
+| required | ?boolean | Whether this option must be provided |
+| choices | ?array | Pre-defined choices (max 25) |
+| options | ?array | Nested options for subcommands/groups |
+| min_value | ?number | Minimum value (for INTEGER/NUMBER) |
+| max_value | ?number | Maximum value (for INTEGER/NUMBER) |
+| min_length | ?integer | Minimum string length (0–6000) |
+| max_length | ?integer | Maximum string length (1–6000) |
+
+### Option Types
+
+| Type | Value | Description |
+| --- | --- | --- |
+| SUB_COMMAND | 1 | A subcommand |
+| SUB_COMMAND_GROUP | 2 | A group of subcommands |
+| STRING | 3 | Text input |
+| INTEGER | 4 | Whole number (min/max supported) |
+| BOOLEAN | 5 | True or false |
+| USER | 6 | User mention |
+| CHANNEL | 7 | Channel mention |
+| ROLE | 8 | Role mention |
+| MENTIONABLE | 9 | User or role mention |
+| NUMBER | 10 | Decimal number (min/max supported) |
+
+## Endpoints
+
+### Global Commands
+
+Global commands are available in every guild your bot is in. They can take up to 1 hour to propagate.
+
+#### List Global Commands
+
+```http
+GET /applications/{application.id}/commands
+```
+
+Returns all global commands for the application.
+
+#### Create Global Command
+
+```http
+POST /applications/{application.id}/commands
+```
+
+Creates a new global command. Returns the created command object.
+
+**JSON Body:**
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| name | string | yes | Command name |
+| description | string | no | Command description |
+| type | integer | no | Command type (default: 1) |
+| options | array | no | Command options |
+| default_member_permissions | string | no | Required permissions |
+| dm_permission | boolean | no | Available in DMs |
+
+**Example:**
+
+```json
+{
+  "name": "ping",
+  "description": "Check if the bot is alive",
+  "type": 1,
+  "options": []
+}
+```
+
+#### Get Global Command
+
+```http
+GET /applications/{application.id}/commands/{command.id}
+```
+
+#### Update Global Command
+
+```http
+PATCH /applications/{application.id}/commands/{command.id}
+```
+
+Updates a global command. Only the fields you send are updated.
+
+#### Delete Global Command
+
+```http
+DELETE /applications/{application.id}/commands/{command.id}
+```
+
+#### Bulk Overwrite Global Commands
+
+```http
+PUT /applications/{application.id}/commands
+```
+
+Replaces all global commands at once. Send an array of command objects. Commands not included will be deleted.
+
+<Callout type="warning" title="Bulk overwrite is destructive">
+Any existing commands not in the array will be permanently deleted. Use this for initial registration or full syncs, not incremental updates.
+</Callout>
+
+### Guild Commands
+
+Guild commands are available instantly and only in the specified guild.
+
+| Method | Route | Description |
+| --- | --- | --- |
+| GET | `/applications/\{app.id\}/guilds/\{guild.id\}/commands` | List guild commands |
+| POST | `/applications/\{app.id\}/guilds/\{guild.id\}/commands` | Create guild command |
+| GET | `/applications/\{app.id\}/guilds/\{guild.id\}/commands/{cmd.id}` | Get guild command |
+| PATCH | `/applications/\{app.id\}/guilds/\{guild.id\}/commands/{cmd.id}` | Update guild command |
+| DELETE | `/applications/\{app.id\}/guilds/\{guild.id\}/commands/{cmd.id}` | Delete guild command |
+| PUT | `/applications/\{app.id\}/guilds/\{guild.id\}/commands` | Bulk overwrite guild commands |
+
+All request/response bodies are identical to global command endpoints.
+
+## Rate Limits
+
+| Action | Limit |
+| --- | --- |
+| List commands | 5 per 5 seconds per application |
+| Create command | 5 per 10 seconds per application |
+| Update command | 5 per 10 seconds per application |
+| Delete command | 5 per 10 seconds per application |
+| Bulk overwrite | 2 per 30 seconds per application |
+
+## Best Practices
+
+1. **Use guild commands during development.** They update instantly, while global commands can take up to an hour.
+2. **Register commands once at startup**, not on every bot restart. Use bulk overwrite (`PUT`) to sync your command definitions.
+3. **Keep names lowercase and descriptive.** Slash command names must be lowercase and can contain hyphens.
+4. **Validate on your side too.** The API validates command schemas, but catching errors early in your bot code saves API calls.
+5. **Use `default_member_permissions`** to restrict sensitive commands (e.g., ban, kick) to administrators without extra permission checks in your code.

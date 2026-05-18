@@ -1,0 +1,427 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.userAreaInnerWrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	width: 100%;
+	background-color: transparent;
+	position: relative;
+	overflow: visible;
+	transition:
+		width var(--motion-dur-medium) var(--motion-ease-smooth),
+		padding var(--motion-dur-medium) var(--motion-ease-smooth);
+}
+
+.userAreaInnerWrapperFloating {
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%),
+		color-mix(in srgb, var(--background-secondary) 84%, var(--background-primary) 16%)
+	);
+	border-radius: 1.35rem;
+}
+
+.userAreaInnerWrapperFloatingCard {
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+}
+
+.userAreaInnerWrapperFloatingCompact {
+	gap: 0;
+}
+
+.userAreaInnerWrapperFloating .separator {
+	background-color: color-mix(in srgb, var(--text-primary) 9%, transparent);
+}
+
+.separator {
+	height: 1px;
+	background-color: var(--user-area-divider-color);
+}
+
+.userAreaContainer {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-2);
+	margin: 0;
+	padding: var(--user-area-padding-y) var(--user-area-padding-x);
+	box-sizing: border-box;
+	background-color: transparent;
+	width: 100%;
+	min-height: var(--layout-user-area-height);
+	transition:
+		padding var(--motion-dur-medium) var(--motion-ease-smooth),
+		min-height var(--motion-dur-medium) var(--motion-ease-smooth);
+}
+
+.userAreaInnerWrapperHasVoiceConnection {
+	min-height: var(--layout-user-area-height);
+}
+
+.userAreaInnerWrapperHasVoiceConnection .userAreaContainer {
+	border-top: 0;
+}
+
+.voiceConnectionWrapper {
+	border-bottom: 0;
+	border-top: 0;
+}
+
+.voiceConnectionWrapperFloating {
+	padding: 0.06rem 0.06rem 0;
+}
+
+.voiceConnectionWrapperFloatingCompact {
+	padding-top: 0;
+}
+
+.userInfo {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-2);
+	flex: 1;
+	min-width: 0;
+	cursor: pointer;
+	padding: 0 var(--spacing-2);
+	margin: 0;
+	border-radius: var(--radius-md);
+	height: var(--user-area-content-height);
+	position: relative;
+	transition:
+		color var(--transition-normal),
+		padding var(--motion-dur-medium) var(--motion-ease-smooth),
+		flex var(--motion-dur-medium) var(--motion-ease-smooth);
+	outline: none;
+}
+
+.userInfoSpeaking {
+	color: var(--text-primary);
+}
+
+.voiceSpeakingPulse {
+	position: absolute;
+	inset: -0.125rem;
+	border-radius: inherit;
+	border: 1px solid color-mix(in srgb, var(--status-online) 24%, transparent);
+	opacity: 0;
+	pointer-events: none;
+	animation: userAreaVoicePulse 1.8s ease-in-out infinite;
+}
+
+.userInfoNoAvatar {
+	gap: var(--spacing-1);
+	padding-left: var(--spacing-1);
+}
+
+.userAreaProfilePopoutFloating {
+	width: min(20.5rem, 36vw);
+	min-width: 18rem;
+}
+
+.userAreaProfilePopoutFloatingCompact {
+	width: min(18.75rem, 34vw);
+	min-width: 17rem;
+}
+
+.userInfo::before {
+	content: '';
+	position: absolute;
+	inset: calc(var(--spacing-1) * -1);
+	border-radius: calc(var(--radius-md) + var(--spacing-1));
+	background-color: transparent;
+	z-index: -1;
+	transition: background-color var(--transition-normal);
+}
+
+.userInfo:hover::before,
+.userInfo.active::before,
+.userInfo:focus-visible::before {
+	background-color: color-mix(in srgb, var(--text-primary) 3%, transparent);
+}
+
+.userInfoText {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+	user-select: text;
+	-webkit-user-select: text;
+	gap: 0.0625rem;
+}
+
+.userName {
+	font-weight: 500;
+	font-size: 0.875rem;
+	line-height: 1.125rem;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+
+.userStatus {
+	font-size: 0.6875rem;
+	line-height: 1rem;
+	color: var(--text-primary-muted);
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 100%;
+	margin-top: -0.0625rem;
+	opacity: 0.85;
+}
+
+.userStatusLabel {
+	composes: userStatus;
+}
+
+.userCustomStatus {
+	composes: userStatus;
+}
+
+.userInfo:hover .userCustomStatus {
+	--emoji-show-animated: 1;
+}
+
+.hoverRoll {
+	display: inline-block;
+	vertical-align: top;
+	position: relative;
+	width: 100%;
+	contain: paint;
+	overflow: hidden;
+}
+
+.defaultState,
+.hovered {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	display: block;
+	transform-style: preserve-3d;
+	pointer-events: none;
+	width: 100%;
+	transition:
+		transform 0.22s ease,
+		opacity 0.22s ease;
+}
+
+.hovered {
+	opacity: 0;
+	transform: translate3d(0, 107%, 0);
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+}
+
+.forceHover .defaultState,
+.userInfo:hover .hoverRoll .defaultState,
+.userInfo:focus-visible .hoverRoll .defaultState {
+	transform: translate3d(0, 107%, 0);
+	opacity: 0;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.forceHover .hovered,
+.userInfo:hover .hoverRoll .hovered,
+.userInfo:focus-visible .hoverRoll .hovered {
+	transform: translate3d(0, 0, 0);
+	opacity: 1;
+}
+
+.controlsContainer {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-1);
+	flex-shrink: 0;
+	padding-left: var(--spacing-2);
+	transition:
+		opacity var(--motion-dur-medium) var(--motion-ease-smooth),
+		transform var(--motion-dur-medium) var(--motion-ease-smooth);
+}
+
+.userAreaContainerFloating {
+	padding: 0.22rem 0.24rem 0.26rem;
+	align-items: stretch;
+	gap: 0.22rem;
+}
+
+.userAreaContainerFloating .userInfo {
+	height: 2.45rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
+	border-radius: 1rem;
+	background: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%);
+	cursor: default;
+}
+
+.userAreaContainerFloatingCompact {
+	padding: 0.18rem 0.2rem 0.22rem;
+	gap: 0.18rem;
+}
+
+.userAreaContainerFloatingCompact .userInfo {
+	height: 2.2rem;
+	border-radius: 0.92rem;
+}
+
+.userAreaContainerFloatingCompact .userName {
+	font-size: 0.78rem;
+	line-height: 0.96rem;
+}
+
+.userAreaContainerFloatingCompact .userStatus {
+	font-size: 0.61rem;
+	line-height: 0.84rem;
+}
+
+.userAreaContainerFloatingCompact .controlsContainer {
+	padding-left: 0.1rem;
+	gap: 0.2rem;
+}
+
+.userAreaContainerFloatingCompact .controlButton {
+	width: 26px;
+	height: 26px;
+	border-radius: 0.58rem;
+}
+
+.userAreaContainerFloating .controlsContainer {
+	padding-left: 0.12rem;
+}
+
+.userAreaContainerFloating .controlButton {
+	width: 28px;
+	height: 28px;
+	border-radius: 0.7rem;
+}
+
+.userAreaContainerFloating .userAreaProfilePopoutFloating {
+	width: min(22rem, 42vw);
+	min-width: 18.6rem;
+}
+
+.controlButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 32px;
+	width: 32px;
+	background-color: transparent;
+	color: var(--control-button-normal-text);
+	border: none;
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	transition:
+		background-color var(--transition-fast),
+		color var(--transition-fast),
+		transform var(--transition-fast);
+	position: relative;
+	padding: 0;
+}
+
+.controlButton:hover {
+	background-color: color-mix(in srgb, var(--control-button-normal-text) 10%, transparent);
+	color: var(--control-button-hover-text);
+}
+
+.controlButton:active {
+	transform: scale(0.95);
+}
+
+.controlButton.active {
+	background-color: color-mix(in srgb, var(--control-button-danger-text) 10%, transparent);
+	color: var(--control-button-danger-text);
+}
+
+.controlButton.active:hover {
+	background-color: color-mix(in srgb, var(--control-button-danger-text) 20%, transparent);
+	color: var(--control-button-danger-text);
+}
+
+.controlButton.disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.controlButton.disabled:hover {
+	background-color: color-mix(in srgb, var(--control-button-danger-text) 15%, transparent);
+	color: var(--control-button-danger-text);
+}
+
+.controlButton.disabled:active {
+	transform: none;
+}
+
+.controlIcon {
+	height: 20px;
+	width: 20px;
+}
+
+.userAreaInnerWrapperCollapsed {
+	align-items: center;
+	background-color: transparent;
+}
+
+.userAreaInnerWrapperCollapsed .separator,
+.userAreaInnerWrapperCollapsed .voiceConnectionWrapper,
+.userAreaInnerWrapperCollapsed .userInfoText {
+	display: none;
+}
+
+.userAreaContainerCollapsed {
+	justify-content: center;
+	padding: 0.35rem 0;
+	min-height: calc(var(--guild-icon-size) + 0.75rem);
+}
+
+.userInfoCollapsed {
+	flex: 0 0 auto;
+	justify-content: center;
+	padding: 0;
+}
+
+.userInfoCollapsed::before {
+	inset: -0.35rem;
+	border-radius: 999px;
+}
+
+.controlsContainerCollapsed {
+	display: none;
+}
+
+@keyframes userAreaVoicePulse {
+	0% {
+		transform: scale(0.98);
+		opacity: 0;
+	}
+	40% {
+		opacity: 1;
+	}
+	100% {
+		transform: scale(1.02);
+		opacity: 0;
+	}
+}

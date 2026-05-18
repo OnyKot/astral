@@ -1,0 +1,77 @@
+.eb25c8568fa3d1ea-container{
+	display:flex;
+	flex-direction:column;
+	gap:1.5rem;
+	text-align:center;
+}
+
+.eb25c8568fa3d1ea-title{
+	margin-bottom:0.5rem;
+	text-align:center;
+	font-size:1.25rem;
+	line-height:1.75rem;
+	font-weight:600;
+	letter-spacing:0.025em;
+	color:var(--text-primary);
+}
+
+.eb25c8568fa3d1ea-description{
+	margin-bottom:2rem;
+	text-align:center;
+	font-size:0.875rem;
+	line-height:1.25rem;
+	color:var(--text-tertiary);
+}
+
+.eb25c8568fa3d1ea-form{
+	display:flex;
+	flex-direction:column;
+	gap:1.5rem;
+}
+
+.eb25c8568fa3d1ea-footer{
+	margin-top:1.5rem;
+	display:flex;
+	flex-direction:column;
+	gap:0.75rem;
+	text-align:center;
+}
+
+.eb25c8568fa3d1ea-link{
+	font-size:0.875rem;
+	line-height:1.25rem;
+	color:var(--text-tertiary);
+	text-decoration:none;
+	transition-property:color;
+	transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration:150ms;
+	cursor:pointer;
+}
+
+.eb25c8568fa3d1ea-link:hover{
+	color:var(--text-primary);
+	text-decoration:underline;
+}
+
+.eb25c8568fa3d1ea-primaryLink{
+	font-size:0.875rem;
+	line-height:1.25rem;
+	color:var(--text-link);
+	text-decoration:none;
+	transition-property:color;
+	transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration:150ms;
+	cursor:pointer;
+}
+
+.eb25c8568fa3d1ea-primaryLink:hover{
+	color:var(--text-link);
+	text-decoration:underline;
+}
+
+.eb25c8568fa3d1ea-footerLabel{
+	font-size:0.875rem;
+	line-height:1.25rem;
+	color:var(--text-tertiary);
+}
+

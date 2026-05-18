@@ -1,0 +1,44 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.appLayout {
+	display: grid;
+	grid-template-columns: 1fr;
+	grid-template-rows: 1fr;
+	overflow: hidden;
+	height: 100svh;
+	/*
+	 * The bottom layer used to be:
+	 *   linear-gradient(180deg, color-mix(in srgb, var(--app-surface-background) 88%, ...), ...)
+	 * but when a gradient preset is active, --app-surface-background was itself
+	 * a gradient — and color-mix() rejects gradients per CSS spec. The whole
+	 * `background` declaration was then silently dropped by the browser. That
+	 * is why clicking Aurora/Forest/Nebula on a wide desktop viewport did
+	 * nothing visually: .appLayout (and every component doing the same
+	 * color-mix trick) lost its background entirely and the main surface
+	 * fell through to boring solids. We now reference --app-shell-background
+	 * directly so the preset is actually visible.
+	 */
+	background: var(--app-shell-background);
+	color: var(--text-primary);
+}
+
+.appLayoutStandalone {
+	height: 100svh;
+}

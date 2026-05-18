@@ -1,0 +1,83 @@
+---
+title: Gateway
+description: Работа с Astral Gateway на русском языке
+---
+
+Gateway — это WebSocket API для событий в реальном времени.
+
+## Endpoint
+
+```text
+wss://<ваш-домен>/gateway?v=1&encoding=json
+```
+
+Чтобы получить публичный Gateway URL для бота, используйте:
+
+```text
+GET https://<ваш-домен>/api/v1/gateway/bot
+Authorization: Bot YOUR_BOT_TOKEN
+```
+
+## Основные opcode
+
+| Opcode | Что значит |
+| --- | --- |
+| `0` | Dispatch |
+| `1` | Heartbeat |
+| `2` | Identify |
+| `6` | Resume |
+| `7` | Reconnect |
+| `9` | Invalid Session |
+| `10` | Hello |
+| `11` | Heartbeat ACK |
+
+## Базовый flow
+
+1. Открыть WebSocket
+2. Получить `HELLO`
+3. Запустить heartbeat
+4. Отправить `IDENTIFY`
+5. Получать `DISPATCH`
+6. При разрыве попытаться `RESUME`
+
+## Пример `HELLO`
+
+```json
+{
+  "op": 10,
+  "d": {
+    "heartbeat_interval": 41250
+  }
+}
+```
+
+## Пример `IDENTIFY`
+
+```json
+{
+  "op": 2,
+  "d": {
+    "token": "Bot <your_token>",
+    "properties": {
+      "$os": "linux",
+      "$browser": "my-bot",
+      "$device": "my-bot"
+    }
+  }
+}
+```
+
+## Пример heartbeat
+
+```json
+{
+  "op": 1,
+  "d": 42
+}
+```
+
+## Важно
+
+- `/gateway/bot` принимает только bot token
+- user token на этом endpoint будет отклонён
+- `compress=zstd-stream` используйте только если клиент умеет декомпрессию zstd

@@ -1,0 +1,180 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.containerModal {
+	display: flex;
+	align-items: center;
+}
+
+.containerModalMobile {
+	gap: 6px;
+}
+
+.containerModalDesktop {
+	gap: 4px;
+}
+
+.containerPopout {
+	position: absolute;
+	top: 115px;
+	right: 10px;
+	z-index: 10;
+	display: flex;
+	gap: 6px;
+	border-radius: 999px;
+	padding: 6px 8px;
+	background: color-mix(in srgb, var(--background-floating) 94%, var(--background-primary) 6%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	backdrop-filter: blur(6px);
+	box-shadow: 0 2px 10px rgb(0 0 0 / 0.22);
+}
+
+.badgeMobile {
+	height: 28px;
+	width: 28px;
+}
+
+.badgeDesktop {
+	height: 20px;
+	width: 20px;
+}
+
+.badgeCoin {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	border: 1px solid var(--badge-tone-border, color-mix(in srgb, var(--text-primary) 20%, transparent));
+	background: var(--badge-tone-bg, color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%));
+	box-shadow: none;
+	overflow: hidden;
+	transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.badgeCoinShine {
+	display: none;
+}
+
+.badgeGlyph {
+	position: relative;
+	z-index: 1;
+	width: 58%;
+	height: 58%;
+	color: var(--badge-tone-fg, color-mix(in srgb, var(--text-primary) 92%, white 8%));
+	filter: none;
+}
+
+.badgeToneGold {
+	--badge-tone-bg: color-mix(in srgb, #5f4b20 82%, var(--background-secondary) 18%);
+	--badge-tone-border: color-mix(in srgb, #826331 88%, var(--background-primary) 12%);
+	--badge-tone-fg: #f4d99f;
+}
+
+.badgeToneTeal {
+	--badge-tone-bg: color-mix(in srgb, #214b50 84%, var(--background-secondary) 16%);
+	--badge-tone-border: color-mix(in srgb, #2f6970 86%, var(--background-primary) 14%);
+	--badge-tone-fg: #b5e8ec;
+}
+
+.badgeToneRose {
+	--badge-tone-bg: color-mix(in srgb, #563047 84%, var(--background-secondary) 16%);
+	--badge-tone-border: color-mix(in srgb, #78405f 86%, var(--background-primary) 14%);
+	--badge-tone-fg: #e9bfd8;
+}
+
+.badgeToneAmber {
+	--badge-tone-bg: color-mix(in srgb, #5a3f1f 84%, var(--background-secondary) 16%);
+	--badge-tone-border: color-mix(in srgb, #7b572d 86%, var(--background-primary) 14%);
+	--badge-tone-fg: #f1cda0;
+}
+
+.badgeToneViolet {
+	--badge-tone-bg: color-mix(in srgb, #3d3561 84%, var(--background-secondary) 16%);
+	--badge-tone-border: color-mix(in srgb, #5a4f86 86%, var(--background-primary) 14%);
+	--badge-tone-fg: #d3cbf6;
+}
+
+.virtualBadge {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding-top: 0;
+	font-weight: 800;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+	color: white;
+	line-height: 1;
+	letter-spacing: 0.05em;
+	text-decoration: none;
+	touch-action: manipulation;
+	user-select: none;
+	-webkit-user-select: none;
+	cursor: pointer;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, #5a4f86 86%, var(--background-primary) 14%);
+	background: color-mix(in srgb, #3d3561 84%, var(--background-secondary) 16%);
+	box-shadow: none;
+	transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.virtualBadgeMobile {
+	height: 28px;
+	width: 28px;
+	font-size: 12px;
+	line-height: 24px;
+}
+
+.virtualBadgeDesktop {
+	height: 20px;
+	width: 20px;
+	font-size: 10px;
+	line-height: 20px;
+}
+
+.virtualBadge:hover,
+.virtualBadge:focus,
+.virtualBadge:active {
+	text-decoration: none;
+}
+
+.link {
+	cursor: pointer;
+	touch-action: manipulation;
+	user-select: none;
+	-webkit-user-select: none;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.link:hover,
+.link:focus,
+.link:active {
+	text-decoration: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.link:hover .badgeCoin,
+	.link:focus-visible .badgeCoin,
+	.link:hover .virtualBadge,
+	.link:focus-visible .virtualBadge {
+		filter: brightness(1.08);
+	}
+}

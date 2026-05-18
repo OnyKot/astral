@@ -1,0 +1,704 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.noteTextarea {
+    scrollbar-width: none;
+}
+
+.noteTextarea::-webkit-scrollbar {
+    display: none;
+}
+
+.modalRoot {
+    border: none;
+}
+
+.userInfo {
+    user-select: text;
+    -webkit-user-select: text;
+    padding-left: 12px;
+    flex-shrink: 0;
+}
+
+.userInfoHeader {
+    gap: 8px;
+    position: relative;
+}
+
+.userInfoHeaderMobile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.userInfoHeaderDesktop {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: flex-start;
+}
+
+.userInfoHeader[data-accent-effect] {
+    border: 2px solid transparent;
+    border-radius: 1rem;
+    background: var(--background-primary);
+}
+
+.userInfoHeader[data-accent-effect]::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 2px;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    z-index: 5;
+}
+
+.userInfoHeader[data-accent-effect='rgb-neon']::before {
+    opacity: 1;
+    background: linear-gradient( 132deg, #ff0000 0%, #00ff00 33%, #0000ff 66%, #ff0000 100%);
+    background-size: 300% 300%;
+    animation: modalAccentRgbShift 2.4s linear infinite;
+}
+
+.userInfoHeader[data-accent-effect='nebula']::before {
+    opacity: 1;
+    background: linear-gradient( 132deg, #1f296f 0%, var(--profile-accent-base) 42%, #8fcbff 78%, #1f296f 100%);
+    background-size: 285% 285%;
+    animation: modalAccentDrift 11.8s linear infinite, modalAccentShadeSoft 6.4s ease-in-out infinite;
+}
+
+.userInfoHeader[data-accent-effect='stellar']::before {
+    opacity: 1;
+    background: radial-gradient(circle at 18% 20%, rgb(255 255 255 / 0.9) 0 1.2px, transparent 1.9px), radial-gradient(circle at 79% 28%, rgb(255 255 255 / 0.88) 0 1.1px, transparent 1.8px), radial-gradient(circle at 64% 74%, rgb(255 255 255 / 0.86) 0 1.4px, transparent 2px), linear-gradient(132deg, #22366f 0%, var(--profile-accent-base) 42%, #8fcbff 78%, #22366f 100%);
+    background-size: 240% 240%, 265% 265%, 285% 285%, 300% 300%;
+    animation: modalAccentStellar 14.6s linear infinite, modalAccentShadeSoft 7s ease-in-out infinite;
+}
+
+.userInfoHeader[data-accent-effect='solar']::before {
+    opacity: 1;
+    background: linear-gradient( 132deg, #ff7a39 0%, #ffd95e 24%, var(--profile-accent-base) 52%, #ff50b6 78%, #ff7a39 100%);
+    background-size: 275% 275%;
+    animation: modalAccentPulse 8.8s linear infinite, modalAccentShade 5.2s ease-in-out infinite;
+}
+
+.userInfoContent {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.nameRow {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.userName {
+    display: inline;
+    white-space: normal;
+    word-break: break-all;
+    vertical-align: middle;
+    font-weight: 600;
+    font-size: 24px;
+    color: var(--text-primary);
+    line-height: 1.25;
+}
+
+.userTag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.usernameRow {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: var(--text-tertiary);
+    line-height: 18px;
+}
+
+.pronouns {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-tertiary);
+    line-height: 18px;
+}
+
+.customStatusText {
+    font-size: 0.75rem;
+    color: var(--text-primary-muted);
+    line-height: 1rem;
+}
+
+.customStatusRow {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.customStatusRow:hover .customStatusText {
+    --emoji-show-animated: 1;
+}
+
+.musicActivityRow {
+    margin-top: 0.45rem;
+    max-width: min(100%, 28rem);
+}
+
+.tagBadgeRow {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.badgesWrapper {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.userNoteEditor {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.noteLabel {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.noteTextareaBase {
+    position: relative;
+    display: flex;
+    max-height: 88px;
+    min-height: 44px;
+    width: 100%;
+    resize: none;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-radius: 10px;
+    padding: 4px;
+    font-size: 14px;
+    line-height: 16px;
+}
+
+.noteTextareaEditing {
+    border: 1px solid var(--background-header-secondary);
+    background-color: var(--background-secondary);
+}
+
+.noteTextareaNotEditing {
+    border: 1px solid transparent;
+    background-color: transparent;
+}
+
+.profileContent {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    gap: 20px;
+    padding: 16px;
+    padding-top: 0;
+}
+
+.profileContentHeader {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mediaPreviewSection {
+	display: grid;
+	gap: 8px;
+}
+
+.mediaPreviewTitle {
+	margin: 0;
+	font-size: 0.78rem;
+	font-weight: 800;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--text-tertiary) 94%, var(--text-secondary));
+}
+
+.mediaPreviewList {
+	display: grid;
+	gap: 6px;
+}
+
+.mediaPreviewItem {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px;
+	border-radius: 12px;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: color-mix(in srgb, var(--background-secondary) 74%, var(--background-primary) 26%);
+}
+
+.mediaPreviewThumb {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	border-radius: 10px;
+	background: color-mix(in srgb, var(--brand-primary) 70%, transparent);
+	color: white;
+	flex-shrink: 0;
+}
+
+.mediaPreviewIcon {
+	width: 16px;
+	height: 16px;
+}
+
+.mediaPreviewMeta {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.mediaPreviewName {
+	font-size: 0.82rem;
+	font-weight: 700;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mediaPreviewInfo {
+	font-size: 0.73rem;
+	color: var(--text-secondary);
+}
+
+.mediaPreviewEmpty {
+	font-size: 0.76rem;
+	color: var(--text-secondary);
+	padding: 8px 2px;
+}
+
+.bannerContainer {
+    height: 210px;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.bannerMask {
+    contain: layout paint;
+    z-index: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.bannerImage {
+    height: 100%;
+    width: 100%;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.bannerColor {
+    height: 100%;
+    width: 100%;
+}
+
+.headerContainer {
+    position: relative;
+    min-height: 38px;
+    padding: 0 16px;
+    padding-top: 16px;
+}
+
+.avatarContainer {
+    position: absolute;
+    top: -66px;
+    left: 16px;
+    z-index: 0;
+    border: 6px solid var(--background-primary);
+    background-color: var(--background-primary);
+}
+
+.actionButtonsContainer {
+    display: flex;
+    height: 38px;
+    min-height: 38px;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.contentContainer {
+    z-index: 1;
+    margin: 16px;
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.profileContentWrapper {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--background-primary) 88%, var(--background-secondary) 12%);
+    box-shadow:
+        0 10px 22px rgb(3 7 18 / 0.18),
+        inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.scrollerFullHeight {
+    height: 100%;
+}
+
+.modalContainer {
+    --profile-accent-base: var(--brand-primary);
+    display: flex;
+    height: 780px;
+    width: 600px;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 20px;
+    border-width: 2px;
+    border-style: solid;
+    background:
+        radial-gradient(circle at 8% -8%, color-mix(in srgb, var(--brand-primary) 18%, transparent), transparent 44%),
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--background-floating) 88%, var(--background-primary) 12%),
+            color-mix(in srgb, var(--background-secondary) 86%, var(--background-primary) 14%)
+        );
+    position: relative;
+    isolation: isolate;
+    box-shadow:
+        0 22px 42px rgb(0 0 0 / 0.34),
+        inset 0 1px 0 color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.modalContainer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 4px;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    z-index: 5;
+}
+
+.modalContainer[data-accent-effect='rgb-neon'] {
+    border-color: transparent !important;
+}
+
+.modalContainer[data-accent-effect='rgb-neon']::before {
+    opacity: 1;
+    background: linear-gradient( 120deg, var(--profile-accent-base) 0%, #ff5875 18%, #ffd25d 36%, #61ff9f 54%, #4cc9ff 72%, #ae7eff 88%, var(--profile-accent-base) 100%);
+    background-size: 260% 260%;
+    animation: modalAccentRgbShift 11s cubic-bezier(0.45, 0.05, 0.25, 0.98) infinite;
+}
+
+.modalContainer[data-accent-effect='nebula'] {
+    border-color: transparent !important;
+}
+
+.modalContainer[data-accent-effect='nebula']::before {
+    opacity: 1;
+    background: linear-gradient(140deg, #281e63 0%, var(--profile-accent-base) 28%, #5f87ff 64%, #9b7cff 100%);
+    background-size: 220% 220%;
+    animation: modalAccentDrift 12s cubic-bezier(0.42, 0, 0.24, 1) infinite;
+}
+
+.modalContainer[data-accent-effect='stellar'] {
+    border-color: transparent !important;
+}
+
+.modalContainer[data-accent-effect='stellar']::before {
+    opacity: 1;
+    background: radial-gradient(circle at 18% 20%, rgb(255 255 255 / 0.9) 0 1.2px, transparent 1.9px), radial-gradient(circle at 79% 28%, rgb(255 255 255 / 0.88) 0 1.1px, transparent 1.8px), radial-gradient(circle at 64% 74%, rgb(255 255 255 / 0.86) 0 1.4px, transparent 2px), linear-gradient(132deg, #24356c 0%, var(--profile-accent-base) 44%, #8bc4ff 100%);
+    background-size: 160% 160%, 180% 180%, 200% 200%, 220% 220%;
+    animation: modalAccentStellar 13.8s cubic-bezier(0.4, 0.04, 0.2, 0.99) infinite;
+}
+
+.modalContainer[data-accent-effect='solar'] {
+    border-color: transparent !important;
+}
+
+.modalContainer[data-accent-effect='solar']::before {
+    opacity: 1;
+    background: linear-gradient(132deg, #ff7a39 0%, #ffd95e 28%, var(--profile-accent-base) 58%, #ff52ba 100%);
+    background-size: 230% 230%;
+    animation: modalAccentPulse 8.2s cubic-bezier(0.44, 0.06, 0.26, 0.98) infinite;
+}
+
+.actionButtons {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    justify-content: flex-end;
+}
+
+.moreMenuButtonActive {
+    background-color: var(--background-modifier-hover);
+}
+
+.buttonIcon {
+    height: 1rem;
+    width: 1rem;
+}
+
+.menuIcon {
+    height: 1rem;
+    width: 1rem;
+}
+
+.avatarContainer {
+    border-radius: 9999px;
+}
+
+.tabsWrapper {
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+.tabsRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mutualTabLabel {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mutualMenuButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    padding: 0;
+    border-radius: 9999px;
+    color: var(--text-primary-muted);
+    line-height: 1;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.mutualMenuButton:hover {
+    background-color: transparent;
+    color: var(--text-primary);
+}
+
+.mutualMenuButtonActive {
+    background-color: transparent;
+    color: var(--text-primary);
+}
+
+.mutualMenuIcon {
+    width: 16px;
+    height: 16px;
+    transition: transform 150ms ease, color 150ms ease;
+}
+
+.mutualMenuIconOpen {
+    transform: rotate(180deg);
+}
+
+.mutualMenuButton:hover .mutualMenuIcon,
+.mutualMenuButton:focus-visible .mutualMenuIcon,
+.mutualMenuButtonActive .mutualMenuIcon {
+    color: var(--text-primary);
+}
+
+.mutualFriendsList {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mutualFriendItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.mutualFriendItem:hover,
+.mutualFriendItem.active {
+    background-color: var(--background-modifier-hover);
+}
+
+.mutualFriendInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.mutualFriendName {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.mutualFriendUsername {
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 32px;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    gap: 8px;
+}
+
+.mutualGuildIcon {
+    border-radius: 50%;
+}
+
+.separator {
+    margin-bottom: 8px;
+    width: 100%;
+    border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+    flex-shrink: 0;
+}
+
+.emptyStateIcon {
+    width: 48px;
+    height: 48px;
+    color: var(--text-tertiary);
+    opacity: 0.5;
+}
+
+.loadingScreen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+}
+
+@keyframes modalAccentRgbShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 110% 50%;
+    }
+    100% {
+        background-position: 220% 50%;
+    }
+}
+
+@keyframes modalAccentDrift {
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes modalAccentStellar {
+    0%,
+    100% {
+        background-position: 0% 0%, 100% 0%, 40% 100%, 0% 50%;
+    }
+    50% {
+        background-position: 100% 100%, 0% 100%, 80% 0%, 100% 50%;
+    }
+}
+
+@keyframes modalAccentPulse {
+    0%,
+    100% {
+        background-position: 0% 50%;
+        filter: saturate(1);
+    }
+    50% {
+        background-position: 100% 50%;
+        filter: saturate(1.1);
+    }
+}
+
+@keyframes modalAccentShade {
+    0%,
+    100% {
+        filter: saturate(1.04) brightness(1);
+    }
+    50% {
+        filter: saturate(1.22) brightness(1.08);
+    }
+}
+
+@keyframes modalAccentShadeSoft {
+    0%,
+    100% {
+        filter: saturate(1.02) brightness(1);
+    }
+    50% {
+        filter: saturate(1.14) brightness(1.06);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modalContainer[data-accent-effect='rgb-neon']::before,
+    .modalContainer[data-accent-effect='nebula']::before,
+    .modalContainer[data-accent-effect='stellar']::before,
+    .modalContainer[data-accent-effect='solar']::before,
+    .userInfoHeader[data-accent-effect='rgb-neon']::before,
+    .userInfoHeader[data-accent-effect='nebula']::before,
+    .userInfoHeader[data-accent-effect='stellar']::before,
+    .userInfoHeader[data-accent-effect='solar']::before {
+        animation: none;
+    }
+}

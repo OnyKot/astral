@@ -1,0 +1,258 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.errorMessage {
+    margin-top: 0.5rem;
+    color: var(--status-danger);
+    font-size: 0.875rem;
+}
+
+.plutoniumShell {
+    margin-top: 0.95rem;
+    padding: 0.86rem;
+    border-radius: 0.92rem;
+    border: 1px solid rgb(102 156 255 / 0.42);
+    background: radial-gradient(circle at 14% -10%, rgb(108 184 255 / 0.24), transparent 42%), radial-gradient(circle at 84% 14%, rgb(70 129 255 / 0.24), transparent 36%), linear-gradient(156deg, rgb(11 28 62 / 0.96), rgb(8 19 43 / 0.98));
+    box-shadow: 0 12px 24px rgb(2 8 21 / 0.42), inset 0 1px 0 rgb(255 255 255 / 0.12);
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+}
+
+.plutoniumShell::before {
+    content: '';
+    position: absolute;
+    inset: -42%;
+    background: radial-gradient(circle at 22% 26%, rgb(255 255 255 / 0.75) 0 0.8px, transparent 1.7px), radial-gradient(circle at 38% 72%, rgb(213 235 255 / 0.72) 0 0.85px, transparent 1.7px), radial-gradient(circle at 72% 30%, rgb(255 255 255 / 0.68) 0 0.9px, transparent 1.8px), radial-gradient(circle at 84% 64%, rgb(206 231 255 / 0.66) 0 0.9px, transparent 1.8px), radial-gradient(circle at 56% 48%, rgb(255 255 255 / 0.62) 0 0.8px, transparent 1.6px);
+    background-size: 220px 220px;
+    opacity: 0.52;
+    animation: cosmicStarDrift 18s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.plutoniumShell::after {
+    content: '';
+    position: absolute;
+    top: 0.5rem;
+    right: -0.9rem;
+    width: 3.05rem;
+    height: 3.05rem;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 28%, rgb(227 242 255 / 0.95) 0%, rgb(171 213 255 / 0.92) 32%, rgb(95 154 255 / 0.92) 70%, rgb(55 102 191 / 0.9) 100%);
+    box-shadow: inset -7px -8px 15px rgb(17 46 103 / 0.46), 0 0 22px rgb(117 178 255 / 0.42);
+    animation: cosmicPlanetFloat 10.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.plutoniumShell :where(.plutoniumHeader)::after {
+    content: '';
+    position: absolute;
+    top: -0.12rem;
+    right: 0.7rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    border: 1px solid rgb(157 213 255 / 0.42);
+    transform: rotate(-18deg);
+    opacity: 0.7;
+    pointer-events: none;
+    animation: cosmicOrbitPulse 9.2s ease-in-out infinite;
+}
+
+.plutoniumHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.72rem;
+    position: relative;
+    z-index: 1;
+}
+
+.plutoniumTitleRow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.crownIcon {
+    color: rgb(217 232 255);
+}
+
+.plutoniumTitle {
+    font-weight: 700;
+    font-size: 0.84rem;
+    color: rgb(233 242 255);
+}
+
+.plutoniumSubtitle {
+    font-size: 0.76rem;
+    line-height: 1.34;
+    color: rgb(184 205 236);
+}
+
+.effectGrid {
+    display: grid;
+    gap: 0.54rem;
+    position: relative;
+    z-index: 1;
+}
+
+.effectButton {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    align-items: flex-start;
+    text-align: left;
+    padding: 0.62rem 0.68rem;
+    border-radius: 0.74rem;
+    border: 1px solid rgb(181 217 255 / 0.14);
+    background: rgb(9 24 51 / 0.48);
+    color: rgb(228 239 255);
+    cursor: pointer;
+    transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+    width: 100%;
+    min-height: 3.7rem;
+    justify-content: center;
+}
+
+.effectButton:hover {
+    border-color: rgb(137 189 255 / 0.52);
+    background: rgb(13 32 67 / 0.72);
+    transform: translateY(-1px);
+}
+
+.effectButtonActive {
+    border-color: rgb(151 205 255 / 0.66);
+    background: rgb(18 40 78 / 0.82);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
+}
+
+.effectLabel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    width: 100%;
+}
+
+.effectDescription {
+    font-size: 0.74rem;
+    color: rgb(174 203 236);
+    line-height: 1.32;
+}
+
+.lockBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.08rem;
+    padding: 0 0.48rem;
+    border-radius: 999px;
+    border: 1px solid rgb(167 214 255 / 0.32);
+    background: rgb(143 197 255 / 0.14);
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    color: rgb(236 246 255);
+    text-transform: uppercase;
+}
+
+.plutoniumFooter {
+    margin-top: 0.68rem;
+    position: relative;
+    z-index: 1;
+}
+
+@media (min-width: 1024px) {
+    .plutoniumShell {
+        padding: 0.98rem 1rem;
+        border-radius: 1rem;
+    }
+    .plutoniumHeader {
+        margin-bottom: 0.8rem;
+    }
+    .plutoniumTitle {
+        font-size: 0.9rem;
+    }
+    .plutoniumSubtitle {
+        max-width: 62ch;
+    }
+    .effectGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 0.62rem;
+        row-gap: 0.58rem;
+    }
+    .effectGrid> :first-child {
+        grid-column: 1 / -1;
+    }
+    .effectButton {
+        padding: 0.68rem 0.74rem;
+        min-height: 4.1rem;
+    }
+}
+
+@keyframes cosmicStarDrift {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    100% {
+        transform: translate3d(-54px, -74px, 0) scale(1.03);
+    }
+}
+
+@keyframes cosmicPlanetFloat {
+    0% {
+        transform: translateY(0) translateX(0) scale(1);
+    }
+    25% {
+        transform: translateY(-0.12rem) translateX(-0.14rem) scale(1.015);
+    }
+    52% {
+        transform: translateY(0.08rem) translateX(-0.22rem) scale(0.994);
+    }
+    76% {
+        transform: translateY(-0.08rem) translateX(-0.08rem) scale(1.012);
+    }
+    100% {
+        transform: translateY(0) translateX(0) scale(1);
+    }
+}
+
+@keyframes cosmicOrbitPulse {
+    0%,
+    100% {
+        opacity: 0.62;
+        transform: rotate(-18deg) scale(1);
+    }
+    50% {
+        opacity: 0.82;
+        transform: rotate(-13deg) scale(1.03);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .plutoniumShell::before,
+    .plutoniumShell::after {
+        animation: none;
+    }
+}

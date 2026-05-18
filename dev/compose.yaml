@@ -1,0 +1,555 @@
+services:
+  caddy:
+    image: caddy:2
+    ports:
+      - '3000:8088'
+      - '8088:8088'
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - ../astral_app/dist:/app/dist:ro
+    networks:
+      - Astral-shared
+    depends_on:
+      - app
+      - api
+      - media
+      - marketing
+      - gateway
+      - minio
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    restart: on-failure
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    env_file:
+      - ./.env
+    networks:
+      - Astral-shared
+    restart: on-failure
+
+  api:
+    image: node:24-bookworm-slim
+    working_dir: /workspace
+    command: bash -lc "corepack enable pnpm && CI=true pnpm install && npx tsx watch --clear-screen=false src/App.ts"
+    env_file:
+      - ./.env
+    environment:
+      - CI=true
+      - VAPID_PUBLIC_KEY=BJHAPp7Xg4oeN_D6-EVu0D-bDyPDwFFJiLn7CzkUjUvaG_F-keQGpA_-RiNugCosTPhhdvdrn4mEOh-_1Bt35V8
+      - ASTRAL_METRICS_HOST=metrics:8080
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=devsecret
+      - LIVEKIT_INTERNAL_URL=http://livekit:7880
+    volumes:
+      - ../astral_api:/workspace
+      - api_node_modules:/workspace/node_modules
+    networks:
+      - Astral-shared
+    depends_on:
+      - media
+    restart: on-failure
+
+  worker:
+    image: node:24-bookworm-slim
+    working_dir: /workspace
+    command: bash -lc "corepack enable pnpm && CI=true pnpm install && npm run dev:worker"
+    env_file:
+      - ./.env
+    environment:
+      - CI=true
+      - ASTRAL_METRICS_HOST=metrics:8080
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=devsecret
+      - LIVEKIT_INTERNAL_URL=http://livekit:7880
+    volumes:
+      - ../astral_api:/workspace
+      - api_node_modules:/workspace/node_modules
+    networks:
+      - Astral-shared
+    restart: on-failure
+    depends_on:
+      - postgres
+      - redis
+      - cassandra
+
+  media:
+    build:
+      context: ../astral_media_proxy
+      dockerfile: Dockerfile
+      target: build
+    working_dir: /workspace
+    command: >
+      bash -lc "
+        corepack enable pnpm &&
+        CI=true pnpm install &&
+        pnpm dev
+      "
+    user: root
+    env_file:
+      - ./.env
+    environment:
+      - CI=true
+      - NODE_ENV=development
+      - ASTRAL_METRICS_HOST=metrics:8080
+    volumes:
+      - ../astral_media_proxy:/workspace
+      - media_node_modules:/workspace/node_modules
+    networks:
+      - Astral-shared
+    restart: on-failure
+
+  marketing:
+    build:
+      context: ../astral_marketing
+      dockerfile: Dockerfile.dev
+    working_dir: /workspace
+    env_file:
+      - ./.env
+    environment:
+      - PORT=8080
+      - ASTRAL_METRICS_HOST=metrics:8080
+    volumes:
+      - marketing_build:/workspace/build
+    networks:
+      - Astral-shared
+    restart: on-failure
+    develop:
+      watch:
+        - action: rebuild
+          path: ../astral_marketing/src
+        - action: rebuild
+          path: ../astral_marketing/tailwind.css
+
+  docs:
+    image: node:24-bookworm-slim
+    working_dir: /workspace
+    command: bash -lc "corepack enable pnpm && CI=true pnpm install && pnpm dev"
+    env_file:
+      - ./.env
+    environment:
+      - CI=true
+      - NODE_ENV=development
+    volumes:
+      - ../astral_docs:/workspace
+      - docs_node_modules:/workspace/node_modules
+    networks:
+      - Astral-shared
+    restart: on-failure
+
+  # UI 3.0 client — sourced from the repo root (`src/`), not `astral_app/`.
+  # The previous version of this service mounted `../astral_app:/workspace`
+  # against the old client; that codebase is now unmaintained on this
+  # branch and its lockfile no longer matches its package.json. The new
+  # UI 3.0 lives at the repository root with its own package.json,
+  # rspack.config.mjs and src/, so we mount the parent of dev/ as
+  # /workspace.
+  app:
+    image: node:24-bookworm-slim
+    working_dir: /workspace
+    command: >
+      bash -lc "
+        apt-get update &&
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl build-essential pkg-config libssl-dev ca-certificates binaryen python3 python-is-python3 &&
+        if ! command -v go >/dev/null 2>&1 || ! go version | grep -q 'go1.25'; then
+          curl -fsSL https://go.dev/dl/go1.25.5.linux-amd64.tar.gz -o /tmp/go1.25.5.linux-amd64.tar.gz &&
+          rm -rf /usr/local/go &&
+          tar -C /usr/local -xzf /tmp/go1.25.5.linux-amd64.tar.gz;
+        fi &&
+        export PATH=/usr/local/go/bin:/root/.cargo/bin:$PATH &&
+        export PATH=/root/.cargo/bin:$PATH &&
+        if ! command -v rustup >/dev/null 2>&1; then curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal; fi &&
+        export PATH=/usr/local/go/bin:/root/.cargo/bin:$PATH &&
+        rustup default stable &&
+        rustup target add wasm32-unknown-unknown &&
+        if ! command -v wasm-pack >/dev/null 2>&1; then cargo install wasm-pack --locked; fi &&
+        corepack enable pnpm &&
+        CI=true pnpm install --no-frozen-lockfile &&
+        pnpm dev:bootstrap
+      "
+    env_file:
+      - ./.env
+    environment:
+      - CI=true
+      - NODE_ENV=development
+      - ASTRAL_DISABLE_DEV_SERVER_CLIENT=1
+      - PUBLIC_BOOTSTRAP_API_ENDPOINT=/api
+      - PUBLIC_BOOTSTRAP_API_PUBLIC_ENDPOINT=/api
+      - PUBLIC_API_VERSION=1
+    volumes:
+      - ..:/workspace
+      - app_node_modules:/workspace/node_modules
+      - app_cargo_home:/root/.cargo
+      - app_rustup_home:/root/.rustup
+    networks:
+      - Astral-shared
+    depends_on:
+      - media
+    restart: on-failure
+
+  gateway:
+    image: erlang:28-slim
+    working_dir: /workspace
+    command: bash -c "apt-get update && apt-get install -y --no-install-recommends build-essential linux-libc-dev curl ca-certificates gettext-base git && curl -fsSL https://github.com/erlang/rebar3/releases/download/3.24.0/rebar3 -o /usr/local/bin/rebar3 && chmod +x /usr/local/bin/rebar3 && sed -i 's/\r$//' ./docker-entrypoint.sh && chmod +x ./docker-entrypoint.sh && rm -rf _build/* _build/.[!.]* _build/..?* && rebar3 compile && exec bash ./docker-entrypoint.sh"
+    hostname: gateway
+    env_file:
+      - ./.env
+    environment:
+      - RELEASE_NODE=Astral_gateway@gateway
+      - LOGGER_LEVEL=debug
+      - CLUSTER_NAME=Astral_gateway
+      - CLUSTER_DISCOVERY_DNS=gateway
+      - NODE_COOKIE=Astral_dev_cookie
+      - VAPID_PUBLIC_KEY=BJHAPp7Xg4oeN_D6-EVu0D-bDyPDwFFJiLn7CzkUjUvaG_F-keQGpA_-RiNugCosTPhhdvdrn4mEOh-_1Bt35V8
+      - VAPID_PRIVATE_KEY=Ze8J4aSmwV5B77zz9NzTU_IdyFyR1hMiKaYF2G61Y-E
+      - VAPID_EMAIL=support@astraof.com
+      - ASTRAL_METRICS_HOST=metrics:8080
+    volumes:
+      - ../astral_gateway:/workspace
+      - gateway_build:/workspace/_build
+    networks:
+      - Astral-shared
+    restart: on-failure
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: Astral
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - Astral-shared
+    restart: on-failure
+
+  cassandra:
+    image: scylladb/scylla:latest
+    command: --smp 1 --memory 512M --overprovisioned 1 --developer-mode 1 --api-address 0.0.0.0
+    ports:
+      - '9042:9042'
+    volumes:
+      - scylla_data:/var/lib/scylla
+    networks:
+      - Astral-shared
+    restart: on-failure
+    healthcheck:
+      test: ['CMD-SHELL', 'cqlsh -e "describe cluster"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  redis:
+    image: valkey/valkey:latest
+    volumes:
+      - redis_data:/data
+    command: valkey-server --save 60 1 --loglevel warning
+    networks:
+      - Astral-shared
+    restart: on-failure
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    networks:
+      - Astral-shared
+    restart: on-failure
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-setup:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set minio http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing minio/Astral-metrics;
+      mc mb --ignore-existing minio/Astral-uploads;
+      exit 0;
+      "
+    networks:
+      - Astral-shared
+    restart: 'no'
+
+  clamav:
+    image: clamav/clamav:latest
+    volumes:
+      - clamav_data:/var/lib/clamav
+    environment:
+      CLAMAV_NO_FRESHCLAMD: 'false'
+      CLAMAV_NO_CLAMD: 'false'
+      CLAMAV_NO_MILTERD: 'true'
+    networks:
+      - Astral-shared
+    restart: on-failure
+    healthcheck:
+      test: ['CMD', '/usr/local/bin/clamdcheck.sh']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.25.0
+    volumes:
+      - meilisearch_data:/meili_data
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: masterKey
+    networks:
+      - Astral-shared
+    restart: on-failure
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    hostname: clickhouse
+    profiles:
+      - clickhouse
+    environment:
+      - CLICKHOUSE_DB=Astral_metrics
+      - CLICKHOUSE_USER=Astral
+      - CLICKHOUSE_PASSWORD=Astral_dev
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_logs:/var/log/clickhouse-server
+    networks:
+      - Astral-shared
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+    restart: on-failure
+    healthcheck:
+      test: ['CMD', 'clickhouse-client', '--query', 'SELECT 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  metrics:
+    build:
+      context: ../astral_metrics
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    environment:
+      - METRICS_PORT=8080
+      - METRICS_MODE=${METRICS_MODE:-noop}
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - CLICKHOUSE_DATABASE=Astral_metrics
+      - CLICKHOUSE_USER=Astral
+      - CLICKHOUSE_PASSWORD=Astral_dev
+      - ANOMALY_DETECTION_ENABLED=true
+      - ASTRAL_ADMIN_ENDPOINT=${ASTRAL_ADMIN_ENDPOINT:-}
+    networks:
+      - Astral-shared
+    restart: on-failure
+
+  metrics-clickhouse:
+    extends:
+      service: metrics
+    profiles:
+      - clickhouse
+    environment:
+      - METRICS_MODE=clickhouse
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+
+  userver-health:
+    build:
+      context: ../services
+      dockerfile: userver_health/Dockerfile
+      args:
+        ASTRAL_VERSION: "0.1.0"
+        ASTRAL_BUILD_ID: "${ASTRAL_BUILD_ID:-dev}"
+        ASTRAL_COMMIT: "${ASTRAL_COMMIT:-unknown}"
+    profiles:
+      - userver
+    networks:
+      - Astral-shared
+    restart: on-failure
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:8080/health >/dev/null || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  userver-instance:
+    build:
+      context: ../services
+      dockerfile: userver_instance/Dockerfile
+      args:
+        ASTRAL_VERSION: "0.1.0"
+        ASTRAL_BUILD_ID: "${ASTRAL_BUILD_ID:-dev}"
+        ASTRAL_COMMIT: "${ASTRAL_COMMIT:-unknown}"
+    profiles:
+      - userver
+    env_file:
+      - ./.env
+    environment:
+      # Mirror the env the Node api service gets for its /instance handler.
+      # These are *not* in dev/.env — api hardcodes them here, so we must too
+      # or the shadow-diff shows false positives like {"push.public_vapid_key": null}.
+      - VAPID_PUBLIC_KEY=BJHAPp7Xg4oeN_D6-EVu0D-bDyPDwFFJiLn7CzkUjUvaG_F-keQGpA_-RiNugCosTPhhdvdrn4mEOh-_1Bt35V8
+    networks:
+      - Astral-shared
+    restart: on-failure
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:8080/instance >/dev/null || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  userver-invites:
+    build:
+      context: ../services
+      dockerfile: userver_invites/Dockerfile
+      args:
+        ASTRAL_VERSION: "0.1.0"
+        ASTRAL_BUILD_ID: "${ASTRAL_BUILD_ID:-dev}"
+        ASTRAL_COMMIT: "${ASTRAL_COMMIT:-unknown}"
+    profiles:
+      - userver
+    env_file:
+      - ./.env
+    environment:
+      - ASTRAL_API_INTERNAL_ENDPOINT=http://api:8080/v1
+    networks:
+      - Astral-shared
+    restart: on-failure
+    depends_on:
+      - api
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:8081/ping >/dev/null || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  userver-presence:
+    build:
+      context: ../services
+      dockerfile: userver_presence/Dockerfile
+      args:
+        ASTRAL_VERSION: "0.1.0"
+        ASTRAL_BUILD_ID: "${ASTRAL_BUILD_ID:-dev}"
+        ASTRAL_COMMIT: "${ASTRAL_COMMIT:-unknown}"
+    profiles:
+      - userver
+    env_file:
+      - ./.env
+    environment:
+      # Gateway RPC host/port/secret — same values the Node api service reads.
+      - ASTRAL_GATEWAY_RPC_HOST=gateway
+      - ASTRAL_GATEWAY_RPC_PORT=8081
+    networks:
+      - Astral-shared
+    restart: on-failure
+    depends_on:
+      - gateway
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:8081/ping >/dev/null || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  userver-tenor:
+    build:
+      context: ../services
+      dockerfile: userver_tenor/Dockerfile
+      args:
+        ASTRAL_VERSION: "0.1.0"
+        ASTRAL_BUILD_ID: "${ASTRAL_BUILD_ID:-dev}"
+        ASTRAL_COMMIT: "${ASTRAL_COMMIT:-unknown}"
+    profiles:
+      - userver
+    env_file:
+      - ./.env
+    environment:
+      - TENOR_API_KEY=${TENOR_API_KEY:-}
+      - GIPHY_API_KEY=${GIPHY_API_KEY:-}
+    networks:
+      - Astral-shared
+    restart: on-failure
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:8081/ping >/dev/null || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  cassandra-migrate:
+    image: debian:bookworm-slim
+    command:
+      [
+        'bash',
+        '-lc',
+        'apt-get update && apt-get install -y dnsutils && sleep 30 && /cassandra-migrate --host cassandra --username cassandra --password cassandra up',
+      ]
+    working_dir: /workspace
+    volumes:
+      - ../scripts/cassandra-migrate/target/release/cassandra-migrate:/cassandra-migrate
+      - ../astral_devops/cassandra/migrations:/workspace/Astral_devops/cassandra/migrations
+    networks:
+      - Astral-shared
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    restart: 'no'
+
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --config /tmp/livekit.yaml --dev
+    env_file:
+      - ./.env
+    volumes:
+      - ./livekit.yaml:/tmp/livekit.yaml:ro
+    ports:
+      - '7880:7880'
+      - '7881:7881'
+      - '7882:7882/udp'
+    networks:
+      - Astral-shared
+    restart: on-failure
+
+networks:
+  Astral-shared:
+    name: Astral-shared
+    external: true
+
+volumes:
+  postgres_data:
+  scylla_data:
+  redis_data:
+  minio_data:
+  clamav_data:
+  meilisearch_data:
+  clickhouse_data:
+  clickhouse_logs:
+  api_node_modules:
+  media_node_modules:
+  marketing_build:
+  gateway_build:
+  docs_node_modules:
+  app_node_modules:
+  app_cargo_home:
+  app_rustup_home:

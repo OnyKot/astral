@@ -1,0 +1,16 @@
+services:
+  typesense:
+    image: typesense/typesense:29.0
+    command:
+      - --data-dir
+      - /data
+      - --api-key=${MUSIC_TYPESENSE_API_KEY:-astramusic-search-dev-key}
+      - --enable-cors
+    ports:
+      - '${MUSIC_TYPESENSE_PORT:-8108}:8108'
+    volumes:
+      - typesense_data:/data
+    restart: unless-stopped
+
+volumes:
+  typesense_data:

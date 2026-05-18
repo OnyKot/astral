@@ -1,0 +1,79 @@
+---
+title: Astral Developer Documentation
+description: Build bots, automations and integrations on top of Astral
+---
+
+> 🇬🇧 **English** · [🇷🇺 Русская версия →](/docs/ru)
+
+Welcome to the Astral developer documentation. Everything here describes the **public** developer-facing API: the same endpoints external bots, OAuth2 integrations and webhook senders use to talk to Astral.
+
+<Callout type="info" title="AI Assistant">
+Can't find what you need? [**Ask the AI assistant →**](/docs/ask) — it knows the entire documentation.
+</Callout>
+
+## What you can build
+
+- **Bots** — messages, slash commands, voice events, Gateway dispatches in real time.
+- **Webhooks** — GitHub, CI, monitoring post into channels without a long-lived process.
+- **OAuth2 integrations** — users link their Astral identity to your app.
+- **Automations** — REST for reads, Gateway for events.
+
+## Pick a starting point
+
+| You want to… | Open |
+| --- | --- |
+| Get a working bot in 5 minutes | [Quickstart](/docs/quickstart) |
+| Understand the bot model end to end | [Bot API Guide](/docs/bots) |
+| Look up an endpoint | [API Reference](/docs/api-reference) |
+| Subscribe to live events | [Gateway](/docs/events/gateway) and [Gateway Events](/docs/events/gateway-events) |
+| Understand permissions | [Permissions](/docs/topics/permissions) |
+| Understand rate limits | [Rate limits](/docs/topics/rate-limits) |
+| Register slash commands | [Application Commands](/docs/resources/application-commands) |
+| Diagnose a broken bot | [Troubleshooting](/docs/topics/troubleshooting) |
+| Set up OAuth2 | [OAuth2 Guide](/docs/resources/oauth2) |
+| Self-host Astral | [Self-Hosting](/docs/topics/self-hosting) |
+| Pick a client library | [Libraries](/docs/libraries) |
+
+## Getting your first bot token
+
+1. Open the Astral client at [astraof.com](https://astraof.com).
+2. Open **User Settings → Applications** (the `</>` icon in the user-settings sidebar).
+3. Click **Create Application** and give it a name.
+4. Open the new application, switch to the **Bot** section, and copy the bot token.
+
+Then follow the [Quickstart](./quickstart) — it walks through environment setup, the three sanity-check requests every bot should pass, and a minimal `ping → pong` example using only the `ws` package from npm.
+
+<Callout type="warning" title="Treat bot tokens like passwords">
+A leaked bot token is equivalent to handing over the bot's account. Do not commit tokens to Git, do not embed them in browser bundles, and rotate them through `POST /oauth2/applications/:id/bot/reset-token` if you suspect compromise.
+</Callout>
+
+## Base URLs
+
+Astral runs on the official deployment at:
+
+```text
+HTTP API: https://astraof.com/api/v1
+Gateway:  wss://astraof.com/gateway?v=1&encoding=json
+```
+
+If you're targeting a self-hosted Astral instance, replace `astraof.com` with your own domain — the API surface and event names are identical.
+
+## Authentication for bots
+
+```text
+Authorization: Bot YOUR_BOT_TOKEN
+```
+
+The `Bot` prefix is required. Bots send the same `Authorization` header on every REST call and on the Gateway `IDENTIFY` payload.
+
+<Callout type="info" title="Bots and the origin gate">
+Astral's production API gates **non-GET, cookie-only** requests by `Origin`. Bots are immune — as soon as you set `Authorization: Bot <token>`, the origin check is bypassed and your request is judged by the token alone. You do **not** need to send an `Origin` header from your bot.
+</Callout>
+
+## Need help?
+
+- Open the in-app support channel from **User Settings → Help**.
+- Email the product team at `product@astraof.com`.
+- File a bug or feature request through the support channel — please include your application id, the `request-id` header from a failing response, and a minimal reproduction.
+
+Happy building.

@@ -1,0 +1,2068 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2026 Astral Contributors
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:190
+msgid " in Chrome"
+msgstr " στο Chrome"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:288
+msgid " in Chrome or another browser with PWA support"
+msgstr " στο Chrome ή σε άλλο πρόγραμμα περιήγησης με υποστήριξη PWA"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:236
+msgid " in Safari"
+msgstr " στο Safari"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1032
+msgid "/forever"
+msgstr "/για-πάντα"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:66
+#: src/Astral_marketing/pages/plutonium_page.gleam:103
+#: src/Astral_marketing/pages/plutonium_page.gleam:225
+msgid "/mo"
+msgstr "/μήνα"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:233
+msgid "/year"
+msgstr "/έτος"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:71
+#: src/Astral_marketing/pages/plutonium_page.gleam:109
+msgid "/yr"
+msgstr "/έτος"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:654
+msgid "500MB uploads, 4000 character messages, 300 bookmarks, 50 emoji packs, and much more."
+msgstr "Αποστολές έως 500MB, μηνύματα έως 4000 χαρακτήρες, 300 σελιδοδείκτες, 50 πακέτα emoji και πολλά ακόμη."
+
+#: src/Astral_marketing/components/hero.gleam:59
+msgid "A chat app that puts you first"
+msgstr "Μια εφαρμογή συνομιλίας που σας βάζει πρώτους"
+
+#: src/Astral_marketing/components/communities_section.gleam:86
+msgid "A chat platform that answers to you, not investors. It's ad-free, independent, community-funded, and never sells your data or nags you with upgrade pop-ups."
+msgstr "Μια πλατφόρμα συνομιλίας που λογοδοτεί σε εσένα, όχι σε επενδυτές. Χωρίς διαφημίσεις, ανοιχτού κώδικα και χρηματοδοτούμενη από την κοινότητα — δεν πουλά ποτέ τα δεδομένα σου και δεν σε ενοχλεί με αναδυόμενα για αναβάθμιση."
+
+#: src/Astral_marketing/pages/careers_page.gleam:219
+msgid "A non-paid role for recurring contributors who help shape Astral alongside the core team."
+msgstr "Ένας μη αμειβόμενος ρόλος για τακτικούς συνεισφέροντες, που βοηθούν να διαμορφωθεί το Astral μαζί με τη βασική ομάδα."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1074
+msgid "Access to Astral Operators community"
+msgstr "Πρόσβαση στην κοινότητα Astral Operators"
+
+#: src/Astral_marketing/pages/partners_page.gleam:225
+msgid "Access to VIP voice servers reserved exclusively for partnered communities."
+msgstr "Πρόσβαση σε VIP διακομιστές φωνής, αποκλειστικά για συνεργαζόμενες κοινότητες."
+
+#: src/Astral_marketing/components/coming_features.gleam:48
+msgid "Activity sharing"
+msgstr "Κοινοποίηση δραστηριότητας"
+
+#: src/Astral_marketing/pages/download_page.gleam:228
+msgid "Add Astral to your home screen to hide the browser UI."
+msgstr "Πρόσθεσε το Astral στην αρχική οθόνη για να κρύψεις το UI του προγράμματος περιήγησης."
+
+#: src/Astral_marketing/components/current_features.gleam:133
+msgid "Add custom emojis, save media for later, and style the app with custom CSS."
+msgstr "Πρόσθεσε προσαρμοσμένα emoji, αποθήκευσε πολυμέσα για αργότερα και δώσε στιλ στην εφαρμογή με προσαρμοσμένο CSS."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1124
+msgid "After the offer ends, Operator Access stays available on its own."
+msgstr "Όταν τελειώσει η προσφορά, το Operator Access θα συνεχίσει να διατίθεται ξεχωριστά."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:843
+msgid "All current and future Plutonium benefits, forever"
+msgstr "Όλα τα τρέχοντα και μελλοντικά προνόμια του Plutonium, για πάντα"
+
+#: src/Astral_marketing/components/current_features.gleam:55
+msgid "All the basics you expect, plus a few things you don't."
+msgstr "Όλα τα βασικά που περιμένεις — και μερικά που δεν περιμένεις."
+
+#: src/Astral_marketing/components/locale_selector.gleam:102
+msgid "All translations are currently LLM-generated with minimal human revision. We'd love to get real people to help us out localizing Astral into your language! To do so, shoot an email to i18n@Astral.app and we'll be happy to accept your contributions."
+msgstr "Όλες οι μεταφράσεις προς το παρόν παράγονται από LLM, με ελάχιστη ανθρώπινη επιμέλεια. Θα θέλαμε πολύ να βοηθήσουν πραγματικοί άνθρωποι για να τοπικοποιήσουμε το Astral στη γλώσσα σου! Στείλε email στο i18n@Astral.app και θα χαρούμε να δεχτούμε τη συνεισφορά σου."
+
+#: src/Astral_marketing/components/platform_download_button.gleam:524
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:97
+msgid "Android"
+msgstr "Android"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:236
+msgid "Android 8+"
+msgstr "Android 8+"
+
+#: src/Astral_marketing/pages/partners_page.gleam:178
+msgid "Animated Avatar & Banner"
+msgstr "Κινούμενο avatar & banner"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:399
+#: src/Astral_marketing/pages/plutonium_page.gleam:591
+msgid "Animated avatars & banners"
+msgstr "Κινούμενα avatar και banner"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:144
+#: src/Astral_marketing/components/platform_download_button.gleam:160
+msgid "Apple Silicon"
+msgstr "Apple Silicon"
+
+#: src/Astral_marketing/pages/partners_page.gleam:448
+msgid "Apply at partners@Astral.app"
+msgstr "Κάνε αίτηση στο partners@Astral.app"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:170
+msgid "Approved reports grant access to Astral Testers, where you can earn points for Plutonium codes and the Bug Hunter badge."
+msgstr "Οι εγκεκριμένες αναφορές σου δίνουν πρόσβαση στους Astral Testers, όπου μπορείς να κερδίζεις πόντους για κωδικούς Plutonium και το σήμα Bug Hunter."
+
+#: src/Astral_marketing/components/locale_selector.gleam:118
+msgid "Arabic"
+msgstr "Αραβικά"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:143
+msgid "Articles in "
+msgstr "Άρθρα στα "
+
+#: src/Astral_marketing/pages/help_article_page.gleam:291
+msgid "Articles in this section"
+msgstr "Άρθρα σε αυτήν την ενότητα"
+
+#: src/Astral_marketing/components/current_features.gleam:106
+msgid "Audit logs for transparency"
+msgstr "Αρχεία καταγραφής ελέγχου για διαφάνεια"
+
+#: src/Astral_marketing/pages/donate_page.gleam:301
+msgid "Available for Swedish bank accounts"
+msgstr "Διαθέσιμο για σουηδικούς τραπεζικούς λογαριασμούς"
+
+#: src/Astral_marketing/pages/download_page.gleam:67
+msgid "Available on your desktop — and on the web"
+msgstr "Διαθέσιμο στον υπολογιστή σου — και στο web"
+
+#: src/Astral_marketing/pages/help_article_page.gleam:182
+msgid "Back to "
+msgstr "Πίσω στο "
+
+#: src/Astral_marketing/pages/help_article_page.gleam:279
+#: src/Astral_marketing/pages/help_search_page.gleam:115
+msgid "Back to Help Center"
+msgstr "Πίσω στο Κέντρο Βοήθειας"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:674
+msgid "Be the first to try new features before they're released to everyone else."
+msgstr "Δοκίμασε πρώτος/πρώτη νέες λειτουργίες πριν κυκλοφορήσουν για όλους."
+
+#: src/Astral_marketing/components/partner_section.gleam:64
+#: src/Astral_marketing/pages/careers_page.gleam:173
+#: src/Astral_marketing/pages/partners_page.gleam:64
+msgid "Become a Astral Partner"
+msgstr "Γίνε Συνεργάτης Astral"
+
+#: src/Astral_marketing/components/partner_section.gleam:151
+msgid "Become a Partner"
+msgstr "Γίνε Συνεργάτης"
+
+#: src/Astral_marketing/pages/download_page.gleam:322
+#: src/Astral_marketing/pages/plutonium_page.gleam:876
+msgid "Become a Visionary"
+msgstr "Γίνε Visionary"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:310
+#: src/Astral_marketing/pages/plutonium_page.gleam:311
+#: src/Astral_marketing/pages/plutonium_page.gleam:318
+#: src/Astral_marketing/pages/plutonium_page.gleam:325
+#: src/Astral_marketing/pages/plutonium_page.gleam:374
+#: src/Astral_marketing/pages/plutonium_page.gleam:626
+#: src/Astral_marketing/pages/plutonium_page.gleam:636
+#: src/Astral_marketing/pages/plutonium_page.gleam:646
+msgid "Beta"
+msgstr "Beta"
+
+#: src/Astral_marketing/components/coming_features.gleam:54
+msgid "Better noise cancellation"
+msgstr "Καλύτερη ακύρωση θορύβου"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:350
+msgid "Bio character limit"
+msgstr "Όριο χαρακτήρων βιογραφικού"
+
+#: src/Astral_marketing/pages/press_page.gleam:235
+msgid "Black"
+msgstr "Μαύρο"
+
+#: src/Astral_marketing/pages/press_page.gleam:117
+msgid "Black Logo"
+msgstr "Μαύρο λογότυπο"
+
+#: src/Astral_marketing/pages/press_page.gleam:171
+msgid "Black Symbol"
+msgstr "Μαύρο σύμβολο"
+
+#: src/Astral_marketing/pages/press_page.gleam:217
+msgid "Blue (Da Ba Dee)"
+msgstr "Μπλε (Da Ba Dee)"
+
+#: src/Astral_marketing/components/footer.gleam:157
+#: src/Astral_marketing/components/navigation.gleam:458
+msgid "Bluesky"
+msgstr "Bluesky"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:343
+msgid "Bookmarked messages"
+msgstr "Μηνύματα με σελιδοδείκτη"
+
+#: src/Astral_marketing/pages/donate_page.gleam:387
+msgid "Both donation types support the same cause equally. The only difference is that Business donations allow you to specify a tax ID (if applicable) and receive a PDF invoice when finalized, which can be useful for company accounting purposes."
+msgstr "Και οι δύο τύποι δωρεάς υποστηρίζουν την ίδια προσπάθεια εξίσου. Η μόνη διαφορά είναι ότι οι δωρεές Επιχείρησης σου επιτρέπουν να δηλώσεις ΑΦΜ (αν ισχύει) και να λάβεις τιμολόγιο σε PDF όταν ολοκληρωθεί, κάτι χρήσιμο για τα λογιστικά της εταιρείας."
+
+#: src/Astral_marketing/pages/press_page.gleam:200
+msgid "Brand Colors"
+msgstr "Χρώματα brand"
+
+#: src/Astral_marketing/pages/partners_page.gleam:421
+msgid "Brief description of your audience and what you do"
+msgstr "Σύντομη περιγραφή του κοινού σου και του τι κάνεις"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:150
+msgid "Browse Categories"
+msgstr "Περιήγηση στις κατηγορίες"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:168
+msgid "Browse articles"
+msgstr "Περιήγηση στα άρθρα"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:95
+msgid "Browse by category"
+msgstr "Περιήγηση ανά κατηγορία"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:65
+msgid "Browse help articles about "
+msgstr "Περιηγήσου σε άρθρα βοήθειας για "
+
+#: src/Astral_marketing/components/communities_section.gleam:44
+msgid "Built for communities of all kinds."
+msgstr "Φτιαγμένο για κοινότητες κάθε είδους."
+
+#: src/Astral_marketing/components/locale_selector.gleam:119
+msgid "Bulgarian"
+msgstr "Βουλγαρικά"
+
+#: src/Astral_marketing/pages/donate_page.gleam:177
+msgid "Business"
+msgstr "Επιχείρηση"
+
+#: src/Astral_marketing/components/coming_features.gleam:56
+msgid "Call pop-out"
+msgstr "Αναδυόμενο παράθυρο κλήσης"
+
+#: src/Astral_marketing/components/footer.gleam:220
+#: src/Astral_marketing/components/navigation.gleam:358
+msgid "Careers"
+msgstr "Καριέρα"
+
+#: src/Astral_marketing/pages/careers_page.gleam:46
+msgid "Careers at Astral"
+msgstr "Καριέρα στο Astral"
+
+#: src/Astral_marketing/components/locale_selector.gleam:38
+#: src/Astral_marketing/components/navigation.gleam:252
+#: src/Astral_marketing/components/navigation.gleam:257
+msgid "Change language"
+msgstr "Αλλαγή γλώσσας"
+
+#: src/Astral_marketing/components/locale_selector.gleam:150
+msgid "Chinese (Simplified)"
+msgstr "Κινέζικα (Απλοποιημένα)"
+
+#: src/Astral_marketing/components/locale_selector.gleam:151
+msgid "Chinese (Traditional)"
+msgstr "Κινέζικα (Παραδοσιακά)"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:207
+msgid "Choose Linux distribution"
+msgstr "Επίλεξε διανομή Linux"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:148
+msgid "Choose a guide below or search again if you don't see what you need."
+msgstr "Επίλεξε έναν οδηγό παρακάτω ή κάνε ξανά αναζήτηση αν δεν βλέπεις αυτό που χρειάζεσαι."
+
+#: src/Astral_marketing/components/platform_download_button.gleam:409
+msgid "Choose distribution"
+msgstr "Επίλεξε διανομή"
+
+#: src/Astral_marketing/components/locale_selector.gleam:63
+msgid "Choose your language"
+msgstr "Επίλεξε τη γλώσσα σου"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:564
+msgid "Choose your own 4-digit tag like #0001, #1337, or #9999 to make your username truly unique."
+msgstr "Διάλεξε το δικό σου 4ψήφιο tag, όπως #0001, #1337 ή #9999, για να κάνεις το όνομα χρήστη σου πραγματικά μοναδικό."
+
+#: src/Astral_marketing/pages/help_category_page.gleam:136
+msgid "Clear search"
+msgstr "Εκκαθάριση αναζήτησης"
+
+#: src/Astral_marketing/pages/download_page.gleam:337
+msgid "Code, issues, docs, and reviews"
+msgstr "Κώδικας, issues, docs και αξιολογήσεις"
+
+#: src/Astral_marketing/pages/press_page.gleam:124
+msgid "Color Logo"
+msgstr "Έγχρωμο λογότυπο"
+
+#: src/Astral_marketing/pages/press_page.gleam:178
+msgid "Color Symbol"
+msgstr "Έγχρωμο σύμβολο"
+
+#: src/Astral_marketing/pages/partners_page.gleam:297
+msgid "Coming Soon"
+msgstr "Σύντομα"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:296
+#: src/Astral_marketing/pages/plutonium_page.gleam:297
+#: src/Astral_marketing/pages/plutonium_page.gleam:366
+#: src/Astral_marketing/pages/plutonium_page.gleam:367
+#: src/Astral_marketing/pages/plutonium_page.gleam:586
+msgid "Coming soon"
+msgstr "Έρχεται σύντομα"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:329
+msgid "Communities"
+msgstr "Κοινότητες"
+
+#: src/Astral_marketing/pages/careers_page.gleam:140
+msgid "Community"
+msgstr "Κοινότητα"
+
+#: src/Astral_marketing/components/footer.gleam:260
+#: src/Astral_marketing/components/navigation.gleam:415
+#: src/Astral_marketing/pages/guidelines_page.gleam:41
+msgid "Community Guidelines"
+msgstr "Οδηγίες Κοινότητας"
+
+#: src/Astral_marketing/pages/partners_page.gleam:134
+msgid "Community Verification"
+msgstr "Επαλήθευση κοινότητας"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1040
+msgid "Community support"
+msgstr "Υποστήριξη κοινότητας"
+
+#: src/Astral_marketing/components/coming_features.gleam:38
+msgid "Community templates"
+msgstr "Πρότυπα κοινοτήτων"
+
+#: src/Astral_marketing/components/current_features.gleam:139
+msgid "Compact mode and display options"
+msgstr "Συμπαγής λειτουργία και επιλογές εμφάνισης"
+
+#: src/Astral_marketing/components/navigation.gleam:348
+msgid "Company"
+msgstr "Εταιρεία"
+
+#: src/Astral_marketing/components/footer.gleam:282
+#: src/Astral_marketing/components/navigation.gleam:376
+#: src/Astral_marketing/pages/company_page.gleam:41
+#: src/Astral_marketing/pages/company_page.gleam:44
+msgid "Company Information"
+msgstr "Πληροφορίες εταιρείας"
+
+#: src/Astral_marketing/components/footer.gleam:289
+#: src/Astral_marketing/components/navigation.gleam:435
+msgid "Connect"
+msgstr "Συνδέσου"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1038
+msgid "Connect from any client"
+msgstr "Συνδέσου από οποιονδήποτε client"
+
+#: src/Astral_marketing/pages/help_article_page.gleam:233
+#: src/Astral_marketing/pages/help_article_page.gleam:375
+msgid "Contact Support"
+msgstr "Επικοινώνησε με την Υποστήριξη"
+
+#: src/Astral_marketing/components/partner_section.gleam:70
+msgid "Content creators and community owners: unlock exclusive perks including free Plutonium, a Partner badge, custom vanity URLs, and more."
+msgstr "Δημιουργοί περιεχομένου και ιδιοκτήτες κοινοτήτων: ξεκλείδωσε αποκλειστικά προνόμια όπως δωρεάν Plutonium, σήμα Συνεργάτη, προσαρμοσμένα vanity URL και πολλά άλλα."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:178
+msgid "Contribute code"
+msgstr "Συνεισέφερε κώδικα"
+
+#: src/Astral_marketing/pages/download_page.gleam:336
+msgid "Contribute on GitHub"
+msgstr "Συνεισέφερε στο GitHub"
+
+#: src/Astral_marketing/components/final_cta.gleam:69
+msgid "Create an account and help us build something good."
+msgstr "Δημιούργησε λογαριασμό και βοήθησέ μας να φτιάξουμε κάτι καλό."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1191
+msgid "Create your Astral account to get that sweet Plutonium while it's hot."
+msgstr "Δημιούργησε τον λογαριασμό σου στο Astral για να προλάβεις αυτό το γλυκό Plutonium όσο προλαβαίνεις."
+
+#: src/Astral_marketing/pages/partners_page.gleam:211
+msgid "Creator Monetization"
+msgstr "Μονετοποίηση δημιουργών"
+
+#: src/Astral_marketing/components/coming_features.gleam:50
+msgid "Creator monetization"
+msgstr "Μονετοποίηση δημιουργών"
+
+#: src/Astral_marketing/components/communities_section.gleam:62
+msgid "Creators"
+msgstr "Δημιουργοί"
+
+#: src/Astral_marketing/components/locale_selector.gleam:132
+msgid "Croatian"
+msgstr "Κροατικά"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:280
+msgid "Custom 4-digit username tag"
+msgstr "Προσαρμοσμένο 4ψήφιο tag ονόματος χρήστη"
+
+#: src/Astral_marketing/components/current_features.gleam:138
+msgid "Custom CSS themes"
+msgstr "Προσαρμοσμένα θέματα CSS"
+
+#: src/Astral_marketing/pages/partners_page.gleam:145
+msgid "Custom Vanity URL"
+msgstr "Προσαρμοσμένο vanity URL"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:315
+#: src/Astral_marketing/pages/plutonium_page.gleam:631
+msgid "Custom entrance sounds"
+msgstr "Προσαρμοσμένοι ήχοι εισόδου"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:127
+msgid "Custom identity"
+msgstr "Προσαρμοσμένη ταυτότητα"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:322
+#: src/Astral_marketing/pages/plutonium_page.gleam:641
+msgid "Custom notification sounds"
+msgstr "Προσαρμοσμένοι ήχοι ειδοποιήσεων"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:413
+msgid "Custom themes"
+msgstr "Προσαρμοσμένα θέματα"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:561
+msgid "Custom username tag"
+msgstr "Προσαρμοσμένο tag ονόματος χρήστη"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:308
+msgid "Custom video backgrounds"
+msgstr "Προσαρμοσμένα φόντα βίντεο"
+
+#: src/Astral_marketing/components/current_features.gleam:130
+msgid "Customization"
+msgstr "Παραμετροποίηση"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:574
+msgid "Customize your profile differently for each community you're part of."
+msgstr "Παραμετροποίησε το προφίλ σου διαφορετικά για κάθε κοινότητα στην οποία συμμετέχεις."
+
+#: src/Astral_marketing/components/locale_selector.gleam:120
+msgid "Czech"
+msgstr "Τσέχικα"
+
+#: src/Astral_marketing/components/coming_features.gleam:35
+msgid "DM folders"
+msgstr "Φάκελοι DM"
+
+#: src/Astral_marketing/components/current_features.gleam:69
+msgid "DM your friends, chat with groups, or build communities with channels."
+msgstr "Στείλε DM στους φίλους σου, μίλησε με ομάδες ή φτιάξε κοινότητες με κανάλια."
+
+#: src/Astral_marketing/components/locale_selector.gleam:121
+msgid "Danish"
+msgstr "Δανικά"
+
+#: src/Astral_marketing/pages/careers_page.gleam:250
+msgid "Design & branding"
+msgstr "Σχεδιασμός & branding"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:99
+msgid "Desktop"
+msgstr "Υπολογιστής"
+
+#: src/Astral_marketing/components/footer.gleam:209
+msgid "Developer Docs"
+msgstr "Τεκμηρίωση προγραμματιστών"
+
+#: src/Astral_marketing/components/communities_section.gleam:74
+msgid "Developers"
+msgstr "Προγραμματιστές"
+
+#: src/Astral_marketing/components/partner_section.gleam:137
+#: src/Astral_marketing/pages/partners_page.gleam:156
+msgid "Direct Team Access"
+msgstr "Άμεση πρόσβαση στην ομάδα"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1076
+msgid "Direct team support"
+msgstr "Άμεση υποστήριξη από την ομάδα"
+
+#: src/Astral_marketing/components/coming_features.gleam:44
+msgid "Discovery"
+msgstr "Ανακάλυψη"
+
+#: src/Astral_marketing/pages/partners_page.gleam:126
+msgid "Display an exclusive Partner badge on your profile to stand out."
+msgstr "Δείξε ένα αποκλειστικό σήμα Συνεργάτη στο προφίλ σου για να ξεχωρίζεις."
+
+#: src/Astral_marketing/pages/donate_page.gleam:366
+msgid "Do I get anything in return?"
+msgstr "Παίρνω κάτι σε αντάλλαγμα;"
+
+#: src/Astral_marketing/components/navigation.gleam:111
+#: src/Astral_marketing/components/navigation.gleam:319
+msgid "Docs"
+msgstr "Τεκμηρίωση"
+
+#: src/Astral_marketing/components/navigation.gleam:120
+#: src/Astral_marketing/components/navigation.gleam:367
+msgid "Donate"
+msgstr "Δωρεά"
+
+#: src/Astral_marketing/pages/donate_page.gleam:216
+#: src/Astral_marketing/pages/donate_page.gleam:255
+msgid "Donate in EUR"
+msgstr "Δωρεά σε EUR"
+
+#: src/Astral_marketing/pages/donate_page.gleam:203
+#: src/Astral_marketing/pages/donate_page.gleam:242
+msgid "Donate in USD"
+msgstr "Δωρεά σε USD"
+
+#: src/Astral_marketing/components/footer.gleam:78
+#: src/Astral_marketing/pages/download_page.gleam:329
+msgid "Donate to Astral"
+msgstr "Κάνε δωρεά στο Astral"
+
+#: src/Astral_marketing/pages/donate_page.gleam:297
+msgid "Donate with Swish"
+msgstr "Δωρεά με Swish"
+
+#: src/Astral_marketing/pages/donate_page.gleam:369
+msgid "Donations are voluntary gifts and do not provide you with any product, service, ownership, or special rights. If you're looking for premium features, check out {0}."
+msgstr "Οι δωρεές είναι εθελοντικά δώρα και δεν σου παρέχουν κάποιο προϊόν, υπηρεσία, ιδιοκτησία ή ειδικά δικαιώματα. Αν ψάχνεις premium λειτουργίες, δες το {0}."
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:308
+msgid "Done! You can now open Astral as if it were a regular program."
+msgstr "Έγινε! Τώρα μπορείς να ανοίγεις το Astral σαν κανονικό πρόγραμμα."
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:206
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:256
+msgid "Done! You can open Astral from your home screen."
+msgstr "Έγινε! Μπορείς να ανοίγεις το Astral από την αρχική οθόνη σου."
+
+#: src/Astral_marketing/components/footer.gleam:132
+#: src/Astral_marketing/components/navigation.gleam:84
+#: src/Astral_marketing/components/navigation.gleam:280
+#: src/Astral_marketing/components/platform_download_button.gleam:223
+#: src/Astral_marketing/pages/press_page.gleam:359
+msgid "Download"
+msgstr "Λήψη"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:276
+#: src/Astral_marketing/pages/download_page.gleam:46
+#: src/Astral_marketing/pages/download_page.gleam:66
+msgid "Download Astral"
+msgstr "Λήψη Astral"
+
+#: src/Astral_marketing/pages/download_page.gleam:49
+msgid "Download Astral for Windows, macOS, and Linux. Mobile apps are underway."
+msgstr "Κατέβασε το Astral για Windows, macOS και Linux. Οι εφαρμογές για κινητά είναι καθ’ οδόν."
+
+#: src/Astral_marketing/pages/press_page.gleam:48
+msgid "Download Astral logos, brand assets, and get in touch with our press team"
+msgstr "Κατέβασε λογότυπα Astral, υλικό brand και έλα σε επαφή με την ομάδα Τύπου"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:428
+#: src/Astral_marketing/components/platform_download_button.gleam:538
+msgid "Download for "
+msgstr "Λήψη για "
+
+#: src/Astral_marketing/components/platform_download_button.gleam:191
+msgid "Download for Windows"
+msgstr "Λήψη για Windows"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:199
+msgid "Download for macOS"
+msgstr "Λήψη για macOS"
+
+#: src/Astral_marketing/pages/press_page.gleam:68
+msgid "Download our logos, learn about our brand colors, and get in touch with our press team."
+msgstr "Κατέβασε τα λογότυπά μας, μάθε για τα χρώματα του brand μας και έλα σε επαφή με την ομάδα Τύπου."
+
+#: src/Astral_marketing/components/locale_selector.gleam:139
+msgid "Dutch"
+msgstr "Ολλανδικά"
+
+#: src/Astral_marketing/components/coming_features.gleam:55
+msgid "E2EE calls"
+msgstr "Κλήσεις με κρυπτογράφηση από άκρο σε άκρο (E2EE)"
+
+#: src/Astral_marketing/pages/partners_page.gleam:200
+msgid "Early Feature Access"
+msgstr "Πρόωρη πρόσβαση σε λειτουργίες"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:671
+msgid "Early access"
+msgstr "Πρόωρη πρόσβαση"
+
+#: src/Astral_marketing/pages/partners_page.gleam:214
+msgid "Early access to creator monetization features with lower platform fees than non-partners."
+msgstr "Πρόωρη πρόσβαση σε λειτουργίες μονετοποίησης δημιουργών, με χαμηλότερες χρεώσεις πλατφόρμας από τους μη συνεργάτες."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:406
+msgid "Early access to new features"
+msgstr "Πρόωρη πρόσβαση σε νέες λειτουργίες"
+
+#: src/Astral_marketing/components/communities_section.gleam:67
+msgid "Education"
+msgstr "Εκπαίδευση"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:364
+msgid "Emoji & sticker packs"
+msgstr "Πακέτα emoji και αυτοκόλλητων"
+
+#: src/Astral_marketing/components/locale_selector.gleam:124
+msgid "English"
+msgstr "Αγγλικά"
+
+#: src/Astral_marketing/components/locale_selector.gleam:125
+msgid "English (US)"
+msgstr "Αγγλικά (ΗΠΑ)"
+
+#: src/Astral_marketing/components/coming_features.gleam:43
+msgid "Event tickets"
+msgstr "Εισιτήρια εκδηλώσεων"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1071
+msgid "Everything in Free, plus:"
+msgstr "Όλα όσα περιλαμβάνει το Δωρεάν, συν:"
+
+#: src/Astral_marketing/pages/partners_page.gleam:233
+msgid "Exclusive Merch"
+msgstr "Αποκλειστικό merch"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:863
+msgid "Exclusive communities"
+msgstr "Αποκλειστικές κοινότητες"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:181
+msgid "Exclusive features"
+msgstr "Αποκλειστικές λειτουργίες"
+
+#: src/Astral_marketing/pages/partners_page.gleam:67
+msgid "Exclusive perks and benefits for content creators and large community owners."
+msgstr "Αποκλειστικά προνόμια και οφέλη για δημιουργούς περιεχομένου και ιδιοκτήτες μεγάλων κοινοτήτων."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:257
+msgid "Feature"
+msgstr "Λειτουργία"
+
+#: src/Astral_marketing/pages/partners_page.gleam:167
+msgid "Featured in Discovery"
+msgstr "Προβεβλημένο στην Ανακάλυψη"
+
+#: src/Astral_marketing/components/coming_features.gleam:30
+msgid "Federation"
+msgstr "Ομοσπονδία"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:357
+msgid "File upload size"
+msgstr "Μέγεθος αποστολής αρχείων"
+
+#: src/Astral_marketing/components/current_features.gleam:121
+msgid "Filter by users, dates, and more"
+msgstr "Φιλτράρισμα ανά χρήστες, ημερομηνίες και άλλα"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:49
+msgid "Find answers to common questions and learn how to use Astral."
+msgstr "Βρες απαντήσεις σε συχνές ερωτήσεις και μάθε πώς να χρησιμοποιείς το Astral."
+
+#: src/Astral_marketing/components/current_features.gleam:117
+msgid "Find old messages or jump between communities and channels in seconds."
+msgstr "Βρες παλιά μηνύματα ή πήγαινε από κοινότητα σε κοινότητα και από κανάλι σε κανάλι σε δευτερόλεπτα."
+
+#: src/Astral_marketing/pages/help_center_page.gleam:104
+msgid "Find step-by-step guides and answers, organized by topic."
+msgstr "Βρες οδηγούς βήμα-βήμα και απαντήσεις, οργανωμένα ανά θέμα."
+
+#: src/Astral_marketing/components/locale_selector.gleam:128
+msgid "Finnish"
+msgstr "Φινλανδικά"
+
+#: src/Astral_marketing/pages/careers_page.gleam:121
+msgid "Fix bugs, ship features, or polish the experience in our main repo."
+msgstr "Διόρθωσε bugs, κυκλοφόρησε λειτουργίες ή βελτίωσε την εμπειρία στο κύριο repo μας."
+
+#: src/Astral_marketing/components/footer.gleam:99
+msgid "Astral"
+msgstr "Astral"
+
+#: src/Astral_marketing/pages/guidelines_page.gleam:44
+msgid "Astral Community Guidelines"
+msgstr "Οδηγίες Κοινότητας Astral"
+
+#: src/Astral_marketing/pages/careers_page.gleam:207
+msgid "Astral Community Team"
+msgstr "Ομάδα Κοινότητας Astral"
+
+#: src/Astral_marketing/pages/partners_page.gleam:44
+msgid "Astral Partner"
+msgstr "Συνεργάτης Astral"
+
+#: src/Astral_marketing/pages/donate_page.gleam:371
+#: src/Astral_marketing/pages/plutonium_page.gleam:51
+#: src/Astral_marketing/pages/plutonium_page.gleam:76
+msgid "Astral Plutonium"
+msgstr "Astral Plutonium"
+
+#: src/Astral_marketing/pages/privacy_page.gleam:44
+msgid "Astral Privacy Policy"
+msgstr "Πολιτική Απορρήτου Astral"
+
+#: src/Astral_marketing/pages/security_page.gleam:44
+msgid "Astral Security Bug Bounty"
+msgstr "Astral Ασφαλείας Bug Bounty"
+
+#: src/Astral_marketing/pages/terms_page.gleam:44
+msgid "Astral Terms of Service"
+msgstr "Όροι Χρήσης Astral"
+
+#: src/Astral_marketing/components/hero.gleam:64
+msgid "Astral is an independent, independent instant messaging and VoIP platform. Built for friends, groups, and communities."
+msgstr "Το Astral είναι μια ανεξάρτητη πλατφόρμα άμεσων μηνυμάτων και VoIP ανοιχτού κώδικα. Δημιουργημένη για φίλους, ομάδες και κοινότητες."
+
+#: src/Astral_marketing/pages/careers_page.gleam:105
+msgid "Astral is built in the open. Pick the path that fits how you like to help."
+msgstr "Το Astral χτίζεται ανοιχτά. Διάλεξε τον δρόμο που ταιριάζει στον τρόπο που σου αρέσει να βοηθάς."
+
+#: src/Astral_marketing/pages/download_page.gleam:303
+msgid "Astral is community-funded. If you'd like to help support iOS and Android development:"
+msgstr "Το Astral χρηματοδοτείται από την κοινότητα. Αν θέλεις να βοηθήσεις στην ανάπτυξη για iOS και Android:"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:991
+msgid "Astral stays independent and community-funded."
+msgstr "Το Astral είναι δωρεάν και ανοιχτού κώδικα. Οποιοσδήποτε μπορεί να το αυτοφιλοξενήσει δωρεάν."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:181
+msgid "Astral is independent (AGPLv3). Contribute directly on GitHub by opening pull requests."
+msgstr "Το Astral είναι ανοιχτού κώδικα (AGPLv3). Συνεισέφερε απευθείας στο GitHub ανοίγοντας pull requests."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:158
+msgid "Follow @Astral.app"
+msgstr "Ακολούθησε το @Astral.app"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:120
+msgid "Follow us on Bluesky"
+msgstr "Ακολούθησέ μας στο Bluesky"
+
+#: src/Astral_marketing/pages/press_page.gleam:230
+msgid "For backgrounds, text on dark surfaces, and creating contrast."
+msgstr "Για φόντα, κείμενο σε σκούρες επιφάνειες και για δημιουργία αντίθεσης."
+
+#: src/Astral_marketing/pages/press_page.gleam:111
+#: src/Astral_marketing/pages/press_page.gleam:165
+msgid "For dark backgrounds"
+msgstr "Για σκούρα φόντα"
+
+#: src/Astral_marketing/pages/press_page.gleam:118
+#: src/Astral_marketing/pages/press_page.gleam:172
+msgid "For light backgrounds"
+msgstr "Για ανοιχτά φόντα"
+
+#: src/Astral_marketing/pages/press_page.gleam:237
+msgid "For text, icons on light surfaces, and creating depth."
+msgstr "Για κείμενο, εικονίδια σε ανοιχτές επιφάνειες και για δημιουργία βάθους."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:189
+msgid "Forever"
+msgstr "Για πάντα"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:189
+msgid "Found a security issue?"
+msgstr "Βρήκες ζήτημα ασφαλείας;"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:175
+#: src/Astral_marketing/pages/plutonium_page.gleam:265
+msgid "Free"
+msgstr "Δωρεάν"
+
+#: src/Astral_marketing/components/partner_section.gleam:97
+#: src/Astral_marketing/pages/partners_page.gleam:112
+msgid "Free Plutonium"
+msgstr "Δωρεάν Plutonium"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1024
+msgid "Astral Standard"
+msgstr "Δωρεάν αυτοφιλοξενία"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:152
+msgid "Free vs Plutonium"
+msgstr "Δωρεάν vs Plutonium"
+
+#: src/Astral_marketing/components/locale_selector.gleam:129
+msgid "French"
+msgstr "Γαλλικά"
+
+#: src/Astral_marketing/pages/donate_page.gleam:345
+msgid "Frequently Asked Questions"
+msgstr "Συχνές ερωτήσεις"
+
+#: src/Astral_marketing/components/current_features.gleam:72
+msgid "Full Markdown support in messages"
+msgstr "Πλήρης υποστήριξη Markdown στα μηνύματα"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1037
+msgid "Full access to all features"
+msgstr "Πλήρης πρόσβαση σε όλες τις λειτουργίες"
+
+#: src/Astral_marketing/pages/press_page.gleam:125
+#: src/Astral_marketing/pages/press_page.gleam:179
+msgid "Full color version"
+msgstr "Πλήρης έγχρωμη έκδοση"
+
+#: src/Astral_marketing/components/current_features.gleam:152
+msgid "Fully independent (AGPLv3)"
+msgstr "Πλήρως ανοιχτού κώδικα (AGPLv3)"
+
+#: src/Astral_marketing/components/communities_section.gleam:57
+msgid "Gaming"
+msgstr "Παιχνίδια"
+
+#: src/Astral_marketing/components/locale_selector.gleam:122
+msgid "German"
+msgstr "Γερμανικά"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:430
+msgid "Get Plutonium"
+msgstr "Απόκτησε Plutonium"
+
+#: src/Astral_marketing/components/plutonium_banner.gleam:79
+msgid "Get Visionary"
+msgstr "Γίνε Visionary"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1135
+msgid "Get Visionary + Operator Access"
+msgstr "Γίνε Visionary + Operator Access"
+
+#: src/Astral_marketing/pages/partners_page.gleam:148
+msgid "Get an exclusive custom vanity URL like Astral.gg/yourcommunity."
+msgstr "Απόκτησε ένα αποκλειστικό vanity URL όπως Astral.gg/yourcommunity."
+
+#: src/Astral_marketing/pages/partners_page.gleam:236
+msgid "Get exclusive Astral Partner-only merchandise and swag."
+msgstr "Απόκτησε αποκλειστικά merch και swag μόνο για Συνεργάτες Astral."
+
+#: src/Astral_marketing/pages/partners_page.gleam:115
+msgid "Get free Plutonium for your account to enjoy all premium features."
+msgstr "Πάρε δωρεάν Plutonium στον λογαριασμό σου για να απολαμβάνεις όλες τις premium λειτουργίες."
+
+#: src/Astral_marketing/pages/partners_page.gleam:170
+msgid "Get heightened visibility by being featured in Community Discovery."
+msgstr "Απόκτησε μεγαλύτερη προβολή με παρουσίαση στην Ανακάλυψη Κοινοτήτων."
+
+#: src/Astral_marketing/pages/not_found_page.gleam:87
+msgid "Get help"
+msgstr "Βρες βοήθεια"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:51
+msgid "Get involved"
+msgstr "Πάρε μέρος"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:956
+msgid "Get lifetime Plutonium on Astral.app plus Operator Access. Pay {0} one-time. Available until October 1, 2026 or when {1} slots are claimed."
+msgstr "Απόκτησε Plutonium για μια ζωή στο Astral.app μαζί με Operator Access για αυτοφιλοξενία. Πλήρωσε εφάπαξ {0}. Διαθέσιμο έως την 1η Οκτωβρίου 2026 ή μέχρι να καλυφθούν {1} θέσεις."
+
+#: src/Astral_marketing/components/plutonium_section.gleam:51
+msgid "Get more with Astral Plutonium"
+msgstr "Περισσότερα με το Astral Plutonium"
+
+#: src/Astral_marketing/pages/download_page.gleam:316
+msgid "Get perks and help fund development"
+msgstr "Πάρε προνόμια και βοήθησε να χρηματοδοτηθεί η ανάπτυξη"
+
+#: src/Astral_marketing/pages/download_page.gleam:237
+msgid "Get push notifications when you're away from the app."
+msgstr "Λάβε push ειδοποιήσεις όταν δεν είσαι στην εφαρμογή."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:89
+msgid "Get updates, see upcoming features, discuss suggestions, and chat with the team."
+msgstr "Πάρε ενημερώσεις, δες τι έρχεται, συζήτησε προτάσεις και μίλα με την ομάδα."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:385
+#: src/Astral_marketing/pages/plutonium_page.gleam:601
+msgid "Global emoji & sticker access"
+msgstr "Καθολική πρόσβαση σε emoji και αυτοκόλλητα"
+
+#: src/Astral_marketing/components/coming_features.gleam:53
+msgid "Global voice regions"
+msgstr "Παγκόσμιες περιοχές φωνής"
+
+#: src/Astral_marketing/pages/not_found_page.gleam:78
+msgid "Go home"
+msgstr "Αρχική"
+
+#: src/Astral_marketing/components/current_features.gleam:104
+msgid "Granular roles and permissions"
+msgstr "Λεπτομερείς ρόλοι και δικαιώματα"
+
+#: src/Astral_marketing/components/locale_selector.gleam:123
+msgid "Greek"
+msgstr "Ελληνικά"
+
+#: src/Astral_marketing/pages/press_page.gleam:285
+msgid "Have a story about Astral? Need more information or high-resolution assets?"
+msgstr "Έχεις μια ιστορία για το Astral; Χρειάζεσαι περισσότερες πληροφορίες ή υλικό υψηλής ανάλυσης;"
+
+#: src/Astral_marketing/components/locale_selector.gleam:130
+msgid "Hebrew"
+msgstr "Εβραϊκά"
+
+#: src/Astral_marketing/components/navigation.gleam:102
+msgid "Help"
+msgstr "Βοήθεια"
+
+#: src/Astral_marketing/components/footer.gleam:187
+#: src/Astral_marketing/components/navigation.gleam:328
+#: src/Astral_marketing/pages/help_article_page.gleam:56
+#: src/Astral_marketing/pages/help_article_page.gleam:86
+#: src/Astral_marketing/pages/help_article_page.gleam:117
+#: src/Astral_marketing/pages/help_category_page.gleam:64
+#: src/Astral_marketing/pages/help_center_page.gleam:46
+#: src/Astral_marketing/pages/help_components.gleam:48
+#: src/Astral_marketing/pages/help_search_page.gleam:48
+msgid "Help Center"
+msgstr "Κέντρο Βοήθειας"
+
+#: src/Astral_marketing/pages/download_page.gleam:291
+msgid "Help make the mobile app a reality"
+msgstr "Βοήθησε να γίνει πραγματικότητα η εφαρμογή για κινητά"
+
+#: src/Astral_marketing/components/footer.gleam:66
+#: src/Astral_marketing/pages/donate_page.gleam:53
+msgid "Help support an independent communication platform. Your donation funds the platform's infrastructure and development."
+msgstr "Στήριξε μια ανεξάρτητη πλατφόρμα επικοινωνίας. Η δωρεά σου χρηματοδοτεί την υποδομή και την ανάπτυξη της πλατφόρμας."
+
+#: src/Astral_marketing/pages/donate_page.gleam:134
+msgid "Help support an independent communication platform. Your donation funds the platform's infrastructure and development. It is a voluntary gift and does not constitute payment for any product or service or give you any ownership or special rights."
+msgstr "Στήριξε μια ανεξάρτητη πλατφόρμα επικοινωνίας. Η δωρεά σου χρηματοδοτεί την υποδομή και την ανάπτυξη της πλατφόρμας. Είναι ένα εθελοντικό δώρο και δεν αποτελεί πληρωμή για κάποιο προϊόν ή υπηρεσία, ούτε σου δίνει ιδιοκτησία ή ειδικά δικαιώματα."
+
+#: src/Astral_marketing/pages/careers_page.gleam:132
+msgid "Help translate Astral and its docs so it feels native everywhere."
+msgstr "Βοήθησε να μεταφραστεί το Astral και η τεκμηρίωσή του ώστε να μοιάζει «ντόπιο» παντού."
+
+#: src/Astral_marketing/pages/careers_page.gleam:69
+msgid "Help us build a different kind of communication platform — independent, community-funded, and built with care."
+msgstr "Βοήθησέ μας να χτίσουμε ένα διαφορετικό είδος πλατφόρμας επικοινωνίας — ανοιχτού κώδικα, χρηματοδοτούμενη από την κοινότητα και φτιαγμένη με φροντίδα."
+
+#: src/Astral_marketing/pages/donate_page.gleam:89
+msgid "Help us build an independent communication platform that puts users first."
+msgstr "Βοήθησέ μας να χτίσουμε μια ανεξάρτητη πλατφόρμα επικοινωνίας που βάζει τους χρήστες πρώτα."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:651
+msgid "Higher limits everywhere"
+msgstr "Υψηλότερα όρια παντού"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:92
+msgid "Higher limits, exclusive features, and early access to new updates"
+msgstr "Υψηλότερα όρια, αποκλειστικές λειτουργίες και πρόωρη πρόσβαση σε νέες ενημερώσεις"
+
+#: src/Astral_marketing/components/locale_selector.gleam:131
+msgid "Hindi"
+msgstr "Χίντι"
+
+#: src/Astral_marketing/components/communities_section.gleam:72
+msgid "Hobbyists"
+msgstr "Χομπίστες"
+
+#: src/Astral_marketing/components/current_features.gleam:85
+msgid "Hop in a call with friends or share your screen to work together."
+msgstr "Μπες σε κλήση με φίλους ή μοιράσου την οθόνη σου για να δουλέψετε μαζί."
+
+#: src/Astral_marketing/components/current_features.gleam:153
+msgid "Host your own instance"
+msgstr "Φιλοξένησε το δικό σου instance"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:64
+#: src/Astral_marketing/pages/help_search_page.gleam:63
+msgid "How can we help?"
+msgstr "Πώς μπορούμε να βοηθήσουμε;"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:39
+msgid "How to install as an app"
+msgstr "Πώς να το εγκαταστήσεις ως εφαρμογή"
+
+#: src/Astral_marketing/pages/partners_page.gleam:434
+msgid "How you plan to use Astral with your community"
+msgstr "Πώς σκοπεύεις να χρησιμοποιήσεις το Astral με την κοινότητά σου"
+
+#: src/Astral_marketing/components/locale_selector.gleam:133
+msgid "Hungarian"
+msgstr "Ουγγρικά"
+
+#: src/Astral_marketing/pages/help_article_page.gleam:223
+#: src/Astral_marketing/pages/help_article_page.gleam:365
+msgid "If you couldn't find what you're looking for, our support team is here to help."
+msgstr "Αν δεν βρήκες αυτό που ψάχνεις, η ομάδα υποστήριξής μας είναι εδώ για να βοηθήσει."
+
+#: src/Astral_marketing/pages/careers_page.gleam:176
+msgid "If you're a creator or community owner, explore the Partner program and its perks."
+msgstr "Αν είσαι δημιουργός ή ιδιοκτήτης κοινότητας, δες το πρόγραμμα Συνεργατών και τα προνόμιά του."
+
+#: src/Astral_marketing/pages/partners_page.gleam:189
+msgid "Increased Limits"
+msgstr "Αυξημένα όρια"
+
+#: src/Astral_marketing/pages/donate_page.gleam:160
+msgid "Individual"
+msgstr "Ιδιώτης"
+
+#: src/Astral_marketing/components/locale_selector.gleam:134
+msgid "Indonesian"
+msgstr "Ινδονησιακά"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:59
+msgid "Install Astral as an app"
+msgstr "Εγκατέστησε το Astral ως εφαρμογή"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:145
+#: src/Astral_marketing/components/platform_download_button.gleam:161
+msgid "Intel"
+msgstr "Intel"
+
+#: src/Astral_marketing/pages/donate_page.gleam:376
+msgid "Is my donation tax-deductible?"
+msgstr "Εκπίπτει η δωρεά μου από τον φόρο;"
+
+#: src/Astral_marketing/pages/donate_page.gleam:358
+msgid "Is this a subscription?"
+msgstr "Είναι συνδρομή;"
+
+#: src/Astral_marketing/components/locale_selector.gleam:135
+msgid "Italian"
+msgstr "Ιταλικά"
+
+#: src/Astral_marketing/components/locale_selector.gleam:136
+msgid "Japanese"
+msgstr "Ιαπωνικά"
+
+#: src/Astral_marketing/components/final_cta.gleam:80
+#: src/Astral_marketing/pages/plutonium_page.gleam:1202
+msgid "Join Astral"
+msgstr "Μπες στο Astral"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:86
+#: src/Astral_marketing/components/get_involved_section.gleam:91
+#: src/Astral_marketing/pages/careers_page.gleam:145
+msgid "Join Astral HQ"
+msgstr "Μπες στο Astral HQ"
+
+#: src/Astral_marketing/pages/careers_page.gleam:442
+msgid "Join Astral HQ community"
+msgstr "Μπες στην κοινότητα Astral HQ"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:75
+msgid "Join and spread the word"
+msgstr "Μπες και πες το παντού"
+
+#: src/Astral_marketing/components/current_features.gleam:88
+msgid "Join from multiple devices at once"
+msgstr "Συνδέσου από πολλές συσκευές ταυτόχρονα"
+
+#: src/Astral_marketing/pages/partners_page.gleam:47
+msgid "Join the Astral Partner Program and unlock exclusive benefits for you and your community"
+msgstr "Μπες στο Πρόγραμμα Συνεργατών Astral και ξεκλείδωσε αποκλειστικά προνόμια για εσένα και την κοινότητά σου"
+
+#: src/Astral_marketing/pages/careers_page.gleam:49
+msgid "Join the Astral community and help build the future of communication through independent and community contributions."
+msgstr "Μπες στην κοινότητα Astral και βοήθησε να χτίσουμε το μέλλον της επικοινωνίας μέσα από ανοιχτό κώδικα και συνεισφορές της κοινότητας."
+
+#: src/Astral_marketing/pages/partners_page.gleam:159
+msgid "Join the exclusive Partners community with direct access to the Astral team."
+msgstr "Μπες στην αποκλειστική κοινότητα Συνεργατών με άμεση πρόσβαση στην ομάδα του Astral."
+
+#: src/Astral_marketing/pages/careers_page.gleam:66
+msgid "Join the team behind Astral"
+msgstr "Μπες στην ομάδα πίσω από το Astral"
+
+#: src/Astral_marketing/components/current_features.gleam:101
+msgid "Keep your community running smoothly with roles, permissions, and logs."
+msgstr "Κράτα την κοινότητά σου να λειτουργεί ομαλά με ρόλους, δικαιώματα και καταγραφές."
+
+#: src/Astral_marketing/components/locale_selector.gleam:137
+msgid "Korean"
+msgstr "Κορεατικά"
+
+#: src/Astral_marketing/pages/company_page.gleam:42
+msgid "Learn about Astral and our mission"
+msgstr "Μάθε για το Astral και την αποστολή μας"
+
+#: src/Astral_marketing/pages/careers_page.gleam:178
+msgid "Learn about Partners"
+msgstr "Μάθε για τους Συνεργάτες"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:195
+msgid "Learn more"
+msgstr "Μάθε περισσότερα"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:848
+msgid "Lifetime Operator Access"
+msgstr "Operator Access για μια ζωή"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:842
+msgid "Lifetime Plutonium"
+msgstr "Plutonium για μια ζωή"
+
+#: src/Astral_marketing/components/plutonium_banner.gleam:38
+msgid "Lifetime Plutonium + Operator Access with Visionary - limited slots"
+msgstr "Plutonium για μια ζωή + Operator Access με το Visionary — περιορισμένες θέσεις"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1103
+msgid "Limited Offer: Visionary includes Operator Access"
+msgstr "Περιορισμένη προσφορά: το Visionary περιλαμβάνει το Operator Access"
+
+#: src/Astral_marketing/pages/partners_page.gleam:408
+msgid "Links to your content or community (YouTube, Twitch, Discord, etc.)"
+msgstr "Σύνδεσμοι προς το περιεχόμενό σου ή την κοινότητά σου (YouTube, Twitch, Discord κ.λπ.)"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:364
+msgid "Linux"
+msgstr "Linux"
+
+#: src/Astral_marketing/components/locale_selector.gleam:138
+msgid "Lithuanian"
+msgstr "Λιθουανικά"
+
+#: src/Astral_marketing/pages/careers_page.gleam:129
+msgid "Localization"
+msgstr "Τοπικοποίηση"
+
+#: src/Astral_marketing/pages/press_page.gleam:93
+msgid "Logo"
+msgstr "Λογότυπο"
+
+#: src/Astral_marketing/pages/donate_page.gleam:123
+msgid "Make a Donation"
+msgstr "Κάνε δωρεά"
+
+#: src/Astral_marketing/components/current_features.gleam:123
+msgid "Manage friends and block users"
+msgstr "Διαχείριση φίλων και αποκλεισμός χρηστών"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:336
+msgid "Message character limit"
+msgstr "Όριο χαρακτήρων μηνύματος"
+
+#: src/Astral_marketing/components/coming_features.gleam:34
+msgid "Message components"
+msgstr "Στοιχεία μηνύματος"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:294
+#: src/Astral_marketing/pages/plutonium_page.gleam:581
+msgid "Message scheduling"
+msgstr "Προγραμματισμός μηνυμάτων"
+
+#: src/Astral_marketing/components/current_features.gleam:66
+msgid "Messaging"
+msgstr "Μηνύματα"
+
+#: src/Astral_marketing/pages/donate_page.gleam:265
+msgid "Minimum donation: $5 / €5"
+msgstr "Ελάχιστη δωρεά: $5 / €5"
+
+#: src/Astral_marketing/pages/download_page.gleam:203
+msgid "Mobile apps are on the way"
+msgstr "Οι εφαρμογές για κινητά έρχονται"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:213
+#: src/Astral_marketing/components/platform_download_button.gleam:218
+#: src/Astral_marketing/components/platform_download_button.gleam:311
+msgid "Mobile apps are underway"
+msgstr "Οι εφαρμογές για κινητά είναι καθ’ οδόν"
+
+#: src/Astral_marketing/components/current_features.gleam:105
+msgid "Moderation actions and tools"
+msgstr "Ενέργειες και εργαλεία εποπτείας"
+
+#: src/Astral_marketing/components/current_features.gleam:98
+msgid "Moderation tools"
+msgstr "Εργαλεία εποπτείας"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:206
+msgid "Most popular"
+msgstr "Πιο δημοφιλές"
+
+#: src/Astral_marketing/components/current_features.gleam:91
+msgid "Mute, deafen, and camera controls"
+msgstr "Σίγαση, απενεργοποίηση ήχου και έλεγχοι κάμερας"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:135
+msgid "No articles found"
+msgstr "Δεν βρέθηκαν άρθρα"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:163
+msgid "No articles found."
+msgstr "Δεν βρέθηκαν άρθρα."
+
+#: src/Astral_marketing/pages/help_search_page.gleam:94
+msgid "No results found for"
+msgstr "Δεν βρέθηκαν αποτελέσματα για"
+
+#: src/Astral_marketing/pages/donate_page.gleam:379
+msgid "No, donations to Astral are not tax-deductible as we are not a registered charitable organization."
+msgstr "Όχι, οι δωρεές προς το Astral δεν εκπίπτουν από τον φόρο, καθώς δεν είμαστε καταχωρισμένος φιλανθρωπικός οργανισμός."
+
+#: src/Astral_marketing/pages/donate_page.gleam:361
+msgid "No, this is a one-time donation. You choose the amount you want to give, and there are no recurring charges."
+msgstr "Όχι, αυτή είναι εφάπαξ δωρεά. Διαλέγεις το ποσό που θέλεις να δώσεις και δεν υπάρχουν επαναλαμβανόμενες χρεώσεις."
+
+#: src/Astral_marketing/components/current_features.gleam:90
+msgid "Noise suppression and echo cancellation"
+msgstr "Καταστολή θορύβου και ακύρωση ηχούς"
+
+#: src/Astral_marketing/components/locale_selector.gleam:140
+msgid "Norwegian"
+msgstr "Νορβηγικά"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:295
+msgid "Not available"
+msgstr "Μη διαθέσιμο"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:91
+msgid "Note: Plutonium and Visionary benefits are available on the official Astral service."
+msgstr "Σημείωση: Τα προνόμια Plutonium και Visionary ισχύουν μόνο για το επίσημο instance του Astral.app, όχι για εγκαταστάσεις τρίτων ή αυτοφιλοξενούμενες."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:788
+msgid "Numbered badge (1-{0}) showing your Visionary status"
+msgstr "Αριθμημένο σήμα (1–{0}) που δείχνει το status σου ως Visionary"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:786
+msgid "Numbered badge showing your Visionary status"
+msgstr "Αριθμημένο σήμα που δείχνει το status σου ως Visionary"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:828
+msgid "One-time purchase, lifetime access"
+msgstr "Εφάπαξ αγορά, πρόσβαση για μια ζωή"
+
+#: src/Astral_marketing/components/plutonium_banner.gleam:43
+msgid "Only {0} of {1} Visionary lifetime slots left - lifetime Plutonium + Operator Access"
+msgstr "Μόνο {0} από {1} θέσεις Visionary εφ’ όρου ζωής έμειναν — Plutonium για μια ζωή + Operator Access"
+
+#: src/Astral_marketing/components/navigation.gleam:172
+msgid "Open Astral"
+msgstr "Άνοιξε το Astral"
+
+#: src/Astral_marketing/components/hero.gleam:82
+#: src/Astral_marketing/components/navigation.gleam:482
+msgid "Open in Browser"
+msgstr "Άνοιξε στο πρόγραμμα περιήγησης"
+
+#: src/Astral_marketing/pages/careers_page.gleam:118
+msgid "independent"
+msgstr "Ανοιχτός κώδικας"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1039
+msgid "independent (AGPL-3.0)"
+msgstr "Ανοιχτού κώδικα (AGPL-3.0)"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:188
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:234
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:284
+msgid "Open the web app"
+msgstr "Άνοιξε τη web εφαρμογή"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1059
+msgid "Operator Access"
+msgstr "Operator Access"
+
+#: src/Astral_marketing/components/coming_features.gleam:31
+msgid "Opt-in E2EE messaging"
+msgstr "Μηνύματα E2EE (προαιρετικά)"
+
+#: src/Astral_marketing/components/current_features.gleam:74
+msgid "Organized channels for communities"
+msgstr "Οργανωμένα κανάλια για κοινότητες"
+
+#: src/Astral_marketing/pages/press_page.gleam:209
+msgid "Our carefully selected color palette that represents the Astral brand."
+msgstr "Η προσεκτικά επιλεγμένη παλέτα χρωμάτων που αντιπροσωπεύει το Astral."
+
+#: src/Astral_marketing/pages/press_page.gleam:102
+msgid "Our full logo including the wordmark. Use this as the primary representation of our brand."
+msgstr "Το πλήρες λογότυπό μας με το wordmark. Χρησιμοποίησέ το ως την κύρια αναπαράσταση του brand μας."
+
+#: src/Astral_marketing/pages/press_page.gleam:221
+msgid "Our primary brand color. Use this for key brand elements and accents."
+msgstr "Το βασικό χρώμα του brand μας. Χρησιμοποίησέ το για βασικά στοιχεία και τονισμούς."
+
+#: src/Astral_marketing/pages/press_page.gleam:156
+msgid "Our standalone symbol. Use this only when our brand is clearly visible or well-established elsewhere in the context."
+msgstr "Το αυτόνομο σύμβολό μας. Χρησιμοποίησέ το μόνο όταν το brand μας είναι ξεκάθαρα ορατό ή ήδη καθιερωμένο αλλού στο ίδιο πλαίσιο."
+
+#: src/Astral_marketing/components/communities_section.gleam:106
+msgid "Over time, we'd love to explore optional monetization tools that help creators and communities earn, with a small, transparent fee that keeps the app sustainable."
+msgstr "Με τον καιρό, θα θέλαμε να εξερευνήσουμε προαιρετικά εργαλεία μονετοποίησης που βοηθούν δημιουργούς και κοινότητες να κερδίζουν, με μια μικρή, διαφανή προμήθεια που κρατά την εφαρμογή βιώσιμη."
+
+#: src/Astral_marketing/pages/not_found_page.gleam:101
+msgid "Page Not Found"
+msgstr "Η σελίδα δεν βρέθηκε"
+
+#: src/Astral_marketing/pages/not_found_page.gleam:55
+msgid "Page not found"
+msgstr "Η σελίδα δεν βρέθηκε"
+
+#: src/Astral_marketing/pages/partners_page.gleam:123
+msgid "Partner Badge"
+msgstr "Σήμα Συνεργάτη"
+
+#: src/Astral_marketing/pages/partners_page.gleam:90
+msgid "Partner Perks"
+msgstr "Προνόμια Συνεργάτη"
+
+#: src/Astral_marketing/components/footer.gleam:121
+#: src/Astral_marketing/components/navigation.gleam:298
+msgid "Partners"
+msgstr "Συνεργάτες"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:287
+#: src/Astral_marketing/pages/plutonium_page.gleam:571
+msgid "Per-community profiles"
+msgstr "Προφίλ ανά κοινότητα"
+
+#: src/Astral_marketing/pages/download_page.gleam:315
+#: src/Astral_marketing/pages/plutonium_page.gleam:215
+#: src/Astral_marketing/pages/plutonium_page.gleam:273
+msgid "Plutonium"
+msgstr "Plutonium"
+
+#: src/Astral_marketing/components/footer.gleam:227
+#: src/Astral_marketing/components/navigation.gleam:387
+msgid "Policies"
+msgstr "Πολιτικές"
+
+#: src/Astral_marketing/components/locale_selector.gleam:141
+msgid "Polish"
+msgstr "Πολωνικά"
+
+#: src/Astral_marketing/components/coming_features.gleam:41
+msgid "Polls & events"
+msgstr "Δημοσκοπήσεις & εκδηλώσεις"
+
+#: src/Astral_marketing/components/locale_selector.gleam:142
+msgid "Portuguese (Brazil)"
+msgstr "Πορτογαλικά (Βραζιλίας)"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:154
+msgid "Premium quality"
+msgstr "Premium ποιότητα"
+
+#: src/Astral_marketing/components/footer.gleam:198
+#: src/Astral_marketing/components/navigation.gleam:337
+msgid "Press"
+msgstr "Τύπος"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:246
+msgid "Press \"Add to Home Screen\""
+msgstr "Πάτησε \"Προσθήκη στην αρχική οθόνη\""
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:249
+msgid "Press \"Add\" in the upper-right corner"
+msgstr "Πάτησε \"Προσθήκη\" στην επάνω δεξιά γωνία"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:200
+msgid "Press \"Install app\""
+msgstr "Πάτησε \"Εγκατάσταση εφαρμογής\""
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:301
+msgid "Press \"Install\" in the popup that appears"
+msgstr "Πάτησε \"Εγκατάσταση\" στο αναδυόμενο παράθυρο που εμφανίζεται"
+
+#: src/Astral_marketing/pages/press_page.gleam:45
+#: src/Astral_marketing/pages/press_page.gleam:65
+msgid "Press & Brand Assets"
+msgstr "Τύπος & Υλικό Brand"
+
+#: src/Astral_marketing/pages/press_page.gleam:273
+msgid "Press Contact"
+msgstr "Επικοινωνία για Τύπο"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:197
+msgid "Press the \"More\" (\\u{22EE}) button in the top-right corner"
+msgstr "Πάτησε το κουμπί \"Περισσότερα\" (\\u{22EE}) στην επάνω δεξιά γωνία"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:243
+msgid "Press the Share button (rectangle with upwards-pointing arrow)"
+msgstr "Πάτησε το κουμπί Κοινή χρήση (ορθογώνιο με βέλος προς τα πάνω)"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:296
+msgid "Press the install button (downwards-pointing arrow on monitor) in the address bar"
+msgstr "Πάτησε το κουμπί εγκατάστασης (βέλος προς τα κάτω σε οθόνη) στη γραμμή διευθύνσεων"
+
+#: src/Astral_marketing/components/footer.gleam:110
+#: src/Astral_marketing/components/navigation.gleam:93
+#: src/Astral_marketing/components/navigation.gleam:289
+msgid "Pricing"
+msgstr "Τιμές"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:851
+msgid "Priority support and Operators community access"
+msgstr "Υποστήριξη προτεραιότητας και πρόσβαση στην κοινότητα Operators για αυτοφιλοξενία"
+
+#: src/Astral_marketing/components/footer.gleam:249
+#: src/Astral_marketing/components/navigation.gleam:406
+#: src/Astral_marketing/pages/privacy_page.gleam:41
+msgid "Privacy Policy"
+msgstr "Πολιτική Απορρήτου"
+
+#: src/Astral_marketing/components/current_features.gleam:73
+msgid "Private DMs and group chats"
+msgstr "Ιδιωτικά DM και ομαδικές συνομιλίες"
+
+#: src/Astral_marketing/components/navigation.gleam:270
+msgid "Product"
+msgstr "Προϊόν"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:301
+#: src/Astral_marketing/pages/plutonium_page.gleam:661
+msgid "Profile badge"
+msgstr "Σήμα προφίλ"
+
+#: src/Astral_marketing/components/coming_features.gleam:47
+msgid "Profile connections"
+msgstr "Συνδέσεις προφίλ"
+
+#: src/Astral_marketing/components/hero.gleam:55
+msgid "Public Beta"
+msgstr "Δημόσια beta"
+
+#: src/Astral_marketing/components/coming_features.gleam:46
+msgid "Public profile URLs"
+msgstr "Δημόσια URL προφίλ"
+
+#: src/Astral_marketing/components/coming_features.gleam:39
+msgid "Publish forums to the web"
+msgstr "Δημοσίευση φόρουμ στο web"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:883
+msgid "Purchase Visionary directly in the app after creating your account. Your purchase date and order number will be displayed on your profile (can be hidden in privacy settings)."
+msgstr "Αγόρασε Visionary απευθείας μέσα από την εφαρμογή αφού δημιουργήσεις λογαριασμό. Η ημερομηνία αγοράς και ο αριθμός παραγγελίας θα εμφανίζονται στο προφίλ σου (μπορείς να τα κρύψεις στις ρυθμίσεις απορρήτου)."
+
+#: src/Astral_marketing/components/current_features.gleam:122
+msgid "Quick switcher with keyboard shortcuts"
+msgstr "Γρήγορη εναλλαγή με συντομεύσεις πληκτρολογίου"
+
+#: src/Astral_marketing/components/coming_features.gleam:40
+msgid "RSS/Atom feeds for forums"
+msgstr "Ροές RSS/Atom για φόρουμ"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:228
+msgid "Read article"
+msgstr "Διάβασε το άρθρο"
+
+#: src/Astral_marketing/pages/guidelines_page.gleam:42
+msgid "Read the Astral Community Guidelines"
+msgstr "Διάβασε τις Οδηγίες Κοινότητας Astral"
+
+#: src/Astral_marketing/pages/privacy_page.gleam:42
+msgid "Read the Astral Privacy Policy"
+msgstr "Διάβασε την Πολιτική Απορρήτου Astral"
+
+#: src/Astral_marketing/pages/terms_page.gleam:42
+msgid "Read the Astral Terms of Service"
+msgstr "Διάβασε τους Όρους Χρήσης Astral"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:172
+msgid "Read the Guide"
+msgstr "Διάβασε τον οδηγό"
+
+#: src/Astral_marketing/pages/partners_page.gleam:362
+msgid "Ready to become a Partner?"
+msgstr "Έτοιμος/έτοιμη να γίνεις Συνεργάτης;"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1180
+msgid "Ready to upgrade?"
+msgstr "Έτοιμος/έτοιμη για αναβάθμιση;"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:80
+msgid "Register now"
+msgstr "Κάνε εγγραφή τώρα"
+
+#: src/Astral_marketing/components/footer.gleam:322
+msgid "Report a bug"
+msgstr "Ανάφερε bug"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:167
+msgid "Report bugs"
+msgstr "Ανάφερε bugs"
+
+#: src/Astral_marketing/pages/careers_page.gleam:165
+msgid "Report people or communities so we can keep Astral safe for everyone."
+msgstr "Ανάφερε άτομα ή κοινότητες ώστε να κρατήσουμε το Astral ασφαλές για όλους."
+
+#: src/Astral_marketing/pages/security_page.gleam:42
+msgid "Report security issues responsibly"
+msgstr "Αναφέρετε ζητήματα ασφαλείας υπεύθυνα"
+
+#: src/Astral_marketing/pages/careers_page.gleam:154
+msgid "Report vulnerabilities and help us keep the platform secure."
+msgstr "Ανάφερε ευπάθειες και βοήθησέ μας να κρατήσουμε την πλατφόρμα ασφαλή."
+
+#: src/Astral_marketing/components/navigation.gleam:309
+msgid "Resources"
+msgstr "Πόροι"
+
+#: src/Astral_marketing/pages/partners_page.gleam:99
+msgid "Rewards that recognize your impact, help your community grow, and give you a direct line to the Astral team."
+msgstr "Ανταμοιβές που αναγνωρίζουν τον αντίκτυπό σου, βοηθούν την κοινότητά σου να μεγαλώσει και σου δίνουν απευθείας γραμμή με την ομάδα του Astral."
+
+#: src/Astral_marketing/pages/careers_page.gleam:344
+msgid "Right now we're focused on shipping a great product and keeping Astral independent and bootstrapped."
+msgstr "Αυτή τη στιγμή εστιάζουμε στο να παραδώσουμε ένα εξαιρετικό προϊόν και να κρατήσουμε το Astral ανεξάρτητο και αυτοχρηματοδοτούμενο."
+
+#: src/Astral_marketing/components/locale_selector.gleam:143
+msgid "Romanian"
+msgstr "Ρουμανικά"
+
+#: src/Astral_marketing/components/current_features.gleam:149
+msgid "Run the Astral backend on your own hardware and connect with our apps."
+msgstr "Τρέξε το backend του Astral στο δικό σου hardware και συνδέσου με τις εφαρμογές μας."
+
+#: src/Astral_marketing/components/locale_selector.gleam:144
+msgid "Russian"
+msgstr "Ρωσικά"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:81
+#: src/Astral_marketing/pages/plutonium_page.gleam:117
+msgid "Save 17%"
+msgstr "Εξοικονόμησε 17%"
+
+#: src/Astral_marketing/components/current_features.gleam:137
+msgid "Save images, videos, GIFs, and audio"
+msgstr "Αποθήκευσε εικόνες, βίντεο, GIF και ήχο"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:371
+msgid "Saved media"
+msgstr "Αποθηκευμένα πολυμέσα"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:584
+msgid "Schedule messages to be sent at a specific time in the future. No DeLorean required."
+msgstr "Προγραμμάτισε μηνύματα ώστε να σταλούν σε συγκεκριμένη ώρα στο μέλλον. Δεν χρειάζεται DeLorean."
+
+#: src/Astral_marketing/components/current_features.gleam:89
+msgid "Screen sharing built in"
+msgstr "Ενσωματωμένη κοινή χρήση οθόνης"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:132
+msgid "Screenshots courtesy of "
+msgstr "Τα στιγμιότυπα οθόνης είναι ευγενική προσφορά του "
+
+#: src/Astral_marketing/pages/help_components.gleam:93
+msgid "Search"
+msgstr "Αναζήτηση"
+
+#: src/Astral_marketing/components/current_features.gleam:114
+msgid "Search & quick switcher"
+msgstr "Αναζήτηση & γρήγορη εναλλαγή"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:46
+msgid "Search Results"
+msgstr "Αποτελέσματα αναζήτησης"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:67
+#: src/Astral_marketing/pages/help_search_page.gleam:66
+msgid "Search for help..."
+msgstr "Αναζήτηση βοήθειας..."
+
+#: src/Astral_marketing/pages/help_category_page.gleam:92
+msgid "Search in "
+msgstr "Αναζήτηση στα "
+
+#: src/Astral_marketing/pages/help_category_page.gleam:90
+#: src/Astral_marketing/pages/help_center_page.gleam:65
+#: src/Astral_marketing/pages/help_search_page.gleam:64
+msgid "Search our help articles or browse by category."
+msgstr "Αναζήτησε στα άρθρα βοήθειας ή περιηγήσου ανά κατηγορία."
+
+#: src/Astral_marketing/pages/help_category_page.gleam:126
+msgid "Search results for"
+msgstr "Αποτελέσματα αναζήτησης για"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:49
+msgid "Search results for: "
+msgstr "Αποτελέσματα αναζήτησης για: "
+
+#: src/Astral_marketing/components/current_features.gleam:120
+msgid "Search through message history"
+msgstr "Αναζήτηση στο ιστορικό μηνυμάτων"
+
+#: src/Astral_marketing/components/footer.gleam:271
+#: src/Astral_marketing/components/get_involved_section.gleam:194
+#: src/Astral_marketing/components/navigation.gleam:424
+#: src/Astral_marketing/pages/careers_page.gleam:156
+#: src/Astral_marketing/pages/security_page.gleam:41
+msgid "Security Bug Bounty"
+msgstr "Bug Bounty Ασφαλείας"
+
+#: src/Astral_marketing/pages/careers_page.gleam:151
+msgid "Security reports"
+msgstr "Αναφορές ασφάλειας"
+
+#: src/Astral_marketing/pages/download_page.gleam:232
+msgid "See badge counts on the app icon."
+msgstr "Δες πόσες ειδοποιήσεις έχεις στο εικονίδιο της εφαρμογής."
+
+#: src/Astral_marketing/pages/partners_page.gleam:312
+msgid "See perks"
+msgstr "Δες τα προνόμια"
+
+#: src/Astral_marketing/components/current_features.gleam:146
+msgid "Multi-device sync"
+msgstr "Αυτοφιλοξενία"
+
+#: src/Astral_marketing/pages/download_page.gleam:330
+msgid "Send a one-time gift"
+msgstr "Στείλε ένα εφάπαξ δώρο"
+
+#: src/Astral_marketing/pages/partners_page.gleam:374
+msgid "Send us an email with the following information to get started:"
+msgstr "Στείλε μας ένα email με τις παρακάτω πληροφορίες για να ξεκινήσουμε:"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:634
+msgid "Set personalized sounds when you join voice channels to make your presence known."
+msgstr "Όρισε προσωπικούς ήχους όταν μπαίνεις σε φωνητικά κανάλια για να γίνεται αισθητή η παρουσία σου."
+
+#: src/Astral_marketing/pages/careers_page.gleam:408
+msgid "Share a bit about yourself, what you'd like to work on, and links to any relevant work."
+msgstr "Πες μας λίγα για εσένα, τι θα ήθελες να δουλέψεις και βάλε συνδέσμους προς σχετική δουλειά."
+
+#: src/Astral_marketing/pages/careers_page.gleam:143
+msgid "Share feedback, report bugs, and help make Astral welcoming for everyone."
+msgstr "Μοιράσου feedback, ανάφερε bugs και βοήθησε να γίνει το Astral φιλόξενο για όλους."
+
+#: src/Astral_marketing/components/current_features.gleam:75
+msgid "Share files and preview links"
+msgstr "Μοιράσου αρχεία και κάνε προεπισκόπηση συνδέσμων"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:490
+msgid "Show download options"
+msgstr "Δες επιλογές λήψης"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:664
+msgid "Show off your Plutonium status with an exclusive badge on your profile."
+msgstr "Δείξε το status Plutonium σου με ένα αποκλειστικό σήμα στο προφίλ σου."
+
+#: src/Astral_marketing/components/coming_features.gleam:33
+msgid "Slash commands"
+msgstr "Εντολές με /"
+
+#: src/Astral_marketing/pages/careers_page.gleam:236
+msgid "Software development"
+msgstr "Ανάπτυξη λογισμικού"
+
+#: src/Astral_marketing/components/coming_features.gleam:57
+msgid "Soundboard"
+msgstr "Πίνακας ήχων"
+
+#: src/Astral_marketing/components/footer.gleam:143
+#: src/Astral_marketing/components/navigation.gleam:447
+msgid "Source Code"
+msgstr "Πηγαίος κώδικας"
+
+#: src/Astral_marketing/components/locale_selector.gleam:127
+msgid "Spanish (Latin America)"
+msgstr "Ισπανικά (Λατινικής Αμερικής)"
+
+#: src/Astral_marketing/components/locale_selector.gleam:126
+msgid "Spanish (Spain)"
+msgstr "Ισπανικά (Ισπανίας)"
+
+#: src/Astral_marketing/pages/download_page.gleam:323
+msgid "Sponsor the roadmap for mobile"
+msgstr "Χρηματοδότησε τον οδικό χάρτη για κινητά"
+
+#: src/Astral_marketing/components/coming_features.gleam:42
+msgid "Stage channels"
+msgstr "Κανάλια Stage"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:594
+msgid "Stand out with animated profile pictures and banners to express your personality."
+msgstr "Ξεχώρισε με κινούμενες φωτογραφίες προφίλ και banner για να εκφράσεις την προσωπικότητά σου."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:127
+msgid "Stay updated on news, service status, and what's happening. You can also follow "
+msgstr "Μείνε ενημερωμένος/η για νέα, κατάσταση υπηρεσίας και ό,τι συμβαίνει. Μπορείς επίσης να ακολουθήσεις "
+
+#: src/Astral_marketing/pages/help_article_page.gleam:218
+#: src/Astral_marketing/pages/help_article_page.gleam:360
+msgid "Still need help?"
+msgstr "Χρειάζεσαι ακόμα βοήθεια;"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:624
+msgid "Store up to 15 video backgrounds for calls. No more Downloads folder scavenger hunts!"
+msgstr "Αποθήκευσε έως 15 φόντα βίντεο για κλήσεις. Τέλος τα κυνηγητά στον φάκελο Λήψεις!"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:614
+msgid "Stream in up to 4K resolution at 60fps so others can see you in stunning clarity."
+msgstr "Κάνε streaming έως 4K στα 60fps ώστε οι άλλοι να σε βλέπουν με εκπληκτική καθαρότητα."
+
+#: src/Astral_marketing/components/coming_features.gleam:58
+msgid "Streamer mode"
+msgstr "Λειτουργία streamer"
+
+#: src/Astral_marketing/pages/donate_page.gleam:50
+#: src/Astral_marketing/pages/donate_page.gleam:86
+msgid "Support Astral"
+msgstr "Στήριξε το Astral"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1077
+msgid "Support future development"
+msgstr "Στήριξε τη μελλοντική ανάπτυξη"
+
+#: src/Astral_marketing/components/locale_selector.gleam:145
+msgid "Swedish"
+msgstr "Σουηδικά"
+
+#: src/Astral_marketing/components/current_features.gleam:155
+msgid "Switch between multiple instances"
+msgstr "Εναλλαγή μεταξύ πολλαπλών εγκαταστάσεων"
+
+#: src/Astral_marketing/pages/press_page.gleam:147
+msgid "Symbol"
+msgstr "Σύμβολο"
+
+#: src/Astral_marketing/components/footer.gleam:238
+#: src/Astral_marketing/components/navigation.gleam:397
+#: src/Astral_marketing/pages/terms_page.gleam:41
+msgid "Terms of Service"
+msgstr "Όροι Χρήσης"
+
+#: src/Astral_marketing/components/locale_selector.gleam:146
+msgid "Thai"
+msgstr "Ταϊλανδικά"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:998
+msgid "The Operator Access is optional: pay for support and community access."
+msgstr "Το Operator Access είναι προαιρετικό: πληρώνεις για υποστήριξη και πρόσβαση στην κοινότητα."
+
+#: src/Astral_marketing/components/coming_features.gleam:89
+msgid "The future is being built right now. These features are coming soon."
+msgstr "Το μέλλον χτίζεται τώρα. Αυτές οι λειτουργίες έρχονται σύντομα."
+
+#: src/Astral_marketing/pages/careers_page.gleam:313
+msgid "The future of paid roles"
+msgstr "Το μέλλον των αμειβόμενων ρόλων"
+
+#: src/Astral_marketing/components/coming_features.gleam:51
+msgid "Theme marketplace"
+msgstr "Αγορά θεμάτων"
+
+#: src/Astral_marketing/pages/download_page.gleam:255
+msgid "This isn't a full replacement for the desktop app yet, and some things you'd expect from a mobile chat app are still missing."
+msgstr "Αυτό δεν αντικαθιστά πλήρως ακόμη την εφαρμογή υπολογιστή και λείπουν ακόμα κάποια πράγματα που θα περίμενες από μια εφαρμογή συνομιλίας για κινητά."
+
+#: src/Astral_marketing/pages/not_found_page.gleam:60
+#: src/Astral_marketing/pages/not_found_page.gleam:104
+msgid "This page doesn't exist. But there's plenty more to explore."
+msgstr "Αυτή η σελίδα δεν υπάρχει. Αλλά υπάρχουν πολλά ακόμα να εξερευνήσεις."
+
+#: src/Astral_marketing/components/footer.gleam:342
+msgid "This product includes GeoLite2 Data created by MaxMind, available from "
+msgstr "Αυτό το προϊόν περιλαμβάνει δεδομένα GeoLite2 που δημιουργήθηκαν από την MaxMind, διαθέσιμα από "
+
+#: src/Astral_marketing/components/coming_features.gleam:37
+msgid "Threads and forums"
+msgstr "Νήματα και φόρουμ"
+
+#: src/Astral_marketing/pages/careers_page.gleam:243
+msgid "Translation & localization"
+msgstr "Μετάφραση & τοπικοποίηση"
+
+#: src/Astral_marketing/pages/careers_page.gleam:162
+#: src/Astral_marketing/pages/careers_page.gleam:257
+msgid "Trust & safety"
+msgstr "Εμπιστοσύνη & ασφάλεια"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:140
+msgid "Try different keywords or browse our categories."
+msgstr "Δοκίμασε διαφορετικές λέξεις-κλειδιά ή περιηγήσου στις κατηγορίες."
+
+#: src/Astral_marketing/components/hackernews_banner.gleam:36
+msgid "Try it without an email at"
+msgstr "Δοκίμασέ το χωρίς email στο"
+
+#: src/Astral_marketing/components/locale_selector.gleam:147
+msgid "Turkish"
+msgstr "Τουρκικά"
+
+#: src/Astral_marketing/components/locale_selector.gleam:148
+msgid "Ukrainian"
+msgstr "Ουκρανικά"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:857
+msgid "Unique profile badge"
+msgstr "Μοναδικό σήμα προφίλ"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1036
+msgid "Unlimited users"
+msgstr "Απεριόριστοι χρήστες"
+
+#: src/Astral_marketing/pages/partners_page.gleam:203
+msgid "Unlock and test new features before they're available to everyone."
+msgstr "Ξεκλείδωσε και δοκίμασε νέες λειτουργίες πριν γίνουν διαθέσιμες σε όλους."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:79
+msgid "Unlock higher limits and exclusive features while supporting an independent communication platform."
+msgstr "Ξεκλείδωσε υψηλότερα όρια και αποκλειστικές λειτουργίες, στηρίζοντας παράλληλα μια ανεξάρτητη πλατφόρμα επικοινωνίας."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:611
+msgid "Up to 4K video quality"
+msgstr "Έως 4K ποιότητα βίντεο"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:54
+msgid "Upgrade to Plutonium for $4.99/mo: custom username tags, per-community profiles, message scheduling, 4K streaming, 500MB uploads, and more exclusive features."
+msgstr "Αναβάθμισε σε Plutonium με $4.99/μήνα: προσαρμοσμένα tag ονόματος χρήστη, προφίλ ανά κοινότητα, προγραμματισμό μηνυμάτων, streaming 4K, αποστολές 500MB και περισσότερες αποκλειστικές λειτουργίες."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:644
+msgid "Upload and use your own notification sounds to personalize your Astral experience."
+msgstr "Ανέβασε και χρησιμοποίησε τους δικούς σου ήχους ειδοποιήσεων για να κάνεις την εμπειρία Astral πιο προσωπική."
+
+#: src/Astral_marketing/pages/partners_page.gleam:181
+msgid "Upload animated GIFs as your community's avatar and banner."
+msgstr "Ανέβασε κινούμενα GIF ως avatar και banner της κοινότητάς σου."
+
+#: src/Astral_marketing/components/current_features.gleam:136
+msgid "Upload custom emojis and stickers"
+msgstr "Ανέβασε προσαρμοσμένα emoji και αυτοκόλλητα"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:315
+msgid "Use Astral in your mobile browser for now"
+msgstr "Προς το παρόν, χρησιμοποίησε το Astral από το πρόγραμμα περιήγησης του κινητού"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:378
+msgid "Use animated emojis"
+msgstr "Χρησιμοποίησε κινούμενα emoji"
+
+#: src/Astral_marketing/components/current_features.gleam:154
+msgid "Use our desktop client (mobile coming soon)"
+msgstr "Χρησιμοποίησε τον desktop client μας (κινητό σύντομα διαθέσιμο)"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:604
+msgid "Use your favorite emojis and stickers from any community, anywhere across Astral."
+msgstr "Χρησιμοποίησε τα αγαπημένα σου emoji και αυτοκόλλητα από οποιαδήποτε κοινότητα, οπουδήποτε μέσα στο Astral."
+
+#: src/Astral_marketing/pages/partners_page.gleam:222
+msgid "VIP Voice Servers"
+msgstr "VIP διακομιστές φωνής"
+
+#: src/Astral_marketing/components/partner_section.gleam:117
+msgid "Verified Community"
+msgstr "Επαληθευμένη κοινότητα"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:621
+msgid "Video backgrounds"
+msgstr "Φόντα βίντεο"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:392
+msgid "Video quality"
+msgstr "Ποιότητα βίντεο"
+
+#: src/Astral_marketing/components/locale_selector.gleam:149
+msgid "Vietnamese"
+msgstr "Βιετναμέζικα"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:172
+msgid "View all articles"
+msgstr "Προβολή όλων των άρθρων"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:183
+#: src/Astral_marketing/pages/careers_page.gleam:123
+msgid "View repository"
+msgstr "Προβολή repository"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:822
+msgid "Visionary"
+msgstr "Visionary"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:864
+msgid "Visionary & Operators communities with team access"
+msgstr "Κοινότητες Visionary & Operators με πρόσβαση στην ομάδα"
+
+#: src/Astral_marketing/components/current_features.gleam:82
+msgid "Voice & video"
+msgstr "Φωνή & βίντεο"
+
+#: src/Astral_marketing/pages/careers_page.gleam:396
+msgid "Want to help build Astral?"
+msgstr "Θέλεις να βοηθήσεις να χτίσουμε το Astral;"
+
+#: src/Astral_marketing/pages/careers_page.gleam:94
+msgid "Ways to contribute"
+msgstr "Τρόποι να συνεισφέρεις"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:192
+msgid "We appreciate responsible disclosure via our Security Bug Bounty page. We offer Plutonium codes and Bug Hunter badges based on severity."
+msgstr "Εκτιμούμε την υπεύθυνη αποκάλυψη μέσω της σελίδας Bug Bounty Ασφαλείας μας. Προσφέρουμε κωδικούς Πλουτωνίου και badges κυνηγών σφαλμάτων με βάση τη σοβαρότητα."
+
+#: src/Astral_marketing/components/final_cta.gleam:56
+msgid "We need your support to make this work."
+msgstr "Χρειαζόμαστε τη στήριξή σου για να πετύχει αυτό."
+
+#: src/Astral_marketing/pages/partners_page.gleam:453
+msgid "We review all applications and will get back to you as soon as possible."
+msgstr "Εξετάζουμε όλες τις αιτήσεις και θα επικοινωνήσουμε μαζί σου το συντομότερο δυνατό."
+
+#: src/Astral_marketing/pages/press_page.gleam:301
+msgid "We typically respond within 24 hours during business days."
+msgstr "Συνήθως απαντάμε μέσα σε 24 ώρες τις εργάσιμες ημέρες."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:62
+msgid "We're building a complete platform with all the features you'd expect. But we can't do it without your help!"
+msgstr "Χτίζουμε μια ολοκληρωμένη πλατφόρμα με όλες τις λειτουργίες που θα περίμενες. Αλλά δεν μπορούμε να το κάνουμε χωρίς τη βοήθειά σου!"
+
+#: src/Astral_marketing/pages/download_page.gleam:214
+msgid "We're building apps for iOS and Android. Until they're ready, Astral works in your mobile browser — and we've put a lot of effort into making it feel as app-like as possible."
+msgstr "Φτιάχνουμε εφαρμογές για iOS και Android. Μέχρι να είναι έτοιμες, το Astral λειτουργεί στο πρόγραμμα περιήγησης του κινητού σου — και έχουμε επενδύσει πολλή δουλειά για να μοιάζει όσο γίνεται με κανονική εφαρμογή."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:78
+msgid "We're limiting registrations during beta. Once you're in, you can give friends a code to skip the queue."
+msgstr "Περιορίζουμε τις εγγραφές στη beta. Μόλις μπεις, μπορείς να δώσεις σε φίλους έναν κωδικό για να παρακάμψουν την ουρά."
+
+#: src/Astral_marketing/pages/careers_page.gleam:324
+msgid "We're still building the business around Astral and aren't quite ready for paid roles yet."
+msgstr "Ακόμα χτίζουμε το επιχειρηματικό κομμάτι γύρω από το Astral και δεν είμαστε ακόμη έτοιμοι για αμειβόμενους ρόλους."
+
+#: src/Astral_marketing/components/current_features.gleam:107
+msgid "Webhooks and bot support"
+msgstr "Υποστήριξη webhooks και bots"
+
+#: src/Astral_marketing/pages/donate_page.gleam:350
+msgid "What does my donation support?"
+msgstr "Τι υποστηρίζει η δωρεά μου;"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:549
+msgid "What you get with Plutonium"
+msgstr "Τι παίρνεις με το Plutonium"
+
+#: src/Astral_marketing/components/current_features.gleam:45
+msgid "What's available today"
+msgstr "Τι είναι διαθέσιμο σήμερα"
+
+#: src/Astral_marketing/components/coming_features.gleam:77
+msgid "What's coming next"
+msgstr "Τι έρχεται μετά"
+
+#: src/Astral_marketing/pages/donate_page.gleam:384
+msgid "What's the difference between Individual and Business?"
+msgstr "Ποια είναι η διαφορά ανάμεσα σε Ιδιώτη και Επιχείρηση;"
+
+#: src/Astral_marketing/pages/press_page.gleam:226
+msgid "White"
+msgstr "Λευκό"
+
+#: src/Astral_marketing/pages/press_page.gleam:110
+msgid "White Logo"
+msgstr "Λευκό λογότυπο"
+
+#: src/Astral_marketing/pages/press_page.gleam:164
+msgid "White Symbol"
+msgstr "Λευκό σύμβολο"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:346
+msgid "Windows"
+msgstr "Windows"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:232
+msgid "Windows 10+"
+msgstr "Windows 10+"
+
+#: src/Astral_marketing/pages/careers_page.gleam:357
+msgid "With your support, we hope to make this independent communication platform sustainable and start offering paid roles in the future."
+msgstr "Με τη στήριξή σου, ελπίζουμε να κάνουμε αυτή την ανεξάρτητη πλατφόρμα επικοινωνίας βιώσιμη και να αρχίσουμε να προσφέρουμε αμειβόμενους ρόλους στο μέλλον."
+
+#: src/Astral_marketing/pages/partners_page.gleam:137
+msgid "Your community gets verified status for authenticity and trust."
+msgstr "Η κοινότητά σου αποκτά επαληθευμένο status για αυθεντικότητα και εμπιστοσύνη."
+
+#: src/Astral_marketing/pages/partners_page.gleam:192
+msgid "Your community receives increased limits when you need them."
+msgstr "Η κοινότητά σου λαμβάνει αυξημένα όρια όταν τα χρειάζεσαι."
+
+#: src/Astral_marketing/pages/donate_page.gleam:353
+msgid "Your donation helps fund Astral's infrastructure costs, including servers, bandwidth, storage, and ongoing development of new features. It helps us maintain and improve the platform for everyone."
+msgstr "Η δωρεά σου βοηθά να χρηματοδοτηθούν τα κόστη υποδομής του Astral, όπως servers, bandwidth, αποθήκευση και η συνεχής ανάπτυξη νέων λειτουργιών. Μας βοηθά να συντηρούμε και να βελτιώνουμε την πλατφόρμα για όλους."
+
+#: src/Astral_marketing/pages/partners_page.gleam:395
+msgid "Your name and platform username"
+msgstr "Το όνομά σου και το όνομα χρήστη σου στην πλατφόρμα"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:949
+msgid "all"
+msgstr "όλα"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:156
+msgid "article"
+msgstr "άρθρο"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:157
+msgid "articles"
+msgstr "άρθρα"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:518
+msgid "iOS"
+msgstr "iOS"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:98
+msgid "iOS / iPadOS"
+msgstr "iOS / iPadOS"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:235
+msgid "iOS 15+"
+msgstr "iOS 15+"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:355
+msgid "macOS"
+msgstr "macOS"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:233
+msgid "macOS 10.15+"
+msgstr "macOS 10.15+"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1067
+msgid "one-time purchase"
+msgstr "εφάπαξ αγορά"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:68
+#: src/Astral_marketing/pages/donate_page.gleam:282
+#: src/Astral_marketing/pages/plutonium_page.gleam:106
+#: src/Astral_marketing/pages/plutonium_page.gleam:230
+msgid "or"
+msgstr "ή"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:140
+msgid "our RSS feed"
+msgstr "τη ροή RSS μας"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:96
+msgid "result for"
+msgstr "αποτέλεσμα για"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:100
+msgid "results for"
+msgstr "αποτελέσματα για"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:801
+msgid "{0} of {1} slots left"
+msgstr "Απομένουν {0} από {1} θέσεις"
+
+#: src/Astral_marketing/components/footer.gleam:336
+msgid "© Astral Platform AB (Swedish limited liability company: 559537-3993)"
+msgstr "© Astral Platform AB (σουηδική ανώνυμη εταιρεία: 559537-3993)"

@@ -1,0 +1,44 @@
+---
+title: Голос И Звонки
+description: Публичные voice/call маршруты Astral
+---
+
+Голосовой слой Astral для разработчика состоит из REST-хелперов и Gateway-событий.
+
+## Основные публичные маршруты
+
+| Endpoint | Для чего нужен |
+| --- | --- |
+| `GET /channels/:channel_id/rtc-regions` | Получить доступные RTC-регионы |
+| `GET /channels/:channel_id/call` | Проверить состояние звонка |
+| `PATCH /channels/:channel_id/call` | Обновить параметры звонка |
+| `POST /channels/:channel_id/call/ring` | Начать звонок / прозвонить участников |
+| `POST /channels/:channel_id/call/stop-ringing` | Остановить прозвон |
+
+## Получить RTC-регионы
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/rtc-regions
+```
+
+## Проверить звонок
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/call
+```
+
+## Прозвонить участников
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"recipients":["1470000000000000001"]}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/call/ring
+```
+
+Для событий голоса дополнительно нужен Gateway.

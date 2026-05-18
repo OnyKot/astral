@@ -1,0 +1,297 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	display: flex;
+	flex-direction: column;
+	width: 100vw;
+	height: 100dvh;
+	margin-left: 0;
+	overflow: hidden;
+	color: var(--text-primary);
+	background: transparent;
+	box-shadow: none;
+	pointer-events: none;
+}
+
+.backdrop {
+	will-change: opacity, backdrop-filter;
+	transition: opacity var(--motion-dur-medium) var(--motion-ease-snap);
+}
+
+.surfacePrimary {
+	--sheet-surface: var(--background-primary);
+	--sheet-surface-elevated: var(--background-secondary);
+}
+
+.surfaceSecondary {
+	--sheet-surface: var(--background-secondary);
+	--sheet-surface-elevated: var(--background-secondary);
+}
+
+.surfaceTertiary {
+	--sheet-surface: var(--background-tertiary);
+	--sheet-surface-elevated: var(--background-tertiary);
+}
+
+.root {
+	display: flex;
+	flex-direction: column;
+	height: calc(100dvh * var(--sheet-open-snap, 1));
+	max-height: 100dvh;
+	margin-top: auto;
+	min-height: 0;
+	background-color: var(--sheet-surface, var(--background-secondary));
+	border-top-left-radius: 18px;
+	border-top-right-radius: 18px;
+	overflow: hidden;
+	box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.24);
+	pointer-events: auto;
+}
+
+.handle {
+	display: flex;
+	width: 100%;
+	justify-content: center;
+	align-items: center;
+	padding: calc(14px + max(var(--safe-area-top, 0px), 6px)) 0 10px;
+	background: transparent;
+	cursor: grab;
+	touch-action: pan-y;
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.handle:active {
+	cursor: grabbing;
+}
+
+.handleBar {
+	height: 5px;
+	width: 54px;
+	border-radius: 9999px;
+	background-color: var(--text-primary-muted);
+	opacity: 0.58;
+}
+
+.header {
+	background-color: var(--sheet-surface, var(--background-secondary));
+	padding: 16px 20px;
+}
+
+.headerBorder {
+	border-bottom: 1px solid var(--background-modifier-accent);
+}
+
+.headerSafeArea {
+	padding-top: calc(16px + max(var(--safe-area-top, 0px), 10px));
+	padding-right: calc(20px + max(var(--safe-area-right, 0px), 4px));
+	padding-left: calc(20px + max(var(--safe-area-left, 0px), 4px));
+}
+
+.headerPaddingSm {
+	padding-top: 12px;
+	padding-bottom: 12px;
+}
+
+.headerPaddingMd {
+	padding-top: 16px;
+	padding-bottom: 16px;
+}
+
+.headerPaddingLg {
+	padding-top: 20px;
+	padding-bottom: 20px;
+}
+
+.headerGrid {
+	display: grid;
+	grid-template-columns: minmax(48px, auto) minmax(0, 1fr) minmax(48px, auto);
+	align-items: center;
+	gap: 12px;
+}
+
+.headerSlot {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 38px;
+	color: inherit;
+}
+
+.headerSlotLeading {
+	justify-content: flex-start;
+}
+
+.headerSlotTrailing {
+	justify-content: flex-end;
+}
+
+.headerCenter {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+	min-width: 0;
+	gap: 4px;
+}
+
+.headerAlignStart .headerCenter {
+	align-items: flex-start;
+	text-align: left;
+}
+
+.headerAlignEnd .headerCenter {
+	align-items: flex-end;
+	text-align: right;
+}
+
+.headerContent {
+	min-width: 0;
+}
+
+.headerAfter {
+	margin-top: 14px;
+	width: 100%;
+}
+
+.title {
+	margin: 0;
+	font-weight: 600;
+	font-size: 18px;
+	line-height: 1.25;
+	color: var(--text-primary);
+}
+
+.subtitle {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.35;
+	color: var(--text-secondary);
+}
+
+.content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	background-color: var(--sheet-surface, var(--background-secondary));
+	padding: 0 20px;
+}
+
+.contentNoPadding {
+	padding: 0;
+}
+
+.contentInner {
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	overscroll-behavior: contain;
+	padding-bottom: calc(24px + var(--safe-area-bottom, 0px));
+}
+
+.contentNoPadding .contentInner {
+	padding-bottom: 0;
+}
+
+.contentStatic {
+	overflow: visible;
+}
+
+.section {
+	padding: 20px;
+	background-color: var(--sheet-surface, var(--background-secondary));
+}
+
+.footer {
+	padding: 18px 20px;
+	padding-bottom: calc(20px + var(--safe-area-bottom, 0px));
+	background-color: var(--sheet-surface, var(--background-secondary));
+	border-top: 1px solid var(--background-modifier-accent);
+}
+
+.footerNoBorder {
+	border-top: none;
+}
+
+.actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
+.divider {
+	height: 1px;
+	width: 100%;
+	background-color: var(--background-header-secondary);
+	opacity: 0.55;
+}
+
+.closeButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 40px;
+	min-height: 40px;
+	padding: 8px;
+	color: var(--text-primary);
+	border-radius: 9999px;
+	background-color: transparent;
+	border: 0;
+	transition:
+		background-color 0.15s,
+		transform 0.15s;
+	cursor: pointer;
+}
+
+.closeButton:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.closeButton:active {
+	background-color: var(--background-modifier-selected);
+	transform: translateY(1px);
+}
+
+.closeButton svg {
+	width: 1.2rem;
+	height: 1.2rem;
+}
+
+@media (min-width: 900px) {
+	.container {
+		width: 100vw;
+		height: 100dvh;
+	}
+
+	.headerSafeArea {
+		padding-top: 16px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.backdrop {
+		backdrop-filter: none !important;
+		-webkit-backdrop-filter: none !important;
+	}
+}

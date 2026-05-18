@@ -1,0 +1,177 @@
+:8088 {
+  encode zstd gzip
+
+  @legacy_desktop_handoff {
+    host asrtal.ru www.asrtal.ru
+    query desktop_handoff=1
+  }
+  handle @legacy_desktop_handoff {
+    redir https://astraof.com/login?{http.request.uri.query} 302
+  }
+
+  @legacy_app_redirect {
+    host asrtal.ru www.asrtal.ru
+    path /channels /channels/* /login /register /forgot /reset /verify /authorize-ip /wasntme /pending /oauth2/authorize /invite /invite/* /gift /gift/* /gifts /gifts/* /theme /theme/* /bookmarks /mentions /notifications /you /report /premium-callback
+  }
+  handle @legacy_app_redirect {
+    redir https://astraof.com{uri} 302
+  }
+
+  @legacy_redirect {
+    host asrtal.ru www.asrtal.ru
+    not path /api/* /dl/* /media/* /s3/* /gateway /gateway/* /livekit /livekit/* /ws /ws/* /assets/* /manifest.json /version.json /web/* /.well-known/*
+  }
+  handle @legacy_redirect {
+    redir https://astraof.com/moved 302
+  }
+
+  # Phase 2a: userver_instance fast path with Node fallback.
+  # Both upstreams accept `/instance` (Node mounts its routes on both `/` and
+  # `/v1/`, so stripping the `/api/v1` or `/api` prefix works uniformly).
+  # Caddy's reverse_proxy with `lb_policy first` treats userver as primary
+  # and Node as fallback: on 5xx / >500ms / connection refused the upstream
+  # is marked unhealthy for 10s and traffic falls back to Node — invisible
+  # to clients.
+  @userver_instance path /api/v1/instance /api/instance
+  handle @userver_instance {
+    uri strip_prefix /api/v1
+    uri strip_prefix /api
+    reverse_proxy userver-instance:8080 api:8080 {
+      lb_policy first
+      lb_try_duration 500ms
+      fail_duration 10s
+      unhealthy_status 5xx
+      unhealthy_latency 500ms
+    }
+  }
+
+  # Phase 3: userver_tenor GIF read proxy with aggressive caching.
+  # C++ service handles GET read endpoints only: search/suggest 30s,
+  # trending/featured 5 min. POST /tenor/register-share stays on Node
+  # because it is a write/auth path.
+  # Security: keep Tenor routes on Node API so existing auth, rate limits,
+  # and input validation middleware are always enforced.
+
+  # Security: do not bypass Node API middleware for guild-scoped routes.
+  # `/api/v1/guilds/*/counts` now flows through the standard `@api` handler
+  # below so authentication, authorization and rate limits are enforced.
+
+  # userver_invites fast path. GET lookup stays client-compatible; POST/DELETE
+  # invite writes remain on Node. Caddy falls back to Node if the C++ service
+  # is unhealthy, times out, or returns 5xx.
+  @userver_invites {
+    method GET
+    path /api/v1/invites/* /api/invites/*
+  }
+  handle @userver_invites {
+    uri strip_prefix /api/v1
+    uri strip_prefix /api
+    reverse_proxy userver-invites:8080 api:8080 {
+      lb_policy first
+      lb_try_duration 500ms
+      fail_duration 10s
+      unhealthy_status 5xx
+      unhealthy_latency 500ms
+    }
+  }
+
+  @api path /api/*
+  handle @api {
+    handle_path /api/* {
+      reverse_proxy api:8080
+    }
+  }
+
+  @api_v1 path /v1/*
+  handle @api_v1 {
+    handle_path /v1/* {
+      reverse_proxy api:8080
+    }
+  }
+
+  @downloads path /dl/*
+  handle @downloads {
+    reverse_proxy api:8080 {
+      header_up X-Forwarded-Proto https
+      header_up X-Forwarded-Host {host}
+    }
+  }
+
+  @media path /media/*
+  handle @media {
+    handle_path /media/* {
+      reverse_proxy media:8080
+    }
+  }
+
+  @s3 path /s3/*
+  handle @s3 {
+    handle_path /s3/* {
+      reverse_proxy minio:9000
+    }
+  }
+
+  @admin path /admin /admin/*
+  handle @admin {
+    uri strip_prefix /admin
+    reverse_proxy admin:8080
+  }
+
+  @marketing path /marketing /marketing/*
+  handle @marketing {
+    uri strip_prefix /marketing
+    reverse_proxy marketing:8080
+  }
+
+  @docs path /docs /docs/*
+  handle @docs {
+    reverse_proxy docs:3000
+  }
+
+  @gateway path /gateway /gateway/*
+  handle @gateway {
+    uri strip_prefix /gateway
+    reverse_proxy gateway:8080
+  }
+
+  @livekit path /livekit /livekit/*
+  handle @livekit {
+    uri strip_prefix /livekit
+    reverse_proxy livekit:7880
+  }
+
+  @metrics path /metrics /metrics/*
+  handle @metrics {
+    uri strip_prefix /metrics
+    reverse_proxy metrics:8080
+  }
+
+  @userver path /userver /userver/*
+  handle @userver {
+    uri strip_prefix /userver
+    reverse_proxy userver-health:8080
+  }
+
+  @app_pages path /channels /channels/* /login /register /forgot /reset /verify /authorize-ip /wasntme /pending /oauth2/authorize /invite /invite/* /gift /gift/* /gifts /gifts/** /theme /theme/* /bookmarks /mentions /notifications /you /report /premium-callback
+  handle @app_pages {
+    reverse_proxy app:3000
+  }
+
+  @app_assets path /assets/* /manifest.json
+  handle @app_assets {
+    header /assets/* Cache-Control "public, max-age=31536000, immutable"
+    header /manifest.json Cache-Control "public, max-age=3600"
+    reverse_proxy app:3000
+  }
+
+  @app_runtime path /ws /ws/* /version.json /web/*
+  handle @app_runtime {
+    header /version.json Cache-Control "no-cache"
+    header /web/* Cache-Control "public, max-age=86400"
+    reverse_proxy app:3000
+  }
+
+  handle {
+    reverse_proxy marketing:8080
+  }
+}

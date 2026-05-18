@@ -1,0 +1,153 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.previewWrapper {
+	background: var(--background-secondary-lighter);
+}
+
+.previewContainer {
+	display: flex;
+	flex-direction: column;
+	height: 176px;
+	overflow: hidden;
+	position: relative;
+	isolation: isolate;
+	padding: 2px 12px 6px;
+	padding-bottom: 0;
+	border-radius: 8px;
+	border: 1px solid var(--background-modifier-accent);
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-primary) 14%, transparent) 0%,
+			transparent 18%,
+			color-mix(in srgb, var(--background-secondary) 18%, transparent) 100%
+		);
+}
+
+.previewContainer::before,
+.previewContainer::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.previewContainer::before {
+	z-index: 0;
+	background-image: var(--chat-background-pattern-image, none);
+	background-repeat: repeat;
+	background-position: center top;
+	background-size:
+		calc(var(--chat-background-pattern-size, 360px) * var(--chat-background-pattern-scale, 1))
+		calc(var(--chat-background-pattern-size, 360px) * var(--chat-background-pattern-scale, 1));
+	opacity: var(--chat-background-pattern-opacity, 0);
+}
+
+.previewContainer::after {
+	z-index: 0;
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.03) 0%, transparent 20%, rgb(0 0 0 / 0.08) 100%),
+		var(--theme-preset-overlay-background, transparent);
+	opacity: calc(0.2 + (var(--theme-preset-overlay-opacity, 0) * 0.45));
+	mix-blend-mode: screen;
+}
+
+.previewMessagesContainer {
+	flex: 1;
+	min-height: 0;
+	padding: 0;
+	pointer-events: none;
+	display: flex;
+	flex-direction: column;
+	--chat-horizontal-padding: 16px;
+	box-sizing: border-box;
+	overflow: hidden;
+	position: relative;
+	z-index: 1;
+}
+
+.previewContainerCompact .previewMessagesContainer,
+.previewContainerCozy .previewMessagesContainer {
+	justify-content: flex-start;
+}
+
+.previewMessagesContainer :global(.message),
+.previewMessagesContainer :global(.messageCompact) {
+	margin-left: 0 !important;
+	margin-right: 0 !important;
+	padding-right: var(--chat-horizontal-padding, 16px) !important;
+	pointer-events: none;
+}
+
+.previewMessagesContainer > :first-child {
+	margin-top: 0 !important;
+}
+
+.previewOverlay {
+	position: absolute;
+	z-index: 2;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	cursor: default;
+	content: '';
+	pointer-events: none;
+	height: 32px;
+	background:
+		linear-gradient(transparent 0%, color-mix(in srgb, var(--background-primary) 78%, transparent) 100%);
+}
+
+.buttonRowsContainer {
+	display: flex;
+	flex-direction: column;
+	margin: -1rem 0;
+}
+
+.buttonRow {
+	display: flex;
+	height: 68px;
+	align-items: center;
+	border-bottom: 1px solid var(--background-modifier-accent);
+}
+
+.buttonRowsContainer > .buttonRow:last-child {
+	border-bottom: 0;
+}
+
+.buttonRowContent {
+	display: flex;
+	width: 100%;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.buttonRowLabel {
+	display: flex;
+	flex: 1;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.buttonRowShortcut {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+}

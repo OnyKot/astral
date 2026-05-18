@@ -1,0 +1,60 @@
+.handle {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 8px;
+	cursor: col-resize;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	transition: background-color 0.18s ease;
+	-webkit-user-select: none;
+	user-select: none;
+	touch-action: none;
+}
+
+.handleRight {
+	right: -4px;
+}
+
+.handleLeft {
+	left: -4px;
+}
+
+.bar {
+	width: 2px;
+	height: 36px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--text-primary) 14%, transparent);
+	opacity: 0;
+	transform: scaleY(0.6);
+	transition:
+		opacity 0.18s ease,
+		transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+		background-color 0.18s ease;
+	pointer-events: none;
+}
+
+.handle:hover .bar,
+.handle:focus-visible .bar,
+.handleActive .bar {
+	opacity: 1;
+	transform: scaleY(1);
+}
+
+.handle:hover .bar {
+	background: color-mix(in srgb, var(--brand-primary) 60%, var(--text-primary) 40%);
+}
+
+.handleActive .bar {
+	background: var(--brand-primary);
+	height: 56px;
+}
+
+.handle:focus-visible {
+	outline: 2px solid color-mix(in srgb, var(--brand-primary) 60%, transparent);
+	outline-offset: -2px;
+	border-radius: 4px;
+}

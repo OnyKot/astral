@@ -1,0 +1,211 @@
+---
+title: Быстрый старт
+description: Поднимите первого Astral-бота за пять минут
+---
+
+Этот quickstart доводит вас от нуля до бота, который отвечает `pong` на `!ping` в любом канале, который ему виден.
+
+Что будет сделано:
+
+1. Создание приложения и пользователя-бота.
+2. Получение токена бота.
+3. Запуск маленького Node.js-скрипта, который подключается к Gateway и отвечает через REST.
+
+<Callout type="info" title="Базовые URL">
+Официальный деплой Astral — `https://astraof.com`. REST-запросы идут на `https://astraof.com/api/v1`, Gateway принимает WebSocket-подключения на `wss://astraof.com/gateway?v=1&encoding=json`. Self-hosted-инстанс отдаёт те же пути под своим доменом.
+</Callout>
+
+## 1. Создайте приложение и бота
+
+В клиенте Astral:
+
+1. Откройте **Настройки пользователя → Приложения** (иконка `</>` в боковой панели настроек).
+2. Нажмите **Создать приложение** и придумайте имя.
+3. Откройте созданное приложение и перейдите в раздел **Bot**.
+4. Нажмите **Показать токен** и сохраните токен в безопасное место.
+
+Тот же lifecycle доступен по API:
+
+```text
+POST   /oauth2/applications
+PATCH  /oauth2/applications/:id
+PATCH  /oauth2/applications/:id/bot
+POST   /oauth2/applications/:id/bot/reset-token
+GET    /users/@me/applications
+```
+
+<Callout type="warning" title="Никогда не коммитьте токен бота">
+Слитый токен бота равносилен передаче доступа к аккаунту. Храните токены в переменных окружения, не в исходниках, и обновляйте их через `POST /oauth2/applications/:id/bot/reset-token`, если подозреваете компрометацию.
+</Callout>
+
+## 2. Подготовьте пустой Node-проект
+
+```bash
+mkdir astral-bot
+cd astral-bot
+npm init -y
+npm pkg set type=module
+npm install ws
+```
+
+## 3. Настройте переменные окружения
+
+Пример ниже читает три переменных окружения. Linux/macOS:
+
+```bash
+export ASTRAL_BOT_TOKEN="your_bot_token"
+export ASTRAL_API_BASE="https://astraof.com/api/v1"
+export ASTRAL_GATEWAY_URL="wss://astraof.com/gateway?v=1&encoding=json"
+```
+
+Windows PowerShell:
+
+```powershell
+$Env:ASTRAL_BOT_TOKEN  = "your_bot_token"
+$Env:ASTRAL_API_BASE   = "https://astraof.com/api/v1"
+$Env:ASTRAL_GATEWAY_URL = "wss://astraof.com/gateway?v=1&encoding=json"
+```
+
+## 4. Проверьте токен тестовыми запросами
+
+Перед открытием Gateway убедитесь, что три ключевых эндпоинта отвечают:
+
+```bash
+curl -s -H "Authorization: Bot $ASTRAL_BOT_TOKEN" https://astraof.com/api/v1/users/@me
+curl -s -H "Authorization: Bot $ASTRAL_BOT_TOKEN" https://astraof.com/api/v1/applications/@me
+curl -s -H "Authorization: Bot $ASTRAL_BOT_TOKEN" https://astraof.com/api/v1/gateway/bot
+```
+
+Если все три вернули JSON — бот готов.
+
+<Callout type="info" title="Заголовок Origin не нужен">
+Production API Astral блокирует non-GET cookie-only запросы по `Origin`, но Bearer-token боты явно пропускаются. Заголовок `Origin` отправлять **не нужно** — токена достаточно для идентификации.
+</Callout>
+
+## 5. Минимальный пример (ping/pong)
+
+Сохраните как `bot.js`:
+
+```js
+import WebSocket from "ws";
+
+const token = process.env.ASTRAL_BOT_TOKEN;
+const apiBase = process.env.ASTRAL_API_BASE;
+const gatewayUrl = process.env.ASTRAL_GATEWAY_URL;
+
+if (!token || !apiBase || !gatewayUrl) {
+  console.error(
+    "Missing ASTRAL_BOT_TOKEN, ASTRAL_API_BASE, or ASTRAL_GATEWAY_URL"
+  );
+  process.exit(1);
+}
+
+let heartbeatTimer = null;
+let seq = null;
+
+function send(ws, payload) {
+  ws.send(JSON.stringify(payload));
+}
+
+async function postMessage(channelId, content) {
+  const response = await fetch(`${apiBase}/channels/${channelId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content }),
+  });
+  if (!response.ok) {
+    console.error("Failed to post message:", response.status, await response.text());
+  }
+}
+
+const ws = new WebSocket(gatewayUrl);
+
+ws.on("message", async (raw) => {
+  const msg = JSON.parse(raw.toString());
+  const { op, t, d, s } = msg;
+  if (s !== null && s !== undefined) seq = s;
+
+  // HELLO -> запускаем heartbeat и шлём IDENTIFY
+  if (op === 10) {
+    heartbeatTimer = setInterval(() => {
+      send(ws, { op: 1, d: seq });
+    }, d.heartbeat_interval);
+
+    send(ws, {
+      op: 2,
+      d: {
+        token: `Bot ${token}`,
+        properties: {
+          $os: "node",
+          $browser: "astral-bot",
+          $device: "astral-bot",
+        },
+      },
+    });
+    return;
+  }
+
+  // HEARTBEAT_ACK — игнорируем
+  if (op === 11) return;
+
+  // Dispatch
+  if (t === "READY") {
+    console.log("READY:", d.user?.username);
+  }
+
+  if (
+    t === "MESSAGE_CREATE" &&
+    d?.content === "!ping" &&
+    !d.author?.bot
+  ) {
+    console.log("Received !ping in channel", d.channel_id);
+    await postMessage(d.channel_id, "pong");
+  }
+});
+
+ws.on("error", (error) => {
+  console.error("Gateway error:", error);
+});
+
+ws.on("close", () => {
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  console.log("Gateway closed");
+});
+```
+
+## 6. Запустите бота
+
+```bash
+node bot.js
+```
+
+Со своего обычного аккаунта Astral отправьте `!ping` в канал, который виден боту. В терминале бота должно появиться:
+
+- `READY: <имя бота>`
+- `pong` опубликован в канале от имени бота
+
+## 7. Пригласите бота в сервер
+
+Чтобы установить бота в чужой сервер, соберите OAuth2-ссылку для установки:
+
+```text
+https://astraof.com/oauth2/authorize?client_id=<APP_ID>&scope=bot&permissions=<PERMISSIONS>
+```
+
+- `client_id` — id приложения из **Настройки пользователя → Приложения**.
+- `permissions` — побитовое OR прав, которые реально нужны боту. Начните с минимума, права всегда можно добавить позже.
+
+## Что читать дальше
+
+- **[Руководство по Bot API](./bots)** — REST-паттерны, gateway lifecycle, обработка ошибок.
+- **[Gateway](./events/gateway)** — lifecycle подключения, opcodes, правила resume / reconnect.
+- **[Gateway Events](./events/gateway-events)** — все события, на которые может подписаться бот.
+- **[Ресурс Message](./resources/message)** — отправка, редактирование, вложения, embed'ы, реакции.
+- **[Ресурс Channel](./resources/channel)** — CRUD каналов и permission overwrites.
+- **[Ресурс Webhook](./resources/webhook)** — для one-shot интеграций без долгоживущего бота.
+- **[Справочник API](./api-reference)** — алфавитный список всех публичных эндпоинтов.
+- **[Rate limits](./topics/rate-limits)** — как читать заголовки rate-limit и правильно отступать.
+- **[Troubleshooting](./topics/troubleshooting)** — типовые 4xx-ответы и что они значат.

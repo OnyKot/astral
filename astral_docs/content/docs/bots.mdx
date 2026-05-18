@@ -1,0 +1,538 @@
+---
+title: Bot API Guide
+description: A practical guide to the public Astral bot API with examples
+---
+
+This guide is the public entry point for building bots on Astral.
+
+It focuses only on developer-facing interfaces:
+
+- public REST API
+- public Gateway API
+- public webhook endpoints
+- OAuth2 flows used by bot developers
+
+Internal service routes and private client endpoints are intentionally not documented here.
+
+## Which API should you use?
+
+Use the smallest interface that fits your job:
+
+| Need | Use |
+| --- | --- |
+| Send a message, edit a message, ban a user, fetch a resource | REST API |
+| React to new messages, joins, voice state changes, and other live events | Gateway |
+| Let GitHub, CI, or another external system post into a channel without a long-lived bot process | Webhooks |
+| Link Astral users to your own app or site | OAuth2 |
+
+In practice, most bots use both:
+
+- REST for actions
+- Gateway for events
+
+## Base URLs
+
+Use your Astral deployment domain:
+
+```text
+HTTP API: https://<your-domain>/api/v1
+Gateway:  wss://<your-domain>/gateway?v=1&encoding=json
+```
+
+Examples below use `https://astraof.com/api/v1`.
+
+## Authentication
+
+Bots authenticate with a bot token in the `Authorization` header:
+
+```text
+Authorization: Bot YOUR_BOT_TOKEN
+```
+
+Use bot tokens only on the server side. Never embed them in browser code, mobile apps, or public repositories.
+
+<Callout type="info" title="Bots bypass the Origin gate">
+Astral's production API gates non-GET, **cookie-only** requests by their `Origin` header — that's the CSRF defence for browser sessions. Bearer-token bots are explicitly bypassed. As soon as you send `Authorization: Bot <token>` your request is judged by the token alone, regardless of whether you set an `Origin` header.
+
+In practice this means bots written with `node-fetch`, `undici`, `curl`, Python `requests`, Go `net/http`, or any other non-browser HTTP client work out of the box without sending an `Origin` header. If you ever see `INVALID_API_ORIGIN` (HTTP 403) from a bot, double-check that the `Authorization` header is actually being sent — that error is reachable only when no `Authorization` header reaches the server.
+</Callout>
+
+## First checks every bot should pass
+
+Before you write real logic, confirm these three requests work:
+
+1. `GET /users/@me`
+2. `GET /applications/@me`
+3. `GET /gateway/bot`
+
+If these succeed with your bot token, your bot is configured correctly enough to start.
+
+Example:
+
+```bash
+export TOKEN="your_bot_token"
+
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/users/@me
+```
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/applications/@me
+```
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/gateway/bot
+```
+
+## Creating and managing bot applications
+
+You can create and manage bot applications in the Astral client, or over public API.
+
+Relevant public endpoints:
+
+- `POST /oauth2/applications`
+- `PATCH /oauth2/applications/:id`
+- `DELETE /oauth2/applications/:id`
+- `PATCH /oauth2/applications/:id/bot`
+- `POST /oauth2/applications/:id/bot/reset-token`
+- `GET /users/@me/applications`
+- `GET /applications/@me`
+
+Typical lifecycle:
+
+1. Create an application
+2. Create or enable its bot user
+3. Copy the bot token
+4. Invite the bot to a server
+5. Connect to Gateway
+6. Use REST for bot actions
+
+## Public bot endpoints you will use most
+
+These are the endpoints most bot developers need first:
+
+| Endpoint | What it is for |
+| --- | --- |
+| `GET /users/@me` | Verify the bot token and inspect the current bot user |
+| `GET /applications/@me` | Fetch the application bound to the current bot token |
+| `GET /gateway/bot` | Get the public Gateway URL and sharding/session limits |
+| `GET /users/@me/guilds` | List guilds the bot is in |
+| `GET /guilds/:guild_id` | Fetch a guild |
+| `GET /channels/:channel_id` | Fetch a channel |
+| `GET /channels/:channel_id/messages` | Read recent messages |
+| `GET /channels/:channel_id/messages/:message_id` | Fetch one message |
+| `POST /channels/:channel_id/messages` | Send a message |
+| `PATCH /channels/:channel_id/messages/:message_id` | Edit a bot message |
+| `DELETE /channels/:channel_id/messages/:message_id` | Delete a message |
+| `GET /guilds/:guild_id/members` | Read guild members |
+| `GET /guilds/:guild_id/members/:user_id` | Read one member |
+| `PATCH /guilds/:guild_id/members/:user_id` | Update a member when permissions allow |
+| `DELETE /guilds/:guild_id/members/:user_id` | Kick a member |
+| `PUT /guilds/:guild_id/bans/:user_id` | Ban a member |
+| `DELETE /guilds/:guild_id/bans/:user_id` | Unban a member |
+
+For webhook-only integrations, also see [Webhook Resource](./resources/webhook).
+
+## When to use REST, Gateway, or Webhooks
+
+### Use REST when
+
+- you already know what to do
+- the action is request/response
+- you need to fetch, create, update, or delete a resource
+
+Examples:
+
+- send `pong` after your code decides to reply
+- fetch the latest 50 messages from a channel
+- ban a user after your moderation logic finishes
+
+### Use Gateway when
+
+- you need live events
+- your bot should react to new activity immediately
+- polling would be wasteful or too slow
+
+Examples:
+
+- reply when a new message arrives
+- update cached guild state
+- respond to member joins or voice changes
+
+### Use Webhooks when
+
+- you do not need a full bot process
+- an external system just needs to post updates into a channel
+- you want the simplest possible integration
+
+Examples:
+
+- CI build finished
+- deployment status
+- GitHub event notifications
+
+## Minimal REST examples
+
+### Send a message
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Hello from Astral bot API"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages
+```
+
+### Read recent channel history
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  "https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages?limit=20"
+```
+
+Common query parameters for message history:
+
+- `limit`
+- `before`
+- `after`
+
+### Edit a message
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Updated content"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages/<MESSAGE_ID>
+```
+
+### Delete a message
+
+```bash
+curl -X DELETE \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages/<MESSAGE_ID>
+```
+
+### Ban a user
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "X-Audit-Log-Reason: Spam" \
+  -d '{"delete_message_days":1}' \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/bans/<USER_ID>
+```
+
+## Gateway: what it is and how to connect
+
+Gateway is Astral's real-time WebSocket API.
+
+Public discovery endpoint:
+
+- `GET /gateway/bot`
+
+That endpoint returns:
+
+- the Gateway URL
+- shard count recommendation
+- session start limits
+
+Example response:
+
+```json
+{
+  "url": "wss://astraof.com/gateway",
+  "shards": 1,
+  "session_start_limit": {
+    "total": 1000,
+    "remaining": 999,
+    "reset_after": 14400000,
+    "max_concurrency": 1
+  }
+}
+```
+
+### Core Gateway flow
+
+1. Open a WebSocket connection
+2. Wait for `HELLO` (`op: 10`)
+3. Start heartbeats using `heartbeat_interval`
+4. Send `IDENTIFY` (`op: 2`) with `token: "Bot ..."`
+5. Receive `READY`
+6. Process dispatch events such as `MESSAGE_CREATE`
+7. On disconnect, reconnect and `RESUME` if possible
+
+### Common opcodes
+
+| Opcode | Meaning |
+| --- | --- |
+| `0` | Dispatch |
+| `1` | Heartbeat |
+| `2` | Identify |
+| `6` | Resume |
+| `7` | Reconnect |
+| `9` | Invalid Session |
+| `10` | Hello |
+| `11` | Heartbeat ACK |
+
+### Minimal Node.js Gateway bot
+
+```js
+import WebSocket from "ws";
+
+const token = process.env.ASTRAL_BOT_TOKEN;
+const gatewayUrl =
+  process.env.ASTRAL_GATEWAY_URL ??
+  "wss://astraof.com/gateway?v=1&encoding=json";
+
+let seq = null;
+let heartbeatTimer = null;
+
+function send(ws, payload) {
+  ws.send(JSON.stringify(payload));
+}
+
+const ws = new WebSocket(gatewayUrl);
+
+ws.on("message", async (raw) => {
+  const packet = JSON.parse(raw.toString());
+  const { op, t, d, s } = packet;
+
+  if (s !== null && s !== undefined) seq = s;
+
+  if (op === 10) {
+    heartbeatTimer = setInterval(() => {
+      send(ws, { op: 1, d: seq });
+    }, d.heartbeat_interval);
+
+    send(ws, {
+      op: 2,
+      d: {
+        token: `Bot ${token}`,
+        properties: {
+          $os: "node",
+          $browser: "astral-bot",
+          $device: "astral-bot"
+        }
+      }
+    });
+
+    return;
+  }
+
+  if (op === 11) return;
+
+  if (t === "READY") {
+    console.log("ready as", d.user.username);
+  }
+
+  if (t === "MESSAGE_CREATE" && d.content === "!ping") {
+    await fetch(`https://astraof.com/api/v1/channels/${d.channel_id}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ content: "pong" })
+    });
+  }
+});
+
+ws.on("close", () => {
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+});
+```
+
+For event details, see [Gateway](./events/gateway) and [Gateway Events](./events/gateway-events).
+
+## Using existing Discord libraries
+
+Astral is designed to be protocol-compatible enough that many Discord libraries work with small configuration changes.
+
+<Callout type="info" title="Library base override">
+Library override values are sometimes not the same string as the raw REST base you use in `curl`. Some libraries expect a host-level API base and append their own version/path segments internally.
+</Callout>
+
+### `discord.js`
+
+```js
+const { Client, GatewayIntentBits } = require("discord.js");
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ],
+  rest: {
+    api: "https://<your-domain>/api"
+  }
+});
+
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+  if (message.content === "!ping") {
+    await message.reply("Pong!");
+  }
+});
+
+client.login(process.env.ASTRAL_BOT_TOKEN);
+```
+
+### `discord.py`
+
+```py
+import os
+import discord
+
+discord.http.Route.BASE = "https://<your-domain>/api"
+
+intents = discord.Intents.default()
+intents.message_content = True
+
+bot = discord.Bot(intents=intents)
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+    if message.content == "!ping":
+        await message.channel.send("Pong!")
+
+bot.run(os.environ["ASTRAL_BOT_TOKEN"])
+```
+
+## Webhooks: when you do not need a full bot
+
+Use webhooks when an external system just needs to send messages into a channel.
+
+Public webhook endpoints are documented in [Webhook Resource](./resources/webhook).
+
+Typical flow:
+
+1. Create a webhook in a channel
+2. Store webhook ID and token in your external system
+3. `POST /webhooks/:webhook_id/:token`
+
+Example:
+
+```bash
+curl -X POST "https://astraof.com/api/v1/webhooks/<WEBHOOK_ID>/<WEBHOOK_TOKEN>?wait=true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Build finished successfully",
+    "username": "CI",
+    "avatar_url": "https://example.com/ci.png"
+  }'
+```
+
+If you only need one-way posting from CI, webhooks are simpler than running a Gateway bot.
+
+## OAuth2: when your app needs Astral user authorization
+
+Use OAuth2 if your own app or dashboard needs a user to authorize access.
+
+Relevant public endpoints:
+
+- `GET /oauth2/authorize`
+- `POST /oauth2/token`
+- `POST /oauth2/token/revoke`
+
+Typical authorization code flow:
+
+1. Redirect the user to `GET /oauth2/authorize`
+2. Receive `code` on your redirect URI
+3. Exchange the code at `POST /oauth2/token`
+4. Store the returned access token securely
+
+OAuth2 is optional for most bots. If your bot only needs its own identity, bot tokens are enough.
+
+## Slash commands and compatibility
+
+Astral follows Discord-style API patterns closely enough that slash commands can be implemented through standard Application Commands endpoints in compatible tooling.
+
+If your library already supports Discord application commands, start there first after switching the base API URL.
+
+## Recommended environment variables
+
+```bash
+ASTRAL_BOT_TOKEN=<application_id>.<secret>
+ASTRAL_API_BASE=https://<your-domain>/api/v1
+ASTRAL_GATEWAY_URL=wss://<your-domain>/gateway?v=1&encoding=json
+LOG_LEVEL=info
+```
+
+At minimum, most bots need:
+
+- `ASTRAL_BOT_TOKEN`
+- `ASTRAL_API_BASE`
+
+## Troubleshooting
+
+### `401 INVALID_AUTH_TOKEN`
+
+Usually means one of:
+
+- wrong token
+- token was rotated
+- you used a user/session token where a bot token is required
+
+Check:
+
+1. `GET /users/@me`
+2. `GET /applications/@me`
+3. `GET /gateway/bot`
+
+### `403 ACCESS_DENIED`
+
+Usually means the bot authenticated correctly but does not have permission to perform that action in the guild or channel.
+
+Check:
+
+- guild permissions
+- channel overrides
+- role hierarchy for moderation operations
+
+### Gateway connects but nothing happens
+
+Check:
+
+- heartbeats are being sent
+- you handle `HELLO` before `IDENTIFY`
+- your library points to Astral, not `discord.com`
+- your bot is actually present in the target guild
+
+### Message sends fail
+
+Check:
+
+- correct `channel_id`
+- the channel is visible to the bot
+- the bot has permission to send messages there
+- the JSON body is valid
+
+## Security checklist
+
+- Keep bot tokens only in environment variables or a secret manager
+- Rotate the token immediately if you suspect leakage
+- Give the bot only the permissions it actually needs
+- Never ship the token in frontend code
+- Do not log secrets
+- Validate all input before acting on it
+
+## Where to go next
+
+- [Quickstart](./quickstart)
+- [API Reference](./api-reference)
+- [Gateway](./events/gateway)
+- [Gateway Events](./events/gateway-events)
+- [Webhook Resource](./resources/webhook)
+- [Troubleshooting](./topics/troubleshooting)

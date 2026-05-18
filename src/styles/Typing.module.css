@@ -1,0 +1,64 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/*
+ * Smooth wave instead of binary opacity blink — dots ride a sine-like
+ * keyframe that nudges them up and scales them slightly, so the
+ * indicator reads as "actively typing" rather than "broken text cursor
+ * blink". Stagger between dots is unchanged.
+ */
+@keyframes typingWave {
+	0%,
+	60%,
+	100% {
+		transform: translateY(0) scale(1);
+		opacity: 0.55;
+	}
+	30% {
+		transform: translateY(-1.5px) scale(1.18);
+		opacity: 1;
+	}
+}
+
+.dot {
+	animation: 1.2s typingWave infinite cubic-bezier(0.4, 0, 0.2, 1);
+	color: var(--text-chat);
+	transform-origin: center;
+	transform-box: fill-box;
+}
+
+.dot:nth-child(2) {
+	animation-delay: 180ms;
+}
+
+.dot:nth-child(3) {
+	animation-delay: 360ms;
+}
+
+:global(html:not(.window-focused)) .dot {
+	animation-play-state: paused;
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dot {
+		animation: none;
+		opacity: 0.7;
+	}
+}

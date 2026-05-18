@@ -1,0 +1,5 @@
+{
+	"title": "Ресурсы",
+	"pages": ["application-commands", "channel", "emoji", "guild", "interactions", "invite", "message", "oauth2", "sticker", "user", "voice", "webhook", "audit-log"],
+	"defaultOpen": true
+}

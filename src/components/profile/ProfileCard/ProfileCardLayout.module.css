@@ -1,0 +1,220 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.previewLabel {
+	margin-bottom: 1rem;
+	text-align: center;
+	font-weight: 500;
+	font-size: 0.875rem;
+	color: var(--text-primary-muted);
+}
+
+.profileCard {
+	--profile-accent-base: var(--brand-primary);
+	position: relative;
+	display: flex;
+	width: var(--profile-card-width, 300px);
+	flex-direction: column;
+	gap: 4px;
+	overflow: hidden;
+	border-radius: var(--profile-card-radius, 0.75rem);
+	border-width: var(--profile-card-border-width, 2px);
+	background: var(--profile-card-background, var(--background-primary));
+	padding-bottom: var(--profile-card-padding-bottom, 0.75rem);
+	box-shadow: var(--profile-card-shadow, none);
+	isolation: isolate;
+	transform: translateZ(0);
+	backface-visibility: hidden;
+}
+
+.profileCard::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	padding: var(--profile-card-border-width, 2px);
+	border-radius: inherit;
+	opacity: 0;
+	pointer-events: none;
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+	z-index: 3;
+	will-change: background-position, filter;
+	transform: translateZ(0);
+}
+
+.profileCard[data-accent-effect='rgb-neon'] {
+	border-color: transparent !important;
+}
+
+.profileCard[data-accent-effect='rgb-neon']::before {
+	opacity: 1;
+	background: linear-gradient(
+		128deg,
+		var(--profile-accent-base) 0%,
+		#ff4f73 14%,
+		#ffe16c 31%,
+		#59ffaa 47%,
+		#43c6ff 64%,
+		#7d93ff 81%,
+		#d27dff 93%,
+		var(--profile-accent-base) 100%
+	);
+	background-size: 300% 300%;
+	animation:
+		profileAccentRgbShift 9.4s linear infinite,
+		profileAccentShade 4.6s ease-in-out infinite;
+}
+
+.profileCard[data-accent-effect='nebula'] {
+	border-color: transparent !important;
+}
+
+.profileCard[data-accent-effect='nebula']::before {
+	opacity: 1;
+	background: linear-gradient(
+		145deg,
+		#1f296f 0%,
+		#4a53db 18%,
+		var(--profile-accent-base) 38%,
+		#69b8ff 61%,
+		#977bff 82%,
+		#1f296f 100%
+	);
+	background-size: 285% 285%;
+	animation:
+		profileAccentDrift 11.8s linear infinite,
+		profileAccentShadeSoft 6.4s ease-in-out infinite;
+}
+
+.profileCard[data-accent-effect='stellar'] {
+	border-color: transparent !important;
+}
+
+.profileCard[data-accent-effect='stellar']::before {
+	opacity: 1;
+	background:
+		radial-gradient(circle at 18% 20%, rgb(255 255 255 / 0.9) 0 1.2px, transparent 1.9px),
+		radial-gradient(circle at 79% 28%, rgb(255 255 255 / 0.88) 0 1.1px, transparent 1.8px),
+		radial-gradient(circle at 64% 74%, rgb(255 255 255 / 0.86) 0 1.4px, transparent 2px),
+		linear-gradient(132deg, #22366f 0%, var(--profile-accent-base) 42%, #8fcbff 78%, #22366f 100%);
+	background-size:
+		240% 240%,
+		265% 265%,
+		285% 285%,
+		300% 300%;
+	animation:
+		profileAccentStellar 14.6s linear infinite,
+		profileAccentShadeSoft 7s ease-in-out infinite;
+}
+
+.profileCard[data-accent-effect='solar'] {
+	border-color: transparent !important;
+}
+
+.profileCard[data-accent-effect='solar']::before {
+	opacity: 1;
+	background: linear-gradient(
+		132deg,
+		#ff7a39 0%,
+		#ffd95e 24%,
+		var(--profile-accent-base) 52%,
+		#ff50b6 78%,
+		#ff7a39 100%
+	);
+	background-size: 275% 275%;
+	animation:
+		profileAccentPulse 8.8s linear infinite,
+		profileAccentShade 5.2s ease-in-out infinite;
+}
+
+@keyframes profileAccentRgbShift {
+	0% {
+		background-position: 0% 52%;
+	}
+	100% {
+		background-position: 300% 52%;
+	}
+}
+
+@keyframes profileAccentDrift {
+	0% {
+		background-position: 0% 48%;
+	}
+	100% {
+		background-position: 285% 52%;
+	}
+}
+
+@keyframes profileAccentStellar {
+	0% {
+		background-position:
+			0% 0%,
+			100% 0%,
+			40% 100%,
+			0% 50%;
+	}
+	100% {
+		background-position:
+			240% 170%,
+			-160% 210%,
+			180% -120%,
+			300% 50%;
+	}
+}
+
+@keyframes profileAccentPulse {
+	0% {
+		background-position: 0% 50%;
+	}
+	100% {
+		background-position: 275% 50%;
+	}
+}
+
+@keyframes profileAccentShade {
+	0%,
+	100% {
+		filter: saturate(1.04) brightness(1);
+	}
+	50% {
+		filter: saturate(1.22) brightness(1.08);
+	}
+}
+
+@keyframes profileAccentShadeSoft {
+	0%,
+	100% {
+		filter: saturate(1.02) brightness(1);
+	}
+	50% {
+		filter: saturate(1.14) brightness(1.06);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.profileCard[data-accent-effect='rgb-neon']::before,
+	.profileCard[data-accent-effect='nebula']::before,
+	.profileCard[data-accent-effect='stellar']::before,
+	.profileCard[data-accent-effect='solar']::before {
+		animation: none;
+	}
+}

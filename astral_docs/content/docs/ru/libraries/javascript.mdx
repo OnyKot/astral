@@ -1,0 +1,88 @@
+---
+title: JavaScript / TypeScript
+description: discord.js и eris с Astral
+---
+
+Две самые популярные Node.js-библиотеки для Discord-shaped API — `discord.js` и `eris` — работают с Astral после того, как вы укажете им base URL Astral.
+
+## discord.js
+
+`discord.js` принимает опции `rest` и `ws` в конструкторе `Client`.
+
+```bash
+npm install discord.js
+```
+
+```js
+import { Client, GatewayIntentBits } from "discord.js";
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+  rest: {
+    api: "https://astraof.com/api",
+    version: "1",
+  },
+  ws: {
+    gateway: "wss://astraof.com/gateway",
+  },
+});
+
+client.once("ready", () => {
+  console.log(`Logged in as ${client.user?.tag}`);
+});
+
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+  if (message.content === "!ping") {
+    await message.reply("pong");
+  }
+});
+
+client.login(process.env.ASTRAL_BOT_TOKEN);
+```
+
+<Callout type="info" title="Формат токена">
+discord.js сам добавляет префикс `Bot ` к заголовку `Authorization` — передавайте в `client.login` сырой токен, а **не** `Bot <token>`.
+</Callout>
+
+## eris
+
+`eris` принимает `rest.baseURL` и `gateway.url` напрямую в конструкторе клиента:
+
+```bash
+npm install eris
+```
+
+```js
+import Eris from "eris";
+
+const client = new Eris(process.env.ASTRAL_BOT_TOKEN, {
+  rest: {
+    baseURL: "https://astraof.com/api/v1",
+  },
+  gateway: {
+    url: "wss://astraof.com/gateway",
+  },
+});
+
+client.on("ready", () => {
+  console.log("Ready");
+});
+
+client.on("messageCreate", async (msg) => {
+  if (msg.author.bot) return;
+  if (msg.content === "!ping") {
+    await client.createMessage(msg.channel.id, "pong");
+  }
+});
+
+client.connect();
+```
+
+## Без библиотеки
+
+Если хочется обойтись без зависимостей — в [Быстром старте](../quickstart) есть полный WebSocket-цикл на одном пакете `ws`.

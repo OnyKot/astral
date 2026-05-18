@@ -1,0 +1,19 @@
+{
+	"title": "Resources",
+	"pages": [
+		"application-commands",
+		"audit-log",
+		"channel",
+		"emoji",
+		"guild",
+		"interactions",
+		"invite",
+		"message",
+		"oauth2",
+		"sticker",
+		"user",
+		"voice",
+		"webhook"
+	],
+	"defaultOpen": true
+}
