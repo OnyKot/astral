@@ -1,0 +1,55 @@
+---
+title: C# / .NET
+description: Discord.Net с Astral
+---
+
+[Discord.Net](https://github.com/discord-net/Discord.Net) — стандартная .NET-библиотека. Она выставляет REST и gateway URL через `DiscordSocketConfig.RestClientProvider` и `DiscordSocketConfig.WebSocketProvider`, плюс статическую константу `DiscordConfig.APIUrl`.
+
+```csharp
+using Discord;
+using Discord.WebSocket;
+
+class Program
+{
+    private DiscordSocketClient _client = null!;
+
+    public static Task Main(string[] args) => new Program().MainAsync();
+
+    public async Task MainAsync()
+    {
+        var config = new DiscordSocketConfig
+        {
+            GatewayIntents = GatewayIntents.Guilds
+                            | GatewayIntents.GuildMessages
+                            | GatewayIntents.MessageContent,
+        };
+
+        // Discord.Net позволяет переопределить API base через рефлексию
+        // на DiscordConfig.APIUrl до создания клиента.
+        typeof(DiscordConfig)
+            .GetField("APIUrl", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!
+            .SetValue(null, "https://astraof.com/api/v1/");
+
+        _client = new DiscordSocketClient(config);
+        _client.Log += msg => { System.Console.WriteLine(msg); return Task.CompletedTask; };
+        _client.MessageReceived += HandleMessage;
+
+        await _client.LoginAsync(TokenType.Bot, System.Environment.GetEnvironmentVariable("ASTRAL_BOT_TOKEN"));
+        await _client.StartAsync();
+        await Task.Delay(-1);
+    }
+
+    private async Task HandleMessage(SocketMessage msg)
+    {
+        if (msg.Author.IsBot) return;
+        if (msg.Content == "!ping")
+        {
+            await msg.Channel.SendMessageAsync("pong");
+        }
+    }
+}
+```
+
+<Callout type="warning" title="Override через рефлексию хрупкий">
+Discord.Net хранит API base в `static readonly` поле. Трюк с рефлексией выше работает в текущих релизах (3.x), но может перестать работать, если библиотека сделает поле действительно readonly. Зафиксируйте версию Discord.Net и тестируйте при апгрейдах.
+</Callout>

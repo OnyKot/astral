@@ -1,0 +1,72 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.emojiButton {
+	display: flex;
+	height: 2.08rem;
+	width: 2.08rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.72rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-floating) 72%, var(--background-secondary) 28%),
+			color-mix(in srgb, var(--background-secondary) 82%, var(--background-primary) 18%)
+		);
+	transition:
+		color 0.15s ease,
+		transform 0.18s ease,
+		border-color 0.18s ease;
+	color: var(--text-tertiary);
+	cursor: pointer;
+}
+
+.emojiButton:hover {
+	color: var(--text-primary);
+	transform: translateY(-1px);
+	border-color: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+}
+
+.emojiButtonActive {
+	color: color-mix(in srgb, var(--brand-primary) 88%, var(--text-primary));
+	border-color: color-mix(in srgb, var(--brand-primary) 24%, transparent);
+}
+
+.description {
+	margin-top: 0.62rem;
+	font-size: 0.8125rem;
+	line-height: 1.5;
+	letter-spacing: 0.004em;
+	color: var(--text-primary-muted);
+	text-wrap: balance;
+}
+
+@media (max-width: 560px) {
+	.description {
+		font-size: 0.79rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.emojiButton {
+		transition: none;
+	}
+}

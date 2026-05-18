@@ -1,0 +1,61 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.sectionTitle {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	margin-bottom: 0.875rem;
+	padding: 0 0.25rem;
+	font-weight: 700;
+	font-size: 0.75rem;
+	line-height: 1rem;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: color-mix(in srgb, var(--text-primary-muted) 82%, var(--text-primary));
+}
+
+/*
+ * Tiny rule line after the section title so the count visually
+ * separates from the row stack and doesn't float against blank
+ * canvas. Subtle enough to not draw the eye but firm enough to
+ * give the section a "shoulder".
+ */
+.sectionTitle::after {
+	content: '';
+	flex: 1;
+	height: 1px;
+	background: linear-gradient(
+		to right,
+		color-mix(in srgb, var(--text-primary) 12%, transparent),
+		transparent
+	);
+	margin-left: 0.25rem;
+}
+
+.sectionContent {
+	display: flex;
+	flex-direction: column;
+	gap: 0.625rem;
+}
+
+.sectionContentWithMargin {
+	composes: sectionContent;
+	margin-bottom: 2rem;
+}

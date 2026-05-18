@@ -1,0 +1,109 @@
+---
+title: Rust
+description: Use serenity or twilight with Astral
+---
+
+The two main ecosystems are `serenity` (high-level, batteries included) and `twilight` (modular, lower-level, async-first).
+
+## serenity
+
+serenity reads its base URL from the `serenity::http::Http::api_url` field. Construct the `Http` manually so you can override it before passing it to `Client::builder`.
+
+```toml
+[dependencies]
+serenity = { version = "0.12", features = ["client", "gateway", "rustls_backend", "model"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+```
+
+```rust
+use std::env;
+use serenity::all::*;
+use serenity::async_trait;
+
+struct Handler;
+
+#[async_trait]
+impl EventHandler for Handler {
+    async fn ready(&self, _ctx: Context, ready: Ready) {
+        println!("Logged in as {}", ready.user.name);
+    }
+
+    async fn message(&self, ctx: Context, msg: Message) {
+        if msg.author.bot { return; }
+        if msg.content == "!ping" {
+            let _ = msg.channel_id.say(&ctx.http, "pong").await;
+        }
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let token = env::var("ASTRAL_BOT_TOKEN").expect("ASTRAL_BOT_TOKEN");
+    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+
+    // Note: serenity exposes the API URL via Http::set_application_id and
+    // friends; the cleanest way to repoint is via env var SERENITY_API_BASE
+    // when supported, or by forking the http module for a small const change.
+    let mut client = Client::builder(&token, intents)
+        .event_handler(Handler)
+        .await
+        .expect("client");
+
+    if let Err(err) = client.start().await {
+        eprintln!("client error: {err:?}");
+    }
+}
+```
+
+<Callout type="warning" title="serenity URL override is awkward">
+serenity hard-codes `https://discord.com/api/v10` in its `http` module. The cleanest path today is either (a) a tiny patch fork that swaps the const for `https://astraof.com/api/v1`, or (b) using `twilight` instead, which exposes a first-class `Client::builder().proxy(...)` API.
+</Callout>
+
+## twilight
+
+```toml
+[dependencies]
+twilight-http = "0.16"
+twilight-gateway = "0.16"
+twilight-model = "0.16"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+futures-util = "0.3"
+```
+
+```rust
+use std::env;
+use twilight_http::Client as HttpClient;
+use twilight_gateway::{Intents, Shard, ShardId};
+use futures_util::StreamExt;
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let token = env::var("ASTRAL_BOT_TOKEN")?;
+
+    let http = HttpClient::builder()
+        .token(token.clone())
+        .proxy("https://astraof.com".to_string(), true)
+        .build();
+
+    let intents = Intents::GUILD_MESSAGES | Intents::MESSAGE_CONTENT;
+    let mut shard = Shard::new(ShardId::ONE, token, intents);
+
+    while let Some(event) = shard.next_event().await {
+        let event = match event {
+            Ok(event) => event,
+            Err(err) => { eprintln!("error: {err:?}"); continue; }
+        };
+
+        if let twilight_model::gateway::event::Event::MessageCreate(msg) = event {
+            if msg.author.bot { continue; }
+            if msg.content == "!ping" {
+                http.create_message(msg.channel_id).content("pong")?.await?;
+            }
+        }
+    }
+
+    Ok(())
+}
+```
+
+twilight's `Client::builder().proxy(...)` was designed for exactly this use case. The second argument (`true`) tells twilight to also use the proxy for WebSocket gateway negotiation.

@@ -1,0 +1,44 @@
+---
+title: Сервер
+description: Публичные маршруты для работы с guild/server ресурсами
+---
+
+Guild в Astral — это сервер.
+
+## Основные публичные маршруты
+
+| Endpoint | Для чего нужен |
+| --- | --- |
+| `GET /guilds/:guild_id` | Получить сервер |
+| `PATCH /guilds/:guild_id` | Обновить сервер |
+| `GET /guilds/:guild_id/channels` | Получить каналы сервера |
+| `GET /guilds/:guild_id/members` | Получить участников |
+| `PUT /guilds/:guild_id/bans/:user_id` | Забанить пользователя |
+| `DELETE /guilds/:guild_id/bans/:user_id` | Разбанить пользователя |
+
+## Получить сервер
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>
+```
+
+## Получить каналы сервера
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/channels
+```
+
+## Забанить пользователя
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "X-Audit-Log-Reason: Нарушение правил" \
+  -d '{"delete_message_days":1}' \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/bans/<USER_ID>
+```

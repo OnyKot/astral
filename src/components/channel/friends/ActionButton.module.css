@@ -1,0 +1,53 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.25rem;
+	height: 2.25rem;
+	border-radius: 0.95rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	box-shadow:
+		0 10px 20px rgb(8 15 28 / 0.12),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+	transition:
+		var(--button-motion-transition),
+		transform 160ms ease;
+}
+
+.danger {
+	background:
+		linear-gradient(180deg, var(--background-floating), var(--background-secondary)),
+		color-mix(in srgb, var(--status-danger) 6%, transparent);
+	color: var(--text-primary-muted);
+	cursor: pointer;
+}
+
+.danger:hover {
+	background:
+		linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--status-danger) 82%, var(--background-floating) 18%),
+			color-mix(in srgb, var(--status-danger) 70%, var(--background-primary) 30%)
+		),
+		var(--status-danger);
+	color: var(--text-primary);
+}

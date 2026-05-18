@@ -1,0 +1,254 @@
+---
+title: Invite
+description: Invites are the public join and access mechanism for guilds, channels, and some pack-style resources in Astral, a Discord-compatible platform. This documentation provides a comprehensive reference for working with invites, including endpoint details, field descriptions, JSON examples, and rate limits.
+---
+
+Astral's Invite API allows developers to manage invitations for guilds, channels, and other resources. As a Discord-compatible platform, it follows similar principles for invite creation, retrieval, and management. All endpoints require authentication via a Bearer token (e.g., `Authorization: Bot YOUR_TOKEN` for bot accounts). Rate limits apply to all endpoints: **5 requests per 10 seconds per endpoint**, with a global limit of **100 requests per minute per application**. Exceeding these limits will result in a 429 Too Many Requests response.
+
+## Common Public Endpoints
+
+The following table lists the primary endpoints for invite management:
+
+| Endpoint                  | HTTP Method | Purpose                  |
+| ------------------------- | ----------- | ------------------------ |
+| `GET /invites/:invite_code` | GET        | Fetch invite metadata    |
+| `POST /invites/:invite_code` | POST       | Accept an invite         |
+| `DELETE /invites/:invite_code` | DELETE     | Delete a specific invite |
+| `POST /channels/:channel_id/invites` | POST       | Create a channel invite  |
+| `GET /channels/:channel_id/invites` | GET        | List invites for a channel |
+| `DELETE /channels/:channel_id/invites/:invite_code` | DELETE     | Delete a specific invite for a channel |
+| `GET /guilds/:guild_id/invites` | GET        | List invites for a guild |
+| `POST /guilds/:guild_id/invites` | POST       | Create a guild invite    |
+| `GET /packs/:pack_id/invites` | GET        | List invites for a pack  |
+| `POST /packs/:pack_id/invites` | POST       | Create a pack invite     |
+| `GET /guilds/:guild_id/vanity-url` | GET        | Fetch guild vanity URL metadata |
+| `POST /guilds/:guild_id/vanity-url` | POST       | Create or update guild vanity URL |
+| `DELETE /guilds/:guild_id/vanity-url` | DELETE     | Delete guild vanity URL  |
+
+## Endpoint Details
+
+### Fetch Invite Metadata
+Retrieves detailed information about a specific invite.
+
+- **Endpoint:** `GET /invites/:invite_code`
+- **Parameters:**
+  - `:invite_code` (path): The unique code of the invite (e.g., `abc123`).
+- **Request Headers:**
+  - `Authorization: Bot YOUR_TOKEN` (required for authenticated access).
+- **Response:** A JSON object containing invite details.
+- **Rate Limit:** 5 requests per 10 seconds.
+- **Field Descriptions:**
+  - `code`: String – The invite code.
+  - `guild`: Object – Guild details (e.g., `id`, `name`).
+  - `channel`: Object – Channel details (e.g., `id`, `name`).
+  - `inviter`: Object – User who created the invite (e.g., `id`, `username`).
+  - `uses`: Integer – Number of times the invite has been used.
+  - `max_uses`: Integer – Maximum number of uses allowed (0 for unlimited).
+  - `max_age`: Integer – Duration in seconds before the invite expires (0 for never).
+  - `temporary`: Boolean – Whether the invite grants temporary membership.
+  - `created_at`: String – ISO 8601 timestamp when the invite was created.
+- **JSON Example Response:**
+  ```json
+  {
+    "code": "abc123",
+    "guild": {
+      "id": "123456789",
+      "name": "Astral Guild"
+    },
+    "channel": {
+      "id": "987654321",
+      "name": "general"
+    },
+    "inviter": {
+      "id": "1122334455",
+      "username": "inviter_user"
+    },
+    "uses": 5,
+    "max_uses": 10,
+    "max_age": 3600,
+    "temporary": false,
+    "created_at": "2023-10-01T12:00:00Z"
+  }
+  ```
+- **Example Request:**
+  ```bash
+  curl -H "Authorization: Bot YOUR_TOKEN" https://astraof.com/api/v1/invites/abc123
+  ```
+
+### Accept an Invite
+Allows a user or bot to join the associated guild or channel via an invite.
+
+- **Endpoint:** `POST /invites/:invite_code`
+- **Parameters:**
+  - `:invite_code` (path): The unique code of the invite.
+- **Request Headers:**
+  - `Authorization: Bot YOUR_TOKEN` (required).
+- **Response:** A 200 OK on success, or a JSON error object.
+- **Rate Limit:** 5 requests per 10 seconds.
+- **JSON Example Response (on success):**
+  ```json
+  {
+    "message": "Invite accepted successfully",
+    "guild_id": "123456789"
+  }
+  ```
+- **Example Request:**
+  ```bash
+  curl -X POST \
+    -H "Authorization: Bot YOUR_TOKEN" \
+    https://astraof.com/api/v1/invites/abc123
+  ```
+
+### Delete an Invite
+Deletes a specific invite by its code.
+
+- **Endpoint:** `DELETE /invites/:invite_code`
+- **Parameters:**
+  - `:invite_code` (path): The unique code of the invite.
+- **Request Headers:**
+  - `Authorization: Bot YOUR_TOKEN` (required; must have permission to manage invites).
+- **Response:** A 204 No Content on success.
+- **Rate Limit:** 5 requests per 10 seconds.
+- **Example Request:**
+  ```bash
+  curl -X DELETE \
+    -H "Authorization: Bot YOUR_TOKEN" \
+    https://astraof.com/api/v1/invites/abc123
+  ```
+
+### Create a Channel Invite
+Creates a new invite for a specific channel.
+
+- **Endpoint:** `POST /channels/:channel_id/invites`
+- **Parameters:**
+  - `:channel_id` (path): The ID of the channel.
+- **Request Body:** JSON object with optional fields.
+- **Request Headers:**
+  - `Authorization: Bot YOUR_TOKEN` (required; must have permission to create invites).
+  - `Content-Type: application/json`.
+- **Field Descriptions:**
+  - `max_uses`: Integer – Maximum number of uses (default: 0 for unlimited).
+  - `max_age`: Integer – Expiration time in seconds (default: 86400; 0 for never).
+  - `unique`: Boolean – Whether the invite should be unique (default: false).
+  - `temporary`: Boolean – Whether membership is temporary (default: false).
+- **Response:** A JSON object with the created invite details.
+- **Rate Limit:** 5 requests per 10 seconds.
+- **JSON Example Request Body:**
+  ```json
+  {
+    "max_uses": 10,
+    "max_age": 3600,
+    "unique": true,
+    "temporary": false
+  }
+  ```
+- **JSON Example Response:**
+  ```json
+  {
+    "code": "abc123",
+    "channel_id": "987654321",
+    "inviter_id": "1122334455",
+    "max_uses": 10,
+    "max_age": 3600,
+    "uses": 0
+  }
+  ```
+- **Example Request:**
+  ```bash
+  curl -X POST \
+    -H "Authorization: Bot YOUR_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "max_uses": 10,
+      "max_age": 3600,
+      "unique": true,
+      "temporary": false
+    }' \
+    https://astraof.com/api/v1/channels/987654321/invites
+  ```
+
+### List Channel Invites
+Retrieves a list of invites for a specific channel.
+
+- **Endpoint:** `GET /channels/:channel_id/invites`
+- **Parameters:**
+  - `:channel_id` (path): The ID of the channel.
+- **Request Headers:**
+  - `Authorization: Bot YOUR_TOKEN` (required; must have permission to view invites).
+- **Response:** An array of invite objects.
+- **Rate Limit:** 5 requests per 10 seconds.
+- **JSON Example Response:**
+  ```json
+  [
+    {
+      "code": "abc123",
+      "channel_id": "987654321",
+      "inviter_id": "1122334455",
+      "uses": 5,
+      "max_uses": 10
+    },
+    {
+      "code": "def456",
+      "channel_id": "987654321",
+      "inviter_id": "1122334455",
+      "uses": 0,
+      "max_uses": 0
+    }
+  ]
+  ```
+- **Example Request:**
+  ```bash
+  curl -H "Authorization: Bot YOUR_TOKEN" https://astraof.com/api/v1/channels/987654321/invites
+  ```
+
+### Delete a Channel Invite
+Deletes a specific invite associated with a channel.
+
+- **Endpoint:** `DELETE /channels/:channel_id/invites/:invite_code`
+- **Parameters:**
+  - `:channel_id` (path): The ID of the channel.
+  - `:invite_code` (path): The code of the invite to delete.
+- **Request Headers:**
+  - `Authorization: Bot YOUR_TOKEN` (required; must have permission to manage invites).
+- **Response:** A 204 No Content on success.
+- **Rate Limit:** 5 requests per 10 seconds.
+- **Example Request:**
+  ```bash
+  curl -X DELETE \
+    -H "Authorization: Bot YOUR_TOKEN" \
+    https://astraof.com/api/v1/channels/987654321/invites/abc123
+  ```
+
+## Vanity URLs
+Vanity URLs provide a custom, branded invite link for guilds, similar to Discord's feature. These are managed via dedicated endpoints.
+
+- **Fetch Vanity URL Metadata:** `GET /guilds/:guild_id/vanity-url`
+  - **Response:** JSON object with vanity URL details.
+  - **JSON Example Response:**
+    ```json
+    {
+      "code": "custom-link",
+      "uses": 100,
+      "guild_id": "123456789"
+    }
+    ```
+- **Create or Update Vanity URL:** `POST /guilds/:guild_id/vanity-url`
+  - **Request Body:** `{ "code": "custom-link" }`
+  - **Rate Limit:** 5 requests per 10 seconds.
+- **Delete Vanity URL:** `DELETE /guilds/:guild_id/vanity-url`
+  - **Response:** 204 No Content on success.
+
+## OAuth2 Bot Invite URL
+To invite a bot application to a guild, use the following OAuth2 authorization URL structure:
+
+```text
+https://astraof.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot&permissions=PERMISSION_INT
+```
+
+- **Parameters:**
+  - `client_id`: String – Your application ID.
+  - `scope=bot`: String – Required scope for bot invites.
+  - `permissions`: String – Bitfield of permissions (e.g., `8` for Administrator).
+  - `guild_id`: String (optional) – Target guild ID for direct installation.
+
+This endpoint is rate-limited to 10 requests per minute per application.

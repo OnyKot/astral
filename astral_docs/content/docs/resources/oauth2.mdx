@@ -1,0 +1,143 @@
+---
+title: OAuth2
+description: Authenticate users and access the API on their behalf
+---
+
+Astral implements the OAuth2 authorization code flow so third-party applications can act on behalf of Astral users with granular permissions.
+
+## Overview
+
+1. Your app redirects the user to Astral's authorization page.
+2. The user approves (or denies) your requested scopes.
+3. Astral redirects back to your app with an authorization `code`.
+4. Your server exchanges the code for an access token and refresh token.
+5. You use the access token to call the API as that user.
+
+## Registering an Application
+
+1. Open the Astral client at [astraof.com](https://astraof.com).
+2. Go to **User Settings → Applications**.
+3. Click **Create Application**.
+4. Fill in the name and redirect URI(s).
+5. Copy the **Client ID** and **Client Secret**.
+
+<Callout type="warning" title="Keep your client secret safe">
+Never expose the client secret in frontend code, mobile apps, or public repositories. It is used only server-side.
+</Callout>
+
+## Authorization URL
+
+Redirect users to:
+
+```text
+https://astraof.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=YOUR_REDIRECT_URI&response_type=code&scope=identify+guilds
+```
+
+### Query Parameters
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| client_id | yes | Your application's client ID |
+| redirect_uri | yes | One of your registered redirect URIs |
+| response_type | yes | Must be `code` |
+| scope | yes | Space-delimited list of scopes |
+| state | recommended | Random string to prevent CSRF; returned unchanged in the callback |
+
+## Scopes
+
+| Scope | Description |
+| --- | --- |
+| `identify` | Read the user's ID, username, avatar, and discriminator |
+| `email` | Read the user's email address |
+| `guilds` | List guilds the user is in |
+| `guilds.join` | Join guilds on behalf of the user |
+| `bot` | Add a bot to a guild (used in the bot authorization flow) |
+| `connections` | Read the user's linked accounts |
+| `messages.read` | Read messages in channels the user can access |
+
+## Token Exchange
+
+After the user approves, Astral redirects to your redirect URI with a `code` parameter. Exchange it:
+
+```http
+POST /api/v1/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&code=THE_CODE&redirect_uri=YOUR_REDIRECT_URI&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET
+```
+
+**Response:**
+
+```json
+{
+  "access_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 604800,
+  "refresh_token": "abc123...",
+  "scope": "identify guilds"
+}
+```
+
+## Refreshing Tokens
+
+Access tokens expire after 7 days. Use the refresh token to get a new one:
+
+```http
+POST /api/v1/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&refresh_token=YOUR_REFRESH_TOKEN&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET
+```
+
+## Using the Token
+
+```text
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+The `Bearer` prefix (not `Bot`) tells the API this is a user token from OAuth2.
+
+### Get Current User
+
+```http
+GET /api/v1/users/@me
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+Requires the `identify` scope.
+
+### Get User Guilds
+
+```http
+GET /api/v1/users/@me/guilds
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+Requires the `guilds` scope.
+
+## Revoking Tokens
+
+```http
+POST /api/v1/oauth2/token/revoke
+Content-Type: application/x-www-form-urlencoded
+
+token=YOUR_TOKEN&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET
+```
+
+## Bot Authorization Flow
+
+To add a bot to a guild, redirect the guild administrator to:
+
+```text
+https://astraof.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot&permissions=PERMISSION_INTEGER
+```
+
+The `permissions` parameter specifies default permissions as a bitfield integer. See [Permissions](../topics/permissions) for the full list.
+
+## Security Recommendations
+
+1. **Always validate the `state` parameter** on the callback to prevent CSRF attacks.
+2. **Store tokens server-side** — never expose access tokens to the browser.
+3. **Request only the scopes you need** — users are more likely to approve minimal permission requests.
+4. **Handle token expiry gracefully** — check for `401` responses and refresh transparently.
+5. **Revoke tokens when users disconnect** your integration to respect their privacy.

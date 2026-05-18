@@ -1,0 +1,346 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.splashOverlay {
+	position: fixed;
+	inset: 0;
+	z-index: var(--z-index-overlay);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--background-secondary);
+	padding-left: var(--spacing-6);
+	padding-right: var(--spacing-6);
+}
+
+:global(html.platform-native-desktop) .splashOverlay {
+	top: var(--native-titlebar-height);
+}
+
+.topDragRegion {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: var(--layout-header-height);
+	z-index: 100;
+	pointer-events: none;
+}
+
+:global(html.platform-native.platform-macos) .topDragRegion {
+	pointer-events: auto;
+}
+
+@media (min-width: 640px) {
+	.splashOverlay {
+		padding-left: var(--spacing-8);
+		padding-right: var(--spacing-8);
+	}
+}
+
+@media (min-width: 768px) {
+	.splashOverlay {
+		padding-left: var(--spacing-12);
+		padding-right: var(--spacing-12);
+	}
+}
+
+.splashContent {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--spacing-4);
+	width: 100%;
+	max-width: 28rem;
+}
+
+@media (min-width: 640px) {
+	.splashContent {
+		max-width: 32rem;
+	}
+}
+
+@media (min-width: 768px) {
+	.splashContent {
+		max-width: 36rem;
+	}
+}
+
+@media (min-width: 1024px) {
+	.splashContent {
+		max-width: 42rem;
+	}
+}
+
+.iconWrapper {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 5rem;
+	height: 5rem;
+}
+
+@media (min-width: 640px) {
+	.iconWrapper {
+		width: 6rem;
+		height: 6rem;
+	}
+}
+
+@media (min-width: 768px) {
+	.iconWrapper {
+		width: 7rem;
+		height: 7rem;
+	}
+}
+
+.animatedMark {
+	position: relative;
+	z-index: var(--z-index-elevated-1);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
+.iconPulse {
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	background-color: var(--brand-primary);
+	opacity: 0.75;
+	animation: splashPulse 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.loadingFrameImage {
+	position: absolute;
+	z-index: var(--z-index-elevated-1);
+	width: 72%;
+	height: 72%;
+	object-fit: contain;
+	object-position: center;
+	filter: drop-shadow(0 4px 14px rgb(0 0 0 / 28%));
+}
+
+.mobileSplashCard {
+	position: relative;
+	width: 100%;
+	max-width: 30rem;
+	display: flex;
+	flex-direction: column;
+	gap: 1.1rem;
+	padding: 1.25rem;
+	border-radius: 1.5rem;
+	border: 1px solid rgb(255 255 255 / 0.08);
+	background:
+		radial-gradient(120% 140% at 0% 0%, rgb(99 102 241 / 0.16) 0%, transparent 60%),
+		linear-gradient(180deg, rgb(14 18 31 / 0.96) 0%, rgb(8 11 21 / 0.98) 100%);
+	box-shadow:
+		0 20px 48px rgb(0 0 0 / 0.28),
+		inset 0 1px 0 rgb(255 255 255 / 0.05);
+	overflow: hidden;
+}
+
+.mobileSplashGlow {
+	position: absolute;
+	inset: auto -10% -30% auto;
+	width: 12rem;
+	height: 12rem;
+	border-radius: 999px;
+	background: radial-gradient(circle, rgb(34 197 94 / 0.16) 0%, rgb(34 197 94 / 0) 72%);
+	filter: blur(12px);
+	pointer-events: none;
+}
+
+.mobileSplashTopRow {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+
+.mobileSplashBadge,
+.mobileSplashVersion {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.45rem 0.75rem;
+	border-radius: 999px;
+	background: rgb(255 255 255 / 0.06);
+	border: 1px solid rgb(255 255 255 / 0.08);
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	color: rgb(241 243 255 / 0.94);
+}
+
+.mobileSplashVersion {
+	font-weight: 600;
+	color: var(--text-secondary);
+}
+
+.mobileSplashHeader {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+}
+
+.mobileSplashText {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	text-align: left;
+}
+
+.mobileSplashTitle {
+	font-size: clamp(1.8rem, 8vw, 2.4rem);
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	color: white;
+}
+
+.mobileSplashSubtitle {
+	font-size: 0.95rem;
+	line-height: 1.45;
+	color: rgb(201 206 230 / 0.86);
+}
+
+.mobileSplashStatusStrip {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.55rem;
+}
+
+.mobileSplashStatusPill {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.65rem 0.8rem;
+	border-radius: 999px;
+	background: rgb(255 255 255 / 0.05);
+	border: 1px solid rgb(255 255 255 / 0.06);
+	font-size: 0.78rem;
+	font-weight: 600;
+	color: rgb(226 230 248 / 0.88);
+}
+
+.mobileSplashStatusDot {
+	width: 0.48rem;
+	height: 0.48rem;
+	flex-shrink: 0;
+	border-radius: 999px;
+	background: linear-gradient(180deg, rgb(110 118 255) 0%, rgb(71 82 212) 100%);
+	box-shadow: 0 0 0 4px rgb(99 102 241 / 0.12);
+}
+
+.mobileSplashSteps {
+	position: relative;
+	z-index: 1;
+	display: grid;
+	gap: 0.75rem;
+}
+
+.mobileSplashStep {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.65rem;
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: rgb(226 231 251 / 0.92);
+}
+
+.mobileSplashStepDot {
+	width: 0.5rem;
+	height: 0.5rem;
+	flex-shrink: 0;
+	border-radius: 999px;
+	background: linear-gradient(180deg, rgb(120 129 255) 0%, rgb(77 86 255) 100%);
+	box-shadow: 0 0 0 4px rgb(99 102 241 / 0.14);
+}
+
+.splashVersionLabel {
+	position: fixed;
+	left: 50%;
+	bottom: max(0.95rem, calc(var(--safe-area-bottom, 0px) + 0.5rem));
+	transform: translateX(-50%);
+	z-index: var(--z-index-elevated-2);
+	pointer-events: none;
+	font-size: 0.76rem;
+	font-weight: 700;
+	letter-spacing: 0.09em;
+	color: color-mix(in srgb, var(--text-primary) 76%, var(--text-tertiary) 24%);
+	text-shadow: 0 2px 8px rgb(0 0 0 / 24%);
+}
+
+:global(html.platform-native-mobile) .splashOverlay {
+	background:
+		radial-gradient(90% 80% at 0% 0%, rgb(92 102 255 / 0.18) 0%, transparent 58%),
+		radial-gradient(80% 80% at 100% 100%, rgb(34 197 94 / 0.08) 0%, transparent 56%),
+		var(--background-secondary);
+	padding-top: calc(var(--safe-area-top, 0px) + 1rem);
+	padding-bottom: calc(var(--safe-area-bottom, 0px) + 1rem);
+	align-items: flex-start;
+}
+
+:global(html.platform-native-mobile) .splashContent {
+	max-width: 30rem;
+	margin-top: auto;
+	margin-bottom: auto;
+}
+
+@media (max-width: 480px) {
+	.mobileSplashCard {
+		padding: 1rem;
+		border-radius: 1.35rem;
+	}
+
+	.mobileSplashHeader {
+		align-items: flex-start;
+	}
+}
+
+@keyframes splashPulse {
+	0% {
+		transform: scale(1);
+		opacity: 0.75;
+	}
+	75% {
+		transform: scale(2);
+		opacity: 0;
+	}
+	100% {
+		transform: scale(2);
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.iconPulse {
+		animation: none;
+		opacity: 0.24;
+	}
+}

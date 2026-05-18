@@ -1,0 +1,41 @@
+---
+title: Пользователь
+description: Публичные user-маршруты, полезные для ботов
+---
+
+Для ботов user routes обычно нужны для проверки токена, получения пользователя и открытия DM.
+
+## Основные публичные маршруты
+
+| Endpoint | Для чего нужен |
+| --- | --- |
+| `GET /users/@me` | Проверить текущего бота |
+| `GET /users/:user_id` | Получить пользователя по ID |
+| `POST /users/@me/channels` | Открыть DM или group DM |
+| `GET /users/@me/guilds` | Получить серверы бота |
+
+## Проверить бота
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/users/@me
+```
+
+## Получить пользователя
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/users/<USER_ID>
+```
+
+## Открыть DM
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"recipient_id":"<USER_ID>"}' \
+  https://astraof.com/api/v1/users/@me/channels
+```

@@ -1,0 +1,2068 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2026 Astral Contributors
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:190
+msgid " in Chrome"
+msgstr " i Chrome"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:288
+msgid " in Chrome or another browser with PWA support"
+msgstr " i Chrome eller i en annan webbläsare med PWA-stöd"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:236
+msgid " in Safari"
+msgstr " i Safari"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1032
+msgid "/forever"
+msgstr "/för alltid"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:66
+#: src/Astral_marketing/pages/plutonium_page.gleam:103
+#: src/Astral_marketing/pages/plutonium_page.gleam:225
+msgid "/mo"
+msgstr "/mån"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:233
+msgid "/year"
+msgstr "/år"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:71
+#: src/Astral_marketing/pages/plutonium_page.gleam:109
+msgid "/yr"
+msgstr "/år"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:654
+msgid "500MB uploads, 4000 character messages, 300 bookmarks, 50 emoji packs, and much more."
+msgstr "Uppladdningar på 500 MB, meddelanden på upp till 4 000 tecken, 300 bokmärken, 50 emojipaket – och mycket mer."
+
+#: src/Astral_marketing/components/hero.gleam:59
+msgid "A chat app that puts you first"
+msgstr "En chattapp där du kommer först"
+
+#: src/Astral_marketing/components/communities_section.gleam:86
+msgid "A chat platform that answers to you, not investors. It's ad-free, independent, community-funded, and never sells your data or nags you with upgrade pop-ups."
+msgstr "En chattplattform som står till svars inför dig – inte inför investerare. Den är reklamfri, har öppen källkod, är communityfinansierad och säljer aldrig dina uppgifter eller tjatar med uppgraderingspopuper."
+
+#: src/Astral_marketing/pages/careers_page.gleam:219
+msgid "A non-paid role for recurring contributors who help shape Astral alongside the core team."
+msgstr "En ideell roll för återkommande bidragsgivare som hjälper till att forma Astral tillsammans med kärnteamet."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1074
+msgid "Access to Astral Operators community"
+msgstr "Tillgång till Astral Operators-communityn"
+
+#: src/Astral_marketing/pages/partners_page.gleam:225
+msgid "Access to VIP voice servers reserved exclusively for partnered communities."
+msgstr "Tillgång till VIP-röstservrar, reserverade enbart för partnercommunities."
+
+#: src/Astral_marketing/components/coming_features.gleam:48
+msgid "Activity sharing"
+msgstr "Aktivitetsdelning"
+
+#: src/Astral_marketing/pages/download_page.gleam:228
+msgid "Add Astral to your home screen to hide the browser UI."
+msgstr "Lägg till Astral på hemskärmen så döljs webbläsarens gränssnitt."
+
+#: src/Astral_marketing/components/current_features.gleam:133
+msgid "Add custom emojis, save media for later, and style the app with custom CSS."
+msgstr "Lägg till egna emojis, spara media till senare och anpassa appens utseende med egen CSS."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1124
+msgid "After the offer ends, Operator Access stays available on its own."
+msgstr "När erbjudandet löper ut kan du fortfarande köpa Operator Access separat."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:843
+msgid "All current and future Plutonium benefits, forever"
+msgstr "Alla nuvarande och framtida Plutonium-förmåner – för alltid"
+
+#: src/Astral_marketing/components/current_features.gleam:55
+msgid "All the basics you expect, plus a few things you don't."
+msgstr "Allt det grundläggande du förväntar dig – plus några saker du inte hade räknat med."
+
+#: src/Astral_marketing/components/locale_selector.gleam:102
+msgid "All translations are currently LLM-generated with minimal human revision. We'd love to get real people to help us out localizing Astral into your language! To do so, shoot an email to i18n@Astral.app and we'll be happy to accept your contributions."
+msgstr "Alla översättningar är just nu LLM-genererade och bara lätt granskade av människor. Vi vill gärna ha hjälp av riktiga människor att lokalisera Astral till ditt språk! Mejla i18n@Astral.app så tar vi gärna emot dina bidrag."
+
+#: src/Astral_marketing/components/platform_download_button.gleam:524
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:97
+msgid "Android"
+msgstr "Android"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:236
+msgid "Android 8+"
+msgstr "Android 8+"
+
+#: src/Astral_marketing/pages/partners_page.gleam:178
+msgid "Animated Avatar & Banner"
+msgstr "Animerad avatar och banner"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:399
+#: src/Astral_marketing/pages/plutonium_page.gleam:591
+msgid "Animated avatars & banners"
+msgstr "Animerade avatarer och banners"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:144
+#: src/Astral_marketing/components/platform_download_button.gleam:160
+msgid "Apple Silicon"
+msgstr "Apple Silicon"
+
+#: src/Astral_marketing/pages/partners_page.gleam:448
+msgid "Apply at partners@Astral.app"
+msgstr "Ansök via partners@Astral.app"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:170
+msgid "Approved reports grant access to Astral Testers, where you can earn points for Plutonium codes and the Bug Hunter badge."
+msgstr "Godkända rapporter ger dig tillgång till Astral Testers, där du kan samla poäng till Plutonium-koder och Bug Hunter-märket."
+
+#: src/Astral_marketing/components/locale_selector.gleam:118
+msgid "Arabic"
+msgstr "Arabiska"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:143
+msgid "Articles in "
+msgstr "Artiklar i "
+
+#: src/Astral_marketing/pages/help_article_page.gleam:291
+msgid "Articles in this section"
+msgstr "Artiklar i den här sektionen"
+
+#: src/Astral_marketing/components/current_features.gleam:106
+msgid "Audit logs for transparency"
+msgstr "Granskningsloggar för insyn"
+
+#: src/Astral_marketing/pages/donate_page.gleam:301
+msgid "Available for Swedish bank accounts"
+msgstr "Tillgängligt för svenska bankkonton"
+
+#: src/Astral_marketing/pages/download_page.gleam:67
+msgid "Available on your desktop — and on the web"
+msgstr "Finns för datorn – och på webben"
+
+#: src/Astral_marketing/pages/help_article_page.gleam:182
+msgid "Back to "
+msgstr "Tillbaka till "
+
+#: src/Astral_marketing/pages/help_article_page.gleam:279
+#: src/Astral_marketing/pages/help_search_page.gleam:115
+msgid "Back to Help Center"
+msgstr "Tillbaka till Hjälpcentret"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:674
+msgid "Be the first to try new features before they're released to everyone else."
+msgstr "Var först med att testa nya funktioner innan de släpps för alla andra."
+
+#: src/Astral_marketing/components/partner_section.gleam:64
+#: src/Astral_marketing/pages/careers_page.gleam:173
+#: src/Astral_marketing/pages/partners_page.gleam:64
+msgid "Become a Astral Partner"
+msgstr "Bli Astral-partner"
+
+#: src/Astral_marketing/components/partner_section.gleam:151
+msgid "Become a Partner"
+msgstr "Bli partner"
+
+#: src/Astral_marketing/pages/download_page.gleam:322
+#: src/Astral_marketing/pages/plutonium_page.gleam:876
+msgid "Become a Visionary"
+msgstr "Bli Visionary"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:310
+#: src/Astral_marketing/pages/plutonium_page.gleam:311
+#: src/Astral_marketing/pages/plutonium_page.gleam:318
+#: src/Astral_marketing/pages/plutonium_page.gleam:325
+#: src/Astral_marketing/pages/plutonium_page.gleam:374
+#: src/Astral_marketing/pages/plutonium_page.gleam:626
+#: src/Astral_marketing/pages/plutonium_page.gleam:636
+#: src/Astral_marketing/pages/plutonium_page.gleam:646
+msgid "Beta"
+msgstr "Beta"
+
+#: src/Astral_marketing/components/coming_features.gleam:54
+msgid "Better noise cancellation"
+msgstr "Bättre brusreducering"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:350
+msgid "Bio character limit"
+msgstr "Teckengräns för biotext"
+
+#: src/Astral_marketing/pages/press_page.gleam:235
+msgid "Black"
+msgstr "Svart"
+
+#: src/Astral_marketing/pages/press_page.gleam:117
+msgid "Black Logo"
+msgstr "Svart logotyp"
+
+#: src/Astral_marketing/pages/press_page.gleam:171
+msgid "Black Symbol"
+msgstr "Svart symbol"
+
+#: src/Astral_marketing/pages/press_page.gleam:217
+msgid "Blue (Da Ba Dee)"
+msgstr "Blå (Da Ba Dee)"
+
+#: src/Astral_marketing/components/footer.gleam:157
+#: src/Astral_marketing/components/navigation.gleam:458
+msgid "Bluesky"
+msgstr "Bluesky"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:343
+msgid "Bookmarked messages"
+msgstr "Bokmärkta meddelanden"
+
+#: src/Astral_marketing/pages/donate_page.gleam:387
+msgid "Both donation types support the same cause equally. The only difference is that Business donations allow you to specify a tax ID (if applicable) and receive a PDF invoice when finalized, which can be useful for company accounting purposes."
+msgstr "Båda donationstyperna stödjer samma sak i lika hög grad. Den enda skillnaden är att företagsdonationer låter dig ange ett skatte-ID (om det är relevant) och få en PDF-faktura när donationen är slutförd, vilket kan vara praktiskt för företagets bokföring."
+
+#: src/Astral_marketing/pages/press_page.gleam:200
+msgid "Brand Colors"
+msgstr "Varumärkesfärger"
+
+#: src/Astral_marketing/pages/partners_page.gleam:421
+msgid "Brief description of your audience and what you do"
+msgstr "Kort beskrivning av din målgrupp och vad du gör"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:150
+msgid "Browse Categories"
+msgstr "Bläddra bland kategorier"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:168
+msgid "Browse articles"
+msgstr "Bläddra bland artiklar"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:95
+msgid "Browse by category"
+msgstr "Bläddra efter kategori"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:65
+msgid "Browse help articles about "
+msgstr "Bläddra bland hjälpartiklar om "
+
+#: src/Astral_marketing/components/communities_section.gleam:44
+msgid "Built for communities of all kinds."
+msgstr "Byggt för communities i alla former."
+
+#: src/Astral_marketing/components/locale_selector.gleam:119
+msgid "Bulgarian"
+msgstr "Bulgariska"
+
+#: src/Astral_marketing/pages/donate_page.gleam:177
+msgid "Business"
+msgstr "Företag"
+
+#: src/Astral_marketing/components/coming_features.gleam:56
+msgid "Call pop-out"
+msgstr "Samtal i eget fönster"
+
+#: src/Astral_marketing/components/footer.gleam:220
+#: src/Astral_marketing/components/navigation.gleam:358
+msgid "Careers"
+msgstr "Jobb"
+
+#: src/Astral_marketing/pages/careers_page.gleam:46
+msgid "Careers at Astral"
+msgstr "Jobb på Astral"
+
+#: src/Astral_marketing/components/locale_selector.gleam:38
+#: src/Astral_marketing/components/navigation.gleam:252
+#: src/Astral_marketing/components/navigation.gleam:257
+msgid "Change language"
+msgstr "Byt språk"
+
+#: src/Astral_marketing/components/locale_selector.gleam:150
+msgid "Chinese (Simplified)"
+msgstr "Kinesiska (förenklad)"
+
+#: src/Astral_marketing/components/locale_selector.gleam:151
+msgid "Chinese (Traditional)"
+msgstr "Kinesiska (traditionell)"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:207
+msgid "Choose Linux distribution"
+msgstr "Välj Linuxdistribution"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:148
+msgid "Choose a guide below or search again if you don't see what you need."
+msgstr "Välj en guide nedan, eller sök igen om du inte hittar det du behöver."
+
+#: src/Astral_marketing/components/platform_download_button.gleam:409
+msgid "Choose distribution"
+msgstr "Välj distribution"
+
+#: src/Astral_marketing/components/locale_selector.gleam:63
+msgid "Choose your language"
+msgstr "Välj språk"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:564
+msgid "Choose your own 4-digit tag like #0001, #1337, or #9999 to make your username truly unique."
+msgstr "Välj din egen fyrsiffriga tagg, som #0001, #1337 eller #9999, och gör ditt användarnamn helt unikt."
+
+#: src/Astral_marketing/pages/help_category_page.gleam:136
+msgid "Clear search"
+msgstr "Rensa sökningen"
+
+#: src/Astral_marketing/pages/download_page.gleam:337
+msgid "Code, issues, docs, and reviews"
+msgstr "Kod, ärenden, dokumentation och granskningar"
+
+#: src/Astral_marketing/pages/press_page.gleam:124
+msgid "Color Logo"
+msgstr "Färgad logotyp"
+
+#: src/Astral_marketing/pages/press_page.gleam:178
+msgid "Color Symbol"
+msgstr "Färgad symbol"
+
+#: src/Astral_marketing/pages/partners_page.gleam:297
+msgid "Coming Soon"
+msgstr "Kommer snart"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:296
+#: src/Astral_marketing/pages/plutonium_page.gleam:297
+#: src/Astral_marketing/pages/plutonium_page.gleam:366
+#: src/Astral_marketing/pages/plutonium_page.gleam:367
+#: src/Astral_marketing/pages/plutonium_page.gleam:586
+msgid "Coming soon"
+msgstr "Kommer snart"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:329
+msgid "Communities"
+msgstr "Communities"
+
+#: src/Astral_marketing/pages/careers_page.gleam:140
+msgid "Community"
+msgstr "Community"
+
+#: src/Astral_marketing/components/footer.gleam:260
+#: src/Astral_marketing/components/navigation.gleam:415
+#: src/Astral_marketing/pages/guidelines_page.gleam:41
+msgid "Community Guidelines"
+msgstr "Communityriktlinjer"
+
+#: src/Astral_marketing/pages/partners_page.gleam:134
+msgid "Community Verification"
+msgstr "Communityverifiering"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1040
+msgid "Community support"
+msgstr "Communitysupport"
+
+#: src/Astral_marketing/components/coming_features.gleam:38
+msgid "Community templates"
+msgstr "Communitymallar"
+
+#: src/Astral_marketing/components/current_features.gleam:139
+msgid "Compact mode and display options"
+msgstr "Kompakt läge och visningsalternativ"
+
+#: src/Astral_marketing/components/navigation.gleam:348
+msgid "Company"
+msgstr "Företag"
+
+#: src/Astral_marketing/components/footer.gleam:282
+#: src/Astral_marketing/components/navigation.gleam:376
+#: src/Astral_marketing/pages/company_page.gleam:41
+#: src/Astral_marketing/pages/company_page.gleam:44
+msgid "Company Information"
+msgstr "Företagsinformation"
+
+#: src/Astral_marketing/components/footer.gleam:289
+#: src/Astral_marketing/components/navigation.gleam:435
+msgid "Connect"
+msgstr "Kontakt"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1038
+msgid "Connect from any client"
+msgstr "Anslut från valfri klient"
+
+#: src/Astral_marketing/pages/help_article_page.gleam:233
+#: src/Astral_marketing/pages/help_article_page.gleam:375
+msgid "Contact Support"
+msgstr "Kontakta supporten"
+
+#: src/Astral_marketing/components/partner_section.gleam:70
+msgid "Content creators and community owners: unlock exclusive perks including free Plutonium, a Partner badge, custom vanity URLs, and more."
+msgstr "Innehållsskapare och communityägare: få exklusiva förmåner som gratis Plutonium, ett partnermärke, egna vanity-URL:er och mycket mer."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:178
+msgid "Contribute code"
+msgstr "Bidra med kod"
+
+#: src/Astral_marketing/pages/download_page.gleam:336
+msgid "Contribute on GitHub"
+msgstr "Bidra på GitHub"
+
+#: src/Astral_marketing/components/final_cta.gleam:69
+msgid "Create an account and help us build something good."
+msgstr "Skapa ett konto och hjälp oss bygga något riktigt bra."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1191
+msgid "Create your Astral account to get that sweet Plutonium while it's hot."
+msgstr "Skapa ditt Astral-konto och säkra ditt Plutonium medan det fortfarande går."
+
+#: src/Astral_marketing/pages/partners_page.gleam:211
+msgid "Creator Monetization"
+msgstr "Intäktsmöjligheter för skapare"
+
+#: src/Astral_marketing/components/coming_features.gleam:50
+msgid "Creator monetization"
+msgstr "Intäktsmöjligheter för skapare"
+
+#: src/Astral_marketing/components/communities_section.gleam:62
+msgid "Creators"
+msgstr "Skapare"
+
+#: src/Astral_marketing/components/locale_selector.gleam:132
+msgid "Croatian"
+msgstr "Kroatiska"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:280
+msgid "Custom 4-digit username tag"
+msgstr "Egen fyrsiffrig användarnamnstagg"
+
+#: src/Astral_marketing/components/current_features.gleam:138
+msgid "Custom CSS themes"
+msgstr "Egna CSS-teman"
+
+#: src/Astral_marketing/pages/partners_page.gleam:145
+msgid "Custom Vanity URL"
+msgstr "Egen vanity-URL"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:315
+#: src/Astral_marketing/pages/plutonium_page.gleam:631
+msgid "Custom entrance sounds"
+msgstr "Egna entréljud"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:127
+msgid "Custom identity"
+msgstr "Egen identitet"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:322
+#: src/Astral_marketing/pages/plutonium_page.gleam:641
+msgid "Custom notification sounds"
+msgstr "Egna notisljud"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:413
+msgid "Custom themes"
+msgstr "Egna teman"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:561
+msgid "Custom username tag"
+msgstr "Egen användarnamnstagg"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:308
+msgid "Custom video backgrounds"
+msgstr "Egna videobakgrunder"
+
+#: src/Astral_marketing/components/current_features.gleam:130
+msgid "Customization"
+msgstr "Anpassning"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:574
+msgid "Customize your profile differently for each community you're part of."
+msgstr "Anpassa din profil på olika sätt för varje community du är med i."
+
+#: src/Astral_marketing/components/locale_selector.gleam:120
+msgid "Czech"
+msgstr "Tjeckiska"
+
+#: src/Astral_marketing/components/coming_features.gleam:35
+msgid "DM folders"
+msgstr "DM-mappar"
+
+#: src/Astral_marketing/components/current_features.gleam:69
+msgid "DM your friends, chat with groups, or build communities with channels."
+msgstr "Skicka DM till dina vänner, chatta i grupper eller bygg communities med kanaler."
+
+#: src/Astral_marketing/components/locale_selector.gleam:121
+msgid "Danish"
+msgstr "Danska"
+
+#: src/Astral_marketing/pages/careers_page.gleam:250
+msgid "Design & branding"
+msgstr "Design och varumärke"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:99
+msgid "Desktop"
+msgstr "Dator"
+
+#: src/Astral_marketing/components/footer.gleam:209
+msgid "Developer Docs"
+msgstr "Utvecklardokumentation"
+
+#: src/Astral_marketing/components/communities_section.gleam:74
+msgid "Developers"
+msgstr "Utvecklare"
+
+#: src/Astral_marketing/components/partner_section.gleam:137
+#: src/Astral_marketing/pages/partners_page.gleam:156
+msgid "Direct Team Access"
+msgstr "Direktkontakt med teamet"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1076
+msgid "Direct team support"
+msgstr "Support direkt från teamet"
+
+#: src/Astral_marketing/components/coming_features.gleam:44
+msgid "Discovery"
+msgstr "Discovery"
+
+#: src/Astral_marketing/pages/partners_page.gleam:126
+msgid "Display an exclusive Partner badge on your profile to stand out."
+msgstr "Visa ett exklusivt partnermärke på din profil för att sticka ut."
+
+#: src/Astral_marketing/pages/donate_page.gleam:366
+msgid "Do I get anything in return?"
+msgstr "Får jag något tillbaka?"
+
+#: src/Astral_marketing/components/navigation.gleam:111
+#: src/Astral_marketing/components/navigation.gleam:319
+msgid "Docs"
+msgstr "Dokumentation"
+
+#: src/Astral_marketing/components/navigation.gleam:120
+#: src/Astral_marketing/components/navigation.gleam:367
+msgid "Donate"
+msgstr "Donera"
+
+#: src/Astral_marketing/pages/donate_page.gleam:216
+#: src/Astral_marketing/pages/donate_page.gleam:255
+msgid "Donate in EUR"
+msgstr "Donera i EUR"
+
+#: src/Astral_marketing/pages/donate_page.gleam:203
+#: src/Astral_marketing/pages/donate_page.gleam:242
+msgid "Donate in USD"
+msgstr "Donera i USD"
+
+#: src/Astral_marketing/components/footer.gleam:78
+#: src/Astral_marketing/pages/download_page.gleam:329
+msgid "Donate to Astral"
+msgstr "Donera till Astral"
+
+#: src/Astral_marketing/pages/donate_page.gleam:297
+msgid "Donate with Swish"
+msgstr "Donera med Swish"
+
+#: src/Astral_marketing/pages/donate_page.gleam:369
+msgid "Donations are voluntary gifts and do not provide you with any product, service, ownership, or special rights. If you're looking for premium features, check out {0}."
+msgstr "Donationer är frivilliga gåvor och ger dig ingen produkt, tjänst, ägarandel eller några särskilda rättigheter. Om du är ute efter premiumfunktioner, kolla in {0}."
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:308
+msgid "Done! You can now open Astral as if it were a regular program."
+msgstr "Klart! Nu kan du öppna Astral precis som ett vanligt program."
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:206
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:256
+msgid "Done! You can open Astral from your home screen."
+msgstr "Klart! Nu kan du öppna Astral från hemskärmen."
+
+#: src/Astral_marketing/components/footer.gleam:132
+#: src/Astral_marketing/components/navigation.gleam:84
+#: src/Astral_marketing/components/navigation.gleam:280
+#: src/Astral_marketing/components/platform_download_button.gleam:223
+#: src/Astral_marketing/pages/press_page.gleam:359
+msgid "Download"
+msgstr "Ladda ner"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:276
+#: src/Astral_marketing/pages/download_page.gleam:46
+#: src/Astral_marketing/pages/download_page.gleam:66
+msgid "Download Astral"
+msgstr "Ladda ner Astral"
+
+#: src/Astral_marketing/pages/download_page.gleam:49
+msgid "Download Astral for Windows, macOS, and Linux. Mobile apps are underway."
+msgstr "Ladda ner Astral för Windows, macOS och Linux. Mobilappar är under utveckling."
+
+#: src/Astral_marketing/pages/press_page.gleam:48
+msgid "Download Astral logos, brand assets, and get in touch with our press team"
+msgstr "Ladda ner Astrals logotyper och varumärkesmaterial, och kontakta vårt pressteam"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:428
+#: src/Astral_marketing/components/platform_download_button.gleam:538
+msgid "Download for "
+msgstr "Ladda ner för "
+
+#: src/Astral_marketing/components/platform_download_button.gleam:191
+msgid "Download for Windows"
+msgstr "Ladda ner för Windows"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:199
+msgid "Download for macOS"
+msgstr "Ladda ner för macOS"
+
+#: src/Astral_marketing/pages/press_page.gleam:68
+msgid "Download our logos, learn about our brand colors, and get in touch with our press team."
+msgstr "Ladda ner våra logotyper, lär dig mer om våra varumärkesfärger och kontakta vårt pressteam."
+
+#: src/Astral_marketing/components/locale_selector.gleam:139
+msgid "Dutch"
+msgstr "Nederländska"
+
+#: src/Astral_marketing/components/coming_features.gleam:55
+msgid "E2EE calls"
+msgstr "E2EE-samtal"
+
+#: src/Astral_marketing/pages/partners_page.gleam:200
+msgid "Early Feature Access"
+msgstr "Tidig åtkomst till nya funktioner"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:671
+msgid "Early access"
+msgstr "Tidig åtkomst"
+
+#: src/Astral_marketing/pages/partners_page.gleam:214
+msgid "Early access to creator monetization features with lower platform fees than non-partners."
+msgstr "Tidig åtkomst till intäktsfunktioner för skapare, med lägre plattformsavgifter än för icke-partners."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:406
+msgid "Early access to new features"
+msgstr "Tidig åtkomst till nya funktioner"
+
+#: src/Astral_marketing/components/communities_section.gleam:67
+msgid "Education"
+msgstr "Utbildning"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:364
+msgid "Emoji & sticker packs"
+msgstr "Emoji- och stickerpaket"
+
+#: src/Astral_marketing/components/locale_selector.gleam:124
+msgid "English"
+msgstr "Engelska"
+
+#: src/Astral_marketing/components/locale_selector.gleam:125
+msgid "English (US)"
+msgstr "Engelska (USA)"
+
+#: src/Astral_marketing/components/coming_features.gleam:43
+msgid "Event tickets"
+msgstr "Evenemangsbiljetter"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1071
+msgid "Everything in Free, plus:"
+msgstr "Allt som ingår i Gratis, plus:"
+
+#: src/Astral_marketing/pages/partners_page.gleam:233
+msgid "Exclusive Merch"
+msgstr "Exklusiv merch"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:863
+msgid "Exclusive communities"
+msgstr "Exklusiva communities"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:181
+msgid "Exclusive features"
+msgstr "Exklusiva funktioner"
+
+#: src/Astral_marketing/pages/partners_page.gleam:67
+msgid "Exclusive perks and benefits for content creators and large community owners."
+msgstr "Exklusiva förmåner för innehållsskapare och stora communityägare."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:257
+msgid "Feature"
+msgstr "Funktion"
+
+#: src/Astral_marketing/pages/partners_page.gleam:167
+msgid "Featured in Discovery"
+msgstr "Utvald i Discovery"
+
+#: src/Astral_marketing/components/coming_features.gleam:30
+msgid "Federation"
+msgstr "Federering"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:357
+msgid "File upload size"
+msgstr "Maxstorlek för filuppladdningar"
+
+#: src/Astral_marketing/components/current_features.gleam:121
+msgid "Filter by users, dates, and more"
+msgstr "Filtrera på användare, datum med mera"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:49
+msgid "Find answers to common questions and learn how to use Astral."
+msgstr "Hitta svar på vanliga frågor och lär dig använda Astral."
+
+#: src/Astral_marketing/components/current_features.gleam:117
+msgid "Find old messages or jump between communities and channels in seconds."
+msgstr "Hitta gamla meddelanden eller hoppa mellan communities och kanaler på några sekunder."
+
+#: src/Astral_marketing/pages/help_center_page.gleam:104
+msgid "Find step-by-step guides and answers, organized by topic."
+msgstr "Hitta steg-för-steg-guider och svar, organiserade efter ämne."
+
+#: src/Astral_marketing/components/locale_selector.gleam:128
+msgid "Finnish"
+msgstr "Finska"
+
+#: src/Astral_marketing/pages/careers_page.gleam:121
+msgid "Fix bugs, ship features, or polish the experience in our main repo."
+msgstr "Fixa buggar, släpp nya funktioner eller finslipa upplevelsen i vårt huvudrepo."
+
+#: src/Astral_marketing/components/footer.gleam:99
+msgid "Astral"
+msgstr "Astral"
+
+#: src/Astral_marketing/pages/guidelines_page.gleam:44
+msgid "Astral Community Guidelines"
+msgstr "Astrals communityriktlinjer"
+
+#: src/Astral_marketing/pages/careers_page.gleam:207
+msgid "Astral Community Team"
+msgstr "Astrals communityteam"
+
+#: src/Astral_marketing/pages/partners_page.gleam:44
+msgid "Astral Partner"
+msgstr "Astral-partner"
+
+#: src/Astral_marketing/pages/donate_page.gleam:371
+#: src/Astral_marketing/pages/plutonium_page.gleam:51
+#: src/Astral_marketing/pages/plutonium_page.gleam:76
+msgid "Astral Plutonium"
+msgstr "Astral Plutonium"
+
+#: src/Astral_marketing/pages/privacy_page.gleam:44
+msgid "Astral Privacy Policy"
+msgstr "Astrals integritetspolicy"
+
+#: src/Astral_marketing/pages/security_page.gleam:44
+msgid "Astral Security Bug Bounty"
+msgstr "Astral Säkerhets Bug Bounty"
+
+#: src/Astral_marketing/pages/terms_page.gleam:44
+msgid "Astral Terms of Service"
+msgstr "Astrals användarvillkor"
+
+#: src/Astral_marketing/components/hero.gleam:64
+msgid "Astral is an independent, independent instant messaging and VoIP platform. Built for friends, groups, and communities."
+msgstr "Astral är en oberoende plattform med öppen källkod för direktmeddelanden och VoIP. Byggd för vänner, grupper och gemenskaper."
+
+#: src/Astral_marketing/pages/careers_page.gleam:105
+msgid "Astral is built in the open. Pick the path that fits how you like to help."
+msgstr "Astral byggs öppet. Välj den väg som passar hur du vill bidra."
+
+#: src/Astral_marketing/pages/download_page.gleam:303
+msgid "Astral is community-funded. If you'd like to help support iOS and Android development:"
+msgstr "Astral är communityfinansierat. Om du vill hjälpa till att stötta iOS- och Android-utvecklingen:"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:991
+msgid "Astral stays independent and community-funded."
+msgstr "Astral är gratis och har öppen källkod. Vem som helst kan självhosta gratis."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:181
+msgid "Astral is independent (AGPLv3). Contribute directly on GitHub by opening pull requests."
+msgstr "Astral är öppen källkod (AGPLv3). Bidra direkt på GitHub genom att skicka pull requests."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:158
+msgid "Follow @Astral.app"
+msgstr "Följ @Astral.app"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:120
+msgid "Follow us on Bluesky"
+msgstr "Följ oss på Bluesky"
+
+#: src/Astral_marketing/pages/press_page.gleam:230
+msgid "For backgrounds, text on dark surfaces, and creating contrast."
+msgstr "För bakgrunder, text på mörka ytor och för att skapa kontrast."
+
+#: src/Astral_marketing/pages/press_page.gleam:111
+#: src/Astral_marketing/pages/press_page.gleam:165
+msgid "For dark backgrounds"
+msgstr "För mörka bakgrunder"
+
+#: src/Astral_marketing/pages/press_page.gleam:118
+#: src/Astral_marketing/pages/press_page.gleam:172
+msgid "For light backgrounds"
+msgstr "För ljusa bakgrunder"
+
+#: src/Astral_marketing/pages/press_page.gleam:237
+msgid "For text, icons on light surfaces, and creating depth."
+msgstr "För text och ikoner på ljusa ytor och för att skapa djup."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:189
+msgid "Forever"
+msgstr "För alltid"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:189
+msgid "Found a security issue?"
+msgstr "Hittat en säkerhetsbrist?"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:175
+#: src/Astral_marketing/pages/plutonium_page.gleam:265
+msgid "Free"
+msgstr "Gratis"
+
+#: src/Astral_marketing/components/partner_section.gleam:97
+#: src/Astral_marketing/pages/partners_page.gleam:112
+msgid "Free Plutonium"
+msgstr "Gratis Plutonium"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1024
+msgid "Astral Standard"
+msgstr "Gratis självhostning"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:152
+msgid "Free vs Plutonium"
+msgstr "Gratis jämfört med Plutonium"
+
+#: src/Astral_marketing/components/locale_selector.gleam:129
+msgid "French"
+msgstr "Franska"
+
+#: src/Astral_marketing/pages/donate_page.gleam:345
+msgid "Frequently Asked Questions"
+msgstr "Vanliga frågor"
+
+#: src/Astral_marketing/components/current_features.gleam:72
+msgid "Full Markdown support in messages"
+msgstr "Fullt stöd för Markdown i meddelanden"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1037
+msgid "Full access to all features"
+msgstr "Full tillgång till alla funktioner"
+
+#: src/Astral_marketing/pages/press_page.gleam:125
+#: src/Astral_marketing/pages/press_page.gleam:179
+msgid "Full color version"
+msgstr "Fullfärgsversion"
+
+#: src/Astral_marketing/components/current_features.gleam:152
+msgid "Fully independent (AGPLv3)"
+msgstr "Helt öppen källkod (AGPLv3)"
+
+#: src/Astral_marketing/components/communities_section.gleam:57
+msgid "Gaming"
+msgstr "Spel"
+
+#: src/Astral_marketing/components/locale_selector.gleam:122
+msgid "German"
+msgstr "Tyska"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:430
+msgid "Get Plutonium"
+msgstr "Skaffa Plutonium"
+
+#: src/Astral_marketing/components/plutonium_banner.gleam:79
+msgid "Get Visionary"
+msgstr "Skaffa Visionary"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1135
+msgid "Get Visionary + Operator Access"
+msgstr "Skaffa Visionary + Operator Access"
+
+#: src/Astral_marketing/pages/partners_page.gleam:148
+msgid "Get an exclusive custom vanity URL like Astral.gg/yourcommunity."
+msgstr "Få en exklusiv vanity-URL som Astral.gg/dincommunity."
+
+#: src/Astral_marketing/pages/partners_page.gleam:236
+msgid "Get exclusive Astral Partner-only merchandise and swag."
+msgstr "Få exklusiv merch och swag som bara Astral-partners får."
+
+#: src/Astral_marketing/pages/partners_page.gleam:115
+msgid "Get free Plutonium for your account to enjoy all premium features."
+msgstr "Få gratis Plutonium på ditt konto och ta del av alla premiumfunktioner."
+
+#: src/Astral_marketing/pages/partners_page.gleam:170
+msgid "Get heightened visibility by being featured in Community Discovery."
+msgstr "Få extra synlighet genom att lyftas fram i Community Discovery."
+
+#: src/Astral_marketing/pages/not_found_page.gleam:87
+msgid "Get help"
+msgstr "Få hjälp"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:51
+msgid "Get involved"
+msgstr "Engagera dig"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:956
+msgid "Get lifetime Plutonium on Astral.app plus Operator Access. Pay {0} one-time. Available until October 1, 2026 or when {1} slots are claimed."
+msgstr "Få Plutonium på livstid på Astral.app plus ett Operator Access för självhostning. Betala {0} som engångsköp. Erbjudandet gäller till 1 oktober 2026 eller tills {1} platser är slut."
+
+#: src/Astral_marketing/components/plutonium_section.gleam:51
+msgid "Get more with Astral Plutonium"
+msgstr "Få mer med Astral Plutonium"
+
+#: src/Astral_marketing/pages/download_page.gleam:316
+msgid "Get perks and help fund development"
+msgstr "Få förmåner och hjälp finansiera utvecklingen"
+
+#: src/Astral_marketing/pages/download_page.gleam:237
+msgid "Get push notifications when you're away from the app."
+msgstr "Få pushnotiser när du är borta från appen."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:89
+msgid "Get updates, see upcoming features, discuss suggestions, and chat with the team."
+msgstr "Få uppdateringar, se kommande funktioner, diskutera förslag och chatta med teamet."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:385
+#: src/Astral_marketing/pages/plutonium_page.gleam:601
+msgid "Global emoji & sticker access"
+msgstr "Global åtkomst till emojis och stickers"
+
+#: src/Astral_marketing/components/coming_features.gleam:53
+msgid "Global voice regions"
+msgstr "Globala röstregioner"
+
+#: src/Astral_marketing/pages/not_found_page.gleam:78
+msgid "Go home"
+msgstr "Till startsidan"
+
+#: src/Astral_marketing/components/current_features.gleam:104
+msgid "Granular roles and permissions"
+msgstr "Detaljerade roller och behörigheter"
+
+#: src/Astral_marketing/components/locale_selector.gleam:123
+msgid "Greek"
+msgstr "Grekiska"
+
+#: src/Astral_marketing/pages/press_page.gleam:285
+msgid "Have a story about Astral? Need more information or high-resolution assets?"
+msgstr "Har du en story om Astral? Behöver du mer information eller högupplöst material?"
+
+#: src/Astral_marketing/components/locale_selector.gleam:130
+msgid "Hebrew"
+msgstr "Hebreiska"
+
+#: src/Astral_marketing/components/navigation.gleam:102
+msgid "Help"
+msgstr "Hjälp"
+
+#: src/Astral_marketing/components/footer.gleam:187
+#: src/Astral_marketing/components/navigation.gleam:328
+#: src/Astral_marketing/pages/help_article_page.gleam:56
+#: src/Astral_marketing/pages/help_article_page.gleam:86
+#: src/Astral_marketing/pages/help_article_page.gleam:117
+#: src/Astral_marketing/pages/help_category_page.gleam:64
+#: src/Astral_marketing/pages/help_center_page.gleam:46
+#: src/Astral_marketing/pages/help_components.gleam:48
+#: src/Astral_marketing/pages/help_search_page.gleam:48
+msgid "Help Center"
+msgstr "Hjälpcenter"
+
+#: src/Astral_marketing/pages/download_page.gleam:291
+msgid "Help make the mobile app a reality"
+msgstr "Hjälp oss göra mobilappen till verklighet"
+
+#: src/Astral_marketing/components/footer.gleam:66
+#: src/Astral_marketing/pages/donate_page.gleam:53
+msgid "Help support an independent communication platform. Your donation funds the platform's infrastructure and development."
+msgstr "Hjälp till att stödja en oberoende kommunikationsplattform. Din donation finansierar plattformens infrastruktur och utveckling."
+
+#: src/Astral_marketing/pages/donate_page.gleam:134
+msgid "Help support an independent communication platform. Your donation funds the platform's infrastructure and development. It is a voluntary gift and does not constitute payment for any product or service or give you any ownership or special rights."
+msgstr "Hjälp till att stödja en oberoende kommunikationsplattform. Din donation finansierar plattformens infrastruktur och utveckling. Det är en frivillig gåva och utgör inte betalning för någon produkt eller tjänst och ger dig inga ägarandelar eller särskilda rättigheter."
+
+#: src/Astral_marketing/pages/careers_page.gleam:132
+msgid "Help translate Astral and its docs so it feels native everywhere."
+msgstr "Hjälp till att översätta Astral och dokumentationen så att det känns som hemma överallt."
+
+#: src/Astral_marketing/pages/careers_page.gleam:69
+msgid "Help us build a different kind of communication platform — independent, community-funded, and built with care."
+msgstr "Hjälp oss bygga en annan typ av kommunikationsplattform – öppen källkod, communityfinansierad och byggd med omsorg."
+
+#: src/Astral_marketing/pages/donate_page.gleam:89
+msgid "Help us build an independent communication platform that puts users first."
+msgstr "Hjälp oss bygga en oberoende kommunikationsplattform som sätter användarna först."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:651
+msgid "Higher limits everywhere"
+msgstr "Högre gränser överallt"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:92
+msgid "Higher limits, exclusive features, and early access to new updates"
+msgstr "Högre gränser, exklusiva funktioner och tidig åtkomst till nya uppdateringar"
+
+#: src/Astral_marketing/components/locale_selector.gleam:131
+msgid "Hindi"
+msgstr "Hindi"
+
+#: src/Astral_marketing/components/communities_section.gleam:72
+msgid "Hobbyists"
+msgstr "Hobbyister"
+
+#: src/Astral_marketing/components/current_features.gleam:85
+msgid "Hop in a call with friends or share your screen to work together."
+msgstr "Hoppa in i ett samtal med vänner eller dela skärmen för att jobba tillsammans."
+
+#: src/Astral_marketing/components/current_features.gleam:153
+msgid "Host your own instance"
+msgstr "Drifta en egen instans"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:64
+#: src/Astral_marketing/pages/help_search_page.gleam:63
+msgid "How can we help?"
+msgstr "Hur kan vi hjälpa?"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:39
+msgid "How to install as an app"
+msgstr "Så installerar du som app"
+
+#: src/Astral_marketing/pages/partners_page.gleam:434
+msgid "How you plan to use Astral with your community"
+msgstr "Hur du tänker använda Astral i din community"
+
+#: src/Astral_marketing/components/locale_selector.gleam:133
+msgid "Hungarian"
+msgstr "Ungerska"
+
+#: src/Astral_marketing/pages/help_article_page.gleam:223
+#: src/Astral_marketing/pages/help_article_page.gleam:365
+msgid "If you couldn't find what you're looking for, our support team is here to help."
+msgstr "Om du inte hittar det du söker finns vårt supportteam här för att hjälpa."
+
+#: src/Astral_marketing/pages/careers_page.gleam:176
+msgid "If you're a creator or community owner, explore the Partner program and its perks."
+msgstr "Om du är skapare eller communityägare – kolla in partnerprogrammet och dess förmåner."
+
+#: src/Astral_marketing/pages/partners_page.gleam:189
+msgid "Increased Limits"
+msgstr "Högre gränser"
+
+#: src/Astral_marketing/pages/donate_page.gleam:160
+msgid "Individual"
+msgstr "Privat"
+
+#: src/Astral_marketing/components/locale_selector.gleam:134
+msgid "Indonesian"
+msgstr "Indonesiska"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:59
+msgid "Install Astral as an app"
+msgstr "Installera Astral som app"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:145
+#: src/Astral_marketing/components/platform_download_button.gleam:161
+msgid "Intel"
+msgstr "Intel"
+
+#: src/Astral_marketing/pages/donate_page.gleam:376
+msgid "Is my donation tax-deductible?"
+msgstr "Är min donation avdragsgill?"
+
+#: src/Astral_marketing/pages/donate_page.gleam:358
+msgid "Is this a subscription?"
+msgstr "Är det här en prenumeration?"
+
+#: src/Astral_marketing/components/locale_selector.gleam:135
+msgid "Italian"
+msgstr "Italienska"
+
+#: src/Astral_marketing/components/locale_selector.gleam:136
+msgid "Japanese"
+msgstr "Japanska"
+
+#: src/Astral_marketing/components/final_cta.gleam:80
+#: src/Astral_marketing/pages/plutonium_page.gleam:1202
+msgid "Join Astral"
+msgstr "Gå med i Astral"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:86
+#: src/Astral_marketing/components/get_involved_section.gleam:91
+#: src/Astral_marketing/pages/careers_page.gleam:145
+msgid "Join Astral HQ"
+msgstr "Gå med i Astral HQ"
+
+#: src/Astral_marketing/pages/careers_page.gleam:442
+msgid "Join Astral HQ community"
+msgstr "Gå med i Astral HQ-communityn"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:75
+msgid "Join and spread the word"
+msgstr "Gå med och sprid ordet"
+
+#: src/Astral_marketing/components/current_features.gleam:88
+msgid "Join from multiple devices at once"
+msgstr "Logga in från flera enheter samtidigt"
+
+#: src/Astral_marketing/pages/partners_page.gleam:47
+msgid "Join the Astral Partner Program and unlock exclusive benefits for you and your community"
+msgstr "Gå med i Astrals partnerprogram och lås upp exklusiva förmåner för dig och din community"
+
+#: src/Astral_marketing/pages/careers_page.gleam:49
+msgid "Join the Astral community and help build the future of communication through independent and community contributions."
+msgstr "Gå med i Astral-communityn och hjälp till att bygga framtidens kommunikation genom öppen källkod och bidrag från communityn."
+
+#: src/Astral_marketing/pages/partners_page.gleam:159
+msgid "Join the exclusive Partners community with direct access to the Astral team."
+msgstr "Gå med i den exklusiva Partners-communityn med direktkontakt med Astral-teamet."
+
+#: src/Astral_marketing/pages/careers_page.gleam:66
+msgid "Join the team behind Astral"
+msgstr "Gå med i teamet bakom Astral"
+
+#: src/Astral_marketing/components/current_features.gleam:101
+msgid "Keep your community running smoothly with roles, permissions, and logs."
+msgstr "Håll din community igång med roller, behörigheter och loggar."
+
+#: src/Astral_marketing/components/locale_selector.gleam:137
+msgid "Korean"
+msgstr "Koreanska"
+
+#: src/Astral_marketing/pages/company_page.gleam:42
+msgid "Learn about Astral and our mission"
+msgstr "Läs om Astral och vårt uppdrag"
+
+#: src/Astral_marketing/pages/careers_page.gleam:178
+msgid "Learn about Partners"
+msgstr "Läs om partnerprogrammet"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:195
+msgid "Learn more"
+msgstr "Läs mer"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:848
+msgid "Lifetime Operator Access"
+msgstr "Operator Access på livstid"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:842
+msgid "Lifetime Plutonium"
+msgstr "Plutonium på livstid"
+
+#: src/Astral_marketing/components/plutonium_banner.gleam:38
+msgid "Lifetime Plutonium + Operator Access with Visionary - limited slots"
+msgstr "Plutonium på livstid + Operator Access med Visionary – begränsat antal platser"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1103
+msgid "Limited Offer: Visionary includes Operator Access"
+msgstr "Begränsat erbjudande: Visionary inkluderar Operator Access"
+
+#: src/Astral_marketing/pages/partners_page.gleam:408
+msgid "Links to your content or community (YouTube, Twitch, Discord, etc.)"
+msgstr "Länkar till ditt innehåll eller din community (YouTube, Twitch, Discord osv.)"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:364
+msgid "Linux"
+msgstr "Linux"
+
+#: src/Astral_marketing/components/locale_selector.gleam:138
+msgid "Lithuanian"
+msgstr "Litauiska"
+
+#: src/Astral_marketing/pages/careers_page.gleam:129
+msgid "Localization"
+msgstr "Lokalisering"
+
+#: src/Astral_marketing/pages/press_page.gleam:93
+msgid "Logo"
+msgstr "Logotyp"
+
+#: src/Astral_marketing/pages/donate_page.gleam:123
+msgid "Make a Donation"
+msgstr "Gör en donation"
+
+#: src/Astral_marketing/components/current_features.gleam:123
+msgid "Manage friends and block users"
+msgstr "Hantera vänner och blockera användare"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:336
+msgid "Message character limit"
+msgstr "Max antal tecken per meddelande"
+
+#: src/Astral_marketing/components/coming_features.gleam:34
+msgid "Message components"
+msgstr "Meddelandekomponenter"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:294
+#: src/Astral_marketing/pages/plutonium_page.gleam:581
+msgid "Message scheduling"
+msgstr "Schemaläggning av meddelanden"
+
+#: src/Astral_marketing/components/current_features.gleam:66
+msgid "Messaging"
+msgstr "Meddelanden"
+
+#: src/Astral_marketing/pages/donate_page.gleam:265
+msgid "Minimum donation: $5 / €5"
+msgstr "Minsta donation: $5 / €5"
+
+#: src/Astral_marketing/pages/download_page.gleam:203
+msgid "Mobile apps are on the way"
+msgstr "Mobilappar är på väg"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:213
+#: src/Astral_marketing/components/platform_download_button.gleam:218
+#: src/Astral_marketing/components/platform_download_button.gleam:311
+msgid "Mobile apps are underway"
+msgstr "Mobilappar är under utveckling"
+
+#: src/Astral_marketing/components/current_features.gleam:105
+msgid "Moderation actions and tools"
+msgstr "Moderationsåtgärder och verktyg"
+
+#: src/Astral_marketing/components/current_features.gleam:98
+msgid "Moderation tools"
+msgstr "Moderationsverktyg"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:206
+msgid "Most popular"
+msgstr "Populärast"
+
+#: src/Astral_marketing/components/current_features.gleam:91
+msgid "Mute, deafen, and camera controls"
+msgstr "Tysta mikrofonen, stäng av ljudet och styr kameran"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:135
+msgid "No articles found"
+msgstr "Inga artiklar hittades"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:163
+msgid "No articles found."
+msgstr "Inga artiklar hittades."
+
+#: src/Astral_marketing/pages/help_search_page.gleam:94
+msgid "No results found for"
+msgstr "Inga resultat för"
+
+#: src/Astral_marketing/pages/donate_page.gleam:379
+msgid "No, donations to Astral are not tax-deductible as we are not a registered charitable organization."
+msgstr "Nej, donationer till Astral är inte avdragsgilla eftersom vi inte är en registrerad välgörenhetsorganisation."
+
+#: src/Astral_marketing/pages/donate_page.gleam:361
+msgid "No, this is a one-time donation. You choose the amount you want to give, and there are no recurring charges."
+msgstr "Nej, det här är en engångsdonation. Du väljer själv beloppet, och det finns inga återkommande avgifter."
+
+#: src/Astral_marketing/components/current_features.gleam:90
+msgid "Noise suppression and echo cancellation"
+msgstr "Brusreducering och ekokompensation"
+
+#: src/Astral_marketing/components/locale_selector.gleam:140
+msgid "Norwegian"
+msgstr "Norska"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:295
+msgid "Not available"
+msgstr "Inte tillgängligt"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:91
+msgid "Note: Plutonium and Visionary benefits are available on the official Astral service."
+msgstr "Obs: Plutonium- och Visionary-förmåner gäller bara för den officiella instansen Astral.app – inte för tredjeparts- eller självhostade instanser."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:788
+msgid "Numbered badge (1-{0}) showing your Visionary status"
+msgstr "Numrerat märke (1–{0}) som visar din Visionary-status"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:786
+msgid "Numbered badge showing your Visionary status"
+msgstr "Numrerat märke som visar din Visionary-status"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:828
+msgid "One-time purchase, lifetime access"
+msgstr "Engångsköp – livstidsåtkomst"
+
+#: src/Astral_marketing/components/plutonium_banner.gleam:43
+msgid "Only {0} of {1} Visionary lifetime slots left - lifetime Plutonium + Operator Access"
+msgstr "Endast {0} av {1} Visionary-platser på livstid kvar – Plutonium på livstid + Operator Access"
+
+#: src/Astral_marketing/components/navigation.gleam:172
+msgid "Open Astral"
+msgstr "Öppna Astral"
+
+#: src/Astral_marketing/components/hero.gleam:82
+#: src/Astral_marketing/components/navigation.gleam:482
+msgid "Open in Browser"
+msgstr "Öppna i webbläsaren"
+
+#: src/Astral_marketing/pages/careers_page.gleam:118
+msgid "independent"
+msgstr "Öppen källkod"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1039
+msgid "independent (AGPL-3.0)"
+msgstr "Öppen källkod (AGPL-3.0)"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:188
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:234
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:284
+msgid "Open the web app"
+msgstr "Öppna webbappen"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1059
+msgid "Operator Access"
+msgstr "Operator Access"
+
+#: src/Astral_marketing/components/coming_features.gleam:31
+msgid "Opt-in E2EE messaging"
+msgstr "Valfri E2EE för meddelanden"
+
+#: src/Astral_marketing/components/current_features.gleam:74
+msgid "Organized channels for communities"
+msgstr "Strukturerade kanaler för communities"
+
+#: src/Astral_marketing/pages/press_page.gleam:209
+msgid "Our carefully selected color palette that represents the Astral brand."
+msgstr "Vår noggrant utvalda färgpalett som representerar Astrals varumärke."
+
+#: src/Astral_marketing/pages/press_page.gleam:102
+msgid "Our full logo including the wordmark. Use this as the primary representation of our brand."
+msgstr "Vår fullständiga logotyp med ordmärke. Använd den som den primära representationen av vårt varumärke."
+
+#: src/Astral_marketing/pages/press_page.gleam:221
+msgid "Our primary brand color. Use this for key brand elements and accents."
+msgstr "Vår primära varumärkesfärg. Använd den för viktiga varumärkeselement och accenter."
+
+#: src/Astral_marketing/pages/press_page.gleam:156
+msgid "Our standalone symbol. Use this only when our brand is clearly visible or well-established elsewhere in the context."
+msgstr "Vår fristående symbol. Använd den bara när varumärket redan är tydligt synligt eller väl etablerat i sammanhanget."
+
+#: src/Astral_marketing/components/communities_section.gleam:106
+msgid "Over time, we'd love to explore optional monetization tools that help creators and communities earn, with a small, transparent fee that keeps the app sustainable."
+msgstr "På sikt vill vi gärna utforska valfria intäktsverktyg som hjälper skapare och communities att tjäna pengar – med en liten, transparent avgift som gör appen långsiktigt hållbar."
+
+#: src/Astral_marketing/pages/not_found_page.gleam:101
+msgid "Page Not Found"
+msgstr "Sidan hittades inte"
+
+#: src/Astral_marketing/pages/not_found_page.gleam:55
+msgid "Page not found"
+msgstr "Sidan hittades inte"
+
+#: src/Astral_marketing/pages/partners_page.gleam:123
+msgid "Partner Badge"
+msgstr "Partnermärke"
+
+#: src/Astral_marketing/pages/partners_page.gleam:90
+msgid "Partner Perks"
+msgstr "Partnerförmåner"
+
+#: src/Astral_marketing/components/footer.gleam:121
+#: src/Astral_marketing/components/navigation.gleam:298
+msgid "Partners"
+msgstr "Partners"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:287
+#: src/Astral_marketing/pages/plutonium_page.gleam:571
+msgid "Per-community profiles"
+msgstr "Profiler per community"
+
+#: src/Astral_marketing/pages/download_page.gleam:315
+#: src/Astral_marketing/pages/plutonium_page.gleam:215
+#: src/Astral_marketing/pages/plutonium_page.gleam:273
+msgid "Plutonium"
+msgstr "Plutonium"
+
+#: src/Astral_marketing/components/footer.gleam:227
+#: src/Astral_marketing/components/navigation.gleam:387
+msgid "Policies"
+msgstr "Policyer"
+
+#: src/Astral_marketing/components/locale_selector.gleam:141
+msgid "Polish"
+msgstr "Polska"
+
+#: src/Astral_marketing/components/coming_features.gleam:41
+msgid "Polls & events"
+msgstr "Omröstningar och evenemang"
+
+#: src/Astral_marketing/components/locale_selector.gleam:142
+msgid "Portuguese (Brazil)"
+msgstr "Portugisiska (Brasilien)"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:154
+msgid "Premium quality"
+msgstr "Premiumkvalitet"
+
+#: src/Astral_marketing/components/footer.gleam:198
+#: src/Astral_marketing/components/navigation.gleam:337
+msgid "Press"
+msgstr "Press"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:246
+msgid "Press \"Add to Home Screen\""
+msgstr "Tryck på \"Lägg till på hemskärmen\""
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:249
+msgid "Press \"Add\" in the upper-right corner"
+msgstr "Tryck på \"Lägg till\" uppe till höger"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:200
+msgid "Press \"Install app\""
+msgstr "Tryck på \"Installera app\""
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:301
+msgid "Press \"Install\" in the popup that appears"
+msgstr "Tryck på \"Installera\" i popupfönstret som dyker upp"
+
+#: src/Astral_marketing/pages/press_page.gleam:45
+#: src/Astral_marketing/pages/press_page.gleam:65
+msgid "Press & Brand Assets"
+msgstr "Press och varumärkesmaterial"
+
+#: src/Astral_marketing/pages/press_page.gleam:273
+msgid "Press Contact"
+msgstr "Presskontakt"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:197
+msgid "Press the \"More\" (\\u{22EE}) button in the top-right corner"
+msgstr "Tryck på \"Mer\" (\\u{22EE}) uppe till höger"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:243
+msgid "Press the Share button (rectangle with upwards-pointing arrow)"
+msgstr "Tryck på Dela (rektangel med uppåtpil)"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:296
+msgid "Press the install button (downwards-pointing arrow on monitor) in the address bar"
+msgstr "Tryck på installationsikonen (nedåtpil på en skärm) i adressfältet"
+
+#: src/Astral_marketing/components/footer.gleam:110
+#: src/Astral_marketing/components/navigation.gleam:93
+#: src/Astral_marketing/components/navigation.gleam:289
+msgid "Pricing"
+msgstr "Priser"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:851
+msgid "Priority support and Operators community access"
+msgstr "Prioriterad support och tillgång till Operators-communityn för självhostning"
+
+#: src/Astral_marketing/components/footer.gleam:249
+#: src/Astral_marketing/components/navigation.gleam:406
+#: src/Astral_marketing/pages/privacy_page.gleam:41
+msgid "Privacy Policy"
+msgstr "Integritetspolicy"
+
+#: src/Astral_marketing/components/current_features.gleam:73
+msgid "Private DMs and group chats"
+msgstr "Privata DM och gruppchattar"
+
+#: src/Astral_marketing/components/navigation.gleam:270
+msgid "Product"
+msgstr "Produkt"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:301
+#: src/Astral_marketing/pages/plutonium_page.gleam:661
+msgid "Profile badge"
+msgstr "Profilmärke"
+
+#: src/Astral_marketing/components/coming_features.gleam:47
+msgid "Profile connections"
+msgstr "Profilkopplingar"
+
+#: src/Astral_marketing/components/hero.gleam:55
+msgid "Public Beta"
+msgstr "Öppen beta"
+
+#: src/Astral_marketing/components/coming_features.gleam:46
+msgid "Public profile URLs"
+msgstr "Offentliga profil-URL:er"
+
+#: src/Astral_marketing/components/coming_features.gleam:39
+msgid "Publish forums to the web"
+msgstr "Publicera forum på webben"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:883
+msgid "Purchase Visionary directly in the app after creating your account. Your purchase date and order number will be displayed on your profile (can be hidden in privacy settings)."
+msgstr "Köp Visionary direkt i appen när du har skapat ditt konto. Ditt köpdatum och ordernummer visas på din profil (kan döljas i integritetsinställningarna)."
+
+#: src/Astral_marketing/components/current_features.gleam:122
+msgid "Quick switcher with keyboard shortcuts"
+msgstr "Snabbväxlare med kortkommandon"
+
+#: src/Astral_marketing/components/coming_features.gleam:40
+msgid "RSS/Atom feeds for forums"
+msgstr "RSS/Atom-flöden för forum"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:228
+msgid "Read article"
+msgstr "Läs artikeln"
+
+#: src/Astral_marketing/pages/guidelines_page.gleam:42
+msgid "Read the Astral Community Guidelines"
+msgstr "Läs Astrals communityriktlinjer"
+
+#: src/Astral_marketing/pages/privacy_page.gleam:42
+msgid "Read the Astral Privacy Policy"
+msgstr "Läs Astrals integritetspolicy"
+
+#: src/Astral_marketing/pages/terms_page.gleam:42
+msgid "Read the Astral Terms of Service"
+msgstr "Läs Astrals användarvillkor"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:172
+msgid "Read the Guide"
+msgstr "Läs guiden"
+
+#: src/Astral_marketing/pages/partners_page.gleam:362
+msgid "Ready to become a Partner?"
+msgstr "Redo att bli partner?"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1180
+msgid "Ready to upgrade?"
+msgstr "Redo att uppgradera?"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:80
+msgid "Register now"
+msgstr "Registrera dig nu"
+
+#: src/Astral_marketing/components/footer.gleam:322
+msgid "Report a bug"
+msgstr "Rapportera en bugg"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:167
+msgid "Report bugs"
+msgstr "Rapportera buggar"
+
+#: src/Astral_marketing/pages/careers_page.gleam:165
+msgid "Report people or communities so we can keep Astral safe for everyone."
+msgstr "Anmäl personer eller communities så att vi kan hålla Astral tryggt för alla."
+
+#: src/Astral_marketing/pages/security_page.gleam:42
+msgid "Report security issues responsibly"
+msgstr "Rapportera säkerhetsproblem ansvarsfullt"
+
+#: src/Astral_marketing/pages/careers_page.gleam:154
+msgid "Report vulnerabilities and help us keep the platform secure."
+msgstr "Rapportera sårbarheter och hjälp oss hålla plattformen säker."
+
+#: src/Astral_marketing/components/navigation.gleam:309
+msgid "Resources"
+msgstr "Resurser"
+
+#: src/Astral_marketing/pages/partners_page.gleam:99
+msgid "Rewards that recognize your impact, help your community grow, and give you a direct line to the Astral team."
+msgstr "Belöningar som uppmärksammar din påverkan, hjälper din community att växa och ger dig en direktlinje till Astral-teamet."
+
+#: src/Astral_marketing/pages/careers_page.gleam:344
+msgid "Right now we're focused on shipping a great product and keeping Astral independent and bootstrapped."
+msgstr "Just nu fokuserar vi på att leverera en riktigt bra produkt och hålla Astral oberoende och självfinansierat."
+
+#: src/Astral_marketing/components/locale_selector.gleam:143
+msgid "Romanian"
+msgstr "Rumänska"
+
+#: src/Astral_marketing/components/current_features.gleam:149
+msgid "Run the Astral backend on your own hardware and connect with our apps."
+msgstr "Kör Astrals backend på din egen hårdvara och anslut via våra appar."
+
+#: src/Astral_marketing/components/locale_selector.gleam:144
+msgid "Russian"
+msgstr "Ryska"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:81
+#: src/Astral_marketing/pages/plutonium_page.gleam:117
+msgid "Save 17%"
+msgstr "Spara 17 %"
+
+#: src/Astral_marketing/components/current_features.gleam:137
+msgid "Save images, videos, GIFs, and audio"
+msgstr "Spara bilder, videor, GIF:ar och ljud"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:371
+msgid "Saved media"
+msgstr "Sparade medier"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:584
+msgid "Schedule messages to be sent at a specific time in the future. No DeLorean required."
+msgstr "Schemalägg meddelanden så att de skickas vid en viss tidpunkt i framtiden. Ingen DeLorean krävs."
+
+#: src/Astral_marketing/components/current_features.gleam:89
+msgid "Screen sharing built in"
+msgstr "Inbyggd skärmdelning"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:132
+msgid "Screenshots courtesy of "
+msgstr "Skärmdumpar med tillstånd av "
+
+#: src/Astral_marketing/pages/help_components.gleam:93
+msgid "Search"
+msgstr "Sök"
+
+#: src/Astral_marketing/components/current_features.gleam:114
+msgid "Search & quick switcher"
+msgstr "Sök och snabbväxlare"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:46
+msgid "Search Results"
+msgstr "Sökresultat"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:67
+#: src/Astral_marketing/pages/help_search_page.gleam:66
+msgid "Search for help..."
+msgstr "Sök i hjälpen..."
+
+#: src/Astral_marketing/pages/help_category_page.gleam:92
+msgid "Search in "
+msgstr "Sök i "
+
+#: src/Astral_marketing/pages/help_category_page.gleam:90
+#: src/Astral_marketing/pages/help_center_page.gleam:65
+#: src/Astral_marketing/pages/help_search_page.gleam:64
+msgid "Search our help articles or browse by category."
+msgstr "Sök i våra hjälpartiklar eller bläddra efter kategori."
+
+#: src/Astral_marketing/pages/help_category_page.gleam:126
+msgid "Search results for"
+msgstr "Sökresultat för"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:49
+msgid "Search results for: "
+msgstr "Sökresultat för: "
+
+#: src/Astral_marketing/components/current_features.gleam:120
+msgid "Search through message history"
+msgstr "Sök i meddelandehistoriken"
+
+#: src/Astral_marketing/components/footer.gleam:271
+#: src/Astral_marketing/components/get_involved_section.gleam:194
+#: src/Astral_marketing/components/navigation.gleam:424
+#: src/Astral_marketing/pages/careers_page.gleam:156
+#: src/Astral_marketing/pages/security_page.gleam:41
+msgid "Security Bug Bounty"
+msgstr "Säkerhets Bug Bounty"
+
+#: src/Astral_marketing/pages/careers_page.gleam:151
+msgid "Security reports"
+msgstr "Säkerhetsrapporter"
+
+#: src/Astral_marketing/pages/download_page.gleam:232
+msgid "See badge counts on the app icon."
+msgstr "Se antal notiser på appikonen."
+
+#: src/Astral_marketing/pages/partners_page.gleam:312
+msgid "See perks"
+msgstr "Se förmåner"
+
+#: src/Astral_marketing/components/current_features.gleam:146
+msgid "Multi-device sync"
+msgstr "Självhostning"
+
+#: src/Astral_marketing/pages/download_page.gleam:330
+msgid "Send a one-time gift"
+msgstr "Skicka en engångsgåva"
+
+#: src/Astral_marketing/pages/partners_page.gleam:374
+msgid "Send us an email with the following information to get started:"
+msgstr "Mejla oss med följande information för att komma igång:"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:634
+msgid "Set personalized sounds when you join voice channels to make your presence known."
+msgstr "Ställ in personliga ljud som spelas när du går in i röstkanaler, så att din närvaro märks."
+
+#: src/Astral_marketing/pages/careers_page.gleam:408
+msgid "Share a bit about yourself, what you'd like to work on, and links to any relevant work."
+msgstr "Berätta lite om dig själv, vad du vill jobba med och länka till relevant arbete."
+
+#: src/Astral_marketing/pages/careers_page.gleam:143
+msgid "Share feedback, report bugs, and help make Astral welcoming for everyone."
+msgstr "Dela feedback, rapportera buggar och hjälp till att göra Astral välkomnande för alla."
+
+#: src/Astral_marketing/components/current_features.gleam:75
+msgid "Share files and preview links"
+msgstr "Dela filer och förhandsgranska länkar"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:490
+msgid "Show download options"
+msgstr "Visa nedladdningsalternativ"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:664
+msgid "Show off your Plutonium status with an exclusive badge on your profile."
+msgstr "Visa upp din Plutonium-status med ett exklusivt märke på din profil."
+
+#: src/Astral_marketing/components/coming_features.gleam:33
+msgid "Slash commands"
+msgstr "Slash-kommandon"
+
+#: src/Astral_marketing/pages/careers_page.gleam:236
+msgid "Software development"
+msgstr "Mjukvaruutveckling"
+
+#: src/Astral_marketing/components/coming_features.gleam:57
+msgid "Soundboard"
+msgstr "Soundboard"
+
+#: src/Astral_marketing/components/footer.gleam:143
+#: src/Astral_marketing/components/navigation.gleam:447
+msgid "Source Code"
+msgstr "Källkod"
+
+#: src/Astral_marketing/components/locale_selector.gleam:127
+msgid "Spanish (Latin America)"
+msgstr "Spanska (Latinamerika)"
+
+#: src/Astral_marketing/components/locale_selector.gleam:126
+msgid "Spanish (Spain)"
+msgstr "Spanska (Spanien)"
+
+#: src/Astral_marketing/pages/download_page.gleam:323
+msgid "Sponsor the roadmap for mobile"
+msgstr "Sponsra mobilroadmapen"
+
+#: src/Astral_marketing/components/coming_features.gleam:42
+msgid "Stage channels"
+msgstr "Scenkanaler"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:594
+msgid "Stand out with animated profile pictures and banners to express your personality."
+msgstr "Stick ut med animerade profilbilder och banners som visar din personlighet."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:127
+msgid "Stay updated on news, service status, and what's happening. You can also follow "
+msgstr "Håll dig uppdaterad om nyheter, driftstatus och vad som händer. Du kan också följa "
+
+#: src/Astral_marketing/pages/help_article_page.gleam:218
+#: src/Astral_marketing/pages/help_article_page.gleam:360
+msgid "Still need help?"
+msgstr "Behöver du fortfarande hjälp?"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:624
+msgid "Store up to 15 video backgrounds for calls. No more Downloads folder scavenger hunts!"
+msgstr "Spara upp till 15 videobakgrunder för samtal. Slipp rota i mappen Hämtade filer!"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:614
+msgid "Stream in up to 4K resolution at 60fps so others can see you in stunning clarity."
+msgstr "Streama i upp till 4K-upplösning i 60 fps så att andra ser dig i fantastisk skärpa."
+
+#: src/Astral_marketing/components/coming_features.gleam:58
+msgid "Streamer mode"
+msgstr "Streamerläge"
+
+#: src/Astral_marketing/pages/donate_page.gleam:50
+#: src/Astral_marketing/pages/donate_page.gleam:86
+msgid "Support Astral"
+msgstr "Stöd Astral"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1077
+msgid "Support future development"
+msgstr "Stöd fortsatt utveckling"
+
+#: src/Astral_marketing/components/locale_selector.gleam:145
+msgid "Swedish"
+msgstr "Svenska"
+
+#: src/Astral_marketing/components/current_features.gleam:155
+msgid "Switch between multiple instances"
+msgstr "Växla mellan flera instanser"
+
+#: src/Astral_marketing/pages/press_page.gleam:147
+msgid "Symbol"
+msgstr "Symbol"
+
+#: src/Astral_marketing/components/footer.gleam:238
+#: src/Astral_marketing/components/navigation.gleam:397
+#: src/Astral_marketing/pages/terms_page.gleam:41
+msgid "Terms of Service"
+msgstr "Användarvillkor"
+
+#: src/Astral_marketing/components/locale_selector.gleam:146
+msgid "Thai"
+msgstr "Thailändska"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:998
+msgid "The Operator Access is optional: pay for support and community access."
+msgstr "Operator Access är valfritt: betala för support och tillgång till communityn."
+
+#: src/Astral_marketing/components/coming_features.gleam:89
+msgid "The future is being built right now. These features are coming soon."
+msgstr "Framtiden byggs just nu. De här funktionerna kommer snart."
+
+#: src/Astral_marketing/pages/careers_page.gleam:313
+msgid "The future of paid roles"
+msgstr "Framtiden för betalda roller"
+
+#: src/Astral_marketing/components/coming_features.gleam:51
+msgid "Theme marketplace"
+msgstr "Temamarknad"
+
+#: src/Astral_marketing/pages/download_page.gleam:255
+msgid "This isn't a full replacement for the desktop app yet, and some things you'd expect from a mobile chat app are still missing."
+msgstr "Det här ersätter inte datorappen fullt ut ännu, och vissa saker man förväntar sig av en mobil chattapp saknas fortfarande."
+
+#: src/Astral_marketing/pages/not_found_page.gleam:60
+#: src/Astral_marketing/pages/not_found_page.gleam:104
+msgid "This page doesn't exist. But there's plenty more to explore."
+msgstr "Den här sidan finns inte. Men det finns mycket mer att utforska."
+
+#: src/Astral_marketing/components/footer.gleam:342
+msgid "This product includes GeoLite2 Data created by MaxMind, available from "
+msgstr "Denna produkt inkluderar GeoLite2-data skapad av MaxMind, tillgänglig från "
+
+#: src/Astral_marketing/components/coming_features.gleam:37
+msgid "Threads and forums"
+msgstr "Trådar och forum"
+
+#: src/Astral_marketing/pages/careers_page.gleam:243
+msgid "Translation & localization"
+msgstr "Översättning och lokalisering"
+
+#: src/Astral_marketing/pages/careers_page.gleam:162
+#: src/Astral_marketing/pages/careers_page.gleam:257
+msgid "Trust & safety"
+msgstr "Trygghet och säkerhet"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:140
+msgid "Try different keywords or browse our categories."
+msgstr "Prova andra sökord eller bläddra bland våra kategorier."
+
+#: src/Astral_marketing/components/hackernews_banner.gleam:36
+msgid "Try it without an email at"
+msgstr "Prova utan e-postadress på"
+
+#: src/Astral_marketing/components/locale_selector.gleam:147
+msgid "Turkish"
+msgstr "Turkiska"
+
+#: src/Astral_marketing/components/locale_selector.gleam:148
+msgid "Ukrainian"
+msgstr "Ukrainska"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:857
+msgid "Unique profile badge"
+msgstr "Unikt profilmärke"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1036
+msgid "Unlimited users"
+msgstr "Obegränsat antal användare"
+
+#: src/Astral_marketing/pages/partners_page.gleam:203
+msgid "Unlock and test new features before they're available to everyone."
+msgstr "Lås upp och testa nya funktioner innan de blir tillgängliga för alla."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:79
+msgid "Unlock higher limits and exclusive features while supporting an independent communication platform."
+msgstr "Lås upp högre gränser och exklusiva funktioner samtidigt som du stödjer en oberoende kommunikationsplattform."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:611
+msgid "Up to 4K video quality"
+msgstr "Upp till 4K-videokvalitet"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:54
+msgid "Upgrade to Plutonium for $4.99/mo: custom username tags, per-community profiles, message scheduling, 4K streaming, 500MB uploads, and more exclusive features."
+msgstr "Uppgradera till Plutonium för $4.99/mån: egna användarnamnstaggar, profiler per community, schemaläggning av meddelanden, 4K-streaming, 500 MB-uppladdningar och fler exklusiva funktioner."
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:644
+msgid "Upload and use your own notification sounds to personalize your Astral experience."
+msgstr "Ladda upp och använd egna notisljud för att göra Astral mer som du vill ha det."
+
+#: src/Astral_marketing/pages/partners_page.gleam:181
+msgid "Upload animated GIFs as your community's avatar and banner."
+msgstr "Ladda upp animerade GIF:ar som din communitys avatar och banner."
+
+#: src/Astral_marketing/components/current_features.gleam:136
+msgid "Upload custom emojis and stickers"
+msgstr "Ladda upp egna emojis och stickers"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:315
+msgid "Use Astral in your mobile browser for now"
+msgstr "Använd Astral i mobilwebbläsaren tills vidare"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:378
+msgid "Use animated emojis"
+msgstr "Använd animerade emojis"
+
+#: src/Astral_marketing/components/current_features.gleam:154
+msgid "Use our desktop client (mobile coming soon)"
+msgstr "Använd vår datorapp (mobilversion kommer snart)"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:604
+msgid "Use your favorite emojis and stickers from any community, anywhere across Astral."
+msgstr "Använd dina favorit-emojis och -stickers från vilken community som helst, var som helst i Astral."
+
+#: src/Astral_marketing/pages/partners_page.gleam:222
+msgid "VIP Voice Servers"
+msgstr "VIP-röstservrar"
+
+#: src/Astral_marketing/components/partner_section.gleam:117
+msgid "Verified Community"
+msgstr "Verifierad community"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:621
+msgid "Video backgrounds"
+msgstr "Videobakgrunder"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:392
+msgid "Video quality"
+msgstr "Videokvalitet"
+
+#: src/Astral_marketing/components/locale_selector.gleam:149
+msgid "Vietnamese"
+msgstr "Vietnamesiska"
+
+#: src/Astral_marketing/pages/help_category_page.gleam:172
+msgid "View all articles"
+msgstr "Visa alla artiklar"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:183
+#: src/Astral_marketing/pages/careers_page.gleam:123
+msgid "View repository"
+msgstr "Visa repot"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:822
+msgid "Visionary"
+msgstr "Visionary"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:864
+msgid "Visionary & Operators communities with team access"
+msgstr "Visionary- och Operators-communityerna med direktkontakt med teamet"
+
+#: src/Astral_marketing/components/current_features.gleam:82
+msgid "Voice & video"
+msgstr "Röst och video"
+
+#: src/Astral_marketing/pages/careers_page.gleam:396
+msgid "Want to help build Astral?"
+msgstr "Vill du hjälpa till att bygga Astral?"
+
+#: src/Astral_marketing/pages/careers_page.gleam:94
+msgid "Ways to contribute"
+msgstr "Sätt att bidra"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:192
+msgid "We appreciate responsible disclosure via our Security Bug Bounty page. We offer Plutonium codes and Bug Hunter badges based on severity."
+msgstr "Vi uppskattar ansvarsfull avslöjande via vår Säkerhets Bug Bounty-sida. Vi erbjuder Plutonium-koder och Bug Hunter-märken baserat på allvarlighetsgrad."
+
+#: src/Astral_marketing/components/final_cta.gleam:56
+msgid "We need your support to make this work."
+msgstr "Vi behöver ditt stöd för att få det här att fungera."
+
+#: src/Astral_marketing/pages/partners_page.gleam:453
+msgid "We review all applications and will get back to you as soon as possible."
+msgstr "Vi granskar alla ansökningar och återkommer så snart vi kan."
+
+#: src/Astral_marketing/pages/press_page.gleam:301
+msgid "We typically respond within 24 hours during business days."
+msgstr "Vi brukar svara inom 24 timmar på vardagar."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:62
+msgid "We're building a complete platform with all the features you'd expect. But we can't do it without your help!"
+msgstr "Vi bygger en komplett plattform med alla funktioner du förväntar dig. Men vi klarar det inte utan din hjälp!"
+
+#: src/Astral_marketing/pages/download_page.gleam:214
+msgid "We're building apps for iOS and Android. Until they're ready, Astral works in your mobile browser — and we've put a lot of effort into making it feel as app-like as possible."
+msgstr "Vi bygger appar för iOS och Android. Tills de är klara fungerar Astral i mobilwebbläsaren – och vi har lagt mycket arbete på att få det att kännas så app-likt som möjligt."
+
+#: src/Astral_marketing/components/get_involved_section.gleam:78
+msgid "We're limiting registrations during beta. Once you're in, you can give friends a code to skip the queue."
+msgstr "Vi begränsar registreringar under betan. När du väl är inne kan du ge vänner en kod så att de kan hoppa över kön."
+
+#: src/Astral_marketing/pages/careers_page.gleam:324
+msgid "We're still building the business around Astral and aren't quite ready for paid roles yet."
+msgstr "Vi håller fortfarande på att bygga upp verksamheten kring Astral och är inte riktigt redo för betalda roller än."
+
+#: src/Astral_marketing/components/current_features.gleam:107
+msgid "Webhooks and bot support"
+msgstr "Webhooks och botstöd"
+
+#: src/Astral_marketing/pages/donate_page.gleam:350
+msgid "What does my donation support?"
+msgstr "Vad går min donation till?"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:549
+msgid "What you get with Plutonium"
+msgstr "Det här får du med Plutonium"
+
+#: src/Astral_marketing/components/current_features.gleam:45
+msgid "What's available today"
+msgstr "Det som finns idag"
+
+#: src/Astral_marketing/components/coming_features.gleam:77
+msgid "What's coming next"
+msgstr "Det som kommer härnäst"
+
+#: src/Astral_marketing/pages/donate_page.gleam:384
+msgid "What's the difference between Individual and Business?"
+msgstr "Vad är skillnaden mellan Privat och Företag?"
+
+#: src/Astral_marketing/pages/press_page.gleam:226
+msgid "White"
+msgstr "Vit"
+
+#: src/Astral_marketing/pages/press_page.gleam:110
+msgid "White Logo"
+msgstr "Vit logotyp"
+
+#: src/Astral_marketing/pages/press_page.gleam:164
+msgid "White Symbol"
+msgstr "Vit symbol"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:346
+msgid "Windows"
+msgstr "Windows"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:232
+msgid "Windows 10+"
+msgstr "Windows 10+"
+
+#: src/Astral_marketing/pages/careers_page.gleam:357
+msgid "With your support, we hope to make this independent communication platform sustainable and start offering paid roles in the future."
+msgstr "Med ditt stöd hoppas vi kunna göra den här oberoende kommunikationsplattformen hållbar och börja erbjuda betalda roller i framtiden."
+
+#: src/Astral_marketing/pages/partners_page.gleam:137
+msgid "Your community gets verified status for authenticity and trust."
+msgstr "Din community får verifierad status för ökad autenticitet och tillit."
+
+#: src/Astral_marketing/pages/partners_page.gleam:192
+msgid "Your community receives increased limits when you need them."
+msgstr "Din community får högre gränser när du behöver dem."
+
+#: src/Astral_marketing/pages/donate_page.gleam:353
+msgid "Your donation helps fund Astral's infrastructure costs, including servers, bandwidth, storage, and ongoing development of new features. It helps us maintain and improve the platform for everyone."
+msgstr "Din donation hjälper till att finansiera Astrals driftkostnader – servrar, bandbredd och lagring – samt fortsatt utveckling av nya funktioner. Den hjälper oss att underhålla och förbättra plattformen för alla."
+
+#: src/Astral_marketing/pages/partners_page.gleam:395
+msgid "Your name and platform username"
+msgstr "Ditt namn och ditt användarnamn på plattformen"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:949
+msgid "all"
+msgstr "alla"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:156
+msgid "article"
+msgstr "artikel"
+
+#: src/Astral_marketing/pages/help_center_page.gleam:157
+msgid "articles"
+msgstr "artiklar"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:518
+msgid "iOS"
+msgstr "iOS"
+
+#: src/Astral_marketing/components/pwa_install_dialog.gleam:98
+msgid "iOS / iPadOS"
+msgstr "iOS / iPadOS"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:235
+msgid "iOS 15+"
+msgstr "iOS 15+"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:355
+msgid "macOS"
+msgstr "macOS"
+
+#: src/Astral_marketing/components/platform_download_button.gleam:233
+msgid "macOS 10.15+"
+msgstr "macOS 10.15+"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:1067
+msgid "one-time purchase"
+msgstr "engångsköp"
+
+#: src/Astral_marketing/components/plutonium_section.gleam:68
+#: src/Astral_marketing/pages/donate_page.gleam:282
+#: src/Astral_marketing/pages/plutonium_page.gleam:106
+#: src/Astral_marketing/pages/plutonium_page.gleam:230
+msgid "or"
+msgstr "eller"
+
+#: src/Astral_marketing/components/get_involved_section.gleam:140
+msgid "our RSS feed"
+msgstr "vårt RSS-flöde"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:96
+msgid "result for"
+msgstr "resultat för"
+
+#: src/Astral_marketing/pages/help_search_page.gleam:100
+msgid "results for"
+msgstr "resultat för"
+
+#: src/Astral_marketing/pages/plutonium_page.gleam:801
+msgid "{0} of {1} slots left"
+msgstr "{0} av {1} platser kvar"
+
+#: src/Astral_marketing/components/footer.gleam:336
+msgid "© Astral Platform AB (Swedish limited liability company: 559537-3993)"
+msgstr "© Astral Platform AB (svenskt aktiebolag, org.nr: 559537-3993)"

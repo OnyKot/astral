@@ -1,0 +1,82 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.button {
+	border: none;
+	background-color: transparent;
+	padding: 0;
+}
+
+.relative {
+	position: relative;
+}
+
+.voiceSpeakingRingOuter,
+.voiceSpeakingRingInner {
+	position: absolute;
+	inset: -3px;
+	border-radius: 999px;
+	pointer-events: none;
+	z-index: 0;
+}
+
+.voiceSpeakingRingOuter {
+	background: color-mix(in srgb, var(--text-primary) 18%, transparent);
+	opacity: 0;
+	animation: dmVoiceSpeakingPulse 1.6s ease-out infinite;
+}
+
+.voiceSpeakingRingInner {
+	border: 1px solid color-mix(in srgb, var(--text-primary) 34%, transparent);
+	opacity: 0.68;
+}
+
+.fullSize {
+	height: 100%;
+	width: 100%;
+}
+
+.muted {
+	color: var(--text-tertiary-muted);
+	opacity: 0.5;
+}
+
+.userTagWrapper {
+	position: absolute;
+	top: -6px;
+	right: -6px;
+	pointer-events: none;
+	z-index: 4;
+	box-shadow: 0 0 0 3px var(--background-secondary);
+}
+
+@keyframes dmVoiceSpeakingPulse {
+	0% {
+		opacity: 0.46;
+		transform: scale(0.96);
+	}
+	65% {
+		opacity: 0.08;
+		transform: scale(1.16);
+	}
+	100% {
+		opacity: 0;
+		transform: scale(1.24);
+	}
+}

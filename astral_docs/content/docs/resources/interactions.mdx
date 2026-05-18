@@ -1,0 +1,329 @@
+---
+title: Interactions
+description: Buttons, select menus, and ephemeral responses for Astral bots
+---
+
+Astral's Interactions API lets webhook-backed bots send messages with
+clickable **buttons** and **select menus**, receive click events
+asynchronously at an HTTPS endpoint of their choosing, and mark
+responses as **ephemeral** so only the user who triggered the
+interaction sees them.
+
+The payload shape and component schema are intentionally Discord-
+compatible. Bots that already handle Discord message components will
+run on Astral with minimal changes — mostly changing the domain they
+POST back to.
+
+## How it works
+
+1. **Bot posts a message with components.** The webhook execute
+   endpoint accepts a `components` field (action rows + buttons +
+   selects) in the body.
+2. **Astral renders the components** on the client as real buttons and
+   drop-downs. Link buttons open in a new tab; interactive buttons and
+   select menus POST to Astral.
+3. **User clicks a button.** The client sends
+   `POST /v1/interactions/click` with the user's session. Astral
+   validates channel access + that the `custom_id` actually exists on
+   the message (so a malicious client can't spoof arbitrary events).
+4. **Astral queues delivery** to `webhook.interaction_url`. A
+   Graphile Worker task POSTs the signed payload to the bot with
+   exponential-backoff retries.
+5. **Bot responds** by calling the normal webhook execute endpoint
+   (`POST /v1/webhooks/:id/:token`) with a follow-up message. If the
+   response should be private, set `flags: 64` to mark it
+   [ephemeral](#ephemeral-messages).
+
+The bot's HTTP response to the outbound POST is not forwarded back to
+the user — it is only used to decide whether delivery succeeded. The
+user sees the bot's reply as a normal `MESSAGE_CREATE` gateway event.
+
+## Sending components
+
+Set the webhook's `interaction_url` first:
+
+```bash
+curl -X PATCH https://astraof.com/api/v1/webhooks/<id> \
+  -H "Authorization: Bearer <session>" \
+  -H "Content-Type: application/json" \
+  -d '{"interaction_url": "https://my-bot.example.com/interactions"}'
+```
+
+Then execute the webhook with a `components` array:
+
+```bash
+curl -X POST https://astraof.com/api/v1/webhooks/<id>/<token> \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Pick a severity:",
+    "components": [{
+      "type": 1,
+      "components": [{
+        "type": 3,
+        "custom_id": "severity",
+        "placeholder": "Select one",
+        "options": [
+          {"label": "Info",     "value": "info"},
+          {"label": "Warning",  "value": "warn"},
+          {"label": "Critical", "value": "crit"}
+        ]
+      }]
+    }]
+  }'
+```
+
+### Component schema
+
+The `components` array on a message is always a list of **action
+rows** (`type: 1`). Each row contains up to 5 children. The only
+component types a message can carry today are:
+
+| `type` | Name | Notes |
+| --- | --- | --- |
+| 1 | Action Row | Container. Up to 5 per message. |
+| 2 | Button | Up to 5 per row. A row with a select menu can't also contain buttons. |
+| 3 | String Select | Exactly 1 per row, and that row contains nothing else. |
+
+Modal submits (`type: 4`) and the user / role / mentionable / channel
+select types (5-8) are accepted by the schema but not yet rendered on
+the client. They will be passed through opaquely to your
+`interaction_url` so your bot can start integrating now and light up
+the UI later.
+
+#### Button
+
+```json
+{
+  "type": 2,
+  "style": 1,
+  "label": "Approve",
+  "custom_id": "deploy_approve",
+  "disabled": false
+}
+```
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `type` | 2 | yes | |
+| `style` | 1..5 | yes | 1 primary, 2 secondary, 3 success, 4 danger, 5 link |
+| `label` | string | no | 1..80 chars |
+| `emoji` | `{name, id?, animated?}` | no | Unicode (`{"name": "✅"}`) or custom |
+| `custom_id` | string | styles 1-4 | 1..100 chars, arbitrary bot-defined ID |
+| `url` | string | style 5 | HTTPS URL, mutually exclusive with `custom_id` |
+| `disabled` | boolean | no | Renders greyed out, clicks rejected |
+
+Link buttons (`style: 5`) are handled entirely client-side — the
+browser navigates to `url`. They never call your `interaction_url`.
+
+#### String select
+
+```json
+{
+  "type": 3,
+  "custom_id": "severity",
+  "placeholder": "Select one",
+  "options": [
+    {"label": "Info", "value": "info", "description": "Low priority"},
+    {"label": "Warn", "value": "warn"},
+    {"label": "Crit", "value": "crit"}
+  ],
+  "min_values": 1,
+  "max_values": 1
+}
+```
+
+`options` accepts 1..25 entries. Each option has a required `label` +
+`value` (1..100 chars) and optional `description`, `emoji`, `default`.
+
+## Receiving interaction events
+
+When a user clicks a button or submits a select, Astral POSTs this
+payload to `webhook.interaction_url`:
+
+```json
+{
+  "id": "1488994324326748216",
+  "type": 3,
+  "token": "int_k3l2m1n0p9q8r7s6",
+  "version": 1,
+  "channel_id": "1474889782147747848",
+  "guild_id": "1474882870798782465",
+  "message_id": "1489000123456789012",
+  "user": {
+    "id": "1474497271369379840",
+    "username": "ivan",
+    "discriminator": "0001",
+    "avatar": "a_abc123..."
+  },
+  "data": {
+    "custom_id": "deploy_approve",
+    "component_type": 2
+  }
+}
+```
+
+For select menus, `data` additionally includes the picked `values`:
+
+```json
+{
+  "data": {
+    "custom_id": "severity",
+    "component_type": 3,
+    "values": ["crit"]
+  }
+}
+```
+
+### Fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | snowflake | Unique ID for this interaction event |
+| `type` | 3 | Always `3` = MESSAGE_COMPONENT. Matches Discord's type enum. |
+| `token` | string | Short opaque correlation ID. Useful for logging. Not currently validated on the way back — the bot is authenticated by its webhook token. |
+| `version` | 1 | Payload schema version |
+| `channel_id` | snowflake | Channel the message lives in |
+| `guild_id` | snowflake | Present only when the channel is in a guild |
+| `message_id` | snowflake | Message the component was attached to |
+| `user` | user partial | Who clicked. Always the authenticated session user. |
+| `data.custom_id` | string | The `custom_id` you set on the component |
+| `data.component_type` | 2 or 3 | 2 = button, 3 = string select |
+| `data.values` | string[] | Picked option values (select menus only) |
+
+### Request headers
+
+Outbound requests from Astral always set:
+
+| Header | Description |
+| --- | --- |
+| `Content-Type` | `application/json` |
+| `User-Agent` | `Astral-Interactions/1.0` |
+| `X-Astral-Timestamp` | Unix seconds (string) |
+| `X-Astral-Signature` | `v1=<hex HMAC-SHA256>` (see below) |
+
+### Verifying signatures
+
+Astral signs every outbound interaction payload with
+HMAC-SHA256 keyed on the **webhook token**. Compute the expected
+signature over the string `v1:<timestamp>:<raw body>` and compare with
+the `X-Astral-Signature` header:
+
+```python
+# Python example — verify a Astral interaction POST
+import hmac, hashlib
+
+def verify(webhook_token: str, timestamp: str, raw_body: bytes, header: str) -> bool:
+    mac = hmac.new(
+        webhook_token.encode("utf-8"),
+        f"v1:{timestamp}:".encode("utf-8") + raw_body,
+        hashlib.sha256,
+    )
+    expected = "v1=" + mac.hexdigest()
+    return hmac.compare_digest(expected, header)
+```
+
+```javascript
+// Node.js example
+import crypto from 'node:crypto';
+
+function verify(webhookToken, timestamp, rawBody, header) {
+  const expected = 'v1=' + crypto
+    .createHmac('sha256', webhookToken)
+    .update(`v1:${timestamp}:${rawBody}`)
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(expected),
+    Buffer.from(header),
+  );
+}
+```
+
+Rejecting events with timestamps more than a few minutes old is
+recommended to mitigate replay attacks.
+
+### Responding to an interaction
+
+Astral does not require an inline response to the POST. Your handler
+should **return 2xx as soon as the payload is validated** — any 4xx
+response outside `429` is treated as permanent failure and the event
+is dropped without retries. 5xx / network errors / 429s trigger
+exponential backoff (up to 5 attempts, ~30 minute ceiling).
+
+To send a visible reply, call the webhook execute endpoint just like
+any other outgoing message:
+
+```bash
+curl -X POST https://astraof.com/api/v1/webhooks/<id>/<token> \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "✅ Deploy approved",
+    "flags": 64
+  }'
+```
+
+## Ephemeral messages
+
+Set `flags: 64` (`1 << 6`) on an outgoing message to mark it ephemeral.
+Clients hide ephemeral messages from every user except:
+
+- the message's **author** (covers user-sent ephemerals)
+- users explicitly listed in the message's `mentions` array
+
+This is a best-effort client-side filter. Clients that don't know
+about the flag see the message normally; treat it as UX hygiene, not
+a security boundary. Do **not** put secrets in ephemeral bodies.
+
+A typical "button click → private response" flow:
+
+```text
+User clicks "Approve"
+  → client POSTs /v1/interactions/click { custom_id: "deploy_approve" }
+  → Astral validates + queues delivery
+  → Astral POSTs signed payload to webhook.interaction_url
+  → Bot receives, processes
+  → Bot POSTs /v1/webhooks/:id/:token with flags: 64
+    and mentions: [user_id] so the invoking user sees it privately
+```
+
+## Client endpoint (from-browser)
+
+Clients that want to trigger an interaction (the Astral web client
+does this automatically when you click a button on a message) hit:
+
+`POST /v1/interactions/click`
+
+Requires a logged-in session. Body:
+
+```json
+{
+  "channel_id": "1474889782147747848",
+  "message_id": "1489000123456789012",
+  "custom_id": "deploy_approve",
+  "values": []
+}
+```
+
+`values` is optional — send it for select menus, omit it for buttons.
+Response is `204 No Content` on success. Delivery to the bot is
+asynchronous; clients don't observe bot responses through this
+endpoint. The bot's reply arrives via the normal gateway
+`MESSAGE_CREATE` event.
+
+Rate limit: 60 clicks per user per minute (bucket
+`interaction:click::user_id`).
+
+## Limitations (as of the phase-1 rollout)
+
+- **Modals (component type 4)** — schema accepted, not yet rendered
+- **User / role / mentionable / channel selects (types 5-8)** — schema
+  accepted, not yet rendered
+- **Deferred responses / 3-second acknowledgment** — there is no
+  deadline; bots always respond async via the webhook execute API
+- **Ed25519 signing** — phase 1 uses HMAC-SHA256 keyed on the webhook
+  token. Ed25519 (with per-bot signing keys) is on the roadmap
+- **Custom emoji in buttons** — the client currently renders only
+  unicode emoji. Custom emoji (`emoji: {id: "…"}`) are accepted and
+  passed through to your bot but show as blank in the UI
+- **Per-message invoking-user tracking** — ephemeral filtering is a
+  client-side shim based on `mentions`. Once interactions track
+  `invoking_user_id` server-side, ephemeral will become authoritative

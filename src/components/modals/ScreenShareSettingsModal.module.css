@@ -1,0 +1,335 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 2px 0 4px;
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px;
+	border-radius: 12px;
+	border: none;
+	background-color: color-mix(in srgb, var(--background-secondary) 92%, black 8%);
+	box-shadow: 0 8px 16px rgb(3 7 18 / 0.14);
+	animation: sectionFadeIn 320ms var(--window-open-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+.sectionLabel {
+	margin-bottom: 0;
+	font-weight: 600;
+	color: var(--text-primary);
+	font-size: 13px;
+	letter-spacing: 0.01em;
+}
+
+.optionGrid {
+	display: grid;
+	gap: 8px;
+}
+
+.optionGridResolution {
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.optionGridFrameRate {
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.optionButton {
+	position: relative;
+	isolation: isolate;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 38px;
+	border: none;
+	border-radius: 10px;
+	padding: 7px 8px;
+	font-weight: 640;
+	font-size: 13px;
+	letter-spacing: 0.01em;
+	overflow: hidden;
+	transition:
+		color 180ms ease,
+		background-color 180ms ease,
+		border-color 180ms ease,
+		transform 180ms ease;
+}
+
+.optionButton:hover {
+	transform: translateY(-1px);
+}
+
+.optionButtonLabel {
+	position: relative;
+	z-index: 1;
+	white-space: nowrap;
+}
+
+.optionButtonSelected {
+	background-color: var(--brand-primary);
+	color: white;
+	cursor: pointer;
+	box-shadow: 0 8px 16px color-mix(in srgb, var(--brand-primary) 28%, transparent);
+}
+
+.optionButtonSelected:hover {
+	background-color: var(--brand-secondary);
+}
+
+.optionButtonSelectedLocked {
+	background-color: color-mix(in srgb, var(--background-modifier-selected) 90%, black 10%);
+	color: var(--text-primary);
+	box-shadow: 0 6px 12px rgb(10 8 22 / 0.2);
+}
+
+.optionButtonUnselected {
+	background-color: color-mix(in srgb, var(--background-modifier-hover) 94%, black 6%);
+	color: var(--text-primary);
+	cursor: pointer;
+	box-shadow: 0 6px 12px rgb(3 7 18 / 0.12);
+}
+
+.optionButtonUnselected:hover {
+	background-color: color-mix(in srgb, var(--background-modifier-selected) 90%, black 10%);
+}
+
+.optionButtonUnselectedLocked {
+	background-color: color-mix(in srgb, var(--background-modifier-hover) 94%, black 6%);
+	color: var(--text-primary);
+	cursor: pointer;
+	box-shadow: 0 6px 12px rgb(3 7 18 / 0.12);
+}
+
+.optionButtonUnselectedLocked:hover {
+	background-color: color-mix(in srgb, var(--background-modifier-selected) 90%, black 10%);
+}
+
+.lockIcon {
+	position: relative;
+	flex: 0 0 auto;
+	width: 17px;
+	height: 17px;
+	z-index: 1;
+	color: var(--text-primary-muted);
+}
+
+.premiumBanner {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+	overflow: hidden;
+	isolation: isolate;
+	text-align: left;
+	cursor: pointer;
+	border: none;
+	border-radius: 8px;
+	background-color: color-mix(in srgb, var(--background-secondary) 88%, rgb(20 16 36) 12%);
+	padding: 14px;
+	box-shadow: 0 10px 20px rgb(6 6 20 / 0.18);
+	transition:
+		transform 220ms ease,
+		box-shadow 220ms ease,
+		border-color 220ms ease;
+}
+
+.premiumBanner::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -38%;
+	width: 28%;
+	background-color: rgb(255 255 255 / 0.08);
+	transform: skewX(-20deg) translateX(-220%);
+	pointer-events: none;
+	transition: transform 760ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.premiumBanner:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 12px 24px rgb(5 8 24 / 0.22);
+}
+
+.premiumBanner:hover::before {
+	transform: skewX(-20deg) translateX(460%);
+}
+
+.premiumBanner:active {
+	transform: translateY(0);
+}
+
+.premiumHalo {
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background-color: transparent;
+}
+
+.premiumBannerHeader {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.premiumBannerIconShell {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border-radius: 999px;
+	background-color: rgb(245 207 112);
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.65),
+		0 5px 10px rgb(20 12 5 / 0.2);
+}
+
+.premiumBannerIcon {
+	color: rgb(117 71 0);
+	filter: drop-shadow(0 1px 1px rgb(255 255 255 / 0.35));
+}
+
+.premiumBannerTitleGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.premiumBannerEyebrow {
+	font-size: 11px;
+	font-weight: 650;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: color-mix(in srgb, var(--brand-primary) 78%, white 22%);
+}
+
+.premiumBannerTitle {
+	font-weight: 730;
+	color: var(--text-primary);
+	font-size: 15px;
+	letter-spacing: 0.01em;
+}
+
+.premiumBannerDescription {
+	margin: 0;
+	color: var(--text-primary-muted);
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+.premiumBannerCta {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	width: fit-content;
+	padding: 6px 10px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	color: var(--text-primary);
+	border: none;
+	background-color: color-mix(in srgb, var(--background-modifier-hover) 82%, rgb(28 24 48) 18%);
+}
+
+.premiumBannerArrow {
+	font-size: 12px;
+	color: color-mix(in srgb, var(--brand-primary) 72%, white 28%);
+}
+
+.audioToggleRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 10px 12px;
+	border: none;
+	background-color: color-mix(in srgb, var(--background-secondary) 90%, black 10%);
+	border-radius: 10px;
+	box-shadow: 0 6px 12px rgb(3 7 18 / 0.12);
+}
+
+.audioToggleInfo {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.audioToggleInfo .sectionLabel {
+	margin-bottom: 0;
+}
+
+.audioToggleDescription {
+	color: var(--text-primary-muted);
+	font-size: 12px;
+}
+
+@media (max-width: 560px) {
+	.optionGridResolution {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.optionGridFrameRate {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.premiumBanner {
+		padding: 12px;
+	}
+
+	.premiumBannerTitle {
+		font-size: 14px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.section,
+	.optionButton,
+	.premiumBanner,
+	.premiumBanner::before,
+	.premiumHalo,
+	.premiumBannerIconShell {
+		animation: none;
+		transition: none;
+	}
+}
+
+@keyframes sectionFadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}

@@ -1,0 +1,18 @@
+{
+	"title": "Astral · Документация",
+	"pages": [
+		"---Начало работы",
+		"index",
+		"quickstart",
+		"bots",
+		"---Справочник",
+		"api-reference",
+		"events",
+		"resources",
+		"---Разделы",
+		"topics",
+		"---Библиотеки",
+		"libraries"
+	],
+	"defaultOpen": true
+}

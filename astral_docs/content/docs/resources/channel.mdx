@@ -1,0 +1,106 @@
+---
+title: Channel
+description: Channel
+---
+
+Channels are the containers bots read from, write to, and manage.
+
+Depending on type, a channel may be:
+
+- a guild text channel
+- a guild voice channel
+- a DM
+- a group DM
+- a category or another specialized channel type
+
+For message-specific endpoints, see [Message](./message).
+
+## Common public endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /channels/:channel_id` | Fetch a single channel |
+| `PATCH /channels/:channel_id` | Update a channel |
+| `DELETE /channels/:channel_id` | Delete a channel or leave/remove yourself from a DM-style channel |
+| `GET /channels/:channel_id/rtc-regions` | List available RTC regions for voice/call use |
+| `PUT /channels/:channel_id/recipients/:user_id` | Add a recipient to a group DM |
+| `DELETE /channels/:channel_id/recipients/:user_id` | Remove a recipient from a group DM |
+| `PUT /channels/:channel_id/permissions/:overwrite_id` | Create or replace a permission overwrite |
+| `DELETE /channels/:channel_id/permissions/:overwrite_id` | Delete a permission overwrite |
+
+Related routes:
+
+- `GET /guilds/:guild_id/channels`
+- `POST /guilds/:guild_id/channels`
+- `PATCH /guilds/:guild_id/channels`
+
+## Fetch a channel
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>
+```
+
+Typical fields include:
+
+```json
+{
+  "id": "1470000000000000001",
+  "type": 0,
+  "name": "general",
+  "guild_id": "1470000000000000002",
+  "position": 0,
+  "topic": "General discussion"
+}
+```
+
+## Update a channel
+
+Only fields valid for the channel type may be updated.
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"news","topic":"Official updates"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>
+```
+
+## Permission overwrites
+
+Use channel overwrites when your bot manages access for roles or users inside a guild.
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": 0,
+    "allow": "1024",
+    "deny": "2048"
+  }' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/permissions/<OVERWRITE_ID>
+```
+
+Notes:
+
+- `type: 0` usually refers to a role overwrite
+- `type: 1` usually refers to a user/member overwrite
+
+## Group DM recipients
+
+For group DM style channels:
+
+- add a member with `PUT /channels/:channel_id/recipients/:user_id`
+- remove a member with `DELETE /channels/:channel_id/recipients/:user_id`
+
+## Voice-related channel helpers
+
+Voice and call-capable channels expose extra public routes:
+
+- `GET /channels/:channel_id/rtc-regions`
+- `GET /channels/:channel_id/call`
+- `PATCH /channels/:channel_id/call`
+
+For that flow, see [Voice](./voice).

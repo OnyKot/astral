@@ -1,0 +1,315 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.voiceChannelContainer {
+	height: 100%;
+	width: 100%;
+	background: transparent;
+}
+
+.channelGrid {
+	display: grid;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	grid-template-rows: 4rem 1fr;
+	background: transparent;
+	isolation: isolate;
+}
+
+@media (min-width: 768px) {
+	.channelGrid {
+		grid-template-rows: 3.5rem 1fr;
+	}
+}
+
+.channelGridVoiceCallActive {
+	grid-template-rows: auto 1fr;
+}
+
+@media (min-width: 768px) {
+	.channelGridVoiceCallActive {
+		grid-template-rows: auto 1fr;
+	}
+}
+
+.voiceActiveHeaderWrapper {
+	background: transparent;
+}
+
+.contentGrid {
+	display: grid;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	grid-template-columns: 1fr auto;
+	position: relative;
+	contain: layout style;
+	background: transparent;
+}
+
+.memberListDivider {
+	display: none;
+}
+
+.searchPanel {
+	display: flex;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	border-left: none;
+	background: transparent;
+	position: relative;
+	/*
+	 * Align side-panel motion with members panel behavior so right-rail
+	 * surfaces (search results / members) feel consistent when toggled.
+	 */
+	animation: sidePanelSlideIn var(--motion-dur-medium) var(--motion-ease-snap);
+}
+
+.searchPanel::before {
+	content: '';
+	position: absolute;
+	inset: 0 auto 0 -16px;
+	width: 16px;
+	pointer-events: none;
+	background: linear-gradient(
+		90deg,
+		color-mix(in srgb, var(--background-primary) 36%, transparent),
+		transparent
+	);
+}
+
+.emptyStateContent {
+	display: flex;
+	width: min(100%, 34rem);
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 1.25rem;
+	padding: 2.5rem;
+	position: relative;
+	z-index: 1;
+}
+
+.centeredText {
+	text-align: center;
+	max-width: 30rem;
+}
+
+.voiceChannelCanvas {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 0;
+	padding: clamp(2rem, 5vw, 4rem);
+	overflow: hidden;
+}
+
+.voiceAndroidStage {
+	position: relative;
+	display: flex;
+	min-height: 0;
+	align-items: center;
+	justify-content: center;
+	padding: clamp(1.25rem, 4vw, 2.25rem);
+	overflow: hidden;
+}
+
+.voiceAndroidPanel {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	width: min(100%, 34rem);
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.voiceAndroidCompactCall {
+	width: 100%;
+}
+
+.voiceBackdropOrb {
+	position: absolute;
+	border-radius: 999px;
+	filter: blur(52px);
+	opacity: 0.62;
+	pointer-events: none;
+	animation: voiceChannelOrbFloat 18s ease-in-out infinite;
+}
+
+.voiceBackdropOrbPrimary {
+	top: 8%;
+	left: 12%;
+	width: min(30vw, 20rem);
+	height: min(30vw, 20rem);
+	background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+}
+
+.voiceBackdropOrbSecondary {
+	right: 10%;
+	bottom: 12%;
+	width: min(24vw, 16rem);
+	height: min(24vw, 16rem);
+	background: color-mix(in srgb, var(--status-online) 14%, transparent);
+	animation-delay: -6s;
+}
+
+.voiceHero {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1rem;
+}
+
+.voiceBadge {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 4.5rem;
+	width: 4.5rem;
+	border-radius: 1.5rem;
+	background:
+		radial-gradient(circle at top left, color-mix(in srgb, var(--brand-primary) 24%, transparent) 0%, transparent 62%),
+		linear-gradient(180deg, color-mix(in srgb, var(--background-floating) 16%, var(--background-primary) 84%), color-mix(in srgb, var(--background-secondary) 22%, var(--background-primary) 78%));
+	box-shadow:
+		0 24px 48px rgb(6 10 21 / 0.22),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.voiceBadge::after {
+	content: '';
+	position: absolute;
+	inset: -0.35rem;
+	border-radius: 1.75rem;
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 16%, transparent);
+	opacity: 0.85;
+}
+
+.voiceBadgeIcon {
+	height: 1.6rem;
+	width: 1.6rem;
+	color: color-mix(in srgb, var(--brand-primary) 76%, var(--text-primary));
+}
+
+.voiceChannelEyebrow {
+	margin-bottom: 0.625rem;
+	font-size: 0.78rem;
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--brand-primary) 72%, var(--text-secondary));
+}
+
+.voiceChannelTitle {
+	margin-bottom: 0.625rem;
+	font-weight: 700;
+	font-size: clamp(1.85rem, 3vw, 2.6rem);
+	line-height: 1.05;
+	color: var(--text-primary);
+	letter-spacing: -0.04em;
+}
+
+.voiceChannelDescription {
+	max-width: 28rem;
+	margin: 0 auto;
+	font-size: 1rem;
+	line-height: 1.6;
+	color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-primary));
+}
+
+.buttonContainer {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.75rem;
+	position: relative;
+}
+
+.buttonContainer::before {
+	content: '';
+	position: absolute;
+	inset: auto;
+	width: 8rem;
+	height: 3rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+	filter: blur(24px);
+	pointer-events: none;
+}
+
+@keyframes voiceChannelOrbFloat {
+	0%,
+	100% {
+		transform: translate3d(0, 0, 0) scale(1);
+	}
+
+	50% {
+		transform: translate3d(20px, -16px, 0) scale(1.08);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.voiceBackdropOrb {
+		animation: none;
+	}
+}
+
+@media (max-width: 767px) {
+	.emptyStateContent {
+		padding: 1.5rem;
+	}
+
+	.voiceAndroidStage {
+		padding: 1rem;
+		align-items: stretch;
+	}
+
+	.voiceAndroidPanel {
+		width: 100%;
+		align-self: stretch;
+		margin: auto 0;
+	}
+
+	.voiceBadge {
+		height: 4rem;
+		width: 4rem;
+	}
+
+	.voiceChannelTitle {
+		font-size: clamp(1.6rem, 8vw, 2rem);
+	}
+}
+
+@keyframes sidePanelSlideIn {
+	from {
+		opacity: 0;
+		transform: translateX(14px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}

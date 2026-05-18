@@ -1,0 +1,68 @@
+components_manager:
+  task_processors:
+    main-task-processor:
+      worker_threads: $main-worker-threads
+    fs-task-processor:
+      worker_threads: $fs-worker-threads
+    monitor-task-processor:
+      worker_threads: $monitor-worker-threads
+      thread_name: mon-worker
+  default_task_processor: main-task-processor
+
+  coro_pool:
+    initial_size: 500
+    max_size: 10000
+
+  components:
+    server:
+      listener:
+        port: $server-port
+        task_processor: main-task-processor
+        connection:
+          in_buffer_size: 32768
+          requests_queue_size_threshold: 100
+      listener-monitor:
+        port: $monitor-port
+        task_processor: monitor-task-processor
+
+    logging:
+      fs-task-processor: fs-task-processor
+      loggers:
+        default:
+          file_path: '@stderr'
+          level: $logger-level
+          format: json
+          overflow_behavior: discard
+
+    dns-client:
+      fs-task-processor: fs-task-processor
+    http-client-core:
+      fs-task-processor: fs-task-processor
+    http-client: {}
+
+    handler-ping:
+      path: /ping
+      method: GET
+      task_processor: monitor-task-processor
+      url_trailing_slash: strict-match
+      throttling_enabled: false
+      set-response-server-hostname: true
+      monitor-handler: true
+
+    handler-server-monitor:
+      path: /metrics
+      method: GET
+      task_processor: monitor-task-processor
+      throttling_enabled: false
+      monitor-handler: true
+      format: prometheus-untyped
+
+    invite-upstream-client:
+      timeout_ms: 800
+      success_cache_ttl_ms: 2000
+      negative_cache_ttl_ms: 5000
+
+    handler-astral-invites:
+      path: /invites/{invite_code}
+      method: GET
+      task_processor: main-task-processor

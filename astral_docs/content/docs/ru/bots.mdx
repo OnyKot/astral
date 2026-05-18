@@ -1,0 +1,316 @@
+---
+title: Руководство По Bot API
+description: Подробное руководство по публичному Astral Bot API с примерами и тестовыми запросами
+---
+
+Это основной русский гайд по Astral Bot API.
+
+Он покрывает:
+
+- какой API использовать под задачу
+- как проверить токен
+- какие маршруты нужны в первую очередь
+- как отправлять тестовые запросы
+- как подключаться к Gateway
+- как отлаживать бота
+
+## Какой API использовать
+
+Используйте самый маленький интерфейс, который решает задачу.
+
+| Задача | Что использовать |
+| --- | --- |
+| Отправить сообщение, прочитать канал, забанить участника, обновить ресурс | REST API |
+| Реагировать на новые сообщения и другие события в реальном времени | Gateway |
+| Отправлять сообщения из CI, GitHub или внешней системы без постоянного бота | Webhooks |
+| Авторизовать пользователя Astral в своём сайте или панели | OAuth2 |
+
+Обычный бот почти всегда использует:
+
+- REST для действий
+- Gateway для событий
+
+## Базовые URL
+
+```text
+HTTP API: https://<ваш-домен>/api/v1
+Gateway:  wss://<ваш-домен>/gateway?v=1&encoding=json
+```
+
+Во многих примерах ниже используется `https://astraof.com/api/v1`.
+
+## Аутентификация
+
+Бот использует заголовок:
+
+```text
+Authorization: Bot YOUR_BOT_TOKEN
+```
+
+Токен нужно хранить только на сервере. Не вставляйте его:
+
+- во фронтенд
+- в мобильный клиент
+- в публичный репозиторий
+
+<Callout type="info" title="Боты пропускают origin-проверку">
+Production API Astral блокирует non-GET, **cookie-only** запросы по заголовку `Origin` — это защита от CSRF для браузерных сессий. Bearer-token боты пропускаются явным образом: как только в запросе есть `Authorization: Bot <token>`, доступ решается только по токену, независимо от того, был ли отправлен `Origin`.
+
+Это значит, что боты на `node-fetch`, `undici`, `curl`, Python `requests`, Go `net/http` и любых других не-браузерных HTTP-клиентах работают из коробки без `Origin`. Если вы получили `INVALID_API_ORIGIN` (HTTP 403) от бота — проверьте, что заголовок `Authorization` действительно доходит до сервера: эта ошибка возможна только когда сервер не получил никакого `Authorization`.
+</Callout>
+
+## Первые 3 запроса, которые нужно проверить
+
+Если эти маршруты работают, значит бот уже авторизуется правильно:
+
+1. `GET /users/@me`
+2. `GET /applications/@me`
+3. `GET /gateway/bot`
+
+### Тестовые запросы через curl
+
+```bash
+export TOKEN="your_bot_token"
+```
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/users/@me
+```
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/applications/@me
+```
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/gateway/bot
+```
+
+Если хотя бы один из этих запросов падает, дальше в Gateway идти рано.
+
+## Основные публичные маршруты для бота
+
+| Endpoint | Для чего нужен |
+| --- | --- |
+| `GET /users/@me` | Проверить бот-токен |
+| `GET /applications/@me` | Получить текущее приложение бота |
+| `GET /gateway/bot` | Получить URL Gateway |
+| `GET /users/@me/guilds` | Список серверов бота |
+| `GET /guilds/:guild_id` | Получить сервер |
+| `GET /channels/:channel_id` | Получить канал |
+| `GET /channels/:channel_id/messages` | Получить сообщения |
+| `POST /channels/:channel_id/messages` | Отправить сообщение |
+| `PATCH /channels/:channel_id/messages/:message_id` | Редактировать сообщение |
+| `DELETE /channels/:channel_id/messages/:message_id` | Удалить сообщение |
+| `GET /guilds/:guild_id/members` | Получить участников |
+| `PUT /guilds/:guild_id/bans/:user_id` | Забанить участника |
+| `DELETE /guilds/:guild_id/bans/:user_id` | Разбанить участника |
+
+## Тестовые запросы для реальной работы
+
+### Отправить сообщение
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Привет из Astral Bot API"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages
+```
+
+### Получить последние сообщения
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  "https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages?limit=20"
+```
+
+### Редактировать сообщение
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Обновлённый текст"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages/<MESSAGE_ID>
+```
+
+### Удалить сообщение
+
+```bash
+curl -X DELETE \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages/<MESSAGE_ID>
+```
+
+### Забанить пользователя
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "X-Audit-Log-Reason: Спам" \
+  -d '{"delete_message_days":1}' \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/bans/<USER_ID>
+```
+
+## Минимальный рабочий бот на Node.js
+
+```js
+import WebSocket from "ws";
+
+const token = process.env.ASTRAL_BOT_TOKEN;
+const apiBase = process.env.ASTRAL_API_BASE ?? "https://astraof.com/api/v1";
+const gatewayUrl =
+  process.env.ASTRAL_GATEWAY_URL ??
+  "wss://astraof.com/gateway?v=1&encoding=json";
+
+let seq = null;
+let heartbeatTimer = null;
+
+function send(ws, payload) {
+  ws.send(JSON.stringify(payload));
+}
+
+const ws = new WebSocket(gatewayUrl);
+
+ws.on("message", async (raw) => {
+  const packet = JSON.parse(raw.toString());
+  const { op, t, d, s } = packet;
+
+  if (s !== null && s !== undefined) seq = s;
+
+  if (op === 10) {
+    heartbeatTimer = setInterval(() => {
+      send(ws, { op: 1, d: seq });
+    }, d.heartbeat_interval);
+
+    send(ws, {
+      op: 2,
+      d: {
+        token: `Bot ${token}`,
+        properties: {
+          $os: "node",
+          $browser: "astral-bot",
+          $device: "astral-bot"
+        }
+      }
+    });
+
+    return;
+  }
+
+  if (t === "MESSAGE_CREATE" && d.content === "!ping" && !d.author?.bot) {
+    await fetch(`${apiBase}/channels/${d.channel_id}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ content: "pong" })
+    });
+  }
+});
+
+ws.on("close", () => {
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+});
+```
+
+## Gateway: когда он нужен
+
+Gateway нужен, если бот должен:
+
+- мгновенно видеть новые сообщения
+- отслеживать изменения на сервере
+- реагировать на голосовые события
+- не опрашивать API вручную каждые несколько секунд
+
+Порядок работы:
+
+1. Подключиться к WebSocket
+2. Получить `HELLO`
+3. Запустить heartbeat
+4. Отправить `IDENTIFY`
+5. Обрабатывать `MESSAGE_CREATE`, `GUILD_CREATE`, `VOICE_STATE_UPDATE` и другие события
+
+Подробно:
+
+- [Gateway](./events/gateway)
+- [События Gateway](./events/gateway-events)
+
+## Webhooks: когда не нужен полный бот
+
+Если внешняя система просто должна отправлять сообщения в канал, используйте webhook.
+
+Пример:
+
+```bash
+curl -X POST "https://astraof.com/api/v1/webhooks/<WEBHOOK_ID>/<WEBHOOK_TOKEN>?wait=true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Сборка завершена",
+    "username": "CI"
+  }'
+```
+
+## OAuth2: когда нужен доступ от пользователя
+
+Если вы пишете сайт, панель или интеграцию, где пользователь должен авторизоваться через Astral, используйте OAuth2.
+
+Основные публичные маршруты:
+
+- `GET /oauth2/authorize`
+- `POST /oauth2/token`
+- `POST /oauth2/token/revoke`
+
+Для обычного server-side бота OAuth2 не обязателен.
+
+## Рекомендуемые переменные окружения
+
+```bash
+ASTRAL_BOT_TOKEN=<application_id>.<secret>
+ASTRAL_API_BASE=https://astraof.com/api/v1
+ASTRAL_GATEWAY_URL=wss://astraof.com/gateway?v=1&encoding=json
+LOG_LEVEL=info
+```
+
+## Типичные ошибки
+
+### `401 INVALID_AUTH_TOKEN`
+
+Обычно значит:
+
+- токен неверный
+- токен был пересоздан
+- вы отправили user token туда, где нужен bot token
+
+### `403 ACCESS_DENIED`
+
+Обычно значит:
+
+- токен валиден
+- но у бота нет прав на действие в сервере или канале
+
+### Gateway подключается, но бот “ничего не видит”
+
+Проверьте:
+
+- heartbeat реально отправляется
+- `IDENTIFY` уходит после `HELLO`
+- бот находится на нужном сервере
+- библиотека не стучится в `discord.com` по старому base URL
+
+## Куда идти дальше
+
+- [Быстрый старт](./quickstart)
+- [Справочник API](./api-reference)
+- [Gateway](./events/gateway)
+- [События Gateway](./events/gateway-events)
+- [Отладка и типовые проблемы](./topics/troubleshooting)

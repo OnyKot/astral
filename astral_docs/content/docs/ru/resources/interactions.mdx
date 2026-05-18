@@ -1,0 +1,274 @@
+---
+title: Взаимодействия
+description: Кнопки, выпадающие меню и эфемерные ответы для ботов Astral
+---
+
+Astral's Interactions API позволяет ботам, поддерживающим вебхуки, отправлять сообщения с кликабельными **кнопками** и **выпадающими меню**, получать события кликов асинхронно на HTTPS-эндпоинте по их выбору и отмечать ответы как **эфеwмерные**, чтобы их видел только пользователь, который активировал взаимодействие.
+
+Форма полезной нагрузки и схема компонентов намеренно совместимы с Discord. Боты, которые уже обрабатывают компоненты сообщений Discord, будут работать в Astral с минимальными изменениями — в основном, изменением домена, на который они отправляют POST.
+
+## How it works
+
+1. **Bot posts a message with components.** Конечная точка выполнения вебхука принимает поле `components` (строки действий + кнопки + выпадающие меню) в теле.
+2. **Astral renders the components** на клиенте как реальные кнопки и выпадающие списки. Кнопки ссылок открываются в новой вкладке; интерактивные кнопки и выпадающие меню отправляют POST на Astral.
+3. **User clicks a button.** Клиент отправляет `POST /v1/interactions/click` с сессией пользователя. Astral проверяет доступ к каналу + то, что `custom_id` действительно существует в сообщении (чтобы злонамеренный клиент не мог подделывать произвольные события).
+4. **Astral queues delivery** на `webhook.interaction_url`. Задача Graphile Worker отправляет подписанную полезную нагрузку боту с повторными попытками с экспоненциальным увеличением интервала.
+5. **Bot responds** путем вызова обычной конечной точки выполнения вебхука (`POST /v1/webhooks/:id/:token`) с последующим сообщением. Если ответ должен быть приватным, установите `flags: 64`, чтобы отметить его [эфеwмерным](#ephemeral-messages).
+
+HTTP-ответ бота на исходящий POST не передается обратно пользователю — он используется только для определения успеха доставки. Пользователь видит ответ бота как обычное событие `MESSAGE_CREATE` через шлюз.
+
+## Sending components
+
+Сначала установите `interaction_url` для вебхука:
+
+```bash
+curl -X PATCH https://astraof.com/api/v1/webhooks/<id> \
+  -H "Authorization: Bearer <session>" \
+  -H "Content-Type: application/json" \
+  -d '{"interaction_url": "https://my-bot.example.com/interactions"}'
+```
+
+Затем выполните вебхук с массивом `components`:
+
+```bash
+curl -X POST https://astraof.com/api/v1/webhooks/<id>/<token> \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Pick a severity:",
+    "components": [{
+      "type": 1,
+      "components": [{
+        "type": 3,
+        "custom_id": "severity",
+        "placeholder": "Select one",
+        "options": [
+          {"label": "Info",     "value": "info"},
+          {"label": "Warning",  "value": "warn"},
+          {"label": "Critical", "value": "crit"}
+        ]
+      }]
+    }]
+  }'
+```
+
+### Component schema
+
+Массив `components` в сообщении всегда представляет собой список **action rows** (`type: 1`). Каждая строка содержит до 5 дочерних элементов. В настоящее время поддерживаемые типы компонентов:
+
+| `type` | Name | Notes |
+| --- | --- | --- |
+| 1 | Action Row | Контейнер. До 5 на сообщение. |
+| 2 | Button | До 5 на строку. Строка с выпадающим меню не может содержать кнопки. |
+| 3 | String Select | Ровно 1 на строку, и эта строка не содержит ничего другого. |
+
+Отправки модалов (`type: 4`) и типы выбора пользователя / роли / упомянаемого / канала (5-8) принимаются схемой, но пока не отображаются на клиенте. Они будут пропускаться прозрачно в ваш `interaction_url`, чтобы ваш бот мог начать интеграцию сейчас и активировать UI позже.
+
+#### Button
+
+```json
+{
+  "type": 2,
+  "style": 1,
+  "label": "Approve",
+  "custom_id": "deploy_approve",
+  "disabled": false
+}
+```
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `type` | 2 | yes | |
+| `style` | 1..5 | yes | 1 primary, 2 secondary, 3 success, 4 danger, 5 link |
+| `label` | string | no | 1..80 chars |
+| `emoji` | `{name, id?, animated?}` | no | Unicode (`{"name": "✅"}`) or custom |
+| `custom_id` | string | styles 1-4 | 1..100 chars, arbitrary bot-defined ID |
+| `url` | string | style 5 | HTTPS URL, mutually exclusive with `custom_id` |
+| `disabled` | boolean | no | Renders greyed out, clicks rejected |
+
+Кнопки ссылок (`style: 5`) обрабатываются полностью на стороне клиента — браузер переходит по `url`. Они никогда не вызывают ваш `interaction_url`.
+
+#### String select
+
+```json
+{
+  "type": 3,
+  "custom_id": "severity",
+  "placeholder": "Select one",
+  "options": [
+    {"label": "Info", "value": "info", "description": "Low priority"},
+    {"label": "Warn", "value": "warn"},
+    {"label": "Crit", "value": "crit"}
+  ],
+  "min_values": 1,
+  "max_values": 1
+}
+```
+
+`options` принимает 1..25 записей. Каждая опция имеет обязательные `label` + `value` (1..100 chars) и необязательные `description`, `emoji`, `default`.
+
+## Receiving interaction events
+
+Когда пользователь нажимает кнопку или отправляет выбор, Astral отправляет эту полезную нагрузку на `webhook.interaction_url`:
+
+```json
+{
+  "id": "1488994324326748216",
+  "type": 3,
+  "token": "int_k3l2m1n0p9q8r7s6",
+  "version": 1,
+  "channel_id": "1474889782147747848",
+  "guild_id": "1474882870798782465",
+  "message_id": "1489000123456789012",
+  "user": {
+    "id": "1474497271369379840",
+    "username": "ivan",
+    "discriminator": "0001",
+    "avatar": "a_abc123..."
+  },
+  "data": {
+    "custom_id": "deploy_approve",
+    "component_type": 2
+  }
+}
+```
+
+Для выпадающих меню, `data` дополнительно включает выбранные `values`:
+
+```json
+{
+  "data": {
+    "custom_id": "severity",
+    "component_type": 3,
+    "values": ["crit"]
+  }
+}
+```
+
+### Fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | snowflake | Уникальный ID для этого события взаимодействия |
+| `type` | 3 | Всегда `3` = MESSAGE_COMPONENT. Соответствует перечислению типов Discord. |
+| `token` | string | Короткий непрозрачный ID корреляции. Полезен для логирования. В настоящее время не проверяется на обратном пути — бот аутентифицируется по токену вебхука. |
+| `version` | 1 | Версия схемы полезной нагрузки |
+| `channel_id` | snowflake | Канал, в котором находится сообщение |
+| `guild_id` | snowflake | Присутствует только когда канал в гильдии |
+| `message_id` | snowflake | Сообщение, к которому прикреплен компонент |
+| `user` | user partial | Кто нажал. Всегда аутентифицированный пользователь сессии. |
+| `data.custom_id` | string | `custom_id`, который вы установили для компонента |
+| `data.component_type` | 2 or 3 | 2 = button, 3 = string select |
+| `data.values` | string[] | Выбранные значения опций (только для выпадающих меню) |
+
+### Request headers
+
+Исходящие запросы от Astral всегда устанавливают:
+
+| Header | Description |
+| --- | --- |
+| `Content-Type` | `application/json` |
+| `User-Agent` | `Astral-Interactions/1.0` |
+| `X-Astral-Timestamp` | Unix seconds (string) |
+| `X-Astral-Signature` | `v1=<hex HMAC-SHA256>` (see below) |
+
+### Verifying signatures
+
+Astral подписывает каждую исходящую полезную нагрузку взаимодействия с помощью HMAC-SHA256, ключевого на **webhook token**. Вычислите ожидаемую подпись для строки `v1:<timestamp>:<raw body>` и сравните с заголовком `X-Astral-Signature`:
+
+```python
+# Python example — verify a Astral interaction POST
+import hmac, hashlib
+
+def verify(webhook_token: str, timestamp: str, raw_body: bytes, header: str) -> bool:
+    mac = hmac.new(
+        webhook_token.encode("utf-8"),
+        f"v1:{timestamp}:".encode("utf-8") + raw_body,
+        hashlib.sha256,
+    )
+    expected = "v1=" + mac.hexdigest()
+    return hmac.compare_digest(expected, header)
+```
+
+```javascript
+// Node.js example
+import crypto from 'node:crypto';
+
+function verify(webhookToken, timestamp, rawBody, header) {
+  const expected = 'v1=' + crypto
+    .createHmac('sha256', webhookToken)
+    .update(`v1:${timestamp}:${rawBody}`)
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(expected),
+    Buffer.from(header),
+  );
+}
+```
+
+Рекомендуется отклонять события с временными метками старше нескольких минут, чтобы предотвратить атаки повтора.
+
+### Responding to an interaction
+
+Astral не требует встроенного ответа на POST. Ваш обработчик должен **возвращать 2xx как только полезная нагрузка проверена** — любой ответ 4xx, кроме `429`, считается постоянной ошибкой, и событие отбрасывается без повторных попыток. 5xx / сетевые ошибки / 429 вызывают экспоненциальное увеличение интервала (до 5 попыток, максимум ~30 минут).
+
+Чтобы отправить видимый ответ, вызовите конечную точку выполнения вебхука, как и для любого другого исходящего сообщения:
+
+```bash
+curl -X POST https://astraof.com/api/v1/webhooks/<id>/<token> \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "✅ Deploy approved",
+    "flags": 64
+  }'
+```
+
+## Ephemeral messages
+
+Установите `flags: 64` (`1 << 6`) в исходящем сообщении, чтобы отметить его эфеwмерным. Клиенты скрывают эфеwмерные сообщения от всех пользователей, кроме:
+
+- **автора** сообщения (охватывает эфеwмерные сообщения от пользователей)
+- пользователей, явно перечисленных в массиве `mentions` сообщения
+
+Это фильтрация на стороне клиента с наилучшими усилиями. Клиенты, которые не знают о флаге, видят сообщение нормально; рассматривайте это как средство гигиены UX, а не как границу безопасности. Не размещайте секреты в телах эфеwмерных сообщений.
+
+Типичный поток "нажатие кнопки → приватный ответ":
+
+```text
+User clicks "Approve"
+  → client POSTs /v1/interactions/click { custom_id: "deploy_approve" }
+  → Astral validates + queues delivery
+  → Astral POSTs signed payload to webhook.interaction_url
+  → Bot receives, processes
+  → Bot POSTs /v1/webhooks/:id/:token with flags: 64
+    and mentions: [user_id] so the invoking user sees it privately
+```
+
+## Client endpoint (from-browser)
+
+Клиенты, которые хотят активировать взаимодействие (веб-клиент Astral делает это автоматически при нажатии кнопки в сообщении), обращаются к:
+
+`POST /v1/interactions/click`
+
+Требуется авторизованная сессия. Тело:
+
+```json
+{
+  "channel_id": "1474889782147747848",
+  "message_id": "1489000123456789012",
+  "custom_id": "deploy_approve",
+  "values": []
+}
+```
+
+`values` необязательно — отправьте его для выпадающих меню, omitted it for buttons. Ответ — `204 No Content` при успехе. Доставка боту асинхронная; клиенты не наблюдают ответы бота через этот эндпоинт. Ответ бота arrives via the normal gateway `MESSAGE_CREATE` event.
+
+Ограничение по скорости: 60 кликов на пользователя в минуту (балок `interaction:click::user_id`).
+
+## Limitations (as of the phase-1 rollout)
+
+- **Modals (component type 4)** — schema accepted, not yet rendered
+- **User / role / mentionable / channel selects (types 5-8)** — schema accepted, not yet rendered
+- **Deferred responses / 3-second acknowledgment** — there is no deadline; bots always respond async via the webhook execute API
+- **Ed25519 signing** — phase 1 uses HMAC-SHA256 keyed on the webhook token. Ed25519 (with per-bot signing keys) is on the roadmap
+- **Custom emoji in buttons** — the client currently renders only unicode emoji. Custom emoji (`emoji: {id: "…"}`) are accepted and passed through to your bot but show as blank in the UI
+- **Per-message invoking-user tracking** — ephemeral filtering is a client-side shim based on `mentions`. Once interactions track `invoking_user_id` server-side, ephemeral will become authoritative

@@ -1,0 +1,174 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.addFriendContainer {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	padding: 1.5rem;
+	padding-bottom: calc(1.5rem + 48px);
+	overflow: hidden;
+	background: color-mix(in srgb, var(--background-primary) 97%, transparent);
+}
+
+.card {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+	max-width: 42rem;
+	padding: clamp(1.5rem, 3vw, 2.5rem);
+	text-align: center;
+	border-radius: 1.25rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: color-mix(in srgb, var(--background-floating) 84%, var(--background-secondary) 16%);
+	box-shadow: 0 14px 28px color-mix(in srgb, var(--background-primary) 24%, transparent);
+	overflow: visible;
+}
+
+.heroIcon {
+	position: relative;
+	z-index: 1;
+	width: 72px;
+	height: 72px;
+	margin-bottom: 1.1rem;
+	padding: 0.9rem;
+	border-radius: 1.55rem;
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 10%, var(--background-floating) 90%);
+	box-shadow:
+		0 12px 24px color-mix(in srgb, var(--brand-primary) 18%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
+	color: color-mix(in srgb, var(--brand-primary) 78%, var(--text-primary));
+}
+
+:global(.theme-light) .heroIcon {
+	color: var(--brand-primary);
+}
+
+.title {
+	position: relative;
+	z-index: 1;
+	margin: 0 0 0.55rem 0;
+	font-weight: 700;
+	font-size: 1.55rem;
+	line-height: 2rem;
+	color: var(--text-primary);
+}
+
+.subtitle {
+	position: relative;
+	z-index: 1;
+	margin: 0 0 1.75rem 0;
+	max-width: 29rem;
+	font-size: 0.97rem;
+	line-height: 1.5rem;
+	color: color-mix(in srgb, var(--text-primary-muted) 92%, var(--text-secondary));
+}
+
+.formContainer {
+	width: 100%;
+	max-width: 34rem;
+	position: relative;
+	z-index: 1;
+}
+
+@media (max-width: 860px) {
+	.addFriendContainer {
+		justify-content: flex-start;
+	}
+
+	.card {
+		max-width: 100%;
+	}
+}
+
+@media (max-width: 480px) {
+	.addFriendContainer {
+		padding: 1rem;
+		padding-bottom: calc(1rem + 48px);
+	}
+
+	.card {
+		padding: 1.25rem;
+	}
+
+	.heroIcon {
+		width: 64px;
+		height: 64px;
+	}
+
+	.title {
+		font-size: 1.25rem;
+		line-height: 1.75rem;
+	}
+}
+
+@media (max-width: 767px) {
+	.addFriendContainer {
+		justify-content: flex-start;
+		padding-top: 0.75rem;
+		padding-right: max(0.75rem, var(--safe-area-right, 0px));
+		padding-bottom: calc(0.9rem + var(--safe-area-bottom, 0px) + 48px);
+		padding-left: max(0.75rem, var(--safe-area-left, 0px));
+		overflow: auto;
+	}
+
+	.card {
+		border-radius: 1rem;
+		box-shadow: none;
+	}
+
+	.subtitle {
+		margin-bottom: 1.2rem;
+		font-size: 0.9rem;
+		line-height: 1.35rem;
+	}
+
+	.formContainer {
+		max-width: 100%;
+	}
+}
+
+@media (max-width: 360px) {
+	.card {
+		padding: 1rem;
+	}
+
+	.heroIcon {
+		width: 56px;
+		height: 56px;
+		padding: 0.75rem;
+	}
+
+	.title {
+		font-size: 1.125rem;
+		line-height: 1.5rem;
+	}
+
+	.subtitle {
+		font-size: 0.82rem;
+		line-height: 1.25rem;
+	}
+}

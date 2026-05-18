@@ -1,0 +1,69 @@
+components_manager:
+  # Separate task processors so /metrics and /ping can be scraped even if the
+  # main pool is saturated — standard userver pattern.
+  task_processors:
+    main-task-processor:
+      worker_threads: $main-worker-threads
+    fs-task-processor:
+      worker_threads: $fs-worker-threads
+    monitor-task-processor:
+      worker_threads: $monitor-worker-threads
+      thread_name: mon-worker
+  default_task_processor: main-task-processor
+
+  # Graceful shutdown: give in-flight requests up to 10s to complete.
+  coro_pool:
+    initial_size: 500
+    max_size: 10000
+
+  components:
+    server:
+      listener:
+        port: $server-port
+        task_processor: main-task-processor
+        connection:
+          in_buffer_size: 32768
+          requests_queue_size_threshold: 100
+      # Dedicated listener for ops endpoints (metrics / ping / info).
+      listener-monitor:
+        port: $monitor-port
+        task_processor: monitor-task-processor
+
+    # Structured JSON logs — can be parsed by Loki / any log shipper.
+    logging:
+      fs-task-processor: fs-task-processor
+      loggers:
+        default:
+          file_path: '@stderr'
+          level: $logger-level
+          format: json
+          overflow_behavior: discard
+
+    # Built-in userver handlers on the ops listener.
+    handler-ping:
+      path: /ping
+      method: GET
+      task_processor: monitor-task-processor
+      url_trailing_slash: strict-match
+      throttling_enabled: false
+      set-response-server-hostname: true
+      monitor-handler: true
+
+    handler-server-monitor:
+      path: /metrics
+      method: GET
+      task_processor: monitor-task-processor
+      throttling_enabled: false
+      monitor-handler: true
+      format: prometheus-untyped
+
+    # Astral handlers.
+    handler-astral-health:
+      path: /health
+      method: GET
+      task_processor: main-task-processor
+
+    handler-astral-info:
+      path: /info
+      method: GET
+      task_processor: main-task-processor

@@ -1,0 +1,17 @@
+{
+	"title": "Astral Docs",
+	"pages": [
+		"---Get Started",
+		"index",
+		"quickstart",
+		"bots",
+		"---Reference",
+		"api-reference",
+		"events",
+		"resources",
+		"---Topics",
+		"topics",
+		"---Libraries",
+		"libraries"
+	]
+}

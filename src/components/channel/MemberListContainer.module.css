@@ -1,0 +1,66 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.memberListContainer {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	width: 100svw;
+	min-width: 0;
+	overflow: hidden;
+	position: relative;
+	background:
+		linear-gradient(
+			170deg,
+			color-mix(in srgb, var(--background-primary) 92%, transparent) 0%,
+			color-mix(in srgb, var(--background-primary) 86%, var(--background-floating)) 100%
+		);
+	--member-list-width: 100svw;
+}
+
+@media (min-width: 768px) {
+	.memberListContainer {
+		/*
+		 * Width comes from --layout-member-list-width which is set on
+		 * the document root by LayoutSizingStore. The fallback keeps
+		 * the historical 16.5rem when the store hasn't yet hydrated
+		 * its persisted value (cold start).
+		 */
+		--member-list-width: var(--layout-member-list-width, 16.5rem);
+		width: var(--member-list-width);
+	}
+}
+
+.memberListScroller {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+	flex-direction: column;
+	gap: var(--spacing-3);
+	background: transparent;
+	padding-left: var(--spacing-2);
+	padding-right: var(--spacing-2);
+	padding-bottom: var(--spacing-5);
+}
+
+.scrollerSpacer {
+	height: 0.45rem;
+	flex-shrink: 0;
+}

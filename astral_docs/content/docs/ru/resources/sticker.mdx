@@ -1,0 +1,29 @@
+---
+title: Sticker
+description: Публичные маршруты для sticker в guild
+---
+
+## Основные публичные маршруты
+
+| Endpoint | Для чего нужен |
+| --- | --- |
+| `POST /guilds/:guild_id/stickers` | Создать sticker |
+| `POST /guilds/:guild_id/stickers/bulk` | Массово создать sticker |
+| `GET /guilds/:guild_id/stickers` | Получить sticker сервера |
+| `PATCH /guilds/:guild_id/stickers/:sticker_id` | Обновить sticker |
+| `DELETE /guilds/:guild_id/stickers/:sticker_id` | Удалить sticker |
+
+## Создать sticker
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name":"wave",
+    "description":"Приветствие",
+    "tags":"hello,wave",
+    "image":"data:image/webp;base64,<BASE64_DATA>"
+  }' \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/stickers
+```

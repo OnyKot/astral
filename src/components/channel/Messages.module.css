@@ -1,0 +1,265 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.messagesWrapper {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 0%;
+	min-height: 0;
+	min-width: 0;
+	height: 100%;
+	font-size: var(--font-size, 16px);
+	--scrollbar-track-bg: transparent;
+	--message-group-spacing: 16px;
+	/*
+	 * Soft fade-in when the channel mounts. Previously switching
+	 * channels caused the old messages to disappear instantly and the
+	 * new messages to flash in (because Messages is keyed by channel.id
+	 * and remounts on every transition). The fade smooths out the
+	 * jump without forcing AnimatePresence around a stateful tree.
+	 */
+	animation: messagesWrapperFadeIn 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes messagesWrapperFadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.messagesWrapper {
+		animation: none;
+	}
+}
+
+.nativeAnchor {
+	overflow-anchor: auto !important;
+}
+
+.scrollerContainer {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	min-width: 0;
+	height: 100%;
+	width: 100%;
+	overflow-x: hidden;
+}
+
+.scrollerContent {
+	display: flex;
+	flex-direction: column;
+	flex: 1 0 auto;
+	min-height: 100%;
+	min-width: 0;
+	overflow-anchor: none;
+}
+
+.scrollerSpacer {
+	display: block;
+	height: var(--scroller-spacer-height);
+	pointer-events: none;
+	width: 100%;
+	flex-shrink: 0;
+}
+
+.placeholderSpacer {
+	flex: 0 0 auto;
+	height: 16px;
+}
+
+.groupSpacer,
+.groupSpacerHalf {
+	flex: 0 0 auto;
+}
+
+.groupSpacer {
+	height: var(--message-group-spacing);
+}
+
+.groupSpacerHalf {
+	height: calc(var(--message-group-spacing) / 2);
+}
+
+.scrollerInner {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+	min-height: 100%;
+	padding-left: max(0.75rem, var(--safe-area-left, 0px));
+	padding-right: max(0.75rem, var(--safe-area-right, 0px));
+	padding-top: 0.875rem;
+	padding-bottom: 0.25rem;
+	position: relative;
+	overflow-x: clip;
+}
+
+@media (min-width: 768px) {
+	.scrollerInner {
+		padding-left: var(--chat-horizontal-padding);
+		padding-right: var(--chat-horizontal-padding);
+	}
+}
+
+@keyframes messagesWrapperFadeInMobile {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@media (max-width: 767px) {
+	.messagesWrapper {
+		animation: messagesWrapperFadeInMobile 0.14s ease-out;
+	}
+
+	.scrollerInner {
+		padding-left: max(0.75rem, var(--safe-area-left, 0px));
+		padding-right: max(0.75rem, var(--safe-area-right, 0px));
+		padding-top: 0.75rem;
+		padding-bottom: 0.2rem;
+	}
+}
+
+@media (max-width: 480px) {
+	.scrollerInner {
+		padding-left: max(0.6875rem, var(--safe-area-left, 0px));
+		padding-right: max(0.6875rem, var(--safe-area-right, 0px));
+		padding-top: 0.7rem;
+	}
+}
+
+.newMessagesBar {
+	position: absolute;
+	left: 0.5rem;
+	right: 0.5rem;
+	top: -8px;
+	z-index: var(--z-index-elevated-3);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 40px;
+	padding-top: 6px;
+	border-radius: 0 0 1rem 1rem;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--brand-primary) 82%, var(--background-floating) 18%), color-mix(in srgb, var(--brand-primary) 70%, var(--background-primary) 30%)),
+		var(--brand-primary);
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 24%, transparent);
+	padding-left: 0.75rem;
+	padding-right: 0.75rem;
+	cursor: pointer;
+	transition:
+		transform 0.1s ease-out,
+		box-shadow 0.1s ease-out;
+	box-shadow:
+		0 16px 28px rgb(37 99 235 / 0.18),
+		inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+.newMessagesBar:active {
+	transform: translateY(2px);
+	box-shadow: 0 0 0 rgb(37 99 235 / 0.12);
+}
+
+/*
+ * Touch screens get 44px minimum height per WCAG 2.5.5 — the desktop
+ * 40px height is too cramped for thumbs, especially since the bar
+ * appears at the very top of the channel where the address bar can
+ * fight for space.
+ */
+@media (pointer: coarse) {
+	.newMessagesBar {
+		min-height: 44px;
+		padding-top: 8px;
+		padding-bottom: 4px;
+	}
+}
+
+.newMessagesBarText {
+	color: white;
+	font-size: 0.875rem;
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+}
+
+.newMessagesBarAction {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	color: white;
+	font-size: 0.875rem;
+	font-weight: 600;
+	flex-shrink: 0;
+}
+
+.loadMoreContainer {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 0.75rem 0;
+}
+
+.loadMoreTopPadding {
+	padding-top: 1.25rem;
+}
+
+.loadMoreBottomPadding {
+	padding-bottom: 1.25rem;
+}
+
+.unreadOverlay {
+	position: absolute;
+	left: 0;
+	right: 0;
+	z-index: 1;
+	pointer-events: none;
+}
+
+.unreadSlot {
+	display: none;
+	pointer-events: none;
+}
+
+.unreadSlot[data-visible='1'] {
+	display: block;
+	padding-top: 0.25rem;
+	padding-bottom: 0.25rem;
+}
+
+@media (min-width: 768px) {
+	.scrollerContainer {
+		background: transparent;
+		border-inline: none;
+		box-shadow: none;
+	}
+}

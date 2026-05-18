@@ -1,0 +1,76 @@
+---
+title: Rate Limits
+description: Rate Limits
+---
+
+Astral applies rate limits to protect API stability.
+
+Every serious bot should treat rate limits as part of normal control flow.
+
+## Basic behavior
+
+When you exceed a limit, the API responds with:
+
+- HTTP `429 Too Many Requests`
+- a machine-readable error payload
+- retry metadata in headers or body
+
+Typical response:
+
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: 5
+```
+
+```json
+{
+  "code": "RATE_LIMITED",
+  "message": "You are being rate limited",
+  "retry_after": 5.0
+}
+```
+
+## What your bot should do
+
+1. Stop sending requests on that route bucket
+2. Wait for `retry_after` or `Retry-After`
+3. Retry after the delay
+4. Add jitter for high-concurrency bots
+
+## Practical rules
+
+- Do not spam edit loops
+- Batch work when possible
+- Avoid polling if Gateway events can replace it
+- Reuse message state from events instead of repeatedly fetching the same resource
+- Respect per-route buckets independently
+
+## Minimal retry example
+
+```js
+async function astralFetch(url, options) {
+  const response = await fetch(url, options);
+
+  if (response.status !== 429) return response;
+
+  const body = await response.json().catch(() => null);
+  const retryAfterSeconds =
+    Number(response.headers.get("Retry-After")) ||
+    Number(body?.retry_after) ||
+    1;
+
+  await new Promise((resolve) => setTimeout(resolve, retryAfterSeconds * 1000));
+  return fetch(url, options);
+}
+```
+
+## Gateway and rate limits
+
+Gateway session starts are also limited. Inspect `GET /gateway/bot` and respect:
+
+- `session_start_limit.total`
+- `session_start_limit.remaining`
+- `session_start_limit.reset_after`
+- `session_start_limit.max_concurrency`
+
+This matters for reconnect storms and sharded bots.

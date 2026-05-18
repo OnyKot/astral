@@ -1,0 +1,34 @@
+---
+title: Overview
+description: Events Overview
+---
+
+Astral sends real-time updates over Gateway WebSocket connections.
+
+Use events when your app must react instantly to message, channel, guild, and voice changes.
+
+## Where events come from
+
+- Connect to `wss://<your-domain>/gateway?v=1&encoding=json`
+- Authenticate with `Identify` (`op: 2`) using your token
+- Receive `Dispatch` packets (`op: 0`) with:
+  - `t`: event name (example: `MESSAGE_CREATE`)
+  - `s`: sequence number
+  - `d`: event payload
+
+If your client supports zstd stream decompression, you can also request `compress=zstd-stream`.
+
+## Event groups
+
+- Session: `READY`, `RESUMED`, `SESSIONS_REPLACE`
+- User: `USER_UPDATE`, `PRESENCE_UPDATE`, `USER_SETTINGS_UPDATE`
+- Guild: `GUILD_CREATE`, `GUILD_UPDATE`, `GUILD_DELETE`, member and role updates
+- Channel: `CHANNEL_CREATE`, `CHANNEL_UPDATE`, `CHANNEL_DELETE`, pins and recipients
+- Message: `MESSAGE_CREATE`, `MESSAGE_UPDATE`, `MESSAGE_DELETE`, reactions, typing
+- Voice and calls: `VOICE_STATE_UPDATE`, `VOICE_SERVER_UPDATE`, `CALL_CREATE`, `CALL_UPDATE`, `CALL_DELETE`
+- Webhooks: `WEBHOOKS_UPDATE`
+
+## Next pages
+
+- [Gateway](./gateway)
+- [Gateway Events](./gateway-events)

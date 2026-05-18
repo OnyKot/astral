@@ -1,0 +1,83 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ * Licensed under AGPL-3.0-or-later. See <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-4);
+}
+
+.loadingText {
+	margin: 0;
+	font-size: 13px;
+	color: var(--text-primary-muted);
+}
+
+.statusBlock {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-2);
+	padding: var(--spacing-4);
+	border-radius: var(--radius-md, 8px);
+	background: var(--background-modifier-accent);
+	border-left: 4px solid var(--background-modifier-active);
+}
+
+.statusBlock[data-status='approved'] {
+	border-left-color: var(--status-positive, #3ba55d);
+}
+
+.statusBlock[data-status='pending'] {
+	border-left-color: var(--status-warning, #faa61a);
+}
+
+.statusBlock[data-status='rejected'] {
+	border-left-color: var(--status-danger, #ed4245);
+}
+
+.statusBlock[data-status='withdrawn'] {
+	border-left-color: var(--text-primary-muted);
+}
+
+.statusBadge {
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--text-primary);
+}
+
+.reviewNote {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--text-primary);
+}
+
+.metaLine {
+	margin: 0;
+	font-size: 12px;
+	color: var(--text-primary-muted);
+}
+
+.formContainer {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-4);
+}
+
+.actionsRow {
+	display: flex;
+	gap: var(--spacing-3);
+	flex-wrap: wrap;
+}
+
+.errorText {
+	margin: 0;
+	font-size: 12px;
+	color: var(--status-danger, #ed4245);
+}

@@ -1,0 +1,30 @@
+---
+title: Opcodes И Status Codes
+description: Основные Gateway opcode и HTTP status для Astral
+---
+
+## Gateway opcode
+
+| Opcode | Что значит |
+| --- | --- |
+| `0` | Dispatch |
+| `1` | Heartbeat |
+| `2` | Identify |
+| `6` | Resume |
+| `7` | Reconnect |
+| `9` | Invalid Session |
+| `10` | Hello |
+| `11` | Heartbeat ACK |
+
+## Основные HTTP status
+
+| Status | Значение |
+| --- | --- |
+| `200` | Успех |
+| `204` | Успех без body |
+| `400` | Ошибка формы/валидации |
+| `401` | Нет или неверная авторизация |
+| `403` | Доступ запрещён |
+| `404` | Ресурс не найден |
+| `429` | Rate limit |
+| `500` | Ошибка сервера |

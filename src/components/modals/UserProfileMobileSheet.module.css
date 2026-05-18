@@ -1,0 +1,507 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	position: relative;
+	display: flex;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	flex-direction: column;
+	overflow: hidden;
+	background:
+		radial-gradient(circle at 10% -10%, color-mix(in srgb, var(--brand-primary) 16%, transparent), transparent 44%),
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-floating) 90%, var(--background-primary) 10%),
+			color-mix(in srgb, var(--background-secondary) 86%, var(--background-primary) 14%)
+		);
+}
+
+.loadingScreen {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 0;
+}
+
+.bannerContainer {
+	position: relative;
+	height: calc(184px + min(var(--safe-area-top, 0px), 20px));
+	width: 100%;
+	overflow: hidden;
+	border-top-left-radius: 28px;
+	border-top-right-radius: 28px;
+}
+
+.bannerImage {
+	height: 100%;
+	width: 100%;
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+
+.bannerColor {
+	height: 100%;
+	width: 100%;
+}
+
+.profileContent {
+	position: relative;
+	background-color: var(--background-primary);
+	animation: mobileProfileContentEnter var(--motion-dur-medium) var(--motion-ease-snap);
+}
+
+.avatarContainer {
+	position: absolute;
+	left: 1rem;
+	z-index: 20;
+	top: -40px;
+}
+
+.avatarBorder {
+	--profile-accent-base: var(--brand-primary);
+	position: relative;
+	border: 4px solid var(--background-primary);
+	background-color: var(--background-primary);
+	width: fit-content;
+	isolation: isolate;
+}
+
+.avatarBorder > * {
+	position: relative;
+	z-index: 1;
+}
+
+.avatarBorder::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	padding: 4px;
+	border-radius: inherit;
+	opacity: 0;
+	pointer-events: none;
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+	z-index: 3;
+}
+
+.avatarBorder[data-accent-effect='rgb-neon'] {
+	border-color: transparent !important;
+}
+
+.avatarBorder[data-accent-effect='rgb-neon']::before {
+	opacity: 1;
+	background: linear-gradient(
+		120deg,
+		var(--profile-accent-base) 0%,
+		#ff5875 18%,
+		#ffd25d 36%,
+		#61ff9f 54%,
+		#4cc9ff 72%,
+		#ae7eff 88%,
+		var(--profile-accent-base) 100%
+	);
+	background-size: 240% 240%;
+	animation: mobileAccentRgbShift 11s cubic-bezier(0.45, 0.05, 0.25, 0.98) infinite;
+}
+
+.avatarBorder[data-accent-effect='nebula'] {
+	border-color: transparent !important;
+}
+
+.avatarBorder[data-accent-effect='nebula']::before {
+	opacity: 1;
+	background: linear-gradient(140deg, #281e63 0%, var(--profile-accent-base) 28%, #5f87ff 64%, #9b7cff 100%);
+	background-size: 220% 220%;
+	animation: mobileAccentDrift 12s cubic-bezier(0.42, 0, 0.24, 1) infinite;
+}
+
+.avatarBorder[data-accent-effect='stellar'] {
+	border-color: transparent !important;
+}
+
+.avatarBorder[data-accent-effect='stellar']::before {
+	opacity: 1;
+	background:
+		radial-gradient(circle at 18% 20%, rgb(255 255 255 / 0.9) 0 1.2px, transparent 1.9px),
+		radial-gradient(circle at 79% 28%, rgb(255 255 255 / 0.88) 0 1.1px, transparent 1.8px),
+		radial-gradient(circle at 64% 74%, rgb(255 255 255 / 0.86) 0 1.4px, transparent 2px),
+		linear-gradient(132deg, #24356c 0%, var(--profile-accent-base) 44%, #8bc4ff 100%);
+	background-size:
+		160% 160%,
+		180% 180%,
+		200% 200%,
+		220% 220%;
+	animation: mobileAccentStellar 13.8s cubic-bezier(0.4, 0.04, 0.2, 0.99) infinite;
+}
+
+.avatarBorder[data-accent-effect='solar'] {
+	border-color: transparent !important;
+}
+
+.avatarBorder[data-accent-effect='solar']::before {
+	opacity: 1;
+	background: linear-gradient(132deg, #ff7a39 0%, #ffd95e 28%, var(--profile-accent-base) 58%, #ff52ba 100%);
+	background-size: 230% 230%;
+	animation: mobileAccentPulse 8.2s cubic-bezier(0.44, 0.06, 0.26, 0.98) infinite;
+}
+
+.contentPadding {
+	padding-left: 1rem;
+	padding-right: 1rem;
+	padding-top: 3rem;
+}
+
+.actionsContainer {
+	position: absolute;
+	top: 1rem;
+	right: 1rem;
+	z-index: 10;
+	display: flex;
+	gap: 0.5rem;
+}
+
+.actionButton {
+	display: flex;
+	height: 2.5rem;
+	width: 2.5rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 14px;
+	background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
+	color: var(--text-primary);
+	cursor: pointer;
+	box-shadow:
+		0 8px 14px rgb(3 7 18 / 0.16),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.usernameContainer {
+	margin-top: 0.75rem;
+}
+
+.usernameRow {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	min-width: 0;
+}
+
+.username {
+	font-weight: 700;
+	font-size: 1.5rem;
+	line-height: 2rem;
+	color: var(--text-primary);
+	word-break: break-word;
+	overflow-wrap: break-word;
+}
+
+.discriminator {
+	font-weight: 500;
+	font-size: 1.5rem;
+	line-height: 2rem;
+	color: var(--text-tertiary);
+}
+
+.fullTag {
+	font-weight: 500;
+	color: var(--text-tertiary);
+}
+
+.tagBadgeRow {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+	min-width: 0;
+}
+
+.badgesWrapper {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+}
+
+.customStatusRow {
+	margin-top: 0.25rem;
+}
+
+.customStatusText {
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+}
+
+.customStatusRow:hover .customStatusText,
+.customStatusRow:active .customStatusText {
+	--emoji-show-animated: 1;
+}
+
+.musicActivityRow {
+	margin-top: 0.75rem;
+}
+
+.editProfileButton {
+	display: flex;
+	width: 100%;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	border-radius: 1rem;
+	background: color-mix(in srgb, var(--brand-primary) 86%, var(--background-primary) 14%);
+	padding-left: 1rem;
+	padding-right: 1rem;
+	padding-top: 0.75rem;
+	padding-bottom: 0.75rem;
+	cursor: pointer;
+	box-shadow:
+		0 10px 18px color-mix(in srgb, var(--brand-primary) 24%, transparent),
+		inset 0 1px 0 rgb(255 255 255 / 0.14);
+}
+
+.editProfileIcon {
+	height: 1.25rem;
+	width: 1.25rem;
+	color: white;
+}
+
+.editProfileText {
+	font-weight: 500;
+	color: white;
+}
+
+.actionButtonsContainer {
+	margin-top: 1rem;
+	display: flex;
+	gap: 0.75rem;
+}
+
+.actionCard {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+	border-radius: 1rem;
+	background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
+	padding: 0.75rem;
+	cursor: pointer;
+	box-shadow:
+		0 8px 14px rgb(3 7 18 / 0.14),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.actionIconContainer {
+	display: flex;
+	height: 3rem;
+	width: 3rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 9999px;
+	background-color: var(--brand-primary);
+}
+
+.actionIconContainerSecondary {
+	display: flex;
+	height: 3rem;
+	width: 3rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 9999px;
+	background-color: var(--background-tertiary);
+}
+
+.actionIcon {
+	height: 1.5rem;
+	width: 1.5rem;
+	color: white;
+}
+
+.actionIconSecondary {
+	height: 1.5rem;
+	width: 1.5rem;
+	color: var(--text-primary);
+}
+
+.actionLabel {
+	font-weight: 500;
+	color: var(--text-secondary);
+	font-size: 0.75rem;
+}
+
+.infoCard {
+	margin-top: 1rem;
+	border-radius: 1rem;
+	background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
+	padding: 1rem;
+	box-shadow:
+		0 10px 16px rgb(3 7 18 / 0.14),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.bioSection {
+	margin-bottom: 0.75rem;
+}
+
+.bioHeader {
+	margin-bottom: 0.5rem;
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: var(--text-primary);
+}
+
+.noteButton {
+	margin-top: 1rem;
+	display: flex;
+	width: 100%;
+	align-items: center;
+	justify-content: space-between;
+	border-radius: 1rem;
+	background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
+	padding: 1rem;
+	text-align: left;
+	cursor: pointer;
+	box-shadow:
+		0 10px 16px rgb(3 7 18 / 0.14),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.noteTitle {
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: var(--text-primary);
+}
+
+.noteSubtitle {
+	color: var(--text-tertiary);
+	font-size: 0.75rem;
+}
+
+.noteText {
+	margin-top: 0.25rem;
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+}
+
+.noteIconContainer {
+	display: flex;
+	height: 2rem;
+	width: 2rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 9999px;
+	background-color: var(--background-tertiary);
+}
+
+.noteIcon {
+	height: 1rem;
+	width: 1rem;
+	color: var(--text-primary);
+}
+
+.icon {
+	height: 1.25rem;
+	width: 1.25rem;
+}
+
+.rolesSection {
+	margin-top: 0.75rem;
+}
+
+.sheetContainer {
+	background-color: transparent;
+}
+
+@keyframes mobileProfileContentEnter {
+	from {
+		opacity: 0;
+		transform: translateY(14px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes mobileAccentRgbShift {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 110% 50%;
+	}
+	100% {
+		background-position: 220% 50%;
+	}
+}
+
+@keyframes mobileAccentDrift {
+	0%,
+	100% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+}
+
+@keyframes mobileAccentStellar {
+	0%,
+	100% {
+		background-position:
+			0% 0%,
+			100% 0%,
+			40% 100%,
+			0% 50%;
+	}
+	50% {
+		background-position:
+			100% 100%,
+			0% 100%,
+			80% 0%,
+			100% 50%;
+	}
+}
+
+@keyframes mobileAccentPulse {
+	0%,
+	100% {
+		background-position: 0% 50%;
+		filter: saturate(1);
+	}
+	50% {
+		background-position: 100% 50%;
+		filter: saturate(1.1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.avatarBorder[data-accent-effect='rgb-neon']::before,
+	.avatarBorder[data-accent-effect='nebula']::before,
+	.avatarBorder[data-accent-effect='stellar']::before,
+	.avatarBorder[data-accent-effect='solar']::before {
+		animation: none;
+	}
+}

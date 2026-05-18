@@ -1,0 +1,173 @@
+---
+title: Troubleshooting
+description: Practical checks and common fixes for Astral bot and integration issues
+---
+
+Use this page when your bot connects, authenticates, or sends requests incorrectly and you need a fast public-API-first debugging flow.
+
+## Start with three health checks
+
+If all three requests below work, your token, application binding, and public Gateway discovery are in a good state:
+
+```bash
+export TOKEN="your_bot_token"
+
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/users/@me
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/applications/@me
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/gateway/bot
+```
+
+What you want to see:
+
+- `GET /users/@me` returns the current bot user
+- `GET /applications/@me` returns the application behind that token
+- `GET /gateway/bot` returns a public WebSocket URL and session limits
+
+If one of these fails, fix that first before debugging message sends or Gateway handlers.
+
+## Quick message send test
+
+Use this to separate "my bot logic is broken" from "the bot cannot post into this channel":
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Astral API test"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages
+```
+
+If this request succeeds but your code path fails, the problem is in your application logic, not the Astral API route itself.
+
+## Common HTTP errors
+
+### `401 INVALID_AUTH_TOKEN`
+
+Usually means one of:
+
+- the token is wrong
+- the token was rotated
+- you used a user/session token where a bot token is required
+
+Verify again with:
+
+```bash
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/users/@me
+```
+
+### `403 ACCESS_DENIED`
+
+The bot authenticated successfully, but it lacks permission for that action.
+
+Check:
+
+- the bot is actually in the guild
+- the target channel is visible to the bot
+- the bot has the required permission in the guild and channel
+- role hierarchy allows the moderation action you are trying to perform
+
+### `404 UNKNOWN_CHANNEL` or `404 UNKNOWN_MESSAGE`
+
+Usually means:
+
+- wrong ID
+- resource was deleted
+- resource exists but is not visible to the bot in the current context
+
+Test the parent resource directly:
+
+```bash
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/channels/<CHANNEL_ID>
+```
+
+### `400 INVALID_FORM_BODY`
+
+The route exists and authentication passed, but your JSON or multipart body is invalid.
+
+Check:
+
+- required fields are present
+- JSON is valid
+- string fields are within documented limits
+- multipart payload uses `payload_json` and `files[n]` correctly
+
+### `429 TOO MANY REQUESTS`
+
+You hit a rate limit bucket. Read the response headers and slow down or queue requests.
+
+See [Rate Limits](./rate-limits) for header details and retry strategy.
+
+## Gateway issues
+
+### WebSocket opens but the bot never becomes ready
+
+Confirm the normal sequence:
+
+1. receive `HELLO` (`op: 10`)
+2. start heartbeats using `heartbeat_interval`
+3. send `IDENTIFY` (`op: 2`)
+4. receive `READY`
+
+If you send `IDENTIFY` before `HELLO`, many clients fail in confusing ways.
+
+### Gateway connects but no events arrive
+
+Check:
+
+- heartbeats are actually sent on time
+- you update and reuse the latest sequence number
+- your library points to Astral and not `discord.com`
+- the bot is present in the target guild/channel
+
+### Gateway URL sanity check
+
+```bash
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/gateway/bot
+```
+
+Use the returned public URL. Do not hard-code private or repository-internal service addresses.
+
+## Webhook issues
+
+For one-way posting, test the webhook independently from the rest of your stack:
+
+```bash
+curl -X POST "https://astraof.com/api/v1/webhooks/<WEBHOOK_ID>/<WEBHOOK_TOKEN>?wait=true" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Webhook test"}'
+```
+
+If this fails:
+
+- confirm the webhook ID and token pair
+- confirm the webhook was not deleted
+- use `wait=true` while testing so you get a response body immediately
+
+## File upload issues
+
+For uploads, use `multipart/form-data` and include `payload_json` plus file parts:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -F 'payload_json={"content":"Upload test","attachments":[{"id":0,"filename":"image.png"}]}' \
+  -F "files[0]=@image.png;type=image/png" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages
+```
+
+If edits unexpectedly remove attachments, remember that `PATCH` with a new attachment list replaces the existing list unless you include the old attachments explicitly.
+
+## Safe debugging checklist
+
+- Use only public documented routes while debugging
+- Log HTTP status, response body, and relevant rate limit headers
+- Redact bot tokens from logs before sharing them
+- Keep one minimal `curl` test for every important route your bot depends on
+- Reproduce issues with the smallest possible request before changing library code
+
+## Continue reading
+
+- [Bot API Guide](../bots)
+- [Quickstart](../quickstart)
+- [API Reference](../api-reference)
+- [Gateway](../events/gateway)

@@ -1,0 +1,76 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.benefit {
+	display: flex;
+	min-height: 0;
+	flex-direction: column;
+	border-radius: 0.88rem;
+	border: none;
+	background:
+		radial-gradient(circle at 22% -12%, rgb(168 131 255 / 0.18), transparent 42%),
+		rgb(18 15 38 / 0.75);
+	padding: 0.95rem;
+	text-align: center;
+	transition: transform 180ms ease, border-color 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.benefit:hover {
+		transform: translateY(-2px);
+	}
+}
+
+.iconContainer {
+	margin-bottom: 0.75rem;
+	display: flex;
+	flex-shrink: 0;
+	justify-content: center;
+}
+
+.iconWrapper {
+	display: flex;
+	height: 2.6rem;
+	width: 2.6rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 9999px;
+	background:
+		linear-gradient(145deg, rgb(160 124 255 / 0.95), rgb(104 65 215 / 0.95)),
+		rgb(125 84 232);
+	box-shadow:
+		0 10px 16px rgb(89 56 182 / 0.42),
+		inset 0 1px 0 rgb(255 255 255 / 0.24);
+}
+
+.title {
+	margin-bottom: 0.5rem;
+	flex-shrink: 0;
+	font-weight: 650;
+	font-size: 0.875rem;
+	line-height: 1.25;
+	color: rgb(245 241 255);
+}
+
+.description {
+	min-height: 0;
+	font-size: 0.76rem;
+	line-height: 1.58;
+	color: rgb(186 177 220);
+}

@@ -1,0 +1,203 @@
+#!/usr/bin/env bash
+# pre-push: catch common junk before it hits origin.
+#
+# Bypass with `git push --no-verify` when you must.
+# Enable for this clone with: git config core.hooksPath .githooks
+#
+# Checks run only on the files actually being pushed (git diff between the
+# local and remote ref), so it stays fast on big pushes.
+
+set -u
+GREEN="\033[0;32m"; RED="\033[0;31m"; YEL="\033[0;33m"; BLU="\033[0;36m"; NC="\033[0m"
+
+fail() { printf "${RED}✗ %s${NC}\n" "$1" >&2; exit 1; }
+warn() { printf "${YEL}! %s${NC}\n" "$1" >&2; }
+info() { printf "${BLU}· %s${NC}\n" "$1"; }
+ok()   { printf "${GREEN}✓ %s${NC}\n" "$1"; }
+
+# 1. Buffer stdin once — git-lfs and our loop both need it.
+STDIN_BUFFER=$(cat)
+
+# 2. git-lfs passthrough — preserve existing hook behavior.
+if command -v git-lfs >/dev/null 2>&1; then
+    printf '%s' "$STDIN_BUFFER" | git lfs pre-push "$@" || exit $?
+fi
+
+# 3. Collect the list of commits being pushed.
+#    stdin format (per git pre-push docs): <local-ref> <local-sha> <remote-ref> <remote-sha>
+CHANGED_FILES=""
+LARGE_CHECK_FILES=""
+COMMITS_RANGE=""
+ZERO="0000000000000000000000000000000000000000"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+    [ -z "$local_sha" ] && continue
+    if [ "$local_sha" = "$ZERO" ]; then
+        # Deleting remote branch — nothing to scan.
+        continue
+    fi
+
+    if [ "$remote_sha" = "$ZERO" ]; then
+        # New branch. Scan commits not on any other remote branch.
+        range=$(git rev-list --max-count=50 "$local_sha" --not --remotes 2>/dev/null || echo "$local_sha")
+        files=$(git diff --name-only --diff-filter=ACMR "$local_sha" --not --remotes 2>/dev/null || true)
+        large_files=$(git diff --name-only --diff-filter=ACM "$local_sha" --not --remotes 2>/dev/null || true)
+    else
+        range="$remote_sha..$local_sha"
+        files=$(git diff --name-only --diff-filter=ACMR "$remote_sha..$local_sha" 2>/dev/null || true)
+        large_files=$(git diff --name-only --diff-filter=ACM "$remote_sha..$local_sha" 2>/dev/null || true)
+    fi
+
+    COMMITS_RANGE="$COMMITS_RANGE $range"
+    CHANGED_FILES="$CHANGED_FILES
+$files"
+    LARGE_CHECK_FILES="$LARGE_CHECK_FILES
+$large_files"
+done <<< "$STDIN_BUFFER"
+
+# Dedup, strip blanks, skip deletes already excluded by --diff-filter.
+CHANGED_FILES=$(printf '%s\n' "$CHANGED_FILES" | awk 'NF && !seen[$0]++')
+LARGE_CHECK_FILES=$(printf '%s\n' "$LARGE_CHECK_FILES" | awk 'NF && !seen[$0]++')
+
+if [ -z "$CHANGED_FILES" ]; then
+    ok "no files to check"
+    exit 0
+fi
+
+FILE_COUNT=$(printf '%s\n' "$CHANGED_FILES" | wc -l | tr -d ' ')
+info "checking $FILE_COUNT file(s)"
+
+# Helper: filter CHANGED_FILES by regex, echo matching paths only if they exist on disk.
+files_match() {
+    printf '%s\n' "$CHANGED_FILES" | grep -E "$1" | while IFS= read -r f; do
+        [ -f "$f" ] && printf '%s\n' "$f"
+    done
+}
+
+# 3. Merge-conflict markers — never push a half-resolved file.
+CONFLICT_HITS=$(files_match '\.(ts|tsx|js|jsx|mjs|cjs|gleam|kt|go|py|rs|java|cs|html|css|md|mdx|yaml|yml|json|toml)$' | while IFS= read -r f; do
+    if grep -nE '^(<{7}|={7}|>{7})([^=]|$)' "$f" >/dev/null 2>&1; then
+        printf '%s\n' "$f"
+    fi
+done)
+if [ -n "$CONFLICT_HITS" ]; then
+    printf "${RED}✗ merge conflict markers in:${NC}\n" >&2
+    printf '%s\n' "$CONFLICT_HITS" | sed 's/^/    /' >&2
+    exit 1
+fi
+
+# 4. Secret scan on text files only. Grep for known API-key shapes.
+#    Skips this file itself, env.example files, tests fixtures, and lockfiles.
+SECRET_PATTERN='(xai-[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|gho_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN (RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----|AIza[0-9A-Za-z_-]{30,}|xoxb-[0-9A-Za-z-]{20,})'
+SECRET_HITS=$(files_match '.' | grep -vE '(\.example$|\.lock$|pnpm-lock|yarn\.lock|package-lock|\.githooks/pre-push$|/node_modules/|/dist/|/build/|\.po$)' | while IFS= read -r f; do
+    if grep -nE "$SECRET_PATTERN" "$f" >/dev/null 2>&1; then
+        matches=$(grep -nE "$SECRET_PATTERN" "$f" | head -3)
+        printf '%s\n' "$f:"
+        printf '%s\n' "$matches" | sed 's/^/    /'
+    fi
+done)
+if [ -n "$SECRET_HITS" ]; then
+    printf "${RED}✗ secret-shaped strings detected:${NC}\n" >&2
+    printf '%s\n' "$SECRET_HITS" >&2
+    printf "${YEL}  If a false positive, add a path exclusion to .githooks/pre-push.${NC}\n" >&2
+    exit 1
+fi
+
+# 5. Large files — don't push new/modified/copied files over 10MB.
+#    Pure renames are allowed so existing large assets can move without noise.
+LARGE_HITS=$(printf '%s\n' "$LARGE_CHECK_FILES" | while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    size=$(wc -c < "$f" 2>/dev/null || echo 0)
+    if [ "$size" -gt 10485760 ]; then
+        printf '%s (%d MB)\n' "$f" $((size / 1048576))
+    fi
+done)
+if [ -n "$LARGE_HITS" ]; then
+    printf "${RED}✗ file(s) over 10 MB — use Git LFS or exclude:${NC}\n" >&2
+    printf '%s\n' "$LARGE_HITS" | sed 's/^/    /' >&2
+    exit 1
+fi
+
+# 6. Leftover debug markers in source files.
+#    Check the pushed diff, not the whole renamed file, so old code and vendor
+#    bundles do not block large rename-only changes.
+DEBUG_PATTERN='(^|[^a-zA-Z_.])(console\.(log|trace|time)|debugger|\.only\(|fit\(|fdescribe\()'
+DEBUG_HITS=$(printf '%s\n' "$COMMITS_RANGE" | tr ' ' '\n' | awk 'NF' | while IFS= read -r range; do
+    git diff --name-only --diff-filter=ACM -G"$DEBUG_PATTERN" "$range" -- \
+        '*.ts' '*.tsx' '*.js' '*.jsx' '*.mjs' '*.cjs' 2>/dev/null || true
+done | grep -vE '(/(test|tests|__tests__|__fixtures__)/|\.test\.|\.spec\.|scripts/|/node_modules/|/dist/|/build/|/priv/static/vendor/)' | awk 'NF && !seen[$0]++')
+if [ -n "$DEBUG_HITS" ]; then
+    printf "${YEL}! debug markers introduced (console.log / debugger / .only):${NC}\n" >&2
+    printf '%s\n' "$DEBUG_HITS" >&2
+    printf "${YEL}  Block: remove or use a logger. Bypass with --no-verify if intentional.${NC}\n" >&2
+    exit 1
+fi
+
+# 7. Trailing tabs mixed with spaces or CRLF in source files — biome will catch most,
+#    but we at least block the CRLF-disaster case on shared config files.
+CRLF_HITS=$(files_match '\.(sh|githooks/|yaml|yml|toml|Dockerfile)$|(^|/)Dockerfile$' | while IFS= read -r f; do
+    eol_info=$(git ls-files --eol -- "$f" 2>/dev/null | sed -n '1p')
+    case "$eol_info" in
+        *" w/crlf "*|*" w/mixed "*) printf '%s\n' "$f" ;;
+    esac
+done)
+if [ -n "$CRLF_HITS" ]; then
+    printf "${RED}✗ CRLF line endings in script/config file:${NC}\n" >&2
+    printf '%s\n' "$CRLF_HITS" | sed 's/^/    /' >&2
+    printf "${YEL}  Convert to LF: sed -i 's/\\r$//' <file>${NC}\n" >&2
+    exit 1
+fi
+
+# 8. Biome format/lint on changed TS/JS if biome is available inside astral_app.
+#    Skipped when biome isn't installed — we don't want to block pushes in clones
+#    that only touched Gleam/Go/Kotlin.
+BIOME_TARGETS=$(printf '%s\n' "$CHANGED_FILES" | grep -E '\.(ts|tsx|js|jsx|mjs|cjs|json)$' | grep -E '^(astral_app|astral_api)/' || true)
+if [ -n "$BIOME_TARGETS" ]; then
+    if [ -x "astral_app/node_modules/.bin/biome" ] || [ -f "astral_app/node_modules/@biomejs/biome/package.json" ]; then
+        info "biome check on changed files"
+        # Run from repo root so shared biome.json applies.
+        if ! printf '%s\n' "$BIOME_TARGETS" | xargs -r astral_app/node_modules/.bin/biome check --no-errors-on-unmatched >/tmp/biome-prepush.log 2>&1; then
+            printf "${RED}✗ biome check failed:${NC}\n" >&2
+            head -40 /tmp/biome-prepush.log >&2
+            printf "${YEL}  Fix with: cd astral_app && node_modules/.bin/biome check --write <files>${NC}\n" >&2
+            exit 1
+        fi
+    else
+        warn "biome not installed — skipping lint (run 'pnpm -C astral_app install' to enable)"
+    fi
+fi
+
+# 9. TypeScript typecheck on workspaces that have TS changes.
+#    Calls tsc directly (no pnpm script needed) — fast on warm tsbuildinfo.
+typecheck_workspace() {
+    ws="$1"
+    tsc_bin="$ws/node_modules/.bin/tsc"
+    if [ ! -x "$tsc_bin" ] && [ ! -f "$tsc_bin.cmd" ]; then
+        warn "$ws: tsc not installed — skipping (run 'pnpm -C $ws install')"
+        return 0
+    fi
+    if [ ! -f "$ws/node_modules/@tsconfig/node22/tsconfig.json" ]; then
+        warn "$ws: dependencies incomplete — skipping (run 'pnpm -C $ws install')"
+        return 0
+    fi
+    info "tsc --noEmit on $ws"
+    if ! (cd "$ws" && node_modules/.bin/tsc --noEmit) >/tmp/tsc-prepush.log 2>&1; then
+        printf "${RED}✗ %s typecheck failed:${NC}\n" "$ws" >&2
+        tail -40 /tmp/tsc-prepush.log >&2
+        if grep -q "\.module\.css" /tmp/tsc-prepush.log; then
+            printf "${YEL}  Stale CSS-module types detected. Try: pnpm -C %s generate:css-types${NC}\n" "$ws" >&2
+        fi
+        return 1
+    fi
+    return 0
+}
+
+if printf '%s\n' "$CHANGED_FILES" | grep -qE '^astral_app/.*\.(ts|tsx)$'; then
+    typecheck_workspace astral_app || exit 1
+fi
+if printf '%s\n' "$CHANGED_FILES" | grep -qE '^astral_api/.*\.(ts|tsx)$'; then
+    typecheck_workspace astral_api || exit 1
+fi
+
+ok "pre-push checks passed"
+exit 0

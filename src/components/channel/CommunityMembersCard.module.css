@@ -1,0 +1,253 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.card {
+	display: flex;
+	width: 100%;
+	min-width: 0;
+	flex: 0 0 auto;
+	flex-direction: column;
+	box-sizing: border-box;
+	border: 1px solid color-mix(in srgb, var(--background-modifier-accent) 80%, transparent);
+	border-radius: 1rem;
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-floating) 38%, transparent),
+			color-mix(in srgb, var(--background-primary) 94%, transparent)
+		);
+	overflow: hidden;
+}
+
+.cardHeader {
+	display: flex;
+	width: 100%;
+	flex-direction: column;
+	border: none;
+	background: none;
+	padding: 0;
+	cursor: pointer;
+	color: inherit;
+	text-align: left;
+	touch-action: pan-y;
+}
+
+.bannerWrap {
+	position: relative;
+	height: 5.7rem;
+	width: 100%;
+	overflow: hidden;
+}
+
+.banner {
+	height: 100%;
+	width: 100%;
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+
+.bannerFallback {
+	background:
+		linear-gradient(130deg, color-mix(in srgb, var(--brand-primary) 35%, var(--background-secondary)) 0%, transparent 70%),
+		linear-gradient(
+			300deg,
+			color-mix(in srgb, var(--status-online) 22%, var(--background-secondary)) 0%,
+			var(--background-secondary) 72%
+		);
+}
+
+.bannerOverlay {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(180deg, rgb(7 11 19 / 18%) 0%, rgb(7 11 19 / 84%) 100%);
+	pointer-events: none;
+}
+
+.headerContent {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	min-width: 0;
+	align-items: flex-end;
+	gap: 0.55rem;
+	margin-top: -1.2rem;
+	padding: 0 0.75rem 0.72rem;
+}
+
+.iconWrap {
+	flex-shrink: 0;
+}
+
+.guildIcon {
+	border: 3px solid color-mix(in srgb, var(--background-primary) 88%, transparent);
+	border-radius: 50%;
+	box-shadow: 0 8px 24px rgb(0 0 0 / 26%);
+}
+
+.titleBlock {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	flex-direction: column;
+	gap: 0.18rem;
+	padding-bottom: 0.12rem;
+}
+
+.eyebrow {
+	font-size: 0.67rem;
+	font-weight: 700;
+	letter-spacing: 0.11em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--text-primary) 68%, transparent);
+}
+
+.title {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.98rem;
+	line-height: 1.2rem;
+	font-weight: 700;
+	color: var(--text-primary);
+}
+
+.stats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+.statPill {
+	display: inline-flex;
+	align-items: center;
+	border-radius: 999px;
+	padding: 0.125rem 0.46rem;
+	font-size: 0.67rem;
+	line-height: 0.875rem;
+	font-weight: 600;
+	background: color-mix(in srgb, var(--background-primary) 38%, transparent);
+	color: color-mix(in srgb, var(--text-primary) 86%, var(--text-secondary));
+}
+
+.caret {
+	height: 1rem;
+	width: 1rem;
+	flex-shrink: 0;
+	margin-bottom: 0.35rem;
+	color: color-mix(in srgb, var(--text-primary) 86%, transparent);
+	transition: transform var(--transition-fast);
+}
+
+.caretExpanded {
+	transform: rotate(180deg);
+}
+
+.actionPanel {
+	width: 100%;
+	max-height: 0;
+	opacity: 0;
+	overflow: hidden;
+	border-top: 1px solid transparent;
+	padding-left: 0.75rem;
+	padding-right: 0.75rem;
+	transition:
+		max-height var(--motion-dur-medium) var(--motion-ease-snap),
+		opacity var(--motion-dur-medium) var(--motion-ease-snap),
+		padding-top var(--motion-dur-medium) var(--motion-ease-snap),
+		padding-bottom var(--motion-dur-medium) var(--motion-ease-snap),
+		border-color var(--motion-dur-medium) var(--motion-ease-snap);
+}
+
+.actionPanelExpanded {
+	max-height: 42rem;
+	opacity: 1;
+	border-top-color: color-mix(in srgb, var(--background-modifier-accent) 78%, transparent);
+	padding-top: 0.75rem;
+	padding-bottom: 0.75rem;
+}
+
+.actionGrid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.42rem;
+}
+
+.actionButton {
+	display: flex;
+	width: 100%;
+	min-width: 0;
+	align-items: center;
+	gap: 0.5rem;
+	border: none;
+	border-radius: 0.75rem;
+	padding: 0.52rem 0.62rem;
+	background: color-mix(in srgb, var(--background-modifier-hover) 78%, transparent);
+	color: var(--text-primary);
+	cursor: pointer;
+	text-align: left;
+	touch-action: pan-y;
+	transition:
+		background-color var(--transition-fast),
+		transform var(--transition-fast);
+}
+
+.actionButton:hover {
+	background: color-mix(in srgb, var(--background-modifier-selected) 85%, transparent);
+	transform: translateY(-1px);
+}
+
+.actionButtonDanger {
+	color: color-mix(in srgb, var(--status-danger) 84%, var(--text-primary));
+}
+
+.actionButtonDanger:hover {
+	background: color-mix(in srgb, var(--status-danger) 14%, transparent);
+}
+
+.actionIcon {
+	height: 0.96rem;
+	width: 0.96rem;
+	flex-shrink: 0;
+}
+
+.actionLabel {
+	min-width: 0;
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.79rem;
+	line-height: 1rem;
+	font-weight: 600;
+}
+
+.actionState {
+	display: inline-flex;
+	align-items: center;
+	border-radius: 999px;
+	padding: 0.08rem 0.45rem;
+	font-size: 0.65rem;
+	line-height: 0.8rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+	color: color-mix(in srgb, var(--text-primary) 80%, var(--brand-primary));
+}

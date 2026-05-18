@@ -1,0 +1,143 @@
+---
+title: OAuth2
+description: Аутентифицируйте пользователей и получите доступ к API от их имени
+---
+
+Astral реализует поток авторизации OAuth2 с кодом, чтобы сторонние приложения могли действовать от имени пользователей Astral с гранулярными разрешениями.
+
+## Обзор
+
+1. Ваше приложение перенаправляет пользователя на страницу авторизации Astral.
+2. Пользователь одобряет (или отказывает) в запрошенных вами областях доступа.
+3. Astral перенаправляет обратно в ваше приложение с параметром авторизации `code`.
+4. Ваш сервер обменивает код на токен доступа и токен обновления.
+5. Вы используете токен доступа для вызова API от имени этого пользователя.
+
+## Регистрация приложения
+
+1. Откройте клиент Astral по адресу [astraof.com](https://astraof.com).
+2. Перейдите в **User Settings → Applications**.
+3. Нажмите **Create Application**.
+4. Заполните имя и URI перенаправления.
+5. Скопируйте **Client ID** и **Client Secret**.
+
+<Callout type="warning" title="Keep your client secret safe">
+Никогда не раскрывайте client secret в коде фронтенда, мобильных приложениях или публичных репозиториях. Он используется только на стороне сервера.
+</Callout>
+
+## URL авторизации
+
+Перенаправьте пользователей на:
+
+```text
+https://astraof.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=YOUR_REDIRECT_URI&response_type=code&scope=identify+guilds
+```
+
+### Параметры запроса
+
+| Параметр | Обязательный | Описание |
+| --- | --- | --- |
+| client_id | yes | Ваш идентификатор клиента приложения |
+| redirect_uri | yes | Один из зарегистрированных URI перенаправления |
+| response_type | yes | Должен быть `code` |
+| scope | yes | Список областей доступа, разделенных пробелами |
+| state | recommended | Случайная строка для предотвращения CSRF; возвращается без изменений в обратном вызове |
+
+## Области доступа
+
+| Scope | Описание |
+| --- | --- |
+| `identify` | Читайте идентификатор пользователя, имя пользователя, аватар и дискриминатор |
+| `email` | Читайте адрес электронной почты пользователя |
+| `guilds` | Список гильдий, в которых состоит пользователь |
+| `guilds.join` | Вступайте в гильдии от имени пользователя |
+| `bot` | Добавьте бота в гильдию (используется в потоке авторизации бота) |
+| `connections` | Читайте связанные аккаунты пользователя |
+| `messages.read` | Читайте сообщения в каналах, к которым пользователь имеет доступ |
+
+## Обмен токенами
+
+После одобрения пользователем Astral перенаправляет на ваш URI перенаправления с параметром `code`. Обменяйте его:
+
+```http
+POST /api/v1/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&code=THE_CODE&redirect_uri=YOUR_REDIRECT_URI&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET
+```
+
+**Ответ:**
+
+```json
+{
+  "access_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 604800,
+  "refresh_token": "abc123...",
+  "scope": "identify guilds"
+}
+```
+
+## Обновление токенов
+
+Токены доступа истекают через 7 дней. Используйте токен обновления, чтобы получить новый:
+
+```http
+POST /api/v1/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&refresh_token=YOUR_REFRESH_TOKEN&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET
+```
+
+## Использование токена
+
+```text
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+Префикс `Bearer` (а не `Bot`) указывает API, что это токен пользователя из OAuth2.
+
+### Получение текущего пользователя
+
+```http
+GET /api/v1/users/@me
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+Требует области доступа `identify`.
+
+### Получение гильдий пользователя
+
+```http
+GET /api/v1/users/@me/guilds
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+Требует области доступа `guilds`.
+
+## Отзыв токенов
+
+```http
+POST /api/v1/oauth2/token/revoke
+Content-Type: application/x-www-form-urlencoded
+
+token=YOUR_TOKEN&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET
+```
+
+## Поток авторизации бота
+
+Чтобы добавить бота в гильдию, перенаправьте администратора гильдии на:
+
+```text
+https://astraof.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot&permissions=PERMISSION_INTEGER
+```
+
+Параметр `permissions` указывает разрешения по умолчанию в виде целочисленного битового поля. См. [Permissions](../topics/permissions) для полного списка.
+
+## Рекомендации по безопасности
+
+1. **Всегда проверяйте параметр `state`** в обратном вызове, чтобы предотвратить атаки CSRF.
+2. **Храните токены на стороне сервера** — никогда не раскрывайте токены доступа в браузере.
+3. **Запрашивайте только необходимые области доступа** — пользователи чаще одобряют запросы с минимальными разрешениями.
+4. **Обрабатывайте истечение срока токена правильно** — проверяйте ответы `401` и обновляйте прозрачно.
+5. **Отзывайте токены, когда пользователи отключают** вашу интеграцию, чтобы уважать их конфиденциальность.

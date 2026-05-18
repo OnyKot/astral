@@ -1,0 +1,37 @@
+---
+title: Обзор Событий
+description: Как Astral отправляет события в реальном времени
+---
+
+Astral отправляет события через Gateway WebSocket.
+
+Используйте события, если бот должен:
+
+- мгновенно реагировать на новые сообщения
+- отслеживать изменения на сервере
+- обрабатывать голосовые состояния
+
+## Откуда приходят события
+
+- подключение: `wss://<ваш-домен>/gateway?v=1&encoding=json`
+- аутентификация: `Identify` (`op: 2`)
+- входящие события: `Dispatch` (`op: 0`)
+
+Dispatch-пакет содержит:
+
+- `t` — имя события
+- `s` — sequence number
+- `d` — payload события
+
+## Основные группы событий
+
+- Session: `READY`, `RESUMED`
+- Guild: `GUILD_CREATE`, `GUILD_UPDATE`, `GUILD_MEMBER_ADD`
+- Channel: `CHANNEL_CREATE`, `CHANNEL_UPDATE`, `CHANNEL_DELETE`
+- Message: `MESSAGE_CREATE`, `MESSAGE_UPDATE`, `MESSAGE_DELETE`
+- Voice: `VOICE_STATE_UPDATE`, `VOICE_SERVER_UPDATE`
+
+## Следующие страницы
+
+- [Gateway](./gateway)
+- [События Gateway](./gateway-events)

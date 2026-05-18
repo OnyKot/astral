@@ -1,0 +1,106 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.wrapperSides {
+	margin-left: 0;
+	margin-right: 0;
+	width: 100%;
+}
+
+.box {
+	position: relative;
+	background: color-mix(in srgb, var(--background-textarea) 90%, var(--background-primary) 10%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
+	transition:
+		border-color var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease),
+		box-shadow var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease),
+		background-color var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease);
+	margin-bottom: 0;
+	border-radius: 1rem;
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 3%, transparent);
+	overflow: hidden;
+}
+
+.boxVoiceOverlayVisible {
+	overflow: visible;
+	z-index: 4;
+}
+
+.stackSection {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.stackSection + .stackSection {
+	border-top: 1px solid color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+.box:focus-within {
+	border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+	box-shadow:
+		0 0 0 1px color-mix(in srgb, var(--brand-primary) 16%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 7%, transparent);
+}
+
+.roundedAll {
+	border-radius: 1rem;
+}
+
+.roundedTop {
+	border-top-left-radius: 1rem;
+	border-top-right-radius: 1rem;
+}
+
+.roundedBottom {
+	border-bottom-left-radius: 1rem;
+	border-bottom-right-radius: 1rem;
+}
+
+.noBottomBorder {
+	border-bottom-width: 0;
+}
+
+.bottomSpacing {
+	margin-bottom: 0;
+}
+
+.disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.topBarContainer {
+	position: relative;
+	z-index: 1;
+	flex-shrink: 0;
+}
+
+.barInner {
+	display: grid;
+	align-items: center;
+	grid-template-columns: 1fr auto;
+	padding-left: 16px;
+	padding-right: 16px;
+}
+
+.separator {
+	height: 1px;
+	background-color: transparent;
+}

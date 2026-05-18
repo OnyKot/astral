@@ -1,0 +1,272 @@
+---
+title: Sticker
+description: Sticker
+---
+
+# Guild Stickers
+
+Astral's guild stickers are custom images that can be used in messages within a guild, providing a Discord-compatible experience for sticker management. Each guild can maintain its own set of custom sticker packs, allowing server administrators to upload, update, and delete stickers as needed. Stickers are stored per guild and can include metadata like names, descriptions, and tags for easy organization and searchability.
+
+## Overview of Endpoints
+
+The following table lists the primary endpoints for managing guild stickers. These endpoints require authentication via a Bot token in the `Authorization` header (e.g., `Authorization: Bot $TOKEN`). Rate limits apply to all endpoints to prevent abuse; details are provided in each section below.
+
+| HTTP Method | Endpoint                          | Purpose                  |
+|-------------|-----------------------------------|--------------------------|
+| POST       | /guilds/\{guild.id\}/stickers      | Create a new sticker    |
+| POST       | /guilds/\{guild.id\}/stickers/bulk | Bulk create stickers    |
+| GET        | /guilds/\{guild.id\}/stickers      | List all stickers in the guild |
+| PATCH      | /guilds/\{guild.id\}/stickers/\{sticker.id\} | Update a sticker       |
+| DELETE     | /guilds/\{guild.id\}/stickers/\{sticker.id\} | Delete a sticker       |
+
+## Create a Sticker (POST /guilds/\{guild.id\}/stickers)
+
+### Description
+Creates a new sticker in the specified guild. This endpoint adds a sticker to the guild's custom sticker pack. The sticker must include an image, which is uploaded as base64-encoded data. Requires the `MANAGE_EMOJIS_AND_STICKERS` permission for the bot in the guild.
+
+### Authentication
+Bot token required.
+
+### Request Body
+| Field       | Type   | Description                          | Required |
+|-------------|--------|--------------------------------------|----------|
+| name       | string | The name of the sticker (1-30 characters). | Yes     |
+| description| string | A brief description of the sticker (0-100 characters). | Yes    |
+| tags       | string | Comma-separated list of tags for categorization (e.g., "hello,wave"). | Yes    |
+| image      | string | Base64-encoded image data (e.g., `data:image/webp;base64,iVBOR...`). Supported formats: WEBP, PNG. Maximum file size: 500 KB. | Yes    |
+
+### Response
+On success, returns a 201 Created status with the newly created sticker object. If the request fails (e.g., due to invalid image or rate limit), a 4xx error is returned with details in the response body.
+
+### Example Request
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "wave",
+    "description": "Friendly wave",
+    "tags": "hello,wave",
+    "image": "data:image/webp;base64,iVBOR..."
+  }' \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/stickers
+```
+
+### Example Response
+```json
+{
+  "id": "123456789",
+  "name": "wave",
+  "description": "Friendly wave",
+  "tags": ["hello", "wave"],
+  "image_url": "https://astraof.com/stickers/123456789.webp",
+  "guild_id": "<GUILD_ID>",
+  "created_at": "2023-10-01T12:00:00Z"
+}
+```
+
+### Rate Limit
+5 requests per 10 seconds per guild. Exceeding this limit results in a 429 Too Many Requests response with a `Retry-After` header indicating the seconds to wait.
+
+## Bulk Create Stickers (POST /guilds/\{guild.id\}/stickers/bulk)
+
+### Description
+Creates multiple stickers in the guild's custom sticker pack in a single request. This is useful for importing sticker packs. Each sticker in the array follows the same structure as the single create endpoint. Requires the `MANAGE_EMOJIS_AND_STICKERS` permission.
+
+### Authentication
+Bot token required.
+
+### Request Body
+| Field       | Type   | Description                          | Required |
+|-------------|--------|--------------------------------------|----------|
+| stickers   | array  | An array of sticker objects, each containing `name`, `description`, `tags`, and `image`. | Yes    |
+
+### Response
+On success, returns a 201 Created status with an array of created sticker objects. Failures for individual stickers are reported in the response.
+
+### Example Request
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stickers": [
+      {
+        "name": "wave",
+        "description": "Friendly wave",
+        "tags": "hello,wave",
+        "image": "data:image/webp;base64,<BASE64_DATA_1>"
+      },
+      {
+        "name": "smile",
+        "description": "Happy smile",
+        "tags": "happy,smile",
+        "image": "data:image/webp;base64,<BASE64_DATA_2>"
+      }
+    ]
+  }' \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/stickers/bulk
+```
+
+### Example Response
+```json
+[
+  {
+    "id": "123456789",
+    "name": "wave",
+    "description": "Friendly wave",
+    "tags": ["hello", "wave"],
+    "image_url": "https://astraof.com/stickers/123456789.webp",
+    "guild_id": "<GUILD_ID>",
+    "created_at": "2023-10-01T12:00:00Z"
+  },
+  {
+    "id": "987654321",
+    "name": "smile",
+    "description": "Happy smile",
+    "tags": ["happy", "smile"],
+    "image_url": "https://astraof.com/stickers/987654321.webp",
+    "guild_id": "<GUILD_ID>",
+    "created_at": "2023-10-01T12:00:00Z"
+  }
+]
+```
+
+### Rate Limit
+3 requests per minute per guild, with a maximum of 10 stickers per request.
+
+## List Stickers (GET /guilds/\{guild.id\}/stickers)
+
+### Description
+Retrieves a list of all stickers in the guild's custom sticker pack. This endpoint supports pagination for guilds with many stickers.
+
+### Authentication
+Bot token required.
+
+### Query Parameters
+| Parameter  | Type   | Description                          | Required |
+|------------|--------|--------------------------------------|----------|
+| limit     | integer| Number of stickers to return (1-100). Default: 50. | No     |
+| offset    | integer| Offset for pagination. Default: 0.  | No     |
+
+### Response
+Returns a 200 OK status with an array of sticker objects.
+
+### Example Request
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/stickers?limit=10&offset=0
+```
+
+### Example Response
+```json
+{
+  "stickers": [
+    {
+      "id": "123456789",
+      "name": "wave",
+      "description": "Friendly wave",
+      "tags": ["hello", "wave"],
+      "image_url": "https://astraof.com/stickers/123456789.webp",
+      "guild_id": "<GUILD_ID>",
+      "created_at": "2023-10-01T12:00:00Z"
+    },
+    {
+      "id": "987654321",
+      "name": "smile",
+      "description": "Happy smile",
+      "tags": ["happy", "smile"],
+      "image_url": "https://astraof.com/stickers/987654321.webp",
+      "guild_id": "<GUILD_ID>",
+      "created_at": "2023-10-01T12:01:00Z"
+    }
+  ],
+  "total": 2,
+  "limit": 10,
+  "offset": 0
+}
+```
+
+### Rate Limit
+10 requests per minute per guild.
+
+## Update a Sticker (PATCH /guilds/\{guild.id\}/stickers/\{sticker.id\})
+
+### Description
+Updates an existing sticker in the guild's custom sticker pack. Only the provided fields are updated. Requires the `MANAGE_EMOJIS_AND_STICKERS` permission.
+
+### Authentication
+Bot token required.
+
+### Request Body
+| Field       | Type   | Description                          | Required |
+|-------------|--------|--------------------------------------|----------|
+| name       | string | The new name of the sticker.        | No     |
+| description| string | The new description of the sticker. | No    |
+| tags       | string | The new comma-separated tags.       | No    |
+| image      | string | New base64-encoded image data (optional update). | No    |
+
+### Response
+On success, returns a 200 OK status with the updated sticker object.
+
+### Example Request
+```bash
+curl -X PATCH \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "wave-2",
+    "description": "Updated friendly wave",
+    "tags": "hello,wave,updated"
+  }' \
+  https://astraof.com/api/v1/guilds/<GUILD_ID>/stickers/<STICKER_ID>
+```
+
+### Example Response
+```json
+{
+  "id": "123456789",
+  "name": "wave-2",
+  "description": "Updated friendly wave",
+  "tags": ["hello", "wave", "updated"],
+  "image_url": "https://astraof.com/stickers/123456789.webp",
+  "guild_id": "<GUILD_ID>",
+  "updated_at": "2023-10-02T12:00:00Z"
+}
+```
+
+### Rate Limit
+5 requests per 10 seconds per guild.
+
+## Delete a Sticker (DELETE /guilds/\{guild.id\}/stickers/\{sticker.id\})
+
+### Description
+Deletes a sticker from the guild's custom sticker pack. The optional `purge` query parameter determines if the underlying asset (e.g., image file) is permanently deleted. Requires the `MANAGE_EMOJIS_AND_STICKERS` permission.
+
+### Authentication
+Bot token required.
+
+### Query Parameters
+| Parameter  | Type    | Description                          | Required |
+|------------|---------|--------------------------------------|----------|
+| purge     | boolean | If true, deletes the asset; if false or omitted, only removes the sticker reference. | No     |
+
+### Response
+On success, returns a 204 No Content status with no body.
+
+### Example Request
+```bash
+curl -X DELETE \
+  -H "Authorization: Bot $TOKEN" \
+  "https://astraof.com/api/v1/guilds/<GUILD_ID>/stickers/<STICKER_ID>?purge=false"
+```
+
+### Example Response
+No content (204 status).
+
+### Rate Limit
+5 requests per 10 seconds per guild.
+
+## Custom Sticker Packs
+Astral allows each guild to manage its own custom sticker packs through the above endpoints. A sticker pack is essentially the collection of stickers associated with a guild, enabling features like themed sets or community-specific designs. To organize stickers, use tags for filtering when listing or searching. Note that stickers are guild-specific and not shared across servers, aligning with Discord's model for custom assets.

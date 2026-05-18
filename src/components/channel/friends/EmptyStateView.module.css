@@ -1,0 +1,113 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	display: flex;
+	height: 100%;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 1.5rem;
+	margin: auto;
+	width: min(100%, 36rem);
+	min-height: min(24rem, 100%);
+	text-align: center;
+	position: relative;
+	gap: 0.35rem;
+}
+
+.card {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	max-width: 28rem;
+}
+
+.iconShell {
+	display: grid;
+	place-items: center;
+	width: 5.25rem;
+	height: 5.25rem;
+	margin-bottom: 1.15rem;
+	border-radius: 1.5rem;
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 16%, transparent);
+	background: color-mix(in srgb, var(--background-primary) 86%, var(--background-floating) 14%);
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.icon {
+	height: 2.5rem;
+	width: 2.5rem;
+	color: color-mix(in srgb, var(--brand-primary) 72%, var(--text-primary));
+}
+
+.title {
+	margin: 0 0 0.6rem;
+	font-weight: 700;
+	color: var(--text-primary);
+	font-size: 1.35rem;
+	line-height: 1.8rem;
+}
+
+.subtitle {
+	max-width: 28rem;
+	margin: 0;
+	color: color-mix(in srgb, var(--text-primary-muted) 92%, var(--text-secondary));
+	font-size: 0.95rem;
+	line-height: 1.45rem;
+}
+
+.action {
+	margin-top: 1.25rem;
+	padding: 0.625rem 1.25rem;
+	min-height: 40px;
+	border: none;
+	border-radius: 8px;
+	background: var(--brand-primary);
+	color: var(--white);
+	font-weight: 600;
+	font-size: 0.9375rem;
+	cursor: pointer;
+	transition:
+		background 0.15s ease,
+		transform 0.1s ease;
+}
+
+.action:hover {
+	background: color-mix(in srgb, var(--brand-primary) 88%, black);
+}
+
+.action:active {
+	transform: scale(0.97);
+}
+
+.action:focus-visible {
+	outline: 2px solid var(--brand-primary);
+	outline-offset: 3px;
+}
+
+@media (pointer: coarse) {
+	.action {
+		padding: 0.75rem 1.5rem;
+		min-height: 44px;
+		font-size: 1rem;
+	}
+}

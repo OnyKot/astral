@@ -1,0 +1,1 @@
+ALTER TABLE astral.guilds ADD splash_card_alignment int;

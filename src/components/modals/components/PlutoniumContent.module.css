@@ -1,0 +1,299 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.giftModeContainer,
+.mainContainer {
+	--plutonium-surface: linear-gradient(165deg, rgb(29 25 54 / 0.86), rgb(17 14 35 / 0.9));
+	--plutonium-border: rgb(148 112 255 / 0.28);
+	--plutonium-text: rgb(238 234 255);
+	--plutonium-muted: rgb(188 180 222 / 0.88);
+	display: flex;
+	min-height: 0;
+	flex-direction: column;
+	gap: 2rem;
+	padding-bottom: 1.75rem;
+	color: var(--plutonium-text);
+}
+
+.mainContainer {
+	gap: 2.35rem;
+}
+
+.header {
+	position: relative;
+	text-align: center;
+	padding: 1.15rem 0.85rem 1rem;
+	border-radius: 1.05rem;
+	border: none;
+	background:
+		radial-gradient(circle at 20% -12%, rgb(154 124 255 / 0.35), transparent 44%),
+		radial-gradient(circle at 80% 112%, rgb(95 168 255 / 0.2), transparent 46%),
+		var(--plutonium-surface);
+	box-shadow:
+		0 12px 20px rgb(8 6 20 / 0.24),
+		inset 0 1px 0 rgb(255 255 255 / 0.09);
+	overflow: hidden;
+	isolation: isolate;
+}
+
+.header::before,
+.header::after {
+	content: '';
+	position: absolute;
+	pointer-events: none;
+}
+
+.header::before {
+	inset: 0;
+	background-image:
+		radial-gradient(circle at 14% 28%, rgb(255 255 255 / 0.36) 0 1px, transparent 1.2px),
+		radial-gradient(circle at 38% 64%, rgb(205 188 255 / 0.32) 0 1px, transparent 1.2px),
+		radial-gradient(circle at 77% 24%, rgb(255 255 255 / 0.32) 0 0.9px, transparent 1.2px),
+		radial-gradient(circle at 88% 74%, rgb(188 225 255 / 0.3) 0 1px, transparent 1.2px);
+	opacity: 0.32;
+}
+
+.header::after {
+	content: none;
+}
+
+.iconContainer {
+	margin-bottom: 0.92rem;
+	display: flex;
+	justify-content: center;
+}
+
+.titlePlanet {
+	position: relative;
+	display: block;
+	width: 4rem;
+	height: 4rem;
+	animation: planetFloat 7.2s ease-in-out infinite;
+}
+
+.titlePlanet::before,
+.titlePlanet::after {
+	content: '';
+	position: absolute;
+	pointer-events: none;
+}
+
+.titlePlanet::before {
+	top: 0.22rem;
+	left: -0.38rem;
+	width: 0.22rem;
+	height: 0.22rem;
+	border-radius: 999px;
+	background: rgb(239 229 255 / 0.92);
+	box-shadow:
+		2.6rem -0.2rem 0 rgb(213 194 255 / 0.72),
+		1.4rem 3.15rem 0 rgb(193 224 255 / 0.68);
+	animation: planetStarsTwinkle 3.1s ease-in-out infinite;
+}
+
+.titlePlanet::after {
+	top: -0.24rem;
+	left: -0.74rem;
+	width: 1.4rem;
+	height: 2px;
+	background: linear-gradient(90deg, transparent, rgb(220 238 255 / 0.9), transparent);
+	transform: rotate(-34deg) translateX(0);
+	opacity: 0;
+	animation: planetFallingStar 5.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.titlePlanetCore,
+.titlePlanetRing,
+.titlePlanetMoon {
+	position: absolute;
+	pointer-events: none;
+}
+
+.titlePlanetCore {
+	inset: 0.68rem;
+	border-radius: 999px;
+	background:
+		radial-gradient(circle at 33% 24%, rgb(255 255 255 / 0.98), transparent 50%),
+		linear-gradient(150deg, #e6d9ff 0%, #aa89ff 46%, #6f43de 100%);
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.76),
+		0 0 0 1px rgb(103 72 194 / 0.55);
+}
+
+.titlePlanetRing {
+	left: 50%;
+	top: 50%;
+	width: 3.65rem;
+	height: 1.2rem;
+	border: 2px solid rgb(233 220 255 / 0.86);
+	border-radius: 999px;
+	transform: translate(-50%, -50%) rotate(16deg);
+	box-shadow:
+		0 0 0 1px rgb(110 76 205 / 0.42),
+		0 0 18px rgb(168 124 255 / 0.34);
+	animation: planetRingDrift 5.8s ease-in-out infinite;
+}
+
+.titlePlanetMoon {
+	top: 0.72rem;
+	right: 0.52rem;
+	width: 0.6rem;
+	height: 0.6rem;
+	border-radius: 999px;
+	background: rgb(233 225 255);
+	box-shadow:
+		0 0 0 1px rgb(93 61 183 / 0.46),
+		0 0 6px rgb(201 168 255 / 0.5);
+}
+
+.title {
+	margin-bottom: 0.62rem;
+	font-weight: 750;
+	font-size: 1.66rem;
+	letter-spacing: 0.01em;
+	line-height: 1.1;
+	font-family: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
+	color: rgb(247 244 255);
+	text-shadow: 0 2px 16px rgb(118 86 255 / 0.32);
+}
+
+@media (min-width: 768px) {
+	.title {
+		font-size: 2rem;
+	}
+}
+
+.description {
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 44rem;
+	font-size: 1rem;
+	line-height: 1.7;
+	color: var(--plutonium-muted);
+}
+
+@media (min-width: 768px) {
+	.description {
+		font-size: 1.06rem;
+	}
+}
+
+.subscriptionSection {
+	display: flex;
+	min-height: 0;
+	width: 100%;
+	flex-direction: column;
+	gap: 0.92rem;
+}
+
+.disclaimerContainer {
+	display: flex;
+	justify-content: center;
+}
+
+.spinnerContainer {
+	display: flex;
+	justify-content: center;
+	padding-top: 2rem;
+	padding-bottom: 2rem;
+}
+
+.perksSection {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	padding: 1rem;
+	border-radius: 1rem;
+	border: none;
+	background:
+		radial-gradient(circle at 10% -8%, rgb(154 124 255 / 0.2), transparent 42%),
+		var(--plutonium-surface);
+	box-shadow:
+		0 10px 20px rgb(8 7 20 / 0.2),
+		inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+.comparisonTableContainer {
+	margin-top: 0.25rem;
+	padding: 0.65rem;
+	border-radius: 0.9rem;
+	border: none;
+	background: rgb(14 12 30 / 0.58);
+}
+
+.previewContainer {
+	border-bottom: none;
+	padding-bottom: 2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.titlePlanet,
+	.titlePlanet::before,
+	.titlePlanet::after,
+	.titlePlanetRing {
+		animation: none;
+	}
+}
+
+@keyframes planetFloat {
+	0%,
+	100% {
+		transform: translate3d(0, 0, 0);
+	}
+	50% {
+		transform: translate3d(0, -4px, 0);
+	}
+}
+
+@keyframes planetRingDrift {
+	0%,
+	100% {
+		transform: translate(-50%, -50%) rotate(16deg);
+	}
+	50% {
+		transform: translate(-50%, -50%) rotate(21deg);
+	}
+}
+
+@keyframes planetStarsTwinkle {
+	0%,
+	100% {
+		opacity: 0.46;
+	}
+	50% {
+		opacity: 0.88;
+	}
+}
+
+@keyframes planetFallingStar {
+	0%,
+	68%,
+	100% {
+		opacity: 0;
+		transform: rotate(-34deg) translateX(0);
+	}
+	80% {
+		opacity: 0.66;
+		transform: rotate(-34deg) translateX(80px);
+	}
+	88% {
+		opacity: 0;
+		transform: rotate(-34deg) translateX(112px);
+	}
+}

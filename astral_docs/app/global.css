@@ -1,0 +1,147 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+:root {
+	color-scheme: dark;
+	--saturation-factor: 1;
+	--color-fd-primary: hsl(242, calc(100% * var(--saturation-factor)), 84%);
+	--color-fd-background: hsl(240 26% 6%);
+	--color-fd-foreground: hsl(230 38% 96%);
+	--color-fd-muted: hsl(239 22% 13%);
+	--color-fd-muted-foreground: hsl(232 16% 70%);
+	--color-fd-popover: hsl(238 25% 9%);
+	--color-fd-popover-foreground: hsl(230 38% 96%);
+	--color-fd-card: hsl(238 24% 8%);
+	--color-fd-card-foreground: hsl(230 38% 96%);
+	--color-fd-border: rgb(120 128 186 / 18%);
+	--color-fd-primary-foreground: hsl(240 26% 7%);
+	--color-fd-secondary: hsl(237 18% 14%);
+	--color-fd-secondary-foreground: hsl(230 40% 94%);
+	--color-fd-accent: rgb(112 120 255 / 18%);
+	--color-fd-accent-foreground: hsl(228 64% 96%);
+	--color-fd-ring: rgb(112 120 255 / 35%);
+	--color-fd-overlay: rgb(5 8 18 / 56%);
+	--astral-bg-0: #04050a;
+	--astral-bg-1: #0a0d16;
+	--astral-bg-2: #121726;
+	--astral-bg-3: #1b2336;
+	--astral-border: rgb(128 139 194 / 18%);
+	--astral-text: #f5f7ff;
+	--astral-muted: #a6adc7;
+	--astral-accent: #7c82ff;
+	--astral-glow-top: rgb(124 130 255 / 20%);
+	--astral-glow-bottom: rgb(56 189 248 / 12%);
+	--astral-surface: rgb(9 12 21 / 78%);
+	--astral-surface-strong: rgb(12 16 27 / 90%);
+}
+
+html,
+body {
+	background:
+		radial-gradient(1200px 700px at 90% -20%, var(--astral-glow-top), transparent 60%),
+		radial-gradient(900px 560px at 0% 100%, var(--astral-glow-bottom), transparent 58%),
+		linear-gradient(180deg, var(--astral-bg-1), var(--astral-bg-0));
+	color: var(--astral-text);
+	font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+	min-height: 100vh;
+}
+
+code,
+pre,
+kbd,
+samp {
+	font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+::selection {
+	background: rgb(99 102 241 / 32%);
+	color: #fff;
+}
+
+.astral-docs-brand {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.8rem;
+	color: var(--astral-text);
+}
+
+.astral-docs-brand__logo {
+	position: relative;
+	display: inline-flex;
+	height: 2.15rem;
+	width: 2.15rem;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	border-radius: 0.9rem;
+	border: 1px solid rgb(148 163 255 / 24%);
+	background:
+		radial-gradient(circle at 28% 18%, rgb(255 255 255 / 26%), transparent 38%),
+		linear-gradient(160deg, #6f76ff 0%, #4f46e5 55%, #191f35 100%);
+	box-shadow:
+		0 0 0 1px rgb(255 255 255 / 3%),
+		0 16px 34px rgb(79 70 229 / 28%);
+}
+
+.astral-docs-brand__logo-glow {
+	position: absolute;
+	inset: auto;
+	height: 1.25rem;
+	width: 1.25rem;
+	border-radius: 999px;
+	background: rgb(255 255 255 / 15%);
+	filter: blur(12px);
+}
+
+.astral-docs-brand__logo-letter {
+	position: relative;
+	z-index: 1;
+	font-size: 1rem;
+	font-weight: 800;
+	letter-spacing: -0.08em;
+	color: white;
+}
+
+.astral-docs-brand__copy {
+	display: inline-flex;
+	flex-direction: column;
+	gap: 0.1rem;
+	line-height: 1;
+}
+
+.astral-docs-brand__name {
+	font-size: 0.98rem;
+	font-weight: 800;
+	letter-spacing: -0.04em;
+}
+
+.astral-docs-brand__label {
+	font-size: 0.68rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--astral-muted);
+}

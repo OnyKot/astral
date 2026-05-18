@@ -1,0 +1,104 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.toast {
+	display: inline-flex;
+	max-width: 90svw;
+	min-width: min(260px, 90svw);
+	cursor: pointer;
+	align-items: center;
+	border-radius: 16px;
+	border: 1px solid color-mix(in srgb, var(--background-modifier-accent) 58%, transparent);
+	background: color-mix(in srgb, var(--background-floating, var(--background-primary)) 72%, transparent);
+	box-shadow: 0 10px 30px rgb(0 0 0 / 0.22);
+	backdrop-filter: blur(16px) saturate(140%);
+}
+
+.toastMobile {
+	gap: 0.4rem;
+	padding: 0.52rem 0.72rem;
+}
+
+.toastDesktop {
+	gap: 0.5rem;
+	padding: 0.58rem 0.82rem;
+}
+
+.icon {
+	flex-shrink: 0;
+}
+
+.iconSuccess {
+	color: var(--status-online);
+}
+
+.iconError {
+	color: var(--status-danger);
+}
+
+.iconMobile {
+	height: 0.95rem;
+	width: 0.95rem;
+}
+
+.iconDesktop {
+	height: 1.05rem;
+	width: 1.05rem;
+}
+
+.text {
+	font-weight: 600;
+	color: var(--text-primary);
+	line-height: 1.28;
+	flex: 1;
+	min-width: 0;
+}
+
+.textMobile {
+	font-size: 0.8rem;
+}
+
+.textDesktop {
+	font-size: 0.84rem;
+}
+
+.closeButton {
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.25rem;
+	height: 1.25rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--background-modifier-accent) 40%, transparent);
+	background: color-mix(in srgb, var(--background-tertiary) 30%, transparent);
+	color: color-mix(in srgb, var(--text-muted) 84%, var(--text-primary) 16%);
+	cursor: pointer;
+	padding: 0;
+}
+
+.closeButton:hover {
+	color: var(--text-primary);
+	background: color-mix(in srgb, var(--background-tertiary) 52%, transparent);
+}
+
+.closeIcon {
+	width: 0.75rem;
+	height: 0.75rem;
+}

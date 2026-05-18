@@ -1,0 +1,75 @@
+﻿{
+	"passwordReset": {
+		"subject": "Ponovno postavite svoju Astral lozinku",
+		"body": "Pozdrav {username},\n\nZatražili ste ponovno postavljanje svoje Astral lozinke. Slijedite poveznicu u nastavku kako biste postavili novu lozinku:\n\n{resetUrl}\n\nAko niste zatražili ponovno postavljanje lozinke, možete slobodno ignorirati ovu e-poštu.\n\nOva poveznica istječe za 1 sat.\n\n- Astral tim"
+	},
+	"emailVerification": {
+		"subject": "Potvrdite svoju Astral adresu e-pošte",
+		"body": "Pozdrav {username},\n\nPotvrdite svoju adresu e-pošte za Astral račun klikom na poveznicu u nastavku:\n\n{verifyUrl}\n\nAko niste otvorili Astral račun, možete slobodno ignorirati ovu e-poštu.\n\nOva poveznica istječe za 24 sata.\n\n- Astral tim"
+	},
+	"emailChangeOriginal": {
+		"subject": "Potvrdite promjenu Astral e-pošte",
+		"body": "Pozdrav {username},\n\nZaprimili smo zahtjev za promjenu e-pošte na vašem Astral računu.\n\nKako biste potvrdili ovu promjenu, unesite ovaj kod u aplikaciji:\n\n{code}\n\nOvaj kod istječe {expiresAt, date, full} u {expiresAt, time, short}.\n\nAko niste zatražili ovo, odmah osigurajte svoj račun.\n\n- Astral tim za sigurnost"
+	},
+	"emailChangeNew": {
+		"subject": "Potvrdite svoju novu Astral e-poštu",
+		"body": "Pozdrav {username},\n\nUnesite ovaj kod u aplikaciji kako biste potvrdili svoju novu Astral e-poštu:\n\n{code}\n\nOvaj kod istječe {expiresAt, date, full} u {expiresAt, time, short}.\n\nAko niste zatražili ovo, možete ignorirati ovu e-poštu."
+	},
+	"ipAuthorization": {
+		"subject": "Autorizirajte prijavu s nove IP adrese",
+		"body": "Pozdrav {username},\n\nOtkrili smo pokušaj prijave na vaš Astral račun s nove IP adrese:\n\nIP adresa: {ipAddress}\nLokacija: {location}\n\nAko ste to bili vi, autorizirajte ovu IP adresu klikom na poveznicu u nastavku:\n\n{authUrl}\n\nAko niste pokušali prijaviti se, odmah promijenite lozinku.\n\nOva autorizacijska poveznica istječe za 30 minuta.\n\n- Astral tim za sigurnost"
+	},
+	"accountDisabledSuspicious": {
+		"subject": "Vaš Astral račun je privremeno onemogućen",
+		"body": "Pozdrav {username},\n\nVaš Astral račun je privremeno onemogućen zbog sumnjive aktivnosti.\n\n{reason, select,\n\tnull {}\n\tother {Razlog: {reason}\n\n}}Kako biste ponovno dobili pristup svom računu, morate ponovno postaviti lozinku:\n\n{forgotUrl}\n\nNakon što ponovno postavite lozinku, moći ćete se ponovno prijaviti.\n\nAko smatrate da je ova radnja poduzeta greškom, kontaktirajte naš tim za podršku.\n\n- Astral tim za sigurnost"
+	},
+	"accountTempBanned": {
+		"subject": "Vaš Astral račun je privremeno suspendiran",
+		"body": "Pozdrav {username},\n\nVaš Astral račun je privremeno suspendiran zbog kršenja naših Uvjeta korištenja ili Smjernica zajednice.\n\nTrajanje: {durationHours, plural,\n\tone {# sat}\n\tfew {# sata}\n\tother {# sati}\n}\nSuspendiran do: {bannedUntil, date, full} {bannedUntil, time, short}\n{reason, select,\n\tnull {}\n\tother {\nRazlog: {reason}}\n}\n\nTijekom ovog razdoblja nećete moći pristupiti svom računu.\n\nPreporučujemo da pregledate naše:\n- Uvjete korištenja: {termsUrl}\n- Smjernice zajednice: {guidelinesUrl}\n\nAko smatrate da je ova odluka o provedbi bila netočna ili neopravdana, možete podnijeti žalbu na appeals@astraof.com s ove adrese e-pošte. Jasno objasnite zašto smatrate da je odluka bila pogrešna. Pregledat ćemo vašu žalbu i odgovoriti s našom odlukom.\n\n- Astral tim za sigurnost"
+	},
+	"accountScheduledDeletion": {
+		"subject": "Vaš Astral račun je zakazan za brisanje",
+		"body": "Pozdrav {username},\n\nVaš Astral račun je zakazan za trajno brisanje zbog kršenja naših Uvjeta korištenja ili Smjernica zajednice.\n\nDatum zakazanog brisanja: {deletionDate, date, full} {deletionDate, time, short}\n{reason, select,\n\tnull {}\n\tother {\nRazlog: {reason}}\n}\n\nOvo je ozbiljna mjera provedbe. Podaci vašeg računa bit će trajno izbrisani na zakazani datum.\n\nPreporučujemo da pregledate naše:\n- Uvjete korištenja: {termsUrl}\n- Smjernice zajednice: {guidelinesUrl}\n\nPOSTUPAK ŽALBE:\nAko smatrate da je ova odluka o provedbi bila netočna ili neopravdana, imate 30 dana za podnošenje žalbe na appeals@astraof.com s ove adrese e-pošte.\n\nU žalbi molimo:\n- Jasno objasnite zašto smatrate da je odluka o provedbi bila netočna ili neopravdana\n- Navedite sve relevantne dokaze ili kontekst\n\nČlan Astral tima za sigurnost pregledat će vašu žalbu i može otkazati planirano brisanje dok se ne donese konačna odluka.\n\n- Astral tim za sigurnost"
+	},
+	"selfDeletionScheduled": {
+		"subject": "Brisanje vašeg Astral računa je zakazano",
+		"body": "Pozdrav {username},\n\nŽao nam je što odlazite! Brisanje vašeg Astral računa je zakazano.\n\nDatum zakazanog brisanja: {deletionDate, date, full} {deletionDate, time, short}\n\nVAŽNO: Ovo brisanje možete otkazati u bilo kojem trenutku prije {deletionDate, date, full} {deletionDate, time, short} tako da se jednostavno ponovno prijavite na svoj račun.\n\nPRIJE NEGO ŠTO ODETE:\nVaša Nadzorna ploča privatnosti u Postavkama korisnika omogućuje vam da:\n- Izbrišete svoje poruke na platformi\n- Izvezete vrijedne podatke prije odlaska\n\nNapomena: Nakon što se račun izbriše, više nije moguće brisati svoje poruke. Ako želite izbrisati poruke, učinite to putem Nadzorne ploče privatnosti prije nego što se brisanje računa dovrši.\n\nAko se predomislite, samo se ponovno prijavite kako biste otkazali brisanje.\n\n- Astral tim"
+	},
+	"inactivityWarning": {
+		"subject": "Vaš Astral račun će biti izbrisan zbog neaktivnosti",
+		"body": "Pozdrav {username},\n\nPrimijetili smo da se niste prijavili na svoj Astral račun više od 2 godine.\n\nZadnja prijava: {lastActiveDate, date, full} {lastActiveDate, time, short}\n\nU skladu s našom politikom zadržavanja podataka, neaktivni računi se automatski zakazuju za brisanje. Vaš račun će biti trajno izbrisan na:\n\nDatum zakazanog brisanja: {deletionDate, date, full} {deletionDate, time, short}\n\nKAKO ZADRŽATI SVOJ RAČUN:\nJednostavno se prijavite na svoj račun na {loginUrl} prije datuma brisanja kako biste otkazali ovo automatsko brisanje. Nije potrebna nikakva druga radnja.\n\nŠTO SE DOGAĐA AKO SE NE PRIJAVITE:\n- Vaš račun i svi povezani podaci bit će trajno izbrisani\n- Vaše poruke će biti anonimizirane (pripisane \"Obrisani korisnik\")\n- Ovu radnju nije moguće poništiti\n\nŽELITE IZBRISATI SVOJE PORUKE?\nAko želite izbrisati poruke prije nego što se račun izbriše, prijavite se i upotrijebite Nadzornu ploču privatnosti u Postavkama korisnika.\n\nNadamo se da ćemo vas ponovno vidjeti na Astralu!\n\n- Astral tim"
+	},
+	"harvestCompleted": {
+		"subject": "Vaš Astral izvoz podataka je spreman",
+		"body": "Pozdrav {username},\n\nVaš izvoz podataka je dovršen i spreman za preuzimanje!\n\nSažetak izvoza:\n- Ukupno poruka: {totalMessages, number}\n- Veličina datoteke: {fileSizeMB} MB\n- Format: ZIP arhiva s JSON datotekama\n\nPreuzmite svoje podatke: {downloadUrl}\n\nVAŽNO: Ova poveznica za preuzimanje istječe {expiresAt, date, full} {expiresAt, time, short}\n\nŠto je uključeno u vaš izvoz:\n- Sve vaše poruke organizirane po kanalima\n- Metapodaci kanala\n- Vaš korisnički profil i informacije o računu\n- Članstva u guildovima i postavke\n- Sesije autentikacije i sigurnosne informacije\n\nPodaci su organizirani u JSON formatu radi jednostavne obrade i analize.\n\nAko imate pitanja o izvozu podataka, kontaktirajte support@astraof.com\n\n- Astral tim"
+	},
+	"unbanNotification": {
+		"subject": "Suspenzija vašeg Astral računa je ukinuta",
+		"body": "Pozdrav {username},\n\nDobre vijesti! Suspenzija vašeg Astral računa je ukinuta.\n\nRazlog: {reason}\n\nSada se možete ponovno prijaviti na svoj račun i nastaviti koristiti Astral.\n\n- Astral tim za sigurnost"
+	},
+	"scheduledDeletionNotification": {
+		"subject": "Vaš Astral račun je zakazan za brisanje",
+		"body": "Pozdrav {username},\n\nVaš Astral račun je zakazan za trajno brisanje.\n\nDatum zakazanog brisanja: {deletionDate, date, full} {deletionDate, time, short}\nRazlog: {reason}\n\nOvo je ozbiljna mjera provedbe. Podaci vašeg računa bit će trajno izbrisani na zakazani datum.\n\nAko smatrate da je ova odluka o provedbi bila netočna, možete podnijeti žalbu na appeals@astraof.com s ove adrese e-pošte.\n\n- Astral tim za sigurnost"
+	},
+	"giftChargebackNotification": {
+		"subject": "Vaš Astral Premium poklon je opozvan",
+		"body": "Pozdrav {username},\n\nPišemo vam kako bismo vas obavijestili da je Astral Premium poklon koji ste iskoristili opozvan zbog spora oko plaćanja (chargeback) koji je pokrenuo izvorni kupac.\n\nVaše premium pogodnosti su uklonjene s vašeg računa. Ova radnja je poduzeta jer je plaćanje za poklon osporeno i poništeno.\n\nAko imate pitanja o ovome, kontaktirajte support@astraof.com.\n\n- Astral tim"
+	},
+	"reportResolved": {
+		"subject": "Vaša Astral prijava je pregledana",
+		"body": "Pozdrav {username},\n\nVaša prijava (ID: {reportId}) je pregledana od strane našeg tima za sigurnost.\n\nOdgovor tima za sigurnost:\n{publicComment}\n\nHvala vam što pomažete održati Astral sigurnim za sve. Sve prijave shvaćamo ozbiljno i cijenimo vaš doprinos našoj zajednici.\n\nAko imate pitanja ili nedoumice u vezi s ovom odlukom, kontaktirajte safety@astraof.com.\n\n- Astral tim za sigurnost"
+	},
+	"dsaReportVerification": {
+		"subject": "Potvrdite svoju e-poštu za DSA prijavu",
+		"body": "Pozdrav,\n\nUpotrijebite sljedeći verifikacijski kod za podnošenje vaše prijave prema Aktu o digitalnim uslugama (DSA) na Astralu:\n\n{code}\n\nOvaj kod istječe {expiresAt, date, full} u {expiresAt, time, short}.\n\nAko niste zatražili ovo, ignorirajte ovu e-poštu.\n\n- Astral tim za sigurnost"
+	},
+	"registrationApproved": {
+		"subject": "Vaša Astral registracija je odobrena",
+		"body": "Pozdrav {username},\n\nSjajne vijesti! Vaša Astral registracija je odobrena.\n\nSada se možete prijaviti u Astral aplikaciju na:\n{channelsUrl}\n\nDobrodošli u Astral zajednicu!\n\n- Astral tim"
+	},
+	"emailChangeRevert": {
+		"subject": "Vaša Astral e-pošta je promijenjena",
+		"body": "Pozdrav {username},\n\nE-pošta vašeg Astral računa je promijenjena na {newEmail}.\n\nAko ste vi napravili ovu promjenu, nije potrebna nikakva radnja. Ako niste, možete vratiti prethodnu adresu i osigurati svoj račun putem ove poveznice:\n\n{revertUrl}\n\nOvo će vratiti vašu prethodnu e-poštu, odjaviti vas posvuda, ukloniti povezane telefonske brojeve, onemogućiti MFA i zahtijevati novu lozinku.\n\n- Astral tim za sigurnost"
+	}
+}
+

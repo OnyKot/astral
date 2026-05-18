@@ -1,0 +1,544 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+:root {
+	--popout-padding: 8px;
+	--popout-border-radius: 4px;
+	--popout-item-radius: 3px;
+	--popout-gap: 1px;
+	--popout-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+	--menu-gap-main: 16px;
+	--menu-gap-nested: 6px;
+	--menu-item-padding: 6px 8px;
+	--menu-item-gap: 12px;
+}
+
+.container {
+	width: 312px;
+}
+
+.profileCardShell {
+	--profile-card-width: 100%;
+	--profile-card-radius: 1rem;
+	--profile-card-border-width: 1px;
+	--profile-banner-height: 118px;
+	--profile-card-padding-bottom: 0.8rem;
+	--profile-card-background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-floating) 90%, var(--background-primary) 10%),
+			color-mix(in srgb, var(--background-secondary) 86%, var(--background-primary) 14%)
+		);
+	--profile-card-shadow:
+		0 18px 36px rgb(0 0 0 / 0.28),
+		0 2px 0 rgb(255 255 255 / 0.02) inset;
+	border-color: color-mix(in srgb, var(--text-primary) 10%, transparent) !important;
+}
+
+.profileCardShell::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		radial-gradient(circle at 12% 0, color-mix(in srgb, var(--brand-primary) 20%, transparent), transparent 40%),
+		linear-gradient(180deg, rgb(255 255 255 / 0.03), transparent 30%);
+	opacity: 0.7;
+	z-index: 0;
+}
+
+.containerVoiceCompact {
+	width: min(18.75rem, 34vw);
+	min-width: 17rem;
+}
+
+.profileCardVoiceCompact {
+	--profile-card-width: 100%;
+	--profile-card-radius: 0.92rem;
+	--profile-card-border-width: 1px;
+	--profile-card-padding-bottom: 0.5rem;
+	--profile-banner-height: 92px;
+	background: color-mix(in srgb, var(--background-secondary) 92%, var(--background-primary) 8%);
+}
+
+.containerVoiceCompact .actionGroup {
+	border-radius: 0.68rem;
+	background-color: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%);
+}
+
+.containerVoiceCompact .editProfileButton {
+	margin-top: 0.05rem;
+}
+
+.voiceCompactHeader {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+}
+
+.voiceCompactHeaderText {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	gap: 0.06rem;
+}
+
+.voiceCompactName {
+	font-size: 0.92rem;
+	line-height: 1.1rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.voiceCompactTag {
+	font-size: 0.72rem;
+	line-height: 0.95rem;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.customStatusRow {
+	display: flex;
+	align-items: center;
+	position: relative;
+	z-index: 1;
+}
+
+.customStatusRow:hover {
+	--emoji-show-animated: 1;
+}
+
+.musicActivityRow {
+	margin-top: 0.15rem;
+}
+
+.customStatusPlaceholder {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25em;
+	padding: 0;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font-size: 0.75rem;
+	line-height: 1rem;
+}
+
+.customStatusPlaceholder:hover .customStatusPlaceholderText {
+	text-decoration: underline;
+}
+
+.customStatusPlaceholderIcon {
+	color: var(--text-tertiary);
+	flex-shrink: 0;
+}
+
+.customStatusPlaceholderText {
+	color: var(--text-tertiary);
+}
+
+.copyUsernameButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.25rem;
+	height: 1.25rem;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: var(--text-tertiary);
+	cursor: pointer;
+	opacity: 0;
+	transition:
+		opacity 0.15s ease,
+		color 0.15s ease,
+		background-color 0.15s ease;
+	position: relative;
+	z-index: 1;
+}
+
+.copyUsernameButton:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-primary);
+}
+
+.container:hover .copyUsernameButton,
+.container:focus-within .copyUsernameButton {
+	opacity: 1;
+}
+
+.footer {
+	display: flex;
+	flex-direction: column;
+	gap: 0.58rem;
+	width: 100%;
+	position: relative;
+	z-index: 1;
+}
+
+.actionGroup {
+	display: flex;
+	flex-direction: column;
+	border-radius: 0.88rem;
+	background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
+	box-shadow:
+		0 8px 16px rgb(3 7 18 / 0.16),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+	overflow: hidden;
+}
+
+.editProfileButton {
+	margin-top: 0;
+	height: 40px;
+	min-height: 40px;
+	border-radius: 0.82rem !important;
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 34%, transparent) !important;
+	background: color-mix(in srgb, var(--button-primary-fill) 84%, var(--background-floating) 16%) !important;
+	box-shadow:
+		0 10px 18px color-mix(in srgb, var(--brand-primary) 18%, transparent),
+		inset 0 1px 0 rgb(255 255 255 / 0.12);
+	transition:
+		transform 150ms ease,
+		filter 150ms ease,
+		background-color 150ms ease !important;
+}
+
+.editProfileButton:hover {
+	transform: translateY(-1px);
+	filter: brightness(1.04);
+}
+
+.editProfileButton:active {
+	transform: translateY(0);
+}
+
+.actionButton {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	width: 100%;
+	padding: 0.52rem 0.64rem;
+	border: none;
+	background: transparent;
+	color: var(--text-primary);
+	text-align: left;
+	font-weight: 530;
+	cursor: pointer;
+	transition:
+		background-color 140ms ease,
+		color 140ms ease;
+}
+
+.actionButton:hover {
+	background: color-mix(in srgb, var(--background-modifier-hover) 82%, var(--background-primary) 18%);
+}
+
+.actionDivider {
+	margin-left: 0.75rem;
+	margin-right: 0.75rem;
+	height: 1px;
+	background-color: color-mix(in srgb, var(--text-primary) 9%, transparent);
+	opacity: 1;
+}
+
+.actionButton:disabled {
+	cursor: not-allowed;
+}
+
+.actionButtonDisabled {
+	opacity: 0.5;
+}
+
+.actionIcon {
+	flex-shrink: 0;
+	width: 22px;
+	height: 22px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: color-mix(in srgb, var(--text-secondary) 88%, var(--text-primary) 12%);
+	border-radius: 0.55rem;
+	background: color-mix(in srgb, var(--background-floating) 82%, var(--background-primary) 18%);
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 7%, transparent);
+}
+
+.actionContent {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+}
+
+.actionLabel {
+	font-weight: 560;
+	font-size: 0.78rem;
+	color: var(--text-primary);
+	line-height: 1.25;
+}
+
+.actionHint {
+	font-size: 0.6875rem;
+	color: var(--text-tertiary);
+	line-height: 1.25;
+}
+
+.actionChevron {
+	color: var(--text-tertiary);
+	flex-shrink: 0;
+	align-self: center;
+}
+
+.statusMenu {
+	display: flex;
+	flex-direction: column;
+	width: 280px;
+	padding: var(--popout-padding);
+	margin-left: var(--menu-gap-main);
+	background-color: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	border-radius: 0.75rem;
+	box-shadow: var(--popout-shadow);
+}
+
+.expiryPopup {
+	display: flex;
+	flex-direction: column;
+	width: 220px;
+	padding: var(--popout-padding);
+	margin-left: var(--menu-gap-nested);
+	background-color: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	border-radius: 0.75rem;
+	box-shadow: var(--popout-shadow);
+}
+
+.switchMenu {
+	display: flex;
+	flex-direction: column;
+	width: 280px;
+	padding: var(--popout-padding);
+	margin-left: var(--menu-gap-main);
+	background-color: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	border-radius: 0.75rem;
+	box-shadow: var(--popout-shadow);
+}
+
+.switchMenuList {
+	display: flex;
+	flex-direction: column;
+}
+
+.switchMenuFooter {
+	margin-top: var(--popout-padding);
+	padding-top: var(--popout-padding);
+	border-top: 1px solid var(--background-modifier-accent);
+}
+
+.manageAccountsButton {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: var(--menu-item-padding);
+	border: none;
+	border-radius: var(--popout-item-radius);
+	background: transparent;
+	color: var(--text-secondary);
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 16px;
+	text-align: left;
+}
+
+.manageAccountsButton:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-primary);
+}
+
+.accountMenuItem {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: var(--menu-item-padding);
+	margin: var(--popout-gap) 0;
+	border: none;
+	border-radius: var(--popout-item-radius);
+	background: transparent;
+	color: var(--text-secondary);
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 16px;
+	text-align: left;
+}
+
+.accountMenuItem:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-primary);
+}
+
+.accountMenuAvatar {
+	flex-shrink: 0;
+}
+
+.accountMenuInfo {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+	gap: 0.125rem;
+}
+
+.accountMenuTag {
+	font-weight: 500;
+	font-size: 13px;
+	line-height: 16px;
+}
+
+.accountMenuDiscriminator {
+	color: var(--text-tertiary);
+	font-weight: 400;
+}
+
+.accountMenuMeta {
+	font-size: 11px;
+	color: var(--status-online);
+	line-height: 14px;
+}
+
+.accountMenuCheck {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 1.25rem;
+	height: 1.25rem;
+	background-color: var(--brand-primary);
+	border-radius: 50%;
+	color: white;
+}
+
+.statusMenuRow {
+	margin: var(--popout-gap) 0;
+}
+
+.statusMenuItem {
+	display: grid;
+	grid-template-columns: 18px 1fr auto;
+	align-items: flex-start;
+	gap: var(--menu-item-gap);
+	width: 100%;
+	padding: var(--menu-item-padding);
+	margin: var(--popout-gap) 0;
+	border: none;
+	border-radius: var(--popout-item-radius);
+	background: transparent;
+	color: var(--text-secondary);
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 18px;
+	text-align: left;
+	box-sizing: border-box;
+
+}
+
+.statusMenuItem:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-primary);
+}
+
+.statusMenuIcon {
+	flex-shrink: 0;
+	width: 18px;
+	height: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-top: 1px;
+}
+
+.statusMenuText {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+}
+
+.statusMenuLabel {
+	font-weight: 500;
+	font-size: 14px;
+	line-height: 18px;
+}
+
+.statusMenuDescription {
+	font-size: 12px;
+	color: var(--text-tertiary);
+	line-height: 16px;
+	margin-top: 2px;
+}
+
+.statusMenuChevron {
+	color: var(--text-secondary);
+	flex-shrink: 0;
+	margin-top: 2px;
+}
+
+.expiryItem {
+	width: 100%;
+	padding: var(--menu-item-padding);
+	margin: var(--popout-gap) 0;
+	border: none;
+	border-radius: var(--popout-item-radius);
+	background: transparent;
+	color: var(--text-secondary);
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 18px;
+	text-align: left;
+	box-sizing: border-box;
+
+}
+
+.expiryItem:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-primary);
+}
+
+.expiryLabel {
+	font-size: 14px;
+	font-weight: 500;
+}
+
+@media (max-width: 1320px) {
+	.container {
+		width: 304px;
+	}
+}

@@ -1,0 +1,61 @@
+---
+title: C# / .NET
+description: Use Discord.Net with Astral
+---
+
+[Discord.Net](https://github.com/discord-net/Discord.Net) is the standard .NET library. It exposes its REST and gateway URLs through `DiscordSocketConfig.RestClientProvider` and `DiscordSocketConfig.WebSocketProvider`, plus the static `DiscordConfig.APIUrl` constant.
+
+```csharp
+using Discord;
+using Discord.WebSocket;
+
+class Program
+{
+    private DiscordSocketClient _client = null!;
+
+    public static Task Main(string[] args) => new Program().MainAsync();
+
+    public async Task MainAsync()
+    {
+        var config = new DiscordSocketConfig
+        {
+            GatewayIntents = GatewayIntents.Guilds
+                            | GatewayIntents.GuildMessages
+                            | GatewayIntents.MessageContent,
+            // Repoint REST + Gateway at Astral
+            RestClientProvider = Discord.Net.Rest.DefaultRestClientProvider.Create(useProxy: false),
+            // The cleanest path: subclass DefaultRestClient or set
+            // DiscordConfig.APIUrl + DiscordRestConfig before constructing
+            // the client.
+        };
+
+        // Discord.Net allows overriding the API base by reflection on
+        // DiscordConfig.APIUrl, or by using DiscordSocketConfig with a
+        // custom rest provider that prefixes the Astral host.
+        typeof(DiscordConfig)
+            .GetField("APIUrl", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!
+            .SetValue(null, "https://astraof.com/api/v1/");
+
+        _client = new DiscordSocketClient(config);
+        _client.Log += msg => { System.Console.WriteLine(msg); return Task.CompletedTask; };
+        _client.MessageReceived += HandleMessage;
+
+        await _client.LoginAsync(TokenType.Bot, System.Environment.GetEnvironmentVariable("ASTRAL_BOT_TOKEN"));
+        await _client.StartAsync();
+        await Task.Delay(-1);
+    }
+
+    private async Task HandleMessage(SocketMessage msg)
+    {
+        if (msg.Author.IsBot) return;
+        if (msg.Content == "!ping")
+        {
+            await msg.Channel.SendMessageAsync("pong");
+        }
+    }
+}
+```
+
+<Callout type="warning" title="Reflection-based override is fragile">
+Discord.Net hard-codes its API base in a `static readonly` field. The reflection trick above works against current releases (3.x) but may stop working if the library marks the field truly readonly. Pin your Discord.Net version and re-test on upgrades.
+</Callout>

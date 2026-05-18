@@ -1,0 +1,61 @@
+---
+title: Voice
+description: Voice
+---
+
+Astral voice integrations are split across a few public layers:
+
+- channel/call REST helpers
+- Gateway events and state updates
+- media transport handled after voice negotiation
+
+## What to use for what
+
+| Need | Use |
+| --- | --- |
+| Check whether a DM/group call can ring | `GET /channels/:channel_id/call` |
+| Change call region | `PATCH /channels/:channel_id/call` |
+| Ring recipients | `POST /channels/:channel_id/call/ring` |
+| Show available RTC regions | `GET /channels/:channel_id/rtc-regions` |
+| React to live voice state changes | Gateway |
+
+## Public voice HTTP endpoints
+
+- `GET /channels/:channel_id/rtc-regions`
+- `GET /channels/:channel_id/call`
+- `PATCH /channels/:channel_id/call`
+- `POST /channels/:channel_id/call/ring`
+- `POST /channels/:channel_id/call/stop-ringing`
+
+## Voice bot design guidance
+
+If your bot interacts with voice or call features:
+
+- use REST to start or configure the call surface
+- use Gateway to observe who joined, left, or changed state
+- keep reconnect logic resilient
+- avoid assuming a fixed region forever
+
+## Region example
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/rtc-regions
+```
+
+## Ring example
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"recipients":["1470000000000000001"]}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/call/ring
+```
+
+## Related docs
+
+- [Resource: Voice](../resources/voice)
+- [Gateway](../events/gateway)
+- [Gateway Events](../events/gateway-events)

@@ -1,0 +1,173 @@
+---
+title: Отладка и типовые проблемы
+description: Практические проверки и быстрые способы найти ошибку в Astral bot API и Gateway
+---
+
+Используйте эту страницу, когда бот не проходит аутентификацию, не получает события, не может отправить сообщение или ведёт себя нестабильно.
+
+## Начните с трёх проверок
+
+Если все три запроса ниже работают, значит токен, привязка приложения и публичный Gateway discovery находятся в нормальном состоянии:
+
+```bash
+export TOKEN="your_bot_token"
+
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/users/@me
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/applications/@me
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/gateway/bot
+```
+
+Что должно получиться:
+
+- `GET /users/@me` возвращает текущего bot user
+- `GET /applications/@me` возвращает приложение, связанное с токеном
+- `GET /gateway/bot` возвращает публичный WebSocket URL и лимиты сессий
+
+Если один из этих запросов падает, сначала чините его, а уже потом переходите к логике сообщений и Gateway.
+
+## Быстрый тест отправки сообщения
+
+Так проще отделить ошибку Astral API от ошибки в коде вашего бота:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Astral API test"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages
+```
+
+Если этот запрос проходит, а ваш код нет, значит проблема находится в вашей логике, библиотеке или обработке данных.
+
+## Частые HTTP-ошибки
+
+### `401 INVALID_AUTH_TOKEN`
+
+Обычно означает одно из следующего:
+
+- токен неверный
+- токен был перевыпущен
+- вы используете user/session token там, где нужен bot token
+
+Проверьте токен ещё раз:
+
+```bash
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/users/@me
+```
+
+### `403 ACCESS_DENIED`
+
+Бот успешно аутентифицировался, но у него нет нужных прав.
+
+Проверьте:
+
+- бот действительно находится на сервере
+- канал виден боту
+- у бота есть нужные guild/channel permissions
+- роль бота находится достаточно высоко для moderation-действия
+
+### `404 UNKNOWN_CHANNEL` или `404 UNKNOWN_MESSAGE`
+
+Чаще всего это:
+
+- неверный ID
+- ресурс уже удалён
+- ресурс существует, но бот его не видит в текущем контексте
+
+Проверьте родительский ресурс напрямую:
+
+```bash
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/channels/<CHANNEL_ID>
+```
+
+### `400 INVALID_FORM_BODY`
+
+Маршрут существует и токен валиден, но тело запроса не проходит валидацию.
+
+Проверьте:
+
+- все обязательные поля присутствуют
+- JSON действительно валиден
+- строки не превышают допустимые лимиты
+- для загрузки файлов вы используете `payload_json` и `files[n]`
+
+### `429 TOO MANY REQUESTS`
+
+Вы уткнулись в rate limit. Считывайте заголовки ответа и замедляйте очередь запросов.
+
+Подробности: [Rate Limits](./rate-limits).
+
+## Проблемы с Gateway
+
+### WebSocket открылся, но бот не становится ready
+
+Нормальный порядок такой:
+
+1. получить `HELLO` (`op: 10`)
+2. запустить heartbeat по `heartbeat_interval`
+3. отправить `IDENTIFY` (`op: 2`)
+4. получить `READY`
+
+Если отправить `IDENTIFY` до `HELLO`, многие клиенты ломаются очень неочевидно.
+
+### Gateway подключается, но события не приходят
+
+Проверьте:
+
+- heartbeat реально отправляется вовремя
+- вы обновляете и сохраняете последний `seq`
+- библиотека подключается к Astral, а не к `discord.com`
+- бот действительно присутствует в нужном сервере и канале
+
+### Быстрая проверка Gateway URL
+
+```bash
+curl -s -H "Authorization: Bot $TOKEN" https://astraof.com/api/v1/gateway/bot
+```
+
+Используйте именно возвращённый публичный URL. Не хардкодьте приватные сервисные адреса из репозитория или инфраструктуры.
+
+## Проблемы с webhook
+
+Если нужен только односторонний постинг, сначала проверьте webhook отдельно от остального кода:
+
+```bash
+curl -X POST "https://astraof.com/api/v1/webhooks/<WEBHOOK_ID>/<WEBHOOK_TOKEN>?wait=true" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Webhook test"}'
+```
+
+Если не работает:
+
+- проверьте пару `webhook_id + token`
+- убедитесь, что webhook не удалён
+- при отладке используйте `wait=true`, чтобы сразу получить тело ответа
+
+## Проблемы с загрузкой файлов
+
+Для загрузки нужен `multipart/form-data` с `payload_json` и файлами:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -F 'payload_json={"content":"Upload test","attachments":[{"id":0,"filename":"image.png"}]}' \
+  -F "files[0]=@image.png;type=image/png" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages
+```
+
+Если при `PATCH` у сообщения исчезают вложения, помните: новый список `attachments` заменяет старый, если вы не перечислили старые файлы явно.
+
+## Безопасный чек-лист отладки
+
+- Используйте только публично документированные маршруты
+- Логируйте HTTP status, тело ответа и нужные rate limit headers
+- Редактируйте токены перед тем, как кому-то показывать логи
+- Держите минимальный `curl`-тест для каждого критичного маршрута
+- Сначала воспроизводите проблему самым маленьким запросом, а потом уже меняйте код библиотеки
+
+## Что читать дальше
+
+- [Руководство по Bot API](../bots)
+- [Быстрый старт](../quickstart)
+- [Справочник API](../api-reference)
+- [Gateway](../events/gateway)

@@ -1,0 +1,148 @@
+---
+title: Справочник API
+description: Базовые правила работы с публичным Astral API на русском языке
+---
+
+Astral предоставляет публичный HTTP API для чтения и записи ресурсов, а также Gateway API для событий в реальном времени.
+
+Если вы работали с Discord API, многие паттерны покажутся знакомыми.
+
+## Базовый URL
+
+```text
+https://<ваш-домен>/api/v1
+```
+
+Во многих примерах используется:
+
+```text
+https://astraof.com/api/v1
+```
+
+## Версионирование
+
+Публичные маршруты документируются с префиксом `v1`.
+
+```text
+GET /v1/...
+```
+
+## Аутентификация
+
+Для ботов используйте:
+
+```text
+Authorization: Bot YOUR_BOT_TOKEN
+```
+
+## Типичная ошибка
+
+```json
+{
+  "code": "INVALID_AUTH_TOKEN",
+  "message": "Invalid authentication token"
+}
+```
+
+## Ошибки валидации
+
+```json
+{
+  "code": "INVALID_FORM_BODY",
+  "message": "Input Validation Error",
+  "errors": [
+    {"path": "content", "message": "Content is too long"}
+  ]
+}
+```
+
+Опирайтесь в логике на:
+
+- HTTP status
+- `code`
+- `errors[*].path`
+
+Не опирайтесь на человекочитаемый `message`.
+
+## Snowflake ID
+
+ID в Astral передаются строками.
+
+Примеры:
+
+- user id
+- channel id
+- guild id
+- message id
+
+Их нужно хранить как строки, а не как обычные JS number.
+
+## Базовые тестовые запросы
+
+### Проверить токен
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/users/@me
+```
+
+### Получить приложение
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/applications/@me
+```
+
+### Получить Gateway URL
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/gateway/bot
+```
+
+### Отправить сообщение
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Тест Astral API"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages
+```
+
+## Загрузка файлов
+
+Файлы отправляются через `multipart/form-data`.
+
+Базовый паттерн:
+
+```js
+const form = new FormData();
+
+form.append(
+  "payload_json",
+  JSON.stringify({
+    content: "Файл загружен",
+    attachments: [{ id: 0, filename: "image.png" }]
+  })
+);
+
+form.append("files[0]", fileBlob, "image.png");
+
+await fetch("https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages", {
+  method: "POST",
+  headers: {
+    Authorization: "Bot YOUR_BOT_TOKEN"
+  },
+  body: form
+});
+```
+
+## Что использовать дальше
+
+- Для событий: [Gateway](./events/gateway)
+- Для общей практики: [Руководство по Bot API](./bots)
+- Для отладки типовых ошибок: [Отладка и типовые проблемы](./topics/troubleshooting)

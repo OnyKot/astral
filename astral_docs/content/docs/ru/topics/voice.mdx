@@ -1,0 +1,24 @@
+---
+title: Голосовая Интеграция
+description: Базовая схема voice/call интеграции в Astral
+---
+
+Voice-интеграция в Astral делится на:
+
+- REST для call/region управления
+- Gateway для voice state событий
+
+## Что использовать
+
+| Задача | Что использовать |
+| --- | --- |
+| Проверить возможность звонка | `GET /channels/:channel_id/call` |
+| Сменить регион звонка | `PATCH /channels/:channel_id/call` |
+| Прозвонить участников | `POST /channels/:channel_id/call/ring` |
+| Отслеживать голосовые изменения | Gateway |
+
+## Минимальный подход
+
+1. REST-запросом поднять или проверить call-flow
+2. через Gateway слушать `VOICE_STATE_UPDATE`
+3. не полагаться только на polling

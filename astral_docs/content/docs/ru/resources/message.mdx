@@ -1,0 +1,53 @@
+---
+title: Сообщение
+description: Публичные маршруты для чтения и отправки сообщений
+---
+
+Сообщения — основной рабочий слой для большинства ботов.
+
+## Основные публичные маршруты
+
+| Endpoint | Для чего нужен |
+| --- | --- |
+| `GET /channels/:channel_id/messages` | Получить список сообщений |
+| `GET /channels/:channel_id/messages/:message_id` | Получить одно сообщение |
+| `POST /channels/:channel_id/messages` | Отправить сообщение |
+| `PATCH /channels/:channel_id/messages/:message_id` | Изменить сообщение |
+| `DELETE /channels/:channel_id/messages/:message_id` | Удалить сообщение |
+| `POST /channels/:channel_id/typing` | Показать typing indicator |
+
+## Получить сообщения
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  "https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages?limit=20"
+```
+
+## Отправить сообщение
+
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Тестовое сообщение"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages
+```
+
+## Изменить сообщение
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Исправленный текст"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages/<MESSAGE_ID>
+```
+
+## Удалить сообщение
+
+```bash
+curl -X DELETE \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>/messages/<MESSAGE_ID>
+```

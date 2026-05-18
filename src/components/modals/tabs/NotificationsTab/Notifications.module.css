@@ -1,0 +1,250 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.title {
+	margin-bottom: 0;
+	font-size: 1.25rem;
+	font-weight: 600;
+}
+
+.description {
+	color: var(--text-primary-muted);
+	font-size: 0.875rem;
+}
+
+.switchesContainer {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.pushSection {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	background: var(--surface-secondary);
+	padding: 1rem;
+	border-radius: 0.75rem;
+	border: 1px solid var(--border-muted);
+}
+
+.pushHeading {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.pushDescription {
+	margin: 0;
+	color: var(--text-secondary);
+	font-size: 0.875rem;
+}
+
+.pushButtons {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+.pushButton {
+	padding: 0.35rem 0.75rem;
+	font-size: 0.875rem;
+	border-radius: 0.5rem;
+	border: 1px solid transparent;
+	background: var(--brand-primary);
+	color: var(--text-on-brand-primary);
+	cursor: pointer;
+}
+
+.pushButtonSecondary {
+	background: transparent;
+	color: var(--text-primary);
+	border-color: var(--border-muted);
+}
+
+.pushButton:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.pushStatus {
+	margin: 0;
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+}
+
+.pushList {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.pushListItem {
+	display: flex;
+	justify-content: space-between;
+	gap: 0.5rem;
+	font-size: 0.85rem;
+	color: var(--text-primary);
+}
+
+.pushListItem span:last-child {
+	color: var(--text-secondary);
+	word-break: break-all;
+}
+
+.androidSection {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.androidHeader {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 0.75rem;
+}
+
+.androidWarningCard {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	padding: 1rem;
+	border-radius: 0.75rem;
+	background: color-mix(in srgb, var(--status-warning, #f59e0b) 10%, var(--surface-secondary));
+	border: 1px solid color-mix(in srgb, var(--status-warning, #f59e0b) 30%, transparent);
+}
+
+.androidFeatureCard {
+	display: flex;
+	flex-direction: column;
+	gap: 0.85rem;
+	padding: 1rem;
+	border-radius: 0.9rem;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--surface-secondary) 88%, var(--background-floating) 12%), color-mix(in srgb, var(--surface-secondary) 96%, var(--background-primary) 4%));
+	border: 1px solid var(--border-muted);
+}
+
+.androidFeatureHeader {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+
+.androidFeatureActions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.androidFeaturePill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 1.75rem;
+	padding: 0.25rem 0.625rem;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 700;
+	line-height: 1rem;
+}
+
+.androidFeaturePillActive {
+	background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+	color: color-mix(in srgb, var(--brand-primary) 86%, var(--text-primary));
+}
+
+.androidFeaturePillMuted {
+	background: color-mix(in srgb, var(--background-primary) 24%, transparent);
+	color: var(--text-secondary);
+}
+
+.androidCardTitle {
+	margin: 0;
+	font-size: 0.95rem;
+	font-weight: 600;
+}
+
+.androidCardDescription {
+	margin: 0;
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+}
+
+.androidChannelGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+	gap: 0.75rem;
+}
+
+.androidPermissionGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+	gap: 0.75rem;
+}
+
+.androidPermissionCard {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	gap: 0.85rem;
+	padding: 1rem;
+	border-radius: 0.75rem;
+	background: var(--surface-secondary);
+	border: 1px solid var(--border-muted);
+}
+
+.androidPermissionMeta {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.androidPermissionFooter {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.androidPermissionStatus {
+	font-size: 0.8rem;
+	font-weight: 600;
+	color: var(--text-secondary);
+}
+
+@media (max-width: 560px) {
+	.androidFeatureActions {
+		flex-direction: column;
+	}
+}

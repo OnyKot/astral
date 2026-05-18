@@ -1,0 +1,28 @@
+---
+title: Rate Limits
+description: Как Astral ограничивает частоту запросов
+---
+
+Astral использует rate limits для защиты API и Gateway.
+
+## Что происходит при превышении лимита
+
+- сервер отвечает `429 Too Many Requests`
+- возвращает `retry_after`
+- клиент должен подождать и повторить запрос
+
+Пример:
+
+```json
+{
+  "code": "RATE_LIMITED",
+  "message": "You are being rate limited",
+  "retry_after": 5.0
+}
+```
+
+## Что должен делать бот
+
+1. остановить запросы в этот bucket
+2. подождать `retry_after`
+3. повторить запрос

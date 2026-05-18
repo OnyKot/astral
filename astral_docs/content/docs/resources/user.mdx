@@ -1,0 +1,239 @@
+---
+title: User
+description: User resource and related endpoints for managing user identities and relationships in the Astral API, which is compatible with Discord's API structure.
+---
+
+# User Resource
+
+The User resource represents an individual account in the Astral platform. It includes details about the user's identity, profile, and relationships. This resource is returned by various endpoints, such as `GET /users/@me` or `GET /users/:user_id`.
+
+## User Object Fields
+
+The User object is a JSON structure with the following fields:
+
+| Field            | Type    | Description |
+| ---------------- | ------- | ----------- |
+| `id`             | String  | The unique identifier for the user. |
+| `username`       | String  | The user's display name. |
+| `discriminator`  | String  | A 4-digit discriminator to distinguish users with the same username (e.g., "0007"). |
+| `avatar`         | String or Null | URL or hash of the user's avatar image; `null` if no avatar is set. |
+| `bot`            | Boolean | Indicates if the user is a bot account (`true`) or a regular user (`false`). |
+| `system`         | Boolean | Indicates if the user is a system-level account (e.g., for internal services). |
+| `mfa_enabled`    | Boolean | Whether multi-factor authentication is enabled for the user. |
+| `locale`         | String  | The user's preferred language locale (e.g., "en-US"). |
+| `flags`          | Integer | Bitfield of user flags (e.g., verified, active). |
+| `premium_type`   | Integer | The type of premium subscription the user has (e.g., 0 for none, 1 for basic). |
+| `public_flags`   | Integer | Bitfield of publicly visible user flags. |
+
+### Example User Object
+
+```json
+{
+  "id": "1470000000000000001",
+  "username": "astral-bot",
+  "discriminator": "0007",
+  "avatar": null,
+  "bot": true,
+  "system": false,
+  "mfa_enabled": true,
+  "locale": "en-US",
+  "flags": 0,
+  "premium_type": 0,
+  "public_flags": 0
+}
+```
+
+## Endpoints
+
+Astral provides a set of endpoints for managing user data, including authentication, profile updates, and relationships. All endpoints require authentication via a Bearer token in the `Authorization` header (e.g., `Authorization: Bot YOUR_TOKEN` for bot accounts). Rate limits apply to all endpoints: **5 requests per second per token**, with a burst limit of 10 requests. Exceeding these limits results in a `429 Too Many Requests` response.
+
+### Endpoint Summary Table
+
+| Method | Endpoint              | Description |
+| ------ | --------------------- | ----------- |
+| GET    | `/users/@me`          | Retrieves the current authenticated user's details. |
+| PATCH  | `/users/@me`          | Updates the current user's profile. |
+| GET    | `/users/:user_id`     | Fetches a public user by their ID. |
+| POST   | `/users/@me/channels` | Creates or opens a direct message (DM) channel. |
+| GET    | `/users/@me/channels` | Lists DM-style channels for the current user. |
+| GET    | `/users/@me/guilds`   | Lists guilds visible to the current user. |
+| GET    | `/users/@me/relationships` | Retrieves the current user's relationships (e.g., friends). |
+
+### Detailed Endpoint Descriptions
+
+#### GET /users/@me
+
+**Description:**  
+Fetches the details of the currently authenticated user or bot. This is the primary endpoint for verifying a token and accessing the user's own data.
+
+**Rate Limit:** 5 requests per second.
+
+**Request:**  
+- **Method:** GET  
+- **URL:** `https://astraof.com/api/v1/users/@me`  
+- **Headers:**  
+  - `Authorization: Bot YOUR_TOKEN`
+
+**Response:**  
+- **Status Code:** 200 OK  
+- **Body:** A User object.
+
+**Example Response:**
+
+```json
+{
+  "id": "1470000000000000001",
+  "username": "astral-user",
+  "discriminator": "1234",
+  "avatar": "a_valid_avatar_hash",
+  "bot": false,
+  "system": false,
+  "mfa_enabled": true,
+  "locale": "en-US",
+  "flags": 0,
+  "premium_type": 1,
+  "public_flags": 0
+}
+```
+
+**Error Responses:**  
+- 401 Unauthorized: If the token is invalid.
+
+#### PATCH /users/@me
+
+**Description:**  
+Updates the profile of the currently authenticated user. Only certain fields (e.g., username, avatar) can be modified based on platform rules.
+
+**Rate Limit:** 1 request per 10 seconds (to prevent abuse).
+
+**Request:**  
+- **Method:** PATCH  
+- **URL:** `https://astraof.com/api/v1/users/@me`  
+- **Headers:**  
+  - `Authorization: Bot YOUR_TOKEN` (for bots) or user token  
+  - `Content-Type: application/json`  
+- **Body:** A JSON object with updatable fields, e.g., `{"username": "new-username"}`.
+
+**Example Request Body:**
+
+```json
+{
+  "username": "updated-user",
+  "avatar": "new_avatar_hash"
+}
+```
+
+**Response:**  
+- **Status Code:** 200 OK  
+- **Body:** The updated User object.
+
+**Example Response:**
+
+```json
+{
+  "id": "1470000000000000001",
+  "username": "updated-user",
+  "discriminator": "1234",
+  "avatar": "new_avatar_hash",
+  "bot": false,
+  "system": false,
+  "mfa_enabled": true,
+  "locale": "en-US",
+  "flags": 0,
+  "premium_type": 1,
+  "public_flags": 0
+}
+```
+
+**Error Responses:**  
+- 400 Bad Request: If the update payload is invalid.  
+- 401 Unauthorized: If authentication fails.
+
+#### GET /users/:user_id
+
+**Description:**  
+Retrieves public details of a user by their ID. This endpoint does not require the user to be friends or in a shared guild.
+
+**Rate Limit:** 5 requests per second.
+
+**Request:**  
+- **Method:** GET  
+- **URL:** `https://astraof.com/api/v1/users/<USER_ID>`  
+- **Headers:**  
+  - `Authorization: Bot YOUR_TOKEN` (optional for public data, but recommended).
+
+**Response:**  
+- **Status Code:** 200 OK  
+- **Body:** A User object (with limited fields if privacy settings apply).
+
+**Example Response:** (Same as the User object example above).
+
+**Error Responses:**  
+- 404 Not Found: If the user ID is invalid.
+
+#### Relationships and Friends
+
+Astral supports managing user relationships, such as friends, blocked users, and incoming requests. These are accessed via the `/users/@me/relationships` endpoint.
+
+**GET /users/@me/relationships**
+
+**Description:**  
+Retrieves a list of the current user's relationships, including friends, pending requests, and blocked users. Each relationship is represented as a Relationship object.
+
+**Rate Limit:** 3 requests per second.
+
+**Relationship Object Fields:**
+
+| Field            | Type    | Description |
+| ---------------- | ------- | ----------- |
+| `id`             | String  | The ID of the related user. |
+| `type`           | Integer | The type of relationship (e.g., 1 for friend, 2 for incoming request, 3 for blocked). |
+| `user`           | Object  | The User object of the related user. |
+| `nickname`       | String or Null | A custom nickname for the user in the relationship. |
+
+**Request:**  
+- **Method:** GET  
+- **URL:** `https://astraof.com/api/v1/users/@me/relationships`  
+- **Headers:**  
+  - `Authorization: Bot YOUR_TOKEN` or user token.
+
+**Response:**  
+- **Status Code:** 200 OK  
+- **Body:** An array of Relationship objects.
+
+**Example Response:**
+
+```json
+[
+  {
+    "id": "1470000000000000002",
+    "type": 1,
+    "user": {
+      "id": "1470000000000000002",
+      "username": "friend-user",
+      "discriminator": "5678",
+      "avatar": "friend_avatar_hash",
+      "bot": false
+    },
+    "nickname": "BestFriend"
+  },
+  {
+    "id": "1470000000000000003",
+    "type": 2,
+    "user": {
+      "id": "1470000000000000003",
+      "username": "pending-user",
+      "discriminator": "9012",
+      "avatar": null,
+      "bot": false
+    },
+    "nickname": null
+  }
+]
+```
+
+**Notes:**  
+- Relationships are private and require proper authentication.  
+- Additional endpoints for managing relationships (e.g., adding or removing friends) may be available but are not detailed here; refer to the full API documentation for advanced operations.  
+
+For bot development, focus on `/users/@me` for identity management and `/users/@me/relationships` for social features. Always handle rate limits to avoid disruptions.

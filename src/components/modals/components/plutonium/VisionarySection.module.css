@@ -1,0 +1,100 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	padding: 1rem;
+	border-radius: 1rem;
+	border: none;
+	background:
+		radial-gradient(circle at 86% -10%, rgb(168 130 255 / 0.22), transparent 42%),
+		linear-gradient(165deg, rgb(29 25 55 / 0.84), rgb(16 14 34 / 0.9));
+	box-shadow:
+		0 18px 32px rgb(8 7 20 / 0.3),
+		inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+.benefitsGrid {
+	margin-top: 0.35rem;
+	display: grid;
+	min-height: 0;
+	grid-template-columns: 1fr;
+	gap: 0.86rem;
+}
+
+@media (min-width: 768px) {
+	.benefitsGrid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (min-width: 1024px) {
+	.benefitsGrid {
+		grid-template-columns: repeat(4, 1fr);
+	}
+}
+
+.benefitIcon {
+	height: 1.25rem;
+	width: 1.25rem;
+	color: white;
+}
+
+.ctaContainer {
+	margin-top: 1rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.ctaButton {
+	padding-left: 2rem;
+	padding-right: 2rem;
+	padding-top: 0.75rem;
+	padding-bottom: 0.75rem;
+	font-weight: 750;
+	font-size: 1rem;
+	line-height: 1.5rem;
+	transition:
+		transform 180ms ease,
+		box-shadow 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.ctaButton:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 12px 20px rgb(69 43 151 / 0.38);
+	}
+}
+
+.ctaIcon {
+	margin-right: 0.5rem;
+	height: 1.25rem;
+	width: 1.25rem;
+}
+
+.disclaimer {
+	text-align: center;
+	font-size: 0.75rem;
+	line-height: 1rem;
+	color: rgb(186 177 220);
+}

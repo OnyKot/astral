@@ -1,0 +1,121 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.label {
+	margin-bottom: 0.5rem;
+	font-weight: 700;
+	font-size: 0.84rem;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--text-primary);
+}
+
+.buttonGroup {
+	margin-bottom: 0.75rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+	.buttonGroup {
+		flex-direction: row;
+	}
+}
+
+.description {
+	font-size: 0.8125rem;
+	line-height: 1.45;
+	color: var(--text-primary-muted);
+}
+
+.helperSpacing {
+	margin-top: 0.75rem;
+}
+
+.errorMessage {
+	margin-top: 0.5rem;
+	font-size: 0.875rem;
+	color: var(--status-danger);
+}
+
+.bannerActionButton {
+	position: relative;
+	overflow: hidden;
+	background:
+		linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--brand-primary) 86%, var(--background-floating) 14%),
+			color-mix(in srgb, var(--brand-primary) 68%, var(--background-primary) 32%)
+		);
+	border-color: color-mix(in srgb, var(--brand-primary) 44%, transparent);
+	box-shadow:
+		0 12px 26px color-mix(in srgb, var(--brand-primary) 34%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 16%, transparent);
+}
+
+.bannerActionButton::before {
+	content: '';
+	position: absolute;
+	inset: -1px auto -1px -40%;
+	width: 30%;
+	background: linear-gradient(
+		110deg,
+		transparent,
+		color-mix(in srgb, var(--text-primary) 26%, transparent),
+		transparent
+	);
+	transform: translateX(-170%);
+	transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+	pointer-events: none;
+}
+
+.bannerActionButton:hover::before {
+	transform: translateX(370%);
+}
+
+.paintIcon,
+.sparkleIcon {
+	width: 0.95rem;
+	height: 0.95rem;
+}
+
+.sparkleIcon {
+	animation: bannerSparkle 2.4s ease-in-out infinite;
+}
+
+@keyframes bannerSparkle {
+	0%,
+	100% {
+		opacity: 0.85;
+		transform: scale(1) rotate(0deg);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.12) rotate(8deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bannerActionButton::before,
+	.sparkleIcon {
+		transition: none;
+		animation: none;
+	}
+}

@@ -1,0 +1,53 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.banner {
+	margin-bottom: 0.2rem;
+	border-radius: 1rem;
+	border: 1px solid rgb(155 121 255 / 0.38);
+	background:
+		radial-gradient(circle at 88% 18%, rgb(188 151 255 / 0.26), transparent 44%),
+		linear-gradient(160deg, rgb(44 35 82 / 0.92), rgb(25 20 49 / 0.95));
+	padding: 1rem;
+	color: rgb(246 242 255);
+	box-shadow:
+		0 16px 28px rgb(8 6 20 / 0.28),
+		inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+.content {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.icon {
+	height: 2rem;
+	width: 2rem;
+	color: rgb(219 203 255);
+	filter: drop-shadow(0 0 12px rgb(141 104 234 / 0.62));
+}
+
+.textContainer {
+	flex: 1;
+}
+
+.title {
+	font-weight: 600;
+}

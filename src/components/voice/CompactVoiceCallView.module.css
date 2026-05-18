@@ -1,0 +1,438 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	--compact-stroke: color-mix(in srgb, var(--text-primary) 10%, transparent);
+	--compact-highlight: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	--compact-ink: color-mix(in srgb, var(--text-primary) 92%, var(--background-floating) 8%);
+	--compact-ink-soft: color-mix(in srgb, var(--text-secondary) 84%, var(--background-floating) 16%);
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 0.8rem;
+	min-width: 0;
+	padding: 0.8rem;
+	border-radius: 1.35rem;
+	background: color-mix(in srgb, var(--background-secondary) 92%, var(--background-primary) 8%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	box-shadow: 0 12px 28px rgb(3 7 18 / 0.16);
+	backdrop-filter: blur(12px) saturate(112%);
+	overflow: hidden;
+	animation: compactArcEnter 340ms cubic-bezier(0.22, 1, 0.36, 1);
+	contain: layout paint;
+}
+
+.container::before {
+	display: none;
+}
+
+.containerNoHeader {
+	padding-top: 0.8rem;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	min-width: 0;
+	padding: 0 0.1rem;
+	flex-wrap: wrap;
+}
+
+.headerActions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.45rem;
+	flex-shrink: 0;
+}
+
+.headerContent {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	min-width: 0;
+	flex: 1;
+	flex-wrap: wrap;
+}
+
+.statusContainer {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.55rem;
+	min-width: 0;
+	padding: 0.48rem 0.78rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--background-floating) 32%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 7%, transparent);
+}
+
+.statusDot {
+	height: 0.625rem;
+	width: 0.625rem;
+	border-radius: 9999px;
+	color: var(--status-online);
+	background-color: currentColor;
+	box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 28%, transparent);
+	animation: compactArcPulse 2.2s ease-in-out infinite;
+	flex-shrink: 0;
+}
+
+.statusContainer[data-state='Connecting'] .statusDot,
+.statusContainer[data-state='Reconnecting'] .statusDot {
+	color: var(--status-idle);
+	box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 26%, transparent);
+}
+
+.statusContainer[data-state='Disconnected'] .statusDot {
+	color: var(--status-danger);
+	box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 24%, transparent);
+}
+
+.statusText {
+	font-weight: 600;
+	font-size: 0.8125rem;
+	line-height: 1.125rem;
+	color: var(--compact-ink);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+}
+
+.controls {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.participantPill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 1.9rem;
+	padding: 0.38rem 0.72rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--background-floating) 14%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	box-shadow: none;
+	color: var(--compact-ink-soft);
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: 1rem;
+	white-space: nowrap;
+}
+
+.expandButton {
+	display: flex;
+	height: 2.15rem;
+	width: 2.15rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--background-floating) 18%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	color: var(--compact-ink);
+	transition:
+		var(--button-motion-transition),
+		transform 160ms ease;
+	cursor: pointer;
+	box-shadow: none;
+	flex-shrink: 0;
+}
+
+.expandButton:hover {
+	transform: translateY(-1px);
+	background: color-mix(in srgb, var(--background-floating) 24%, transparent);
+	border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.expandButtonActive {
+	background: color-mix(in srgb, var(--brand-primary) 18%, var(--background-floating) 82%);
+	border-color: color-mix(in srgb, var(--brand-primary) 26%, transparent);
+	color: color-mix(in srgb, var(--brand-primary) 86%, var(--text-primary));
+}
+
+.videoSection {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 0.55rem;
+	justify-content: center;
+	width: 100%;
+	min-width: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+.videoSectionCentered {
+	justify-content: center;
+}
+
+.videoContainer {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	align-content: center;
+	flex-wrap: wrap;
+	gap: 0.55rem;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	overflow: visible;
+	padding: 0.1rem;
+	margin-inline: auto;
+	scrollbar-width: none;
+}
+
+.videoContainerCentered {
+	justify-content: center;
+}
+
+.videoContainerCentered > * {
+	flex-shrink: 0;
+}
+
+.videoTile,
+.moreVideos {
+	position: relative;
+	height: clamp(7rem, 18vh, 9.25rem);
+	width: clamp(11rem, 28vw, 16rem);
+	flex: 0 0 auto;
+	overflow: hidden;
+	border-radius: 1.25rem;
+	background: color-mix(in srgb, var(--background-secondary) 48%, var(--background-primary) 52%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
+	box-shadow:
+		0 14px 28px rgb(3 7 18 / 0.22),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 7%, transparent);
+	scroll-snap-align: start;
+	transition:
+		var(--button-motion-transition),
+		transform 180ms ease;
+}
+
+.videoTileCentered {
+	height: clamp(6.8rem, 18vh, 8.8rem);
+	width: clamp(10.6rem, 26vw, 14.5rem);
+}
+
+.videoTileScreenShare {
+	width: var(--compact-screenshare-width, clamp(15rem, 34vw, 24rem));
+	aspect-ratio: 16 / 9;
+	height: auto;
+	flex: 1 1 var(--compact-screenshare-width, clamp(15rem, 34vw, 24rem));
+	max-width: min(100%, var(--compact-screenshare-max-width, 24rem));
+	border-radius: 1.35rem;
+	border-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	box-shadow: 0 14px 28px rgb(3 7 18 / 0.16);
+}
+
+.videoContainer[data-multiple-screen-shares='true'] {
+	justify-content: center;
+}
+
+.videoContainer[data-multiple-screen-shares='true'] .videoTileScreenShare {
+	width: var(--compact-screenshare-multi-width, clamp(13.5rem, 28vw, 20rem));
+	flex-basis: var(--compact-screenshare-multi-width, clamp(13.5rem, 28vw, 20rem));
+	max-width: min(100%, var(--compact-screenshare-multi-max-width, 20rem));
+}
+
+.videoContainerCentered .videoTile:not(.videoTileScreenShare),
+.videoContainerCentered .moreVideos {
+	width: clamp(8rem, 18vw, 11.5rem);
+	height: clamp(4.6rem, 10vh, 6.6rem);
+	border-radius: 1rem;
+}
+
+.videoTile:hover,
+.moreVideos:hover {
+	transform: translateY(-2px);
+	border-color: transparent;
+	box-shadow: none;
+}
+
+.videoTile::after,
+.moreVideos::after {
+	display: none;
+}
+
+.moreVideos {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.moreVideosText {
+	position: relative;
+	z-index: 1;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	font-weight: 600;
+	color: var(--compact-ink-soft);
+}
+
+.controlBarSection {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 0;
+	border-radius: 0;
+	background: transparent;
+	border: 1px solid transparent;
+	box-shadow: none;
+	width: 100%;
+	min-width: 0;
+	overflow: visible;
+}
+
+.iconSmall {
+	height: 1rem;
+	width: 1rem;
+}
+
+@keyframes compactArcEnter {
+	from {
+		opacity: 0;
+		transform: translateY(10px) scale(0.98);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes compactArcPulse {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0 currentColor;
+		opacity: 1;
+	}
+
+	50% {
+		box-shadow: 0 0 0 9px color-mix(in srgb, currentColor 0%, transparent);
+		opacity: 0.72;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.container,
+	.statusDot {
+		animation: none;
+	}
+
+	.expandButton,
+	.videoTile,
+	.videoTileScreenShare,
+	.moreVideos {
+		transition: none;
+		animation: none;
+	}
+}
+
+@media (hover: none) and (pointer: coarse) {
+	.container {
+		backdrop-filter: none;
+	}
+
+	.expandButton:hover,
+	.videoTile:hover,
+	.moreVideos:hover {
+		transform: none;
+	}
+
+.videoTileScreenShare {
+	animation: none;
+	box-shadow: none;
+}
+}
+
+@media (max-width: 640px) {
+	.header {
+		align-items: center;
+		flex-direction: row;
+	}
+
+	.headerContent {
+		width: 100%;
+	}
+
+	.participantPill {
+		width: auto;
+		justify-content: center;
+	}
+
+	.expandButton {
+		align-self: flex-end;
+	}
+
+	.headerActions {
+		width: auto;
+		justify-content: flex-end;
+	}
+
+	.controlBarSection {
+		padding: 0.1rem 0;
+		border-radius: 1rem;
+	}
+
+	.videoTile,
+	.moreVideos {
+		width: clamp(8.6rem, 42vw, 11.5rem);
+		height: clamp(5.1rem, 18vw, 6.7rem);
+	}
+
+	.videoTileScreenShare {
+		width: 100%;
+		max-width: 100%;
+		aspect-ratio: 16 / 9;
+		height: auto;
+		flex: 1 1 100%;
+	}
+}
+
+@media (max-width: 420px) {
+	.container {
+		padding: 0.68rem;
+		gap: 0.66rem;
+		border-radius: 1.15rem;
+	}
+
+	.videoContainer {
+		gap: 0.48rem;
+	}
+
+	.videoTile,
+	.videoTileCentered,
+	.moreVideos {
+		width: clamp(7.7rem, 42vw, 9.4rem);
+		height: clamp(4.5rem, 25vw, 5.7rem);
+	}
+
+	.videoTileScreenShare {
+		width: 100%;
+		max-width: 100%;
+		aspect-ratio: 16 / 9;
+		height: auto;
+		flex: 1 1 100%;
+	}
+}

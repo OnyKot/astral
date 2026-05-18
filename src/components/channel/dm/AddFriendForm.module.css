@@ -1,0 +1,164 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.form {
+	width: 100%;
+}
+
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 0.85rem;
+}
+
+.containerDesktop {
+	flex-direction: row;
+	gap: 0;
+	align-items: center;
+}
+
+.input {
+	width: 100%;
+	min-height: 3.15rem;
+	border-radius: 1.15rem;
+	border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: color-mix(in srgb, var(--background-floating) 82%, var(--background-primary) 18%);
+	box-shadow:
+		0 14px 26px rgb(8 15 28 / 0.08),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+	font-weight: 600;
+}
+
+.inputDesktop {
+	padding-right: 9rem;
+}
+
+.inputError {
+	border-color: color-mix(in srgb, var(--status-danger) 70%, transparent);
+	box-shadow:
+		0 14px 26px color-mix(in srgb, var(--status-danger) 10%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.button {
+	width: 100%;
+	min-height: 3rem;
+	border-radius: 1rem;
+	background: color-mix(in srgb, var(--brand-primary) 90%, var(--background-floating) 10%);
+	box-shadow:
+		0 14px 26px color-mix(in srgb, var(--brand-primary) 24%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
+	position: relative;
+	overflow: hidden;
+	transition:
+		transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+		box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+		background-color 220ms ease;
+}
+
+.inlineButton {
+	flex-shrink: 0;
+	min-width: 7.75rem;
+	min-height: 2.4rem;
+	border-radius: 0.9rem;
+	background: color-mix(in srgb, var(--brand-primary) 90%, var(--background-floating) 10%);
+	box-shadow:
+		0 12px 22px color-mix(in srgb, var(--brand-primary) 22%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
+	position: relative;
+	overflow: hidden;
+	transition:
+		transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+		box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+		background-color 220ms ease;
+}
+
+.button::before,
+.inlineButton::before {
+	content: '';
+	position: absolute;
+	inset: -1px auto -1px -34%;
+	width: 30%;
+	background: linear-gradient(110deg, transparent, color-mix(in srgb, var(--text-on-brand-primary) 24%, transparent), transparent);
+	transform: translateX(-165%);
+	transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+	pointer-events: none;
+}
+
+.button:hover:not(:disabled),
+.inlineButton:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--brand-primary) 94%, var(--background-floating) 6%);
+	transform: translateY(-1px);
+	box-shadow:
+		0 18px 30px color-mix(in srgb, var(--brand-primary) 30%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--text-on-brand-primary) 24%, transparent);
+}
+
+.button:hover:not(:disabled)::before,
+.inlineButton:hover:not(:disabled)::before {
+	transform: translateX(420%);
+}
+
+.button:active:not(:disabled),
+.inlineButton:active:not(:disabled) {
+	transform: translateY(0);
+}
+
+.errorMessage {
+	margin-top: 0.85rem;
+	padding: 0.75rem 0.95rem;
+	border-radius: 1rem;
+	border: 1px solid color-mix(in srgb, var(--status-danger) 18%, transparent);
+	background: color-mix(in srgb, var(--status-danger) 8%, transparent);
+	font-size: 0.875rem;
+	font-weight: 600;
+	line-height: 1.3rem;
+	color: color-mix(in srgb, var(--status-danger) 88%, var(--text-primary));
+}
+
+.successMessage {
+	margin-top: 0.85rem;
+	padding: 0.75rem 0.95rem;
+	border-radius: 1rem;
+	border: 1px solid color-mix(in srgb, var(--status-online) 18%, transparent);
+	background: color-mix(in srgb, var(--status-online) 8%, transparent);
+	font-size: 0.875rem;
+	font-weight: 600;
+	line-height: 1.3rem;
+	color: color-mix(in srgb, var(--status-online) 84%, var(--text-primary));
+}
+
+@media (max-width: 620px) {
+	.container {
+		gap: 0.7rem;
+	}
+
+	.input {
+		min-height: 3rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.button,
+	.inlineButton,
+	.button::before,
+	.inlineButton::before {
+		transition: none;
+	}
+}

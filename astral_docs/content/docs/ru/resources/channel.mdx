@@ -1,0 +1,35 @@
+---
+title: Канал
+description: Публичные маршруты для работы с каналами
+---
+
+Каналы — это контейнеры, в которых бот читает сообщения, пишет сообщения и управляет доступом.
+
+## Основные публичные маршруты
+
+| Endpoint | Для чего нужен |
+| --- | --- |
+| `GET /channels/:channel_id` | Получить канал |
+| `PATCH /channels/:channel_id` | Обновить канал |
+| `DELETE /channels/:channel_id` | Удалить канал |
+| `GET /channels/:channel_id/rtc-regions` | Получить доступные RTC-регионы |
+| `PUT /channels/:channel_id/permissions/:overwrite_id` | Поставить permission overwrite |
+| `DELETE /channels/:channel_id/permissions/:overwrite_id` | Удалить permission overwrite |
+
+## Тестовый запрос
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>
+```
+
+## Обновить канал
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"news","topic":"Официальные обновления"}' \
+  https://astraof.com/api/v1/channels/<CHANNEL_ID>
+```

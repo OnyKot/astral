@@ -1,0 +1,28 @@
+---
+title: Audit Log
+description: Публичный аудит действий на сервере
+---
+
+Audit log нужен для просмотра записанных административных и модерационных действий на сервере.
+
+## Публичный маршрут
+
+| Endpoint | Для чего нужен |
+| --- | --- |
+| `GET /guilds/:guild_id/audit-logs` | Получить журнал аудита сервера |
+
+## Параметры запроса
+
+- `limit`
+- `before`
+- `after`
+- `user_id`
+- `action_type`
+
+## Пример
+
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  "https://astraof.com/api/v1/guilds/<GUILD_ID>/audit-logs?limit=50"
+```

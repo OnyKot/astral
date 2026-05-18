@@ -1,0 +1,213 @@
+---
+title: Emoji
+description: Manage custom emojis in Astral, a Discord-compatible platform. Guild emojis are custom images that can be used in messages and are managed at the guild level.
+---
+
+Astral's Emoji API allows you to manage custom emojis for guilds, similar to Discord. Emojis are guild-specific resources that enable users to upload, update, and delete custom images for use in messages. This API supports standard CRUD operations and integrates with Astral's CDN for efficient image delivery.
+
+## Introduction
+
+Custom emojis in Astral are tied to specific guilds and can be created, read, updated, and deleted using the provided endpoints. Each emoji has a unique ID and is associated with metadata like its name and image data. Rate limits are enforced to prevent abuse, with most endpoints limited to 5 requests per minute per guild. For authentication, use a Bot token in the `Authorization` header as `Bot YOUR_TOKEN`.
+
+## Endpoint Overview
+
+The following table lists the primary endpoints for managing custom emojis. Each endpoint operates under the base URL `https://astraof.com/api/v1`.
+
+| Endpoint                          | Method | Purpose                          | Rate Limit                  |
+| --------------------------------- | ------ | -------------------------------- | --------------------------- |
+| `/guilds/\{guild.id\}/emojis`      | GET    | Retrieve a list of emojis in a guild | 5 requests per minute per guild |
+| `/guilds/\{guild.id\}/emojis`      | POST   | Create a new emoji in a guild   | 5 requests per minute per guild |
+| `/guilds/\{guild.id\}/emojis/{emoji.id}` | PATCH | Update an existing emoji        | 5 requests per minute per guild |
+| `/guilds/\{guild.id\}/emojis/{emoji.id}` | DELETE | Delete an existing emoji        | 5 requests per minute per guild |
+
+**Notes on Rate Limits:** All endpoints are subject to global rate limits of 100 requests per minute per application. Exceeding limits results in a 429 Too Many Requests response with a `Retry-After` header indicating the seconds to wait.
+
+## Emoji Object
+
+Before diving into endpoints, here's the structure of an emoji object returned in API responses:
+
+```json
+{
+  "id": "1234567890", // string - Unique identifier for the emoji
+  "name": "party_blob", // string - Name of the emoji (e.g., used as :party_blob:)
+  "image": "https://cdn.example.com/emojis/1234567890.webp", // string - URL to the emoji image
+  "guild_id": "9876543210", // string - ID of the guild this emoji belongs to
+  "roles": ["role_id_1", "role_id_2"], // array of strings - Role IDs that can use this emoji (optional)
+  "created_at": "2023-10-01T12:00:00Z", // string - ISO 8601 timestamp of creation
+  "user": { // object - User who uploaded the emoji
+    "id": "user_id",
+    "username": "username",
+    "discriminator": "0000"
+  }
+}
+```
+
+## CRUD Operations
+
+### GET /guilds/\{guild.id\}/emojis
+
+**Description:** Retrieves a list of all custom emojis in the specified guild. This endpoint returns an array of emoji objects.
+
+**Query Parameters:**
+- None required.
+
+**Response:**
+- 200 OK: An array of emoji objects.
+- 404 Not Found: If the guild does not exist.
+- 403 Forbidden: If the bot lacks permission.
+
+**JSON Example Request:**
+```bash
+curl -s \
+  -H "Authorization: Bot $TOKEN" \
+  https://astraof.com/api/v1/guilds/9876543210/emojis
+```
+
+**JSON Example Response:**
+```json
+[
+  {
+    "id": "1234567890",
+    "name": "party_blob",
+    "image": "https://cdn.example.com/emojis/1234567890.webp",
+    "guild_id": "9876543210",
+    "roles": [],
+    "created_at": "2023-10-01T12:00:00Z",
+    "user": {
+      "id": "user_id",
+      "username": "username",
+      "discriminator": "0000"
+    }
+  },
+  {
+    "id": "1234567891",
+    "name": "another_emoji",
+    "image": "https://cdn.example.com/emojis/1234567891.webp",
+    "guild_id": "9876543210",
+    "roles": ["role_id_1"],
+    "created_at": "2023-10-02T13:00:00Z",
+    "user": {
+      "id": "user_id_2",
+      "username": "another_user",
+      "discriminator": "0001"
+    }
+  }
+]
+```
+
+### POST /guilds/\{guild.id\}/emojis
+
+**Description:** Creates a new custom emoji in the specified guild. The emoji requires a name and image data.
+
+**Request Body Fields:**
+- `name` (string, required): The name of the emoji (e.g., "party_blob").
+- `image` (string, required): Base64-encoded image data (e.g., `data:image/png;base64,iVBOR...`) or a URL.
+- `roles` (array of strings, optional): Array of role IDs that can use this emoji.
+
+**Response:**
+- 201 Created: The newly created emoji object.
+- 400 Bad Request: If the request body is invalid (e.g., missing fields).
+- 403 Forbidden: If the bot lacks permission or the guild has reached its emoji limit.
+
+**JSON Example Request:**
+```bash
+curl -X POST \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "party_blob",
+    "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNby...",
+    "roles": ["role_id_1"]
+  }' \
+  https://astraof.com/api/v1/guilds/9876543210/emojis
+```
+
+**JSON Example Response:**
+```json
+{
+  "id": "1234567890",
+  "name": "party_blob",
+  "image": "https://cdn.example.com/emojis/1234567890.webp",
+  "guild_id": "9876543210",
+  "roles": ["role_id_1"],
+  "created_at": "2023-10-01T12:00:00Z",
+  "user": {
+    "id": "user_id",
+    "username": "username",
+    "discriminator": "0000"
+  }
+}
+```
+
+### PATCH /guilds/\{guild.id\}/emojis/\{emoji.id\}
+
+**Description:** Updates an existing emoji in the specified guild. Only the provided fields are updated.
+
+**Request Body Fields:**
+- `name` (string, optional): New name for the emoji.
+- `roles` (array of strings, optional): Updated array of role IDs.
+
+**Response:**
+- 200 OK: The updated emoji object.
+- 404 Not Found: If the emoji or guild does not exist.
+- 403 Forbidden: If the bot lacks permission.
+
+**JSON Example Request:**
+```bash
+curl -X PATCH \
+  -H "Authorization: Bot $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "party_blob_v2",
+    "roles": ["role_id_1", "role_id_2"]
+  }' \
+  https://astraof.com/api/v1/guilds/9876543210/emojis/1234567890
+```
+
+**JSON Example Response:**
+```json
+{
+  "id": "1234567890",
+  "name": "party_blob_v2",
+  "image": "https://cdn.example.com/emojis/1234567890.webp",
+  "guild_id": "9876543210",
+  "roles": ["role_id_1", "role_id_2"],
+  "created_at": "2023-10-01T12:00:00Z",
+  "user": {
+    "id": "user_id",
+    "username": "username",
+    "discriminator": "0000"
+  }
+}
+```
+
+### DELETE /guilds/\{guild.id\}/emojis/\{emoji.id\}
+
+**Description:** Deletes an existing emoji from the specified guild. An optional query parameter `purge` determines if the backing media should be deleted.
+
+**Query Parameters:**
+- `purge` (boolean, optional): If `true`, deletes the image from storage (default: `false`).
+
+**Response:**
+- 204 No Content: Successful deletion.
+- 404 Not Found: If the emoji or guild does not exist.
+- 403 Forbidden: If the bot lacks permission.
+
+**JSON Example Request:**
+```bash
+curl -X DELETE \
+  -H "Authorization: Bot $TOKEN" \
+  "https://astraof.com/api/v1/guilds/9876543210/emojis/1234567890?purge=true"
+```
+
+**JSON Example Response:** (No body, status 204)
+
+## CDN Endpoints
+
+Astral provides a CDN for serving emoji images efficiently. Use the following endpoint to access an emoji image:
+
+- **Endpoint:** `/emojis/\{emoji.id\}.webp`
+- **Example:** `https://cdn.example.com/emojis/1234567890.webp`
+- **Description:** Retrieves the emoji image in WebP format. This is a public endpoint and does not require authentication. Images are cached for up to 24 hours to optimize performance.
+
+For how custom emojis are referenced inside messages, see the [API Reference](../api-reference#message-formatting).

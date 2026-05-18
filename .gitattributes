@@ -1,0 +1,12 @@
+* text=auto
+.gitattributes text eol=lf
+astral_static/** filter=lfs diff=lfs merge=lfs -text
+*.sh text eol=lf
+*.bash text eol=lf
+
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+Dockerfile text eol=lf
+*.sh text eol=lf
+.githooks/* text eol=lf

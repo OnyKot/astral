@@ -1,0 +1,207 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 2200;
+	display: grid;
+	place-items: center;
+	padding: 1.25rem;
+	background: color-mix(in srgb, var(--background-primary) 72%, transparent);
+	backdrop-filter: blur(20px) saturate(124%);
+}
+
+.card {
+	width: 100%;
+	max-width: 26rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.85rem;
+	padding: 1.6rem 1.4rem 1.25rem;
+	border-radius: 1.3rem;
+	background:
+		radial-gradient(circle at top, color-mix(in srgb, var(--brand-primary) 14%, transparent), transparent 55%),
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-floating) 22%, var(--background-primary) 78%),
+			color-mix(in srgb, var(--background-secondary) 24%, var(--background-primary) 76%)
+		);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	box-shadow:
+		0 24px 64px rgb(4 8 16 / 0.45),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+	color: var(--text-primary);
+	text-align: center;
+}
+
+.iconShell {
+	display: grid;
+	place-items: center;
+	width: 3rem;
+	height: 3rem;
+	border-radius: 9999px;
+	background: color-mix(in srgb, var(--status-warning, #eab308) 22%, transparent);
+	color: var(--status-warning, #eab308);
+}
+
+.iconShell svg {
+	width: 1.7rem;
+	height: 1.7rem;
+}
+
+.title {
+	font-size: 1.2rem;
+	font-weight: 700;
+	line-height: 1.25;
+	margin: 0;
+}
+
+.body {
+	font-size: 0.9rem;
+	line-height: 1.45;
+	color: var(--text-primary-muted);
+	margin: 0;
+	max-width: 22rem;
+}
+
+.joke {
+	font-size: 0.78rem;
+	line-height: 1.4;
+	font-style: italic;
+	color: color-mix(in srgb, var(--text-primary) 55%, transparent);
+	margin: 0;
+	padding: 0.5rem 0.8rem;
+	border-left: 2px solid color-mix(in srgb, var(--brand-primary) 38%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 6%, transparent);
+	border-radius: 0 0.45rem 0.45rem 0;
+	max-width: 22rem;
+	text-align: left;
+}
+
+.urlRow {
+	width: 100%;
+	padding: 0.55rem 0.7rem;
+	border-radius: 0.65rem;
+	background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	overflow: hidden;
+}
+
+.url {
+	display: block;
+	font-family: var(--font-code, ui-monospace, SFMono-Regular, Menlo, monospace);
+	font-size: 0.78rem;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.actions {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+	width: 100%;
+	margin-top: 0.25rem;
+}
+
+.primaryAction,
+.secondaryAction {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.45rem;
+	height: 2.5rem;
+	padding: 0 1rem;
+	border-radius: 0.75rem;
+	font-size: 0.9rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		background-color var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease),
+		transform var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease),
+		border-color var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease);
+}
+
+.primaryAction {
+	border: 1px solid transparent;
+	background: var(--brand-primary);
+	color: var(--white);
+}
+
+.primaryAction:hover {
+	transform: translateY(-1px);
+	background: color-mix(in srgb, var(--brand-primary) 92%, var(--white) 8%);
+}
+
+.primaryAction svg {
+	width: 1.05rem;
+	height: 1.05rem;
+}
+
+.secondaryAction {
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: transparent;
+	color: var(--text-primary);
+}
+
+.secondaryAction:hover {
+	background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+	border-color: color-mix(in srgb, var(--text-primary) 16%, transparent);
+}
+
+.secondaryAction svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.dismissLink {
+	margin-top: 0.25rem;
+	padding: 0.3rem 0.6rem;
+	background: transparent;
+	border: none;
+	color: var(--text-primary-muted);
+	font-size: 0.8rem;
+	cursor: pointer;
+}
+
+.dismissLink:hover {
+	color: var(--text-primary);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+	.card {
+		padding: 1.2rem 1rem 1rem;
+	}
+
+	.title {
+		font-size: 1.05rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.primaryAction,
+	.secondaryAction {
+		transition: none;
+	}
+}

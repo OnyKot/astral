@@ -1,0 +1,227 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.channelListScroller {
+	background: var(--background-secondary);
+}
+
+.channelListScrollerWrapper {
+	position: relative;
+	width: 100%;
+	min-height: 0;
+	min-width: 0;
+	padding: 0 0.75rem 0.9rem;
+	background: var(--background-secondary);
+}
+
+.channelListScrollerWrapperCompact {
+	padding: 0 0.625rem 0.75rem;
+}
+
+.channelListScrollerWrapperCollapsed {
+	padding-inline: 0.35rem;
+}
+
+.navigationContainer {
+	width: 100%;
+	min-width: 0;
+	min-height: 100%;
+	padding: 0.125rem 0 0.5rem;
+	background: var(--background-secondary);
+}
+
+.listControls {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.2rem 0.15rem 0.6rem;
+}
+
+.listControlsLabel {
+	font-family: var(--font-sans);
+	font-size: 0.68rem;
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--text-primary) 58%, var(--text-tertiary) 42%);
+}
+
+.listTabs {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.listTab {
+	border: none;
+	border-radius: 999px;
+	padding: 0.18rem 0.45rem;
+	background: transparent;
+	color: var(--text-tertiary);
+	font-size: 0.72rem;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
+}
+
+.listTab:hover {
+	color: var(--text-primary);
+	background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+.listTabActive {
+	background: color-mix(in srgb, var(--brand-primary) 10%, transparent);
+	color: var(--text-primary);
+}
+
+.listActionButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--background-secondary) 74%, transparent);
+	color: var(--text-secondary);
+	cursor: pointer;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		border-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
+}
+
+.listActionButton:hover {
+	transform: none;
+	color: var(--text-primary);
+	border-color: color-mix(in srgb, var(--brand-primary) 22%, transparent);
+	background: color-mix(in srgb, var(--background-secondary) 78%, var(--brand-primary) 22%);
+}
+
+.listActionIcon {
+	width: 0.78rem;
+	height: 0.78rem;
+}
+
+.listControlsCollapsed {
+	display: none;
+}
+
+.collapsedState {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.35rem 0 1rem;
+}
+
+.collapsedStateLine {
+	width: 1px;
+	height: 1.15rem;
+	background: color-mix(in srgb, var(--text-primary) 22%, transparent);
+}
+
+.collapsedStateDot {
+	width: 0.5rem;
+	height: 0.5rem;
+	border-radius: 999px;
+	background: var(--brand-primary);
+	box-shadow: none;
+}
+
+.topDropZone {
+	position: relative;
+	height: 0.625rem;
+}
+
+.channelGroupsContainer {
+	display: flex;
+	width: 100%;
+	min-width: 0;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.channelGroup {
+	display: flex;
+	width: 100%;
+	min-width: 0;
+	flex-direction: column;
+	gap: 0.2rem;
+	padding: 0;
+	border-radius: 0;
+	background: transparent;
+	border: none;
+	box-shadow: none;
+}
+
+.bottomDropZone {
+	position: relative;
+	height: 0.625rem;
+}
+
+.bottomSpacer {
+	height: 0.5rem;
+}
+
+.channelListScrollerWrapperCollapsed .channelGroupsContainer {
+	display: none;
+}
+
+.channelListScrollerWrapperCollapsed .topDropZone,
+.channelListScrollerWrapperCollapsed .bottomDropZone {
+	display: none;
+}
+
+@media (max-width: 767px) {
+	.channelListScrollerWrapper,
+	.channelListScrollerWrapperCompact {
+		padding: 0 0.625rem 0.75rem;
+	}
+
+	.listControls {
+		padding-bottom: 0.45rem;
+	}
+
+	.listTabs {
+		gap: 0.2rem;
+	}
+
+	.listTab {
+		padding: 0.16rem 0.4rem;
+		font-size: 0.7rem;
+	}
+
+	.listActionButton {
+		width: 1.42rem;
+		height: 1.42rem;
+	}
+
+	.channelGroup {
+		padding: 0;
+	}
+}

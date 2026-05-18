@@ -1,0 +1,200 @@
+---
+title: Самостоятельное размещение
+description: Разверните свой собственный экземпляр Astral с помощью Docker Compose
+---
+
+Astral полностью поддерживает самостоятельное размещение. Это руководство проходит через развертывание с использованием Docker Compose.
+
+## Предварительные требования
+
+- Linux-сервер (рекомендуется Ubuntu 22.04+) с минимум 4 ГБ ОЗУ и 2 CPU-ядрами
+- Docker Engine 24+ и Docker Compose v2
+- Доменное имя с DNS, указывающим на ваш сервер
+- TLS-сертификат (Caddy обрабатывает это автоматически через Let's Encrypt)
+
+## Архитектура
+
+Стандартное развертывание Astral состоит из следующих служб:
+
+| Service | Role | Port |
+| --- | --- | --- |
+| **API** | HTTP REST API + WebSocket handlers | 3000 |
+| **Gateway** | Erlang-based real-time event system | 4000 |
+| **App** | Frontend web client (rspack dev or static) | 7001 |
+| **Caddy** | Reverse proxy, TLS termination | 80, 443 |
+| **Cassandra** | Primary database (ScyllaDB compatible) | 9042 |
+| **PostgreSQL** | Relational data (OAuth, billing) | 5432 |
+| **Redis** | Cache, sessions, pub/sub | 6379 |
+| **MinIO** | S3-compatible object storage (avatars, attachments) | 9000 |
+| **MeiliSearch** | Full-text message search | 7700 |
+| **LiveKit** | WebRTC voice and video | 7880 |
+| **ClamAV** | Attachment virus scanning | 3310 |
+
+## Быстрый старт
+
+### 1. Клонируйте репозиторий
+
+```bash
+git clone https://github.com/Ivantech123/Astro-.git
+cd Astro-
+```
+
+### 2. Настройте среду
+
+```bash
+cp dev/.env.example dev/.env
+```
+
+Отредактируйте `dev/.env` и установите минимум (не используйте значения по умолчанию из dev в production):
+
+```text
+# Domain
+PUBLIC_DOMAIN=your-domain.com
+PUBLIC_API_ENDPOINT=https://your-domain.com/api
+
+# Secrets (generate random strings)
+JWT_SECRET=<random-64-char-string>
+SESSION_SECRET=<random-64-char-string>
+
+# Database
+CASSANDRA_CONTACT_POINTS=cassandra
+CASSANDRA_KEYSPACE=astral
+POSTGRES_URL=postgresql://astral:astral_dev@postgres:5432/astral
+
+# Redis
+REDIS_URL=redis://redis:6379
+
+# Storage
+S3_ENDPOINT=http://minio:9000
+S3_ACCESS_KEY=<random-access-key>
+S3_SECRET_KEY=<random-secret-key>
+S3_BUCKET=astral
+
+# Voice
+LIVEKIT_API_KEY=<random-livekit-api-key>
+LIVEKIT_API_SECRET=<random-livekit-api-secret>
+LIVEKIT_URL=wss://your-domain.com
+
+# Optional
+STRIPE_ENABLED=false
+FREE_PREMIUM=false
+CAPTCHA_ENABLED=true
+```
+
+### 3. Запустите стек
+
+```bash
+cd dev
+docker compose up -d
+```
+
+Подождите, пока Cassandra станет здоровой (на первом запуске это занимает 30–60 секунд):
+
+```bash
+docker compose logs -f cassandra
+# Wait for "listening for clients" message
+```
+
+### 4. Выполните миграции
+
+Таблицы Cassandra создаются автоматически контейнером миграции. Проверьте:
+
+```bash
+docker compose logs cassandra-migrate
+```
+
+### 5. Доступ к приложению
+
+Откройте `https://your-domain.com` в браузере. Зарегистрируйте первый аккаунт — он станет администратором экземпляра.
+
+## Усиление безопасности для производства
+
+### TLS с Caddy
+
+Отредактируйте Caddyfile для использования вашего домена:
+
+```text
+your-domain.com {
+    handle /api/* {
+        reverse_proxy api:3000
+    }
+    handle /gateway* {
+        reverse_proxy gateway:4000
+    }
+    handle {
+        reverse_proxy app:7001
+    }
+}
+```
+
+Caddy автоматически получает и обновляет сертификаты Let's Encrypt.
+
+### Ограничения ресурсов
+
+Добавьте ограничения памяти в `compose.yaml`:
+
+```yaml
+services:
+  api:
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+  cassandra:
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+```
+
+### Резервные копии
+
+**Cassandra:**
+```bash
+docker exec cassandra nodetool snapshot astral
+# Snapshots stored in /var/lib/cassandra/data/astral/*/snapshots/
+```
+
+**PostgreSQL:**
+```bash
+docker exec postgres pg_dump -U astral astral > backup.sql
+```
+
+**MinIO:**
+```bash
+docker exec minio mc mirror /data /backup
+```
+
+### Мониторинг
+
+Включите стек метрик с ClickHouse:
+
+```bash
+docker compose --profile clickhouse up -d
+```
+
+Это запускает ClickHouse + сборщик метрик Astral. Просмотрите метрики по `/status/summary`.
+
+## Обновление
+
+```bash
+git pull origin main
+docker compose build
+docker compose up -d
+```
+
+API и Gateway перезапустятся с новым кодом. Миграции базы данных запускаются автоматически.
+
+## Устранение неисправностей
+
+| Problem | Solution |
+| --- | --- |
+| API crashes on start | Check Cassandra is healthy: `docker compose logs cassandra` |
+| Gateway won't connect | Verify Erlang cookie matches and the gateway can reach Cassandra |
+| Voice calls fail | Check LiveKit logs and ensure UDP ports 7882 are open |
+| Attachments don't upload | Verify MinIO is healthy and S3 credentials are correct |
+| Search returns nothing | MeiliSearch needs indexing: check `docker compose logs meilisearch` |
+
+## Ссылка на среду
+
+Смотрите `dev/.env.example` для полного списка переменных конфигурации с описаниями.

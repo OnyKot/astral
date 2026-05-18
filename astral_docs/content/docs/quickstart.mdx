@@ -1,0 +1,211 @@
+---
+title: Quickstart
+description: Build your first Astral bot in five minutes
+---
+
+This quickstart takes you from zero to a bot that replies `pong` to `!ping` in any channel it can read.
+
+You will:
+
+1. Create an application and a bot user.
+2. Get a bot token.
+3. Run a tiny Node.js script that connects to the Gateway and answers messages over REST.
+
+<Callout type="info" title="API base URLs">
+The official Astral deployment lives at `https://astraof.com`. REST calls go to `https://astraof.com/api/v1` and the Gateway accepts WebSocket connections at `wss://astraof.com/gateway?v=1&encoding=json`. Self-hosted instances expose the same paths under their own domain.
+</Callout>
+
+## 1. Create an application and a bot
+
+In the Astral client:
+
+1. Open **User Settings → Applications** (the `</>` icon in the user-settings sidebar).
+2. Click **Create Application** and give it a memorable name.
+3. Open the new application's detail page and switch to the **Bot** section.
+4. Click **Reveal token** and copy the bot token to a safe place.
+
+You can also drive the same lifecycle over API:
+
+```text
+POST   /oauth2/applications
+PATCH  /oauth2/applications/:id
+PATCH  /oauth2/applications/:id/bot
+POST   /oauth2/applications/:id/bot/reset-token
+GET    /users/@me/applications
+```
+
+<Callout type="warning" title="Never commit a bot token">
+A leaked bot token is equivalent to handing over the bot's account. Keep tokens in environment variables, never in source files, and rotate them via `POST /oauth2/applications/:id/bot/reset-token` if you suspect a leak.
+</Callout>
+
+## 2. Set up an empty Node project
+
+```bash
+mkdir astral-bot
+cd astral-bot
+npm init -y
+npm pkg set type=module
+npm install ws
+```
+
+## 3. Set environment variables
+
+The example below reads its configuration from three environment variables. On Linux/macOS:
+
+```bash
+export ASTRAL_BOT_TOKEN="your_bot_token"
+export ASTRAL_API_BASE="https://astraof.com/api/v1"
+export ASTRAL_GATEWAY_URL="wss://astraof.com/gateway?v=1&encoding=json"
+```
+
+On Windows PowerShell:
+
+```powershell
+$Env:ASTRAL_BOT_TOKEN  = "your_bot_token"
+$Env:ASTRAL_API_BASE   = "https://astraof.com/api/v1"
+$Env:ASTRAL_GATEWAY_URL = "wss://astraof.com/gateway?v=1&encoding=json"
+```
+
+## 4. Sanity-check your token
+
+Before opening the Gateway, confirm the three endpoints every bot should be able to hit:
+
+```bash
+curl -s -H "Authorization: Bot $ASTRAL_BOT_TOKEN" https://astraof.com/api/v1/users/@me
+curl -s -H "Authorization: Bot $ASTRAL_BOT_TOKEN" https://astraof.com/api/v1/applications/@me
+curl -s -H "Authorization: Bot $ASTRAL_BOT_TOKEN" https://astraof.com/api/v1/gateway/bot
+```
+
+If you get JSON back from all three, the bot is ready.
+
+<Callout type="info" title="Notice the Origin header is not required">
+Astral's production API gates non-GET cookie-only requests by `Origin`, but Bearer-token bots are explicitly bypassed. You do **not** need to send an `Origin` header — the token alone identifies you.
+</Callout>
+
+## 5. Minimal bot example (ping/pong)
+
+Save this as `bot.js`:
+
+```js
+import WebSocket from "ws";
+
+const token = process.env.ASTRAL_BOT_TOKEN;
+const apiBase = process.env.ASTRAL_API_BASE;
+const gatewayUrl = process.env.ASTRAL_GATEWAY_URL;
+
+if (!token || !apiBase || !gatewayUrl) {
+  console.error(
+    "Missing ASTRAL_BOT_TOKEN, ASTRAL_API_BASE, or ASTRAL_GATEWAY_URL"
+  );
+  process.exit(1);
+}
+
+let heartbeatTimer = null;
+let seq = null;
+
+function send(ws, payload) {
+  ws.send(JSON.stringify(payload));
+}
+
+async function postMessage(channelId, content) {
+  const response = await fetch(`${apiBase}/channels/${channelId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content }),
+  });
+  if (!response.ok) {
+    console.error("Failed to post message:", response.status, await response.text());
+  }
+}
+
+const ws = new WebSocket(gatewayUrl);
+
+ws.on("message", async (raw) => {
+  const msg = JSON.parse(raw.toString());
+  const { op, t, d, s } = msg;
+  if (s !== null && s !== undefined) seq = s;
+
+  // HELLO -> start heartbeat + IDENTIFY
+  if (op === 10) {
+    heartbeatTimer = setInterval(() => {
+      send(ws, { op: 1, d: seq });
+    }, d.heartbeat_interval);
+
+    send(ws, {
+      op: 2,
+      d: {
+        token: `Bot ${token}`,
+        properties: {
+          $os: "node",
+          $browser: "astral-bot",
+          $device: "astral-bot",
+        },
+      },
+    });
+    return;
+  }
+
+  // HEARTBEAT_ACK — ignore
+  if (op === 11) return;
+
+  // Dispatch
+  if (t === "READY") {
+    console.log("READY:", d.user?.username);
+  }
+
+  if (
+    t === "MESSAGE_CREATE" &&
+    d?.content === "!ping" &&
+    !d.author?.bot
+  ) {
+    console.log("Received !ping in channel", d.channel_id);
+    await postMessage(d.channel_id, "pong");
+  }
+});
+
+ws.on("error", (error) => {
+  console.error("Gateway error:", error);
+});
+
+ws.on("close", () => {
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  console.log("Gateway closed");
+});
+```
+
+## 6. Run
+
+```bash
+node bot.js
+```
+
+Then, from your normal Astral account, send `!ping` in a channel that the bot can read and write. You should see:
+
+- `READY: <bot username>` in the bot's terminal
+- `pong` posted into the channel by the bot
+
+## 7. Invite the bot to a server
+
+To install the bot into a server you don't yourself control, build an OAuth2 install URL:
+
+```text
+https://astraof.com/oauth2/authorize?client_id=<APP_ID>&scope=bot&permissions=<PERMISSIONS>
+```
+
+- `client_id` — the application id from User Settings → Applications.
+- `permissions` — the bitwise OR of permissions the bot needs. Start small; you can always add more later.
+
+## Next steps
+
+- **[Bot API Guide](./bots)** — REST patterns, gateway lifecycle, error handling.
+- **[Gateway](./events/gateway)** — connection lifecycle, opcodes, resume / reconnect rules.
+- **[Gateway Events](./events/gateway-events)** — every event your bot can dispatch on.
+- **[Message resource](./resources/message)** — sending, editing, attachments, embeds, reactions.
+- **[Channel resource](./resources/channel)** — channel CRUD and permission overwrites.
+- **[Webhook resource](./resources/webhook)** — for one-shot integrations that don't need a long-lived bot.
+- **[API Reference](./api-reference)** — alphabetical list of every public endpoint.
+- **[Rate limits](./topics/rate-limits)** — how to read rate-limit headers and back off correctly.
+- **[Troubleshooting](./topics/troubleshooting)** — common 4xx responses and what they mean.

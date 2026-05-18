@@ -1,0 +1,35 @@
+---
+title: Webhook
+description: Публичные webhook-маршруты Astral
+---
+
+Webhook нужен, когда внешняя система должна отправлять сообщения в канал без постоянного Gateway-бота.
+
+## Основные публичные маршруты
+
+| Endpoint | Для чего нужен |
+| --- | --- |
+| `GET /channels/:channel_id/webhooks` | Список webhook канала |
+| `POST /channels/:channel_id/webhooks` | Создать webhook |
+| `GET /webhooks/:webhook_id/:token` | Получить webhook по token |
+| `POST /webhooks/:webhook_id/:token` | Выполнить webhook |
+| `DELETE /webhooks/:webhook_id/:token` | Удалить webhook |
+
+## Выполнить webhook
+
+```bash
+curl -X POST "https://astraof.com/api/v1/webhooks/<WEBHOOK_ID>/<WEBHOOK_TOKEN>?wait=true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Деплой завершён",
+    "username": "Deploy Bot"
+  }'
+```
+
+## Когда webhook лучше обычного бота
+
+Используйте webhook, если нужно:
+
+- отправлять CI-события
+- публиковать уведомления из внешней системы
+- не держать постоянное Gateway-подключение

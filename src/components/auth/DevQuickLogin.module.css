@@ -1,0 +1,287 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.root {
+	margin-top: 1.25rem;
+	padding: 0.9rem 0.9rem 0.8rem;
+	border-radius: 0.85rem;
+	border: 1px dashed color-mix(in srgb, #f59e0b 35%, transparent);
+	background: color-mix(in srgb, #f59e0b 6%, transparent);
+	display: flex;
+	flex-direction: column;
+	gap: 0.65rem;
+}
+
+.badge {
+	align-self: flex-start;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	font-size: 0.7rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	padding: 0.18rem 0.55rem;
+	border-radius: 9999px;
+	background: color-mix(in srgb, #f59e0b 20%, transparent);
+	color: #d97706;
+}
+
+.badge svg {
+	width: 0.85rem;
+	height: 0.85rem;
+}
+
+.accountList {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.accountRow {
+	display: flex;
+	align-items: stretch;
+	gap: 0.35rem;
+}
+
+.accountPick {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	gap: 0.65rem;
+	padding: 0.55rem 0.7rem;
+	border-radius: 0.65rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: color-mix(in srgb, var(--text-primary) 3%, transparent);
+	color: var(--text-primary);
+	cursor: pointer;
+	text-align: left;
+	transition:
+		background-color var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease),
+		transform var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease);
+	min-width: 0;
+}
+
+.accountPick:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	transform: translateY(-1px);
+}
+
+.accountPick:disabled {
+	opacity: 0.55;
+	cursor: wait;
+}
+
+.accountIcon {
+	width: 1.35rem;
+	height: 1.35rem;
+	flex-shrink: 0;
+	color: color-mix(in srgb, #f59e0b 85%, var(--text-primary));
+}
+
+.accountText {
+	display: flex;
+	flex-direction: column;
+	gap: 0.05rem;
+	min-width: 0;
+	flex: 1;
+}
+
+.accountLabel {
+	font-size: 0.88rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.accountEmail {
+	font-size: 0.72rem;
+	color: var(--text-primary-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.spinner {
+	font-size: 1rem;
+	color: var(--text-primary-muted);
+	animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+	0%, 100% { opacity: 0.35; }
+	50% { opacity: 1; }
+}
+
+.iconButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: auto;
+	flex-shrink: 0;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	border-radius: 0.55rem;
+	background: transparent;
+	color: var(--text-primary-muted);
+	cursor: pointer;
+	transition: background-color var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease);
+}
+
+.iconButton:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+	color: var(--text-primary);
+}
+
+.iconButton svg {
+	width: 0.95rem;
+	height: 0.95rem;
+}
+
+.addButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4rem;
+	padding: 0.4rem 0.7rem;
+	border-radius: 0.6rem;
+	border: 1px dashed color-mix(in srgb, var(--text-primary) 18%, transparent);
+	background: transparent;
+	color: var(--text-primary-muted);
+	font-size: 0.82rem;
+	cursor: pointer;
+	align-self: flex-start;
+	transition:
+		color var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease),
+		border-color var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease);
+}
+
+.addButton:hover:not(:disabled) {
+	color: var(--text-primary);
+	border-color: color-mix(in srgb, var(--text-primary) 30%, transparent);
+}
+
+.addButton svg {
+	width: 0.95rem;
+	height: 0.95rem;
+}
+
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: 0.45rem;
+	padding-top: 0.2rem;
+}
+
+.input {
+	padding: 0.45rem 0.65rem;
+	border-radius: 0.55rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+	background: color-mix(in srgb, var(--background-floating) 20%, var(--background-primary) 80%);
+	color: var(--text-primary);
+	font-size: 0.85rem;
+	outline: none;
+	transition: border-color var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease);
+}
+
+.input:focus {
+	border-color: color-mix(in srgb, var(--brand-primary) 40%, transparent);
+}
+
+.formActions {
+	display: flex;
+	gap: 0.4rem;
+}
+
+.primaryButton {
+	flex: 1;
+	padding: 0.45rem 0.7rem;
+	border-radius: 0.55rem;
+	border: 1px solid transparent;
+	background: var(--brand-primary);
+	color: var(--white);
+	font-size: 0.85rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		transform var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease),
+		background-color var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease);
+}
+
+.primaryButton:hover:not(:disabled) {
+	transform: translateY(-1px);
+	background: color-mix(in srgb, var(--brand-primary) 92%, var(--white) 8%);
+}
+
+.primaryButton:disabled {
+	opacity: 0.55;
+	cursor: wait;
+}
+
+.secondaryButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3rem;
+	padding: 0.45rem 0.7rem;
+	border-radius: 0.55rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+	background: transparent;
+	color: var(--text-primary-muted);
+	font-size: 0.85rem;
+	cursor: pointer;
+	transition: background-color var(--motion-dur-short, 160ms) var(--motion-ease-smooth, ease);
+}
+
+.secondaryButton:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+	color: var(--text-primary);
+}
+
+.secondaryButton svg {
+	width: 0.9rem;
+	height: 0.9rem;
+}
+
+.error {
+	padding: 0.45rem 0.6rem;
+	border-radius: 0.5rem;
+	background: color-mix(in srgb, var(--status-danger) 10%, transparent);
+	border: 1px solid color-mix(in srgb, var(--status-danger) 24%, transparent);
+	color: var(--status-danger);
+	font-size: 0.78rem;
+	line-height: 1.35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.accountPick,
+	.primaryButton,
+	.secondaryButton {
+		transition: none;
+	}
+
+	.spinner {
+		animation: none;
+	}
+}

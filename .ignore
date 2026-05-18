@@ -1,0 +1,85 @@
+# Build artifact directories
+**/_build
+**/_checkouts
+**/_vendor
+**/.astro/
+**/build
+!astral_app/scripts/build
+**/coverage
+**/dist
+astral_app/dist/
+**/generated
+**/target
+**/ebin
+**/certificates
+
+# Dependency directories
+**/node_modules
+**/.pnpm-store
+
+# Framework & tooling buckets
+**/.next
+**/.next/cache
+**/.vercel
+**/out
+**/.pnp
+**/.pnp.js
+*.tsbuildinfo
+next-env.d.ts
+
+# Cache directories
+**/.cache
+**/.*cache
+**/.swc
+
+# Logs and temporary files
+**/*.beam
+**/*.dump
+**/*.iml
+**/*.log
+**/*.o
+**/*.plt
+**/*.swo
+**/*.swp
+**/*.tmp
+**/*~
+**/*.lock
+**/log
+**/logs
+**/npm-debug.log*
+**/pnpm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/rebar3.crashdump
+**/erl_crash.dump
+
+# Source files we never want tracked
+**/.source
+**/*.source
+
+# Environment files
+**/.env
+**/.env.local
+**/.env.*.local
+**/.dev.vars
+**/.erlang.cookie
+**/.eunit
+**/.rebar
+**/.rebar3
+**/astral.env
+**/secrets.env
+/dev/astral.env
+
+# Project-specific artifacts
+/astral_app/src/assets/emoji-sprites/
+/astral_app/src/locales/*/messages.js
+/astral_admin/priv/static/app.css
+/astral_marketing/priv/static/app.css
+app.css
+astral_static
+geoip_data
+livekit.yaml
+astral.yaml
+
+# Generated CSS type definitions
+**/*.css.d.ts
