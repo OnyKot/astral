@@ -17,7 +17,7 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {ChannelTypes} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType} from '~/Constants';
 import type {UserPartial} from '~/records/UserRecord';
 import UserPinnedDMStore from '~/stores/UserPinnedDMStore';
 import UserStore from '~/stores/UserStore';
@@ -214,12 +214,20 @@ export class ChannelRecord {
 		return this.type === ChannelTypes.GUILD_VOICE;
 	}
 
+	isGuildStage(): boolean {
+		return this.type === ChannelTypes.GUILD_STAGE;
+	}
+
+	isGuildRtc(): boolean {
+		return isGuildRtcChannelType(this.type);
+	}
+
 	isGuildCategory(): boolean {
 		return this.type === ChannelTypes.GUILD_CATEGORY;
 	}
 
 	isVoice(): boolean {
-		return this.type === ChannelTypes.GUILD_VOICE;
+		return this.isGuildRtc();
 	}
 
 	isText(): boolean {

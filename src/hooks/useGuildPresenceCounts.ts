@@ -99,7 +99,6 @@ export function useGuildPresenceCounts(
 			try {
 				const response = await HttpClient.get<ApiResponse>({
 					url: `/guilds/${encodeURIComponent(guildId)}/counts`,
-					skipAuth: true,
 					signal: controller.signal,
 					rejectWithError: true,
 				});

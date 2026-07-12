@@ -51,7 +51,6 @@
 	border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
 	font-size: 0.75rem;
 	z-index: 2;
-	backdrop-filter: blur(6px);
 	opacity: 0;
 	visibility: hidden;
 }

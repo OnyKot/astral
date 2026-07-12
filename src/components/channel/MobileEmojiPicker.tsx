@@ -22,7 +22,12 @@ import {CaretDownIcon, CaretUpIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
 import {EmojiPickerCategoryList} from '~/components/channel/emoji-picker/EmojiPickerCategoryList';
-import {EMOJI_SPRITE_SIZE} from '~/components/channel/emoji-picker/EmojiPickerConstants';
+import {
+	EMOJI_SPRITE_SIZE,
+	OVERSCAN_ROWS,
+	getEmojiImageUrl,
+	preloadEmojiImageUrls,
+} from '~/components/channel/emoji-picker/EmojiPickerConstants';
 import {EmojiPickerSearchBar} from '~/components/channel/emoji-picker/EmojiPickerSearchBar';
 import {useEmojiCategories} from '~/components/channel/emoji-picker/hooks/useEmojiCategories';
 import {useVirtualRows} from '~/components/channel/emoji-picker/hooks/useVirtualRows';
@@ -39,6 +44,9 @@ import UnicodeEmojis, {EMOJI_SPRITES} from '~/lib/UnicodeEmojis';
 import ChannelStore from '~/stores/ChannelStore';
 import EmojiStore, {type Emoji, normalizeEmojiSearchQuery} from '~/stores/EmojiStore';
 
+const MOBILE_EMOJIS_PER_ROW = 8;
+const MOBILE_PICKER_PRELOAD_EMOJI_COUNT = MOBILE_EMOJIS_PER_ROW * (OVERSCAN_ROWS * 3 + 6);
+
 export const MobileEmojiPicker = observer(
 	({
 		channelId,
@@ -46,18 +54,28 @@ export const MobileEmojiPicker = observer(
 		externalSearchTerm,
 		externalSetSearchTerm,
 		hideSearchBar = false,
+		searchActive,
+		onSearchActiveChange,
+		searchAutoFocusKey = 0,
 	}: {
 		channelId?: string;
 		handleSelect: (emoji: Emoji, shiftKey?: boolean) => void;
 		externalSearchTerm?: string;
 		externalSetSearchTerm?: (term: string) => void;
 		hideSearchBar?: boolean;
+		searchActive?: boolean;
+		onSearchActiveChange?: (active: boolean) => void;
+		searchAutoFocusKey?: number;
 	}) => {
 		const headerPortalContext = useExpressionPickerHeaderPortal();
 		const hasPortal = Boolean(headerPortalContext?.headerPortalElement);
 
 		const [internalSearchTerm, setInternalSearchTerm] = React.useState('');
 		const [hoveredEmoji, setHoveredEmoji] = React.useState<Emoji | null>(null);
+		const supportsHover = React.useMemo(
+			() => typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches,
+			[],
+		);
 		const [isSearchFocused, setIsSearchFocused] = React.useState(false);
 		const [fastScrollDirection, setFastScrollDirection] = React.useState<-1 | 0 | 1>(0);
 		const scrollerRef = React.useRef<ScrollerHandle>(null);
@@ -76,12 +94,22 @@ export const MobileEmojiPicker = observer(
 
 		const searchTerm = externalSearchTerm ?? internalSearchTerm;
 		const setSearchTerm = externalSetSearchTerm ?? setInternalSearchTerm;
+		const isSearchVisible = searchActive ?? (isSearchFocused || Boolean(searchTerm));
 		const normalizedSearchTerm = React.useMemo(() => normalizeEmojiSearchQuery(searchTerm), [searchTerm]);
+		const deferredSearchTerm = React.useDeferredValue(normalizedSearchTerm);
 		const renderedEmojis = React.useMemo(
-			() => EmojiStore.search(channel, normalizedSearchTerm).slice(),
-			[channel, hiddenEmojiRevision, normalizedSearchTerm],
+			() => EmojiStore.search(channel, deferredSearchTerm).slice(),
+			[channel, hiddenEmojiRevision, deferredSearchTerm],
 		);
 		const allEmojis = React.useMemo(() => EmojiStore.search(channel, '').slice(), [channel, hiddenEmojiRevision]);
+		const preloadedEmojiUrls = React.useMemo(
+			() =>
+				renderedEmojis
+					.slice(0, MOBILE_PICKER_PRELOAD_EMOJI_COUNT)
+					.map((emoji) => getEmojiImageUrl(emoji, skinTone))
+					.filter(Boolean),
+			[renderedEmojis, skinTone],
+		);
 
 		const spriteSheetSizes = React.useMemo(() => {
 			const nonDiversitySize = [
@@ -99,35 +127,50 @@ export const MobileEmojiPicker = observer(
 
 		React.useEffect(() => {
 			return ComponentDispatch.subscribe('EMOJI_PICKER_RERENDER', forceUpdate);
-		});
+		}, [forceUpdate]);
+
+		React.useEffect(() => {
+			preloadEmojiImageUrls(preloadedEmojiUrls);
+		}, [preloadedEmojiUrls]);
 
 		const {customEmojisByGuildId, unicodeEmojisByCategory, favoriteEmojis, frequentlyUsedEmojis} =
 			useEmojiCategories(allEmojis);
-		const showFrequentlyUsedButton = frequentlyUsedEmojis.length > 0 && !normalizedSearchTerm;
+		const showFrequentlyUsedButton = frequentlyUsedEmojis.length > 0 && !deferredSearchTerm;
 		const virtualRows = useVirtualRows(
-			normalizedSearchTerm,
+			deferredSearchTerm,
 			renderedEmojis,
 			favoriteEmojis,
 			frequentlyUsedEmojis,
 			customEmojisByGuildId,
 			unicodeEmojisByCategory,
-			8,
+			MOBILE_EMOJIS_PER_ROW,
 		);
 
-		const handleCategoryClick = (category: string) => {
+		const rowsWithEmojiIndex = React.useMemo(() => {
+			let emojiRowIndex = -1;
+			return virtualRows.map((row) => ({
+				row,
+				emojiRowIndex: row.type === 'emoji-row' ? ++emojiRowIndex : -1,
+			}));
+		}, [virtualRows]);
+
+		const handleCategoryClick = React.useCallback((category: string) => {
 			const element = categoryRefs.current.get(category);
 			if (element) {
 				scrollerRef.current?.scrollIntoViewNode({node: element, shouldScrollToStart: true});
 			}
-		};
+		}, []);
 
-		const handleHover = (emoji: Emoji | null) => {
-			setHoveredEmoji(emoji);
-		};
+		const handleHover = React.useCallback((emoji: Emoji | null) => {
+			if (supportsHover) {
+				setHoveredEmoji(emoji);
+			}
+		}, [supportsHover]);
 
 		const handleSearchFocusChange = React.useCallback((focused: boolean) => {
 			setIsSearchFocused(focused);
-		}, []);
+			onSearchActiveChange?.(focused);
+		}, [onSearchActiveChange]);
 
 		const stopFastScroll = React.useCallback(() => {
 			fastScrollDirectionRef.current = 0;
@@ -197,7 +240,7 @@ export const MobileEmojiPicker = observer(
 		}, [stopFastScroll]);
 
 		React.useEffect(() => {
-			if (!isSearchFocused) {
+			if (!isSearchVisible) {
 				return;
 			}
 
@@ -213,15 +256,23 @@ export const MobileEmojiPicker = observer(
 
 				searchInputRef.current?.blur();
 				setIsSearchFocused(false);
+				onSearchActiveChange?.(false);
 			};
 
 			document.addEventListener('pointerdown', handleOutsidePointerDown, true);
 			return () => {
 				document.removeEventListener('pointerdown', handleOutsidePointerDown, true);
 			};
-		}, [isSearchFocused]);
+		}, [isSearchVisible, onSearchActiveChange]);
 
-		const searchBar = !hideSearchBar ? (
+		React.useEffect(() => {
+			if (!searchActive || hideSearchBar) {
+				return;
+			}
+			requestAnimationFrame(() => searchInputRef.current?.focus());
+		}, [hideSearchBar, searchActive, searchAutoFocusKey]);
+
+		const searchBar = !hideSearchBar && isSearchVisible ? (
 			<div
 				ref={searchContainerRef}
 				className={clsx(mobileStyles.searchBarWrapper, isSearchFocused && mobileStyles.searchBarWrapperFocused)}
@@ -233,6 +284,7 @@ export const MobileEmojiPicker = observer(
 					inputRef={searchInputRef}
 					onSearchFocusChange={handleSearchFocusChange}
 					compact={true}
+					showSkinToneSelector={false}
 				/>
 			</div>
 		) : null;
@@ -241,8 +293,8 @@ export const MobileEmojiPicker = observer(
 			<div className={mobileStyles.container}>
 				{hasPortal && searchBar ? <ExpressionPickerHeaderPortal>{searchBar}</ExpressionPickerHeaderPortal> : null}
 				<div
-					className={clsx(mobileStyles.mobileEmojiPicker, isSearchFocused && mobileStyles.mobileEmojiPickerSearchActive)}
-					data-search-focused={isSearchFocused ? '1' : '0'}
+					className={clsx(mobileStyles.mobileEmojiPicker, isSearchVisible && mobileStyles.mobileEmojiPickerSearchActive)}
+					data-search-focused={isSearchVisible ? '1' : '0'}
 				>
 					{!hasPortal && searchBar}
 					<div className={mobileStyles.bodyWrapper}>
@@ -252,7 +304,7 @@ export const MobileEmojiPicker = observer(
 								className={`${mobileStyles.list} ${mobileStyles.listWrapper}`}
 								key="mobile-emoji-picker-scroller"
 							>
-								{virtualRows.map((row) => (
+								{rowsWithEmojiIndex.map(({row, emojiRowIndex}) => (
 									<div
 										key={`${row.type}-${row.index}`}
 										ref={
@@ -272,11 +324,10 @@ export const MobileEmojiPicker = observer(
 											skinTone={skinTone}
 											spriteSheetSizes={spriteSheetSizes}
 											channel={channel}
-											gridColumns={8}
-											hoveredEmoji={hoveredEmoji}
-											selectedRow={-1}
+											gridColumns={MOBILE_EMOJIS_PER_ROW}
+											isSelectedRow={false}
 											selectedColumn={-1}
-											emojiRowIndex={0}
+											emojiRowIndex={emojiRowIndex}
 											emojiRefs={emojiRefs}
 										/>
 									</div>
@@ -321,10 +372,10 @@ export const MobileEmojiPicker = observer(
 						</div>
 					</div>
 					<div
-						className={clsx(
-							mobileStyles.categoryListBottom,
-							isSearchFocused && mobileStyles.categoryListBottomSearchActive,
-						)}
+							className={clsx(
+								mobileStyles.categoryListBottom,
+								isSearchVisible && mobileStyles.categoryListBottomSearchActive,
+							)}
 					>
 						<EmojiPickerCategoryList
 							customEmojisByGuildId={customEmojisByGuildId}

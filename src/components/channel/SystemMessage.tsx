@@ -48,43 +48,45 @@ export const SystemMessage = observer(
 		const formattedDate = messageDisplayCompact
 			? DateUtils.getFormattedTime(message.timestamp)
 			: DateUtils.getRelativeDateString(message.timestamp, i18n);
+		void Icon;
+		void iconWeight;
+		void iconClassname;
 
 		if (messageDisplayCompact) {
 			return (
 				<div className={styles.systemMessageCompactContent}>
-					<TimestampWithTooltip date={message.timestamp} className={styles.messageTimestampCompact}>
-						{formattedDate}
-					</TimestampWithTooltip>
-					<div className={styles.systemMessageIconCompact}>
-						<Icon weight={iconWeight} className={clsx(styles.systemMessageIconSvg, iconClassname)} />
+					<div className={styles.systemMessageBubble}>
+						<div className={styles.systemMessageContentWrapper}>
+							<div className={styles.systemMessageContent}>{messageContent}</div>
+							<TimestampWithTooltip
+								date={message.timestamp}
+								className={clsx(styles.messageTimestampCompact, styles.systemMessageTimestamp)}
+							>
+								{formattedDate}
+							</TimestampWithTooltip>
+						</div>
 					</div>
-					<div className={styles.systemMessageContentWrapper}>
-						<div className={styles.systemMessageContent}>{messageContent}</div>
-						{UserSettingsStore.getRenderReactions() && message.reactions.length > 0 && (
-							<div className={styles.container}>
-								<MessageReactions message={message} />
-							</div>
-						)}
-					</div>
+					{UserSettingsStore.getRenderReactions() && message.reactions.length > 0 && (
+						<div className={styles.container}>
+							<MessageReactions message={message} />
+						</div>
+					)}
 				</div>
 			);
 		}
 
 		return (
 			<>
-				<div className={styles.messageGutterLeft} />
-				<div className={styles.systemMessageIconWrapper}>
-					<Icon weight={iconWeight} className={clsx(styles.systemMessageIconSvg, iconClassname)} />
-				</div>
-				<div className={styles.messageGutterRight} />
-				<div className={styles.systemMessageContent}>
-					{messageContent}{' '}
-					<TimestampWithTooltip
-						date={message.timestamp}
-						className={clsx(styles.messageTimestamp, styles.systemMessageTimestamp)}
-					>
-						{formattedDate}
-					</TimestampWithTooltip>
+				<div className={styles.systemMessageBubble}>
+					<div className={styles.systemMessageContent}>
+						{messageContent}{' '}
+						<TimestampWithTooltip
+							date={message.timestamp}
+							className={clsx(styles.messageTimestamp, styles.systemMessageTimestamp)}
+						>
+							{formattedDate}
+						</TimestampWithTooltip>
+					</div>
 				</div>
 				{UserSettingsStore.getRenderReactions() && message.reactions.length > 0 && (
 					<div className={styles.container}>

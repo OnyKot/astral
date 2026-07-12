@@ -29,11 +29,11 @@
 	border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
 	transition:
 		border-color var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease),
-		box-shadow var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease),
-		background-color var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease);
+		background-color var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease),
+		box-shadow var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease);
 	margin-bottom: 0;
-	border-radius: 1rem;
-	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 3%, transparent);
+	border-radius: 0.68rem;
+	box-shadow: none;
 	overflow: hidden;
 }
 
@@ -53,24 +53,25 @@
 }
 
 .box:focus-within {
-	border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+	background: color-mix(in srgb, var(--background-textarea) 92%, var(--background-primary) 8%);
+	border-color: color-mix(in srgb, var(--brand-primary) 28%, transparent);
 	box-shadow:
 		0 0 0 1px color-mix(in srgb, var(--brand-primary) 16%, transparent),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 7%, transparent);
+		0 0 0 0.25rem color-mix(in srgb, var(--brand-primary) 10%, transparent);
 }
 
 .roundedAll {
-	border-radius: 1rem;
+	border-radius: 0.68rem;
 }
 
 .roundedTop {
-	border-top-left-radius: 1rem;
-	border-top-right-radius: 1rem;
+	border-top-left-radius: 0.68rem;
+	border-top-right-radius: 0.68rem;
 }
 
 .roundedBottom {
-	border-bottom-left-radius: 1rem;
-	border-bottom-right-radius: 1rem;
+	border-bottom-left-radius: 0.68rem;
+	border-bottom-right-radius: 0.68rem;
 }
 
 .noBottomBorder {
@@ -103,4 +104,21 @@
 .separator {
 	height: 1px;
 	background-color: transparent;
+}
+
+@media (max-width: 767px) {
+	.box,
+	.roundedAll,
+	.roundedTop,
+	.roundedBottom {
+		border-radius: 0.95rem;
+	}
+
+	.box {
+		background: color-mix(in srgb, var(--background-textarea) 94%, var(--background-primary) 6%);
+		border-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
+		box-shadow:
+			inset 0 1px 0 color-mix(in srgb, var(--text-primary) 7%, transparent),
+			0 10px 22px color-mix(in srgb, var(--background-primary) 20%, transparent);
+	}
 }

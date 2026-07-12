@@ -1,0 +1,97 @@
+.root { display: flex; flex-direction: column; gap: 12px; }
+
+.connected {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px;
+	background: rgba(200, 155, 60, 0.1);
+	border: 1px solid rgba(200, 155, 60, 0.2);
+	border-radius: 8px;
+}
+
+.icon { color: #c89b3c; flex-shrink: 0; }
+
+.info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+
+.name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+.region { font-size: 11px; color: var(--text-primary-muted); }
+
+.rank { font-size: 12px; color: #c89b3c; }
+
+.inGame { font-size: 11px; color: var(--status-positive, #4ade80); }
+
+.actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.linkedBadge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 700;
+	color: color-mix(in srgb, var(--status-positive) 75%, var(--text-primary));
+	background: color-mix(in srgb, var(--status-positive) 20%, transparent);
+	border: 1px solid color-mix(in srgb, var(--status-positive) 35%, transparent);
+}
+
+.actionsRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.refreshBtn, .disconnectBtn {
+	display: flex; align-items: center; gap: 4px;
+	padding: 4px 8px; border: none; border-radius: 4px;
+	font-size: 11px; font-weight: 600; cursor: pointer;
+	transition: background 0.15s;
+}
+
+.refreshBtn { background: rgba(255,255,255,0.08); color: var(--text-primary-muted); }
+.refreshBtn:hover { background: rgba(255,255,255,0.12); }
+
+.disconnectBtn { background: rgba(239,68,68,0.15); color: #f87171; }
+.disconnectBtn:hover { background: rgba(239,68,68,0.25); }
+
+.hint { font-size: 13px; color: var(--text-primary-muted); margin: 0; }
+
+.form { display: flex; flex-direction: column; gap: 8px; }
+
+.riotId { display: flex; align-items: center; gap: 4px; }
+
+.input, .inputTag, .select {
+	padding: 8px 10px; border: 1px solid var(--border-subtle, rgba(255,255,255,0.1));
+	border-radius: 6px; background: var(--bg-overlay-1, rgba(0,0,0,0.2));
+	color: var(--text-primary); font-size: 13px; outline: none;
+}
+
+.input { flex: 1; }
+.inputTag { width: 64px; }
+.hash { color: var(--text-primary-muted); font-weight: 700; }
+
+.select { width: 100%; cursor: pointer; }
+
+.connectBtn {
+	padding: 8px 16px; background: #c89b3c; color: #000;
+	border: none; border-radius: 6px; font-size: 13px; font-weight: 700;
+	cursor: pointer; transition: background 0.15s;
+}
+
+.connectBtn:hover:not(:disabled) { background: #d4aa52; }
+.connectBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.errorBanner {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	line-height: 1.35;
+	color: color-mix(in srgb, var(--status-danger) 76%, var(--text-primary));
+	background: color-mix(in srgb, var(--status-danger) 10%, transparent);
+	border: 1px solid color-mix(in srgb, var(--status-danger) 28%, transparent);
+	padding: 8px 10px;
+	border-radius: 8px;
+}

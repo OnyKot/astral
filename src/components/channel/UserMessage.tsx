@@ -29,11 +29,13 @@ import {EditingMessageInput} from '~/components/channel/EditingMessageInput';
 import {MessageAttachments} from '~/components/channel/MessageAttachments';
 import {MessageAuthorInfo} from '~/components/channel/MessageAuthorInfo';
 import {MessageComponents} from '~/components/channel/MessageComponents';
+import {ForwardedStoryCard} from '~/components/channel/ForwardedStoryCard';
 import {MessageAvatar} from '~/components/channel/MessageAvatar';
 import {MessageUsername} from '~/components/channel/MessageUsername';
 import {ReplyPreview} from '~/components/channel/ReplyPreview';
 import {TimestampWithTooltip} from '~/components/channel/TimestampWithTooltip';
 import {UserTag} from '~/components/channel/UserTag';
+import {MessageStatusIcon} from '~/components/channel/MessageStatusIcon';
 import {Tooltip} from '~/components/uikit/Tooltip';
 import FocusManager from '~/lib/FocusManager';
 import {SafeMarkdown} from '~/lib/markdown';
@@ -50,6 +52,7 @@ import markupStyles from '~/styles/Markup.module.css';
 import styles from '~/styles/Message.module.css';
 import * as DateUtils from '~/utils/DateUtils';
 import {SpoilerSyncProvider} from '~/utils/SpoilerUtils';
+import {resolveForwardedStoryPreview} from '~/utils/StoryForwardPayload';
 import {useMessageViewContext} from './MessageViewContext';
 
 const MessageStateToClassName: Record<string, string> = {
@@ -82,6 +85,12 @@ export const UserMessage = observer(() => {
 			}),
 		[message.content],
 	);
+	const storyPreview = React.useMemo(
+		() => resolveForwardedStoryPreview(message.content, message.components),
+		[message.components, message.content],
+	);
+	const hasStoryPreview = storyPreview != null;
+	const hasTextContent = message.content.trim().length > 0 && !hasStoryPreview;
 
 	const shouldHideContent =
 		UserSettingsStore.getRenderEmbeds() &&
@@ -134,24 +143,12 @@ export const UserMessage = observer(() => {
 		}
 	}, [animateEmoji, isHovering, message.id]);
 
-	React.useEffect(() => {
-		const disposer = autorun(() => {
-			const shouldAnimate = UserSettingsStore.animateEmoji && FocusManager.isFocused();
-			setAnimateEmoji(shouldAnimate);
-			if (shouldAnimate) {
-				const emojiImgs = document.querySelectorAll(
-					`img[data-message-id="${message.id}"][data-animated="true"]`,
-				) as NodeListOf<HTMLImageElement>;
-
-				for (const img of emojiImgs) {
-					const src = img.src;
-					img.src = src.replace('.webp', '.gif');
-				}
-			}
-		});
-		return () => disposer();
-	}, [message.id]);
-
+	/*
+	 * Single unified effect for emoji animation.
+	 * Merged from two duplicate autorun effects that both watched
+	 * UserSettingsStore.animateEmoji and FocusManager.isFocused().
+	 * Previous duplication caused double subscriptions and race conditions.
+	 */
 	React.useEffect(() => {
 		const disposer = autorun(() => {
 			const shouldAnimate = UserSettingsStore.animateEmoji && FocusManager.isFocused();
@@ -234,6 +231,9 @@ export const UserMessage = observer(() => {
 						<TimestampWithTooltip date={message.timestamp} className={styles.messageTimestamp}>
 							{formattedDate}
 						</TimestampWithTooltip>
+						{channel.isPrivate() && (
+							<MessageStatusIcon message={message} channelId={channel.id} />
+						)}
 					</h3>
 					<div className={styles.messageText}>
 						<div className={clsx(markupStyles.markup)}>
@@ -288,7 +288,17 @@ export const UserMessage = observer(() => {
 			);
 		}
 
-		if (shouldHideContent) return null;
+		if (shouldHideContent || (!hasTextContent && !hasStoryPreview)) return null;
+
+		if (storyPreview) {
+			return (
+				<ForwardedStoryCard
+					preview={storyPreview}
+					messageId={message.id}
+					channelId={message.channelId}
+				/>
+			);
+		}
 
 		return (
 			<div className={clsx(markupStyles.markup)}>
@@ -335,38 +345,49 @@ export const UserMessage = observer(() => {
 						previewContext={previewContext}
 						previewOverrides={previewOverrides}
 					/>
-					{!shouldHideContent && (
-						<span className={clsx(styles.compactInlineContent, MessageStateToClassName[message.state])}>
-							{isEditing && !previewContext && !mobileLayout.enabled ? (
-								<EditingMessageInput
-									channel={channel}
-									onCancel={cancelEditing}
-									onSubmit={onSubmit}
-									textareaRef={textareaRef}
-									value={value}
-									setValue={setValue}
-								/>
-							) : (
-								<span className={clsx(markupStyles.markup, 'inline')}>
-									<SafeMarkdown
-										content={message.content}
-										options={{
-											context: MarkdownContext.STANDARD_WITH_JUMBO,
-											messageId: message.id,
-											channelId: message.channelId,
-										}}
+					{!shouldHideContent && (hasTextContent || hasStoryPreview) && (
+						hasStoryPreview ? (
+							<div
+								className={clsx(
+									styles.compactForwardedStory,
+									MessageStateToClassName[message.state],
+								)}
+							>
+								{renderMessageContent()}
+							</div>
+						) : (
+							<span className={clsx(styles.compactInlineContent, MessageStateToClassName[message.state])}>
+								{isEditing && !previewContext && !mobileLayout.enabled ? (
+									<EditingMessageInput
+										channel={channel}
+										onCancel={cancelEditing}
+										onSubmit={onSubmit}
+										textareaRef={textareaRef}
+										value={value}
+										setValue={setValue}
 									/>
-									{(message.editedTimestamp || message.isEditing) &&
-										(message.isEditing ? (
-											<span className={styles.editedLabel}> {t`(edited)`}</span>
-										) : (
-											<TimestampWithTooltip date={message.editedTimestamp!} className={styles.editedTimestamp}>
+								) : (
+									<span className={clsx(markupStyles.markup, 'inline')}>
+										<SafeMarkdown
+											content={message.content}
+											options={{
+												context: MarkdownContext.STANDARD_WITH_JUMBO,
+												messageId: message.id,
+												channelId: message.channelId,
+											}}
+										/>
+										{(message.editedTimestamp || message.isEditing) &&
+											(message.isEditing ? (
 												<span className={styles.editedLabel}> {t`(edited)`}</span>
-											</TimestampWithTooltip>
-										))}
-								</span>
-							)}
-						</span>
+											) : (
+												<TimestampWithTooltip date={message.editedTimestamp!} className={styles.editedTimestamp}>
+													<span className={styles.editedLabel}> {t`(edited)`}</span>
+												</TimestampWithTooltip>
+											))}
+									</span>
+								)}
+							</span>
+						)
 					)}
 				</div>
 
@@ -378,7 +399,7 @@ export const UserMessage = observer(() => {
 				{mobileLayout.enabled && message.state === MessageStates.FAILED && (
 					<div className={styles.mobileFailedIndicator}>
 						<WarningCircleIcon weight="fill" className={styles.mobileFailedIcon} />
-						<span>{t`Failed to send message. Hold for options.`}</span>
+						<span>{t`Not sent. Hold for options.`}</span>
 					</div>
 				)}
 			</SpoilerSyncProvider>
@@ -425,41 +446,44 @@ export const UserMessage = observer(() => {
 				/>
 			)}
 
-			{(message.content || isEditing) && (!shouldHideContent || isEditing) && (
+			{(hasTextContent || hasStoryPreview || isEditing) &&
+				((!shouldHideContent && (hasTextContent || hasStoryPreview)) || isEditing) && (
 				<div className={styles.messageContent}>
-					{!shouldGroup && (
-						<h3 className={styles.messageAuthorInfo}>
-							<span className={styles.authorContainer}>
-								<MessageUsername
-									user={author}
-									message={message}
-									guild={guild}
-									member={member ?? undefined}
-									className={styles.messageUsername}
-									isPreview={!!previewContext}
-									previewColor={previewOverrides?.usernameColor}
-									previewName={previewOverrides?.displayName}
-								/>
-								{author.bot && <UserTag className={styles.userTagOffset} system={author.system} />}
-							</span>
-							<TimestampWithTooltip date={message.timestamp} className={styles.messageTimestamp}>
-								{formattedDate}
-							</TimestampWithTooltip>
-							{(message.flags & MessageFlags.SUPPRESS_NOTIFICATIONS) !== 0 && (
-								<Tooltip text={t`This was a @silent message.`}>
-									<BellSlashIcon weight="fill" className={styles.silentMessageIcon} />
-								</Tooltip>
-							)}
-						</h3>
-					)}
 					<div className={clsx(styles.messageText, MessageStateToClassName[message.state])}>
+						{!shouldGroup && (
+							<h3 className={clsx(styles.messageAuthorInfo, styles.messageAuthorInfoInBubble)}>
+								<span className={styles.authorContainer}>
+									<MessageUsername
+										user={author}
+										message={message}
+										guild={guild}
+										member={member ?? undefined}
+										className={styles.messageUsername}
+										isPreview={!!previewContext}
+										previewColor={previewOverrides?.usernameColor}
+										previewName={previewOverrides?.displayName}
+									/>
+									{author.bot && <UserTag className={styles.userTagOffset} system={author.system} />}
+								</span>
+								<span className={styles.messageBubbleMeta}>
+									<TimestampWithTooltip date={message.timestamp} className={styles.messageTimestamp}>
+										{formattedDate}
+									</TimestampWithTooltip>
+									{(message.flags & MessageFlags.SUPPRESS_NOTIFICATIONS) !== 0 && (
+										<Tooltip text={t`This was a @silent message.`}>
+											<BellSlashIcon weight="fill" className={styles.silentMessageIcon} />
+										</Tooltip>
+									)}
+								</span>
+							</h3>
+						)}
 						{renderMessageContent()}
 					</div>
 				</div>
 			)}
 
 			<div className={styles.container}>
-				{((!message.content && !isEditing) || (shouldHideContent && !isEditing)) && !shouldGroup && (
+				{((!hasTextContent && !hasStoryPreview && !isEditing) || (shouldHideContent && !isEditing)) && !shouldGroup && (
 					<h3 className={styles.messageAuthorInfo}>
 						<span className={styles.authorContainer}>
 							<MessageUsername
@@ -492,7 +516,7 @@ export const UserMessage = observer(() => {
 			{mobileLayout.enabled && message.state === MessageStates.FAILED && (
 				<div className={styles.mobileFailedIndicator}>
 					<WarningCircleIcon weight="fill" className={styles.mobileFailedIcon} />
-					<span>{t`Failed to send message. Hold for options.`}</span>
+					<span>{t`Not sent. Hold for options.`}</span>
 				</div>
 			)}
 		</SpoilerSyncProvider>

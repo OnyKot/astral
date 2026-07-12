@@ -30,8 +30,10 @@ import {
 	PauseIcon,
 	PhoneXIcon,
 	PlayIcon,
+	ProjectorScreenIcon,
 	SpeakerHighIcon,
 	SpeakerSlashIcon,
+	UsersIcon,
 } from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
@@ -43,6 +45,7 @@ import {modal} from '~/actions/ModalActionCreators';
 import * as PremiumModalActionCreators from '~/actions/PremiumModalActionCreators';
 import * as VoiceSettingsActionCreators from '~/actions/VoiceSettingsActionCreators';
 import * as VoiceStateActionCreators from '~/actions/VoiceStateActionCreators';
+import {Permissions} from '~/Constants';
 import {
 	VoiceAudioSettingsBottomSheet,
 	VoiceCameraSettingsBottomSheet,
@@ -51,6 +54,7 @@ import {
 import {CameraPreviewModalInRoom} from '~/components/modals/CameraPreviewModal';
 import {ScreenShareSettingsModal} from '~/components/modals/ScreenShareSettingsModal';
 import {MenuGroup} from '~/components/uikit/ContextMenu/MenuGroup';
+import {MenuItem} from '~/components/uikit/ContextMenu/MenuItem';
 import {MenuItemCheckbox} from '~/components/uikit/ContextMenu/MenuItemCheckbox';
 import {MenuItemRadio} from '~/components/uikit/ContextMenu/MenuItemRadio';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
@@ -58,10 +62,12 @@ import {TooltipWithKeybind} from '~/components/uikit/KeybindHint/KeybindHint';
 import {Tooltip} from '~/components/uikit/Tooltip/Tooltip';
 import {useAudioSettingsMenu} from '~/hooks/useAudioSettingsMenu';
 import {useMediaDevices} from '~/hooks/useMediaDevices';
+import ChannelStore from '~/stores/ChannelStore';
 import KeybindStore from '~/stores/KeybindStore';
 import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
 import LocalScreenSharePreviewStore from '~/stores/LocalScreenSharePreviewStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
+import PermissionStore from '~/stores/PermissionStore';
 import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import {hapticSelection, hapticWarning} from '~/utils/haptics';
@@ -110,6 +116,14 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 
 	const muteReason = MediaEngineStore.getMuteReason(voiceState);
 	const effectiveMuted = muteReason !== null || isMuted;
+	const connectedChannel = ChannelStore.getChannel(MediaEngineStore.channelId ?? '');
+	const canSpeakInChannel = connectedChannel ? (!connectedChannel.guildId || PermissionStore.can(Permissions.SPEAK, connectedChannel)) : true;
+	const isBroadcastMode = connectedChannel ? MediaEngineStore.isVoiceChannelStageLike(connectedChannel.id) : false;
+	const isSuppressedListener = isBroadcastMode && MediaEngineStore.isCurrentUserInBroadcastListenerMode();
+	const isStageListenerLocked = isSuppressedListener;
+	const isAudienceLocked = !canSpeakInChannel || isSuppressedListener;
+	const muteControlDisabled = isGuildMuted || isAudienceLocked;
+	const canJoinSpeakers = isBroadcastMode && canSpeakInChannel;
 
 	const isPushToTalkEffective = KeybindStore.isPushToTalkEffective();
 	const pushToTalkCombo = KeybindStore.getByAction('push_to_talk').combo;
@@ -202,6 +216,7 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 	}, []);
 
 	const handleToggleVideo = useCallback(async () => {
+		if (isStageListenerLocked) return;
 		if (!localParticipant) return;
 
 		try {
@@ -223,7 +238,7 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 		} catch (error) {
 			console.error('Failed to toggle camera:', error);
 		}
-	}, [localParticipant, isCameraEnabled]);
+	}, [isStageListenerLocked, localParticipant, isCameraEnabled]);
 
 	const getScreenShareOptions = useCallback(
 		(resolution: ScreenShareStreamResolution, frameRate: number) =>
@@ -289,11 +304,28 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 		[currentCallId],
 	);
 
+	const handleStopScreenShare = useCallback(async () => {
+		if (!isScreenShareEnabled) return;
+		await executeScreenShareOperation(async () => {
+			await MediaEngineStore.setScreenShareEnabled(false);
+		});
+	}, [isScreenShareEnabled]);
+
 	const renderScreenShareSettingsMenu = useCallback(
-		(_menuContext: {onClose: () => void}) => (
+		({onClose}: {onClose: () => void}) => (
 			<>
 				{isScreenShareEnabled && (
 					<MenuGroup>
+						<MenuItem
+							icon={<ProjectorScreenIcon weight="fill" className={styles.iconSmall} />}
+							danger
+							onClick={() => {
+								onClose();
+								void handleStopScreenShare();
+							}}
+						>
+							{t`Stop Sharing`}
+						</MenuItem>
 						<MenuItemCheckbox
 							icon={
 								isLocalScreenSharePreviewPaused ? (
@@ -352,6 +384,7 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 			handleScreenShareFrameRateSelect,
 			handleScreenSharePreviewToggle,
 			handleScreenShareResolutionSelect,
+			handleStopScreenShare,
 			hasPremium,
 			isLocalScreenSharePreviewPaused,
 			isScreenShareEnabled,
@@ -362,6 +395,7 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 	);
 
 	const handleScreenShare = useCallback(async () => {
+		if (isStageListenerLocked) return;
 		if (!localParticipant) return;
 
 		try {
@@ -391,10 +425,11 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 		} catch (error) {
 			console.error('Failed to toggle screen share:', error);
 		}
-	}, [localParticipant, isScreenShareEnabled, getScreenShareOptions]);
+	}, [isStageListenerLocked, localParticipant, isScreenShareEnabled, getScreenShareOptions]);
 
 	const handleScreenShareSettingsClick = useCallback(
 		(event: React.MouseEvent<HTMLButtonElement>) => {
+			if (isStageListenerLocked) return;
 			if (isMobile) {
 				ModalActionCreators.push(
 					modal(() => (
@@ -420,12 +455,20 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 
 			ContextMenuActionCreators.openFromEvent(event, renderScreenShareSettingsMenu);
 		},
-		[getScreenShareOptions, isMobile, renderScreenShareSettingsMenu],
+		[getScreenShareOptions, isMobile, isStageListenerLocked, renderScreenShareSettingsMenu],
 	);
 
 	const handleDisconnect = useCallback(async () => {
 		hapticWarning();
 		await MediaEngineStore.disconnectFromVoiceChannel('user');
+	}, []);
+
+	const handleMoveToListeners = useCallback(() => {
+		void VoiceStateActionCreators.moveCurrentUserToListeners();
+	}, []);
+
+	const handleMoveToSpeakers = useCallback(() => {
+		void VoiceStateActionCreators.moveCurrentUserToSpeakers();
 	}, []);
 
 	const handleAudioSettingsClick = useCallback(
@@ -441,6 +484,7 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 
 	const handleCameraSettingsClick = useCallback(
 		(event: React.MouseEvent<HTMLButtonElement>) => {
+			if (isStageListenerLocked) return;
 			if (isMobile) {
 				setCameraSettingsOpen(true);
 			} else {
@@ -449,7 +493,7 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 				));
 			}
 		},
-		[videoDevices, isMobile],
+		[videoDevices, isMobile, isStageListenerLocked],
 	);
 
 	const handleMoreOptionsClick = useCallback(
@@ -465,6 +509,11 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 
 	const getMuteTooltipLabel = useCallback(() => {
 		if (isGuildMuted) return t`Community Muted`;
+		if (isAudienceLocked) {
+			return canJoinSpeakers
+				? t`Listener mode: use the Join Stage button to talk`
+				: t`Listener mode: ask a moderator to add you to broadcasters to speak`;
+		}
 
 		switch (muteReason) {
 			case 'push_to_talk':
@@ -472,7 +521,7 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 			default:
 				return effectiveMuted ? t`Unmute` : t`Mute`;
 		}
-	}, [effectiveMuted, isGuildMuted, muteReason, pushToTalkHint, t]);
+	}, [canJoinSpeakers, effectiveMuted, isAudienceLocked, isGuildMuted, muteReason, pushToTalkHint, t]);
 
 	const getDeafenTooltipLabel = useCallback(() => {
 		if (isGuildDeafened) return t`Community Deafened`;
@@ -500,11 +549,11 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 								className={clsx(
 									styles.button,
 									effectiveMuted || isGuildMuted ? styles.buttonMuted : styles.buttonUnmuted,
-									isGuildMuted && 'disabled',
+									muteControlDisabled && 'disabled',
 								)}
-								onClick={isGuildMuted ? undefined : handleToggleMute}
+								onClick={muteControlDisabled ? undefined : handleToggleMute}
 								onContextMenu={handleAudioSettingsContextMenu}
-								disabled={isGuildMuted}
+								disabled={muteControlDisabled}
 							>
 								{effectiveMuted || isGuildMuted ? (
 									<MicrophoneSlashIcon weight="fill" className={styles.icon} />
@@ -564,12 +613,21 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 			</div>
 
 			<div className={styles.buttonContainer}>
-				<Tooltip text={isCameraEnabled ? t`Turn Off Camera` : t`Turn On Camera`}>
+				<Tooltip
+					text={
+						isStageListenerLocked
+							? t`Listeners can't use camera. Join stage to enable camera.`
+							: isCameraEnabled
+								? t`Turn Off Camera`
+								: t`Turn On Camera`
+					}
+				>
 					<FocusRing offset={-2}>
 						<button
 							type="button"
 							className={clsx(styles.button, isCameraEnabled ? styles.buttonCameraOn : styles.buttonCameraOff)}
 							onClick={handleToggleVideo}
+							disabled={isStageListenerLocked}
 						>
 							{isCameraEnabled ? (
 								<CameraIcon weight="fill" className={styles.icon} />
@@ -580,9 +638,14 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 					</FocusRing>
 				</Tooltip>
 
-				<Tooltip text={t`Camera Settings`}>
+				<Tooltip text={isStageListenerLocked ? t`Join stage to use camera settings` : t`Camera Settings`}>
 					<FocusRing offset={-2}>
-						<button type="button" className={styles.settingsButton} onClick={handleCameraSettingsClick}>
+						<button
+							type="button"
+							className={styles.settingsButton}
+							onClick={handleCameraSettingsClick}
+							disabled={isStageListenerLocked}
+						>
 							<CaretDownIcon weight="bold" className={styles.iconSmall} />
 						</button>
 					</FocusRing>
@@ -590,7 +653,15 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 			</div>
 
 			<div className={styles.buttonContainer}>
-				<Tooltip text={isScreenShareEnabled ? t`Stop Sharing` : t`Share Your Screen`}>
+				<Tooltip
+					text={
+						isStageListenerLocked
+							? t`Listeners can't share screen. Join stage to share.`
+							: isScreenShareEnabled
+								? t`Stop Sharing`
+								: t`Share Your Screen`
+					}
+				>
 					<FocusRing offset={-2}>
 						<button
 							type="button"
@@ -599,9 +670,11 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 								isScreenShareEnabled ? styles.buttonScreenShareOn : styles.buttonScreenShareOff,
 							)}
 							onClick={handleScreenShare}
+							disabled={isStageListenerLocked}
 							onContextMenu={(event) => {
 								if (isMobile) return;
 								event.preventDefault();
+								if (isStageListenerLocked) return;
 								ContextMenuActionCreators.openFromEvent(event, renderScreenShareSettingsMenu);
 							}}
 						>
@@ -610,16 +683,21 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 					</FocusRing>
 				</Tooltip>
 
-				<Tooltip text={t`Screen Share Settings`}>
+				<Tooltip text={isStageListenerLocked ? t`Join stage to use screen share settings` : t`Screen Share Settings`}>
 					<FocusRing offset={-2}>
-						<button type="button" className={styles.settingsButton} onClick={handleScreenShareSettingsClick}>
+						<button
+							type="button"
+							className={styles.settingsButton}
+							onClick={handleScreenShareSettingsClick}
+							disabled={isStageListenerLocked}
+						>
 							<CaretDownIcon weight="bold" className={styles.iconSmall} />
 						</button>
 					</FocusRing>
 				</Tooltip>
 			</div>
 
-			<Tooltip text={t`More Options`}>
+				<Tooltip text={t`More Options`}>
 				<FocusRing offset={-2}>
 					<button
 						type="button"
@@ -630,6 +708,34 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 					</button>
 				</FocusRing>
 			</Tooltip>
+
+			{isBroadcastMode && (!isSuppressedListener || canJoinSpeakers) && (
+				<Tooltip
+					text={
+						isSuppressedListener
+							? canJoinSpeakers
+								? t`Join Stage`
+								: t`You don't have permission to join stage`
+							: t`Leave Stage`
+					}
+				>
+					<FocusRing offset={-2}>
+						<button
+							type="button"
+							className={clsx(styles.button, styles.buttonStageSwitch, isSuppressedListener && styles.buttonMuted)}
+							onClick={isSuppressedListener ? handleMoveToSpeakers : handleMoveToListeners}
+							aria-label={isSuppressedListener ? t`Join Stage` : t`Leave Stage`}
+							disabled={isSuppressedListener && !canJoinSpeakers}
+						>
+							{isSuppressedListener ? (
+								<MicrophoneIcon weight="fill" className={styles.icon} />
+							) : (
+								<UsersIcon weight="fill" className={styles.icon} />
+							)}
+						</button>
+					</FocusRing>
+				</Tooltip>
+			)}
 
 			<Tooltip text={t`Disconnect`}>
 				<FocusRing offset={-2}>

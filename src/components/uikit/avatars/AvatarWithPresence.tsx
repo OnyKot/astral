@@ -34,6 +34,7 @@ interface Props {
 	title?: string;
 	borderClassName?: string;
 	guildId?: string | null;
+	disablePresence?: boolean;
 }
 
 export const AvatarWithPresence: React.FC<Props> = observer(function AvatarWithPresence({
@@ -44,6 +45,7 @@ export const AvatarWithPresence: React.FC<Props> = observer(function AvatarWithP
 	title,
 	borderClassName,
 	guildId,
+	disablePresence,
 }) {
 	return (
 		<div
@@ -57,6 +59,7 @@ export const AvatarWithPresence: React.FC<Props> = observer(function AvatarWithP
 					size={size}
 					guildId={guildId}
 					className={styles.image}
+					disablePresence={disablePresence}
 					disableStatusTooltip={true}
 				/>
 			</div>

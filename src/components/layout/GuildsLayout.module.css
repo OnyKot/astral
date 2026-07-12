@@ -19,20 +19,20 @@
 
 .guildsLayoutContainer {
     --layout-user-area-reserved-height: 0px;
-    --layout-mobile-bottom-nav-reserved-height: 0px;
     --layout-desktop-utility-rail-width: 0px;
     --desktop-dock-composer-lift: 0px;
     --desktop-dock-composer-gap: 10px;
     --desktop-dock-composer-inline-padding: 10px;
     --desktop-dock-gap: 0px;
     --guild-channel-sidebar-width: var(--layout-sidebar-width);
+    --classic-channel-dock-reserve: 0px;
     --guild-shell-top: var(--background-secondary);
     --guild-shell-bottom: var(--background-secondary);
     --guild-shell-card-top: color-mix(in srgb, var(--background-secondary-alt) 90%, var(--background-secondary) 10%);
     --guild-shell-card-bottom: color-mix(in srgb, var(--background-secondary-alt) 90%, var(--background-secondary) 10%);
     --guild-shell-card-hover-top: color-mix(in srgb, var(--background-secondary-alt) 86%, var(--brand-primary) 14%);
     --guild-shell-card-hover-bottom: color-mix(in srgb, var(--background-secondary-alt) 86%, var(--brand-primary) 14%);
-    --guild-shell-stroke: color-mix(in srgb, var(--text-primary) 8%, transparent);
+    --guild-shell-stroke: color-mix(in srgb, var(--text-primary) 4%, transparent);
     position: relative;
     display: grid;
     grid-template-columns: var(--layout-desktop-utility-rail-width) var(--layout-guild-list-width) minmax(0, 1fr);
@@ -53,11 +53,37 @@
 		 */
     linear-gradient( to right, transparent 0%, transparent calc(var(--layout-guild-list-width) - 18px), color-mix(in srgb, var(--guild-shell-bottom) 35%, var(--background-primary) 65%) var(--layout-guild-list-width)), linear-gradient(180deg, var(--guild-shell-top), var(--guild-shell-bottom));
     background: var(--guild-shell-top);
-    border-right: 1px solid var(--guild-shell-stroke);
+    border-right: none;
+    contain: layout paint;
 }
 
 .guildsLayoutContainerDesktopUtilityRail {
     --layout-desktop-utility-rail-width: 4.25rem;
+}
+
+.guildsLayoutContainerDesktopUtilityRailCompactDock {
+    --layout-desktop-utility-rail-width: 0px;
+}
+
+.guildsLayoutContainerClassicCommunities {
+    --layout-desktop-utility-rail-width: 0px;
+    --classic-community-adjacent-surface: var(--background-secondary);
+    --classic-channel-dock-reserve: 4.95rem;
+    grid-template-columns: var(--layout-guild-list-width) minmax(0, 1fr);
+    transition: grid-template-columns var(--motion-dur-medium) var(--motion-ease-smooth);
+}
+
+.guildsLayoutContainerClassicCommunitiesCollapsed {
+    --layout-guild-list-width: 1.05rem;
+    --classic-channel-dock-reserve: 0px;
+}
+
+.guildsLayoutContainerClassicCommunitiesVoiceDock {
+    --classic-channel-dock-reserve: 6.95rem;
+}
+
+.guildsLayoutContainerClassicDm {
+    grid-template-columns: var(--layout-guild-list-width) minmax(0, 1fr);
 }
 
 .guildsLayoutContainerDesktopDock {
@@ -99,20 +125,78 @@
     --layout-user-area-reserved-height: var(--layout-voice-connection-height, 0px);
 }
 
-.guildsLayoutReserveMobileBottomNav {
-    --layout-mobile-bottom-nav-reserved-height: var(--mobile-bottom-nav-height);
-}
-
 .guildsLayoutContainerMobile {
     composes: guildsLayoutContainer;
     grid-template-columns: 1fr;
+}
+
+.mobileFloatingVoiceWindow {
+	position: fixed;
+	right: max(0.75rem, env(safe-area-inset-right, 0px));
+	bottom: max(5.25rem, calc(env(safe-area-inset-bottom, 0px) + 5.25rem));
+	z-index: var(--z-index-elevated-3);
+	width: min(56vw, 15rem);
+	min-width: 10.5rem;
+	max-width: calc(100vw - 1.5rem);
+	border-radius: 1rem;
+	box-shadow: 0 18px 42px rgb(0 0 0 / 0.34);
+	overflow: hidden;
+	pointer-events: auto;
+}
+
+.mobileFloatingVoiceView {
+	--compact-screenshare-width: 13rem;
+	--compact-screenshare-max-width: 13rem;
+	--compact-screenshare-multi-width: 10rem;
+	--compact-screenshare-multi-max-width: 10rem;
+	padding: 0.4rem;
+	border-radius: 1rem;
+	border-color: color-mix(in srgb, var(--text-primary) 14%, transparent);
+	background: color-mix(in srgb, var(--background-floating) 94%, var(--background-primary) 6%);
+	box-shadow: none;
+}
+
+.mobileFloatingVoiceView :global([class*='videoSection']) {
+	min-height: 0;
+}
+
+.mobileFloatingVoiceView :global([class*='videoContainer']) {
+	gap: 0.3rem;
+	padding: 0;
+}
+
+.mobileFloatingVoiceView :global([class*='videoTile']) {
+	border-radius: 0.75rem;
+	box-shadow: none;
+}
+
+.mobileFloatingVoiceOpenButton {
+	position: absolute;
+	top: 0.5rem;
+	right: 0.5rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	border: 1px solid rgb(255 255 255 / 0.16);
+	border-radius: 999px;
+	background: rgb(8 10 18 / 0.64);
+	color: white;
+	backdrop-filter: blur(8px);
+	box-shadow: 0 8px 18px rgb(0 0 0 / 0.28);
+}
+
+.mobileFloatingVoiceOpenIcon {
+	width: 1rem;
+	height: 1rem;
 }
 
 .guildListScrollContainer {
     grid-column: 2;
     grid-row: 1;
     min-height: 0;
-    height: calc(100% - var(--layout-mobile-bottom-nav-reserved-height, 0px));
+    height: 100%;
     width: var(--layout-guild-list-width);
     min-width: 0;
     overflow-y: auto;
@@ -134,8 +218,15 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
+    min-height: 100%;
     min-width: 0;
     padding: 0.125rem 0 0.75rem;
+}
+
+.guildListMobileMenuButton {
+	flex: 0 0 auto;
+	margin-bottom: 0.25rem;
+	background: color-mix(in srgb, var(--background-secondary) 84%, var(--background-primary) 16%);
 }
 
 .guildListScrollContainerDocked {
@@ -166,8 +257,14 @@
     padding: 0.45rem 0.58rem;
     border-radius: 1.15rem;
     background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
-    border: 1px solid var(--guild-shell-stroke);
-    box-shadow: 0 10px 24px rgb(4 7 12 / 0.28), 0 1px 0 color-mix(in srgb, var(--text-primary) 10%, transparent) inset;
+    border: none;
+    box-shadow:
+        0 10px 26px rgb(4 7 12 / 0.2),
+        inset 0 1px 0 color-mix(in srgb, var(--text-primary) 6%, transparent);
+    transition:
+        background-color var(--motion-dur-short) var(--motion-ease-snap),
+        box-shadow var(--motion-dur-short) var(--motion-ease-snap),
+        transform var(--motion-dur-medium) var(--motion-ease-smooth);
 }
 
 .guildListTopSection,
@@ -240,9 +337,13 @@
     flex-shrink: 0;
     border-radius: var(--radius-full);
     background: linear-gradient(180deg, var(--guild-shell-card-top), var(--guild-shell-card-bottom)), var(--guilds-layout-item-bg, var(--guild-list-foreground));
-    border: 1px solid var(--guild-shell-stroke);
+    border: none;
     color: var(--text-primary);
-    transition: border-radius 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out, transform 120ms ease-out;
+    transition:
+        border-radius var(--motion-dur-short) var(--motion-ease-smooth),
+        background-color var(--motion-dur-short) var(--motion-ease-snap),
+        border-color var(--motion-dur-short) var(--motion-ease-snap),
+        transform var(--motion-dur-short) var(--motion-ease-smooth);
     box-shadow: none;
 }
 
@@ -274,7 +375,7 @@
     border-radius: var(--radius-full);
     padding: 1px;
     color: white;
-    transition: transform 120ms ease-out;
+    transition: transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .guildFolderChevronExpanded {
@@ -320,6 +421,14 @@
     grid-column: 2;
 }
 
+.contentContainerClassicCommunities {
+    grid-column: 2;
+}
+
+.contentContainerClassicDm {
+    grid-column: 2;
+}
+
 .contentContainer::before {
     display: none;
 }
@@ -349,6 +458,108 @@
 .guildsLayoutContainerDesktopDockPinned .guildListContentDocked {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
+}
+
+.classicCommunityRail {
+    grid-column: 1;
+    grid-row: 1;
+    position: relative;
+    z-index: var(--z-index-elevated-1);
+    width: var(--layout-guild-list-width);
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--background-secondary) 98%, var(--background-primary) 2%),
+            var(--background-secondary)
+        ),
+        var(--background-secondary);
+    box-shadow: inset -1px 0 color-mix(in srgb, var(--text-primary) 5%, transparent);
+    transition:
+        width var(--motion-dur-medium) var(--motion-ease-smooth),
+        box-shadow var(--motion-dur-medium) var(--motion-ease-smooth),
+        background-color var(--motion-dur-medium) var(--motion-ease-smooth);
+    overflow: visible;
+    isolation: isolate;
+}
+
+.classicCommunityRailEmbedded {
+    grid-column: auto;
+    grid-row: auto;
+    width: 100%;
+}
+
+.classicCommunityRailBody {
+    height: 100%;
+    min-height: 0;
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition:
+        opacity var(--motion-dur-short) var(--motion-ease-smooth),
+        transform var(--motion-dur-medium) var(--motion-ease-smooth);
+}
+
+.classicCommunityRailCollapsed {
+    width: 1.05rem;
+    box-shadow: inset -1px 0 color-mix(in srgb, var(--brand-primary) 14%, transparent);
+}
+
+.classicCommunityRailCollapsed .classicCommunityRailBody {
+    opacity: 0;
+    transform: translate3d(-0.55rem, 0, 0) scale(0.985);
+    pointer-events: none;
+}
+
+.classicCommunityRailToggle {
+    position: absolute;
+    top: calc(50% - 1.55rem);
+    right: -1.18rem;
+    z-index: var(--z-index-elevated-3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.7rem;
+    height: 3.1rem;
+    border: 0;
+    border-radius: 999px;
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(
+                in srgb,
+                var(--classic-community-adjacent-surface, var(--background-secondary)) 92%,
+                var(--background-floating) 8%
+            ),
+            var(--classic-community-adjacent-surface, var(--background-secondary))
+        );
+    color: var(--text-primary);
+    box-shadow:
+        0 10px 22px color-mix(in srgb, var(--background-primary) 26%, transparent),
+        inset 0 1px 0 color-mix(in srgb, var(--text-primary) 6%, transparent);
+    cursor: pointer;
+    transform: translateZ(0);
+    transition:
+        background-color var(--motion-dur-short) var(--motion-ease-smooth),
+        border-color var(--motion-dur-short) var(--motion-ease-smooth),
+        color var(--motion-dur-short) var(--motion-ease-smooth),
+        box-shadow var(--motion-dur-short) var(--motion-ease-smooth);
+    pointer-events: auto;
+}
+
+.classicCommunityRailToggleIcon {
+    width: 0.98rem;
+    height: 0.98rem;
+    flex: 0 0 auto;
+    filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.32));
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .classicCommunityRailToggle:hover {
+        background: color-mix(in srgb, var(--background-floating) 88%, var(--brand-primary) 12%);
+        box-shadow: 0 12px 26px color-mix(in srgb, var(--background-primary) 32%, transparent);
+    }
 }
 
 .nagbarStack {
@@ -397,6 +608,11 @@
     padding: 0.06rem;
 }
 
+.guildListScrollContainerDocked .guildListItemDockDragging {
+    pointer-events: none;
+    transform-origin: center;
+}
+
 .guildListItemNoMargin {
     margin-bottom: 0;
 }
@@ -416,9 +632,16 @@
     font-weight: 600;
     font-size: 1.25rem;
     color: var(--text-primary);
-    border: 1px solid var(--guild-shell-stroke);
-    box-shadow: none;
-    transition: border-radius 70ms ease-out, background-color 70ms ease-out, color 70ms ease-out, transform 70ms ease-out, box-shadow 70ms ease-out, border-color 70ms ease-out;
+    border: none;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 4%, transparent);
+    transition:
+        border-radius var(--motion-dur-short) var(--motion-ease-smooth),
+        background-color var(--motion-dur-short) var(--motion-ease-snap),
+        color var(--motion-dur-short) var(--motion-ease-snap),
+        transform var(--motion-dur-short) var(--motion-ease-smooth),
+        box-shadow var(--motion-dur-short) var(--motion-ease-snap),
+        border-color var(--motion-dur-short) var(--motion-ease-snap),
+        filter var(--motion-dur-short) var(--motion-ease-snap);
     container-type: size;
     overflow: hidden;
 }
@@ -442,14 +665,17 @@
     .guildListItem:hover .guildIcon:not(.guildIconNoImage),
     .guildIcon:hover:not(.guildIconNoImage) {
         border-radius: 30%;
-        transform: none;
+        transform: translateY(-1px) scale(1.035);
         border-color: color-mix(in srgb, var(--brand-primary) 16%, transparent);
+        box-shadow:
+            0 8px 20px rgb(0 0 0 / 0.18),
+            inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
     }
 }
 
 .guildIconNoImage {
     transition-property: background-color, color, border-radius;
-    transition-duration: 70ms;
+    transition-duration: var(--motion-dur-short);
     transition-timing-function: ease-out;
     background: linear-gradient(180deg, var(--guild-shell-card-top), var(--guild-shell-card-bottom)), var(--guilds-layout-item-bg, var(--guild-list-foreground));
     cursor: pointer;
@@ -468,6 +694,10 @@
         border-radius: 30%;
         background: linear-gradient(180deg, color-mix(in srgb, var(--brand-primary) 84%, var(--background-floating) 16%), color-mix(in srgb, var(--brand-primary) 68%, var(--background-primary) 32%)), var(--brand-primary);
         color: white;
+        transform: translateY(-1px) scale(1.035);
+        box-shadow:
+            0 8px 20px rgb(0 0 0 / 0.18),
+            inset 0 1px 0 color-mix(in srgb, white 15%, transparent);
     }
 }
 
@@ -617,14 +847,87 @@
     grid-row: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     padding: 0.85rem 0.4rem 0.7rem;
     background-color: var(--background-secondary-alt);
-    border-right: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+    border-right: none;
     z-index: calc(var(--z-index-elevated-1) + 9);
     position: relative;
     overflow: visible;
+}
+
+.desktopUtilityRailClassic {
+    --desktop-utility-rail-button-size: 2.42rem;
+    --desktop-utility-rail-menu-button-size: 2.08rem;
+    --desktop-utility-rail-min-width: 14.5rem;
+    position: absolute;
+    left: calc(var(--layout-guild-list-width) + 0.62rem);
+    bottom: 0.65rem;
+    grid-column: auto;
+    grid-row: auto;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: flex-end;
+    width: min(
+        clamp(15.6rem, 21vw, 18.2rem),
+        max(var(--desktop-utility-rail-min-width), calc(var(--guild-channel-sidebar-width, var(--layout-sidebar-width)) - 0.9rem))
+    );
+    min-width: 0;
+    height: 3.65rem;
+    padding: 0.42rem;
+    border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
+    border-radius: 1.05rem;
+    background: color-mix(in srgb, var(--background-secondary-alt) 94%, var(--background-primary) 6%);
+    box-shadow:
+        0 14px 32px rgb(5 9 18 / 0.24),
+        inset 0 1px 0 color-mix(in srgb, var(--text-primary) 5%, transparent);
+    transition:
+        height 180ms var(--motion-ease-smooth),
+        width 180ms var(--motion-ease-smooth),
+        background-color 180ms var(--motion-ease-smooth),
+        border-color 180ms var(--motion-ease-smooth);
+}
+
+.desktopUtilityRailClassicOpen {
+    width: min(
+        clamp(15.6rem, 21vw, 18.2rem),
+        max(var(--desktop-utility-rail-min-width), calc(var(--guild-channel-sidebar-width, var(--layout-sidebar-width)) - 0.9rem))
+    );
+}
+
+.desktopUtilityRailClassicVoice {
+    --desktop-utility-rail-button-size: clamp(
+        2.08rem,
+        calc((var(--guild-channel-sidebar-width, var(--layout-sidebar-width)) - 7.4rem) / 5),
+        2.42rem
+    );
+    --desktop-utility-rail-menu-button-size: var(--desktop-utility-rail-button-size);
+    --desktop-utility-rail-min-width: 18.5rem;
+    --voice-dock-control-size: var(--desktop-utility-rail-button-size);
+    --voice-dock-control-gap: 0.28rem;
+    width: min(
+        max(var(--desktop-utility-rail-min-width), calc(var(--guild-channel-sidebar-width, var(--layout-sidebar-width)) + 2.4rem)),
+        calc(100vw - var(--layout-guild-list-width) - 0.75rem)
+    );
+    min-width: 0;
+    height: 6.35rem;
+    padding: 0.56rem 0.62rem;
+}
+
+.desktopUtilityRailNonClassicDock {
+    left: 0.62rem;
+    z-index: calc(var(--z-index-elevated-1) + 11);
+}
+
+.desktopUtilityRailNonClassicVoiceDock {
+    left: calc(var(--layout-desktop-utility-rail-width, 4.25rem) + 0.62rem);
+    width: min(
+        clamp(15.8rem, 22vw, 19.5rem),
+        calc(100vw - var(--layout-desktop-utility-rail-width, 4.25rem) - 0.95rem)
+    );
+    z-index: calc(var(--z-index-elevated-1) + 11);
 }
 
 .desktopUtilityRailTop {
@@ -633,6 +936,11 @@
     justify-content: center;
     width: 100%;
     flex: 1 1 auto;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailTop {
+    justify-content: flex-end;
+    min-width: 0;
 }
 
 .desktopUtilityRailList {
@@ -644,6 +952,14 @@
     width: 100%;
 }
 
+.desktopUtilityRailClassic .desktopUtilityRailList {
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 0.38rem;
+    min-width: 0;
+    width: auto;
+}
+
 .desktopUtilityRailButton {
     position: relative;
     display: flex;
@@ -651,12 +967,41 @@
     justify-content: center;
     height: 2.82rem;
     width: 2.82rem;
-    border-radius: 1rem;
+    border-radius: 0.72rem;
     border: 1px solid transparent;
     background: color-mix(in srgb, var(--background-floating) 8%, transparent);
     color: var(--text-primary-muted);
     cursor: pointer;
-    transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+    transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailButton {
+    width: var(--desktop-utility-rail-button-size);
+    height: var(--desktop-utility-rail-button-size);
+    border-radius: 0.74rem;
+    flex: 0 0 var(--desktop-utility-rail-button-size);
+    min-width: var(--desktop-utility-rail-button-size);
+    min-height: var(--desktop-utility-rail-button-size);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .desktopUtilityRailButton:hover {
+        transform: translateY(-1px) scale(1.035);
+        background: color-mix(in srgb, var(--background-floating) 32%, transparent);
+        border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+        color: var(--text-primary);
+        box-shadow: 0 8px 18px rgb(5 9 18 / 0.18);
+    }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .desktopUtilityRailButton:hover {
+        transform: translateY(-1px) scale(1.035);
+        background: color-mix(in srgb, var(--background-floating) 32%, transparent);
+        border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+        color: var(--text-primary);
+        box-shadow: 0 8px 18px rgb(5 9 18 / 0.18);
+    }
 }
 
 .desktopUtilityRailButtonSelected {
@@ -676,15 +1021,50 @@
     width: 1.34rem;
     flex-shrink: 0;
     transform-origin: center;
-    transition: transform 180ms ease, filter 180ms ease, opacity 180ms ease;
+    transition: transform 160ms ease, opacity 160ms ease;
 }
 
 .desktopUtilityRailButtonDm,
 .desktopUtilityRailButtonNotes,
+.desktopUtilityRailButtonNft,
 .desktopUtilityRailButtonDiscover,
 .desktopUtilityRailButtonAi,
 .desktopUtilityRailButtonSettings {
     position: relative;
+}
+
+.desktopUtilityRailButtonNft {
+    background: color-mix(in srgb, var(--background-floating) 10%, transparent);
+}
+
+.desktopUtilityRailNftIconWrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.48rem;
+    height: 1.48rem;
+}
+
+.desktopUtilityRailIconNftHammer {
+    position: relative;
+    z-index: 2;
+    width: 1.08rem;
+    height: 1.08rem;
+    transform-origin: 78% 84%;
+    animation: none;
+}
+
+.desktopUtilityRailNftAnvil {
+    position: absolute;
+    left: 50%;
+    bottom: 0.14rem;
+    width: 0.72rem;
+    height: 0.18rem;
+    border-radius: 999px;
+    transform: translateX(-50%);
+    background: color-mix(in srgb, var(--text-primary) 78%, var(--background-primary) 22%);
+    opacity: 0.9;
 }
 
 .desktopUtilityRailButtonPlutoniumHover {
@@ -692,8 +1072,51 @@
     isolation: isolate;
 }
 
+.desktopUtilityRailButtonPlutoniumHintVisible {
+    overflow: visible;
+}
+
+.desktopUtilityRailPlutoniumHint {
+    position: absolute;
+    left: calc(100% + 0.45rem);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 0.32rem 0.6rem;
+    border-radius: 0.55rem;
+    background: linear-gradient( 140deg, color-mix(in srgb, #8d63ff 90%, var(--background-floating) 10%), color-mix(in srgb, #6f43de 80%, #4f2aa8 20%));
+    color: rgb(248 242 255);
+    font-size: 0.68rem;
+    font-weight: 650;
+    line-height: 1.15;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 8px 22px color-mix(in srgb, #6f43de 30%, transparent);
+    animation: utilityLifetimeHintSlide 5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    z-index: 8;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailPlutoniumHint {
+    left: 50%;
+    top: auto;
+    bottom: calc(100% + 0.5rem);
+    transform: translateX(-50%);
+}
+
+.desktopUtilityRailSettingsDot {
+    position: absolute;
+    right: 0.48rem;
+    top: 0.46rem;
+    width: 0.46rem;
+    height: 0.46rem;
+    border-radius: 999px;
+    background-color: #f7cd4d;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--background-secondary-alt) 92%, transparent);
+    pointer-events: none;
+}
+
 .desktopUtilityRailIconDm,
 .desktopUtilityRailIconNotes,
+.desktopUtilityRailIconNftHammer,
 .desktopUtilityRailIconDiscover,
 .desktopUtilityRailIconPlutonium,
 .desktopUtilityRailIconAi,
@@ -720,6 +1143,23 @@
     padding-bottom: 0.15rem;
 }
 
+.desktopUtilityRailBottomOpen {
+    z-index: 4;
+}
+
+.desktopUtilityRailBottomVoice {
+    justify-content: center;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailBottom {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+}
+
 .desktopUtilityRailBottom::after {
     content: '';
     position: absolute;
@@ -730,19 +1170,343 @@
     pointer-events: auto;
 }
 
+.desktopUtilityRailClassic .desktopUtilityRailBottom::after {
+    display: none;
+}
+
+.desktopUtilityRailIdentityRow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailIdentityRow {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.42rem;
+    height: 100%;
+    overflow: visible;
+}
+
+.desktopUtilityRailClassicVoice .desktopUtilityRailIdentityRow {
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-content: center;
+    column-gap: 0.42rem;
+    row-gap: 0.38rem;
+}
+
+.desktopUtilityRailAvatarStack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.22rem;
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailAvatarStack {
+    flex: 0 0 var(--desktop-utility-rail-button-size);
+    width: var(--desktop-utility-rail-button-size);
+}
+
+.desktopUtilityRailClassicVoice .desktopUtilityRailAvatarStack {
+    margin-right: 0;
+}
+
+.desktopUtilityRailAudioQuickActions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.16rem;
+    width: var(--desktop-utility-rail-button-size);
+    animation: desktopUtilityRailAudioQuickEnter 220ms cubic-bezier(0.2, 0.92, 0.24, 1.16) both;
+}
+
+.desktopUtilityRailAudioQuickButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 var(--desktop-utility-rail-button-size);
+    width: var(--desktop-utility-rail-button-size);
+    height: var(--desktop-utility-rail-button-size);
+    max-width: var(--desktop-utility-rail-button-size);
+    max-height: var(--desktop-utility-rail-button-size);
+    min-width: 0;
+    padding: 0;
+    border-radius: 0.74rem;
+    border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+    background: color-mix(in srgb, var(--background-floating) 12%, transparent);
+    color: color-mix(in srgb, var(--text-primary) 76%, var(--brand-primary) 24%);
+    cursor: pointer;
+    transition:
+        background-color 150ms var(--motion-ease-smooth),
+        border-color 150ms var(--motion-ease-smooth),
+        color 150ms var(--motion-ease-smooth),
+        transform 150ms var(--motion-ease-smooth);
+}
+
+.desktopUtilityRailClassicVoice .desktopUtilityRailAudioQuickButton {
+    flex-basis: calc(var(--desktop-utility-rail-button-size) + 0.32rem);
+    width: calc(var(--desktop-utility-rail-button-size) + 0.32rem);
+    max-width: calc(var(--desktop-utility-rail-button-size) + 0.32rem);
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    opacity: 0;
+    translate: 0.7rem 0;
+    scale: 0.94;
+    animation: desktopUtilityRailBottomButtonEnter 300ms cubic-bezier(0.2, 0.92, 0.24, 1.16) forwards;
+}
+
+.desktopUtilityRailAudioQuickButtonMute {
+    margin-left: auto;
+    animation-delay: 45ms;
+}
+
+.desktopUtilityRailAudioQuickButtonDeafen {
+    animation-delay: 85ms;
+}
+
+.desktopUtilityRailAudioQuickButton:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+    border-color: transparent;
+    color: var(--text-primary);
+}
+
+.desktopUtilityRailAudioQuickButtonMuted,
+.desktopUtilityRailAudioQuickButtonDeafened {
+    color: color-mix(in srgb, var(--status-danger) 86%, var(--text-primary));
+    background: transparent;
+    border-color: transparent;
+}
+
+.desktopUtilityRailAudioQuickButtonDisabled {
+    cursor: not-allowed;
+    opacity: 0.56;
+}
+
+.desktopUtilityRailAudioQuickIcon {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex: 0 0 auto;
+}
+
+.desktopUtilityRailMiddleSlot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 0;
+    min-width: 0;
+    height: 2.42rem;
+    overflow: hidden;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailMiddleSlot {
+    position: relative;
+    overflow: visible;
+}
+
+.desktopUtilityRailMiddleSlotVoice {
+    position: relative;
+    order: -1;
+    flex: 0 0 100%;
+    align-self: center;
+    justify-content: flex-start;
+    height: calc(var(--desktop-utility-rail-button-size) + 0.18rem);
+    overflow: visible;
+}
+
+.desktopUtilityRailStatusText {
+    display: none;
+    min-width: 0;
+    overflow: hidden;
+    color: color-mix(in srgb, var(--text-secondary) 88%, var(--text-primary));
+    font-size: 0.72rem;
+    font-weight: 620;
+    line-height: 1.15;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailStatusText {
+    display: inline-flex;
+    flex: 1 1 0;
+    align-items: center;
+    gap: 0.28rem;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 2.42rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+        opacity 130ms var(--motion-ease-smooth),
+        transform 130ms var(--motion-ease-smooth);
+}
+
+.desktopUtilityRailClassic button.desktopUtilityRailStatusText {
+    justify-content: flex-start;
+    padding: 0 0.12rem;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+}
+
+.desktopUtilityRailClassic button.desktopUtilityRailStatusText:hover {
+    color: var(--text-primary);
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailStatusTextHidden {
+    opacity: 0;
+    transform: translateY(-2px);
+    pointer-events: none;
+}
+
+.desktopUtilityRailStatusText,
+.desktopUtilityRailStatusText * {
+    min-width: 0;
+}
+
+.desktopUtilityRailStatusText :global(span) {
+    overflow: hidden;
+    max-width: 100%;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.desktopUtilityRailStatusText :global(.placeholderText) {
+    min-width: 0;
+}
+
+.desktopUtilityRailStatusEmoji {
+    display: inline-block !important;
+    flex: 0 0 1.08rem;
+    width: 1.08rem !important;
+    height: 1.08rem !important;
+    min-width: 1.08rem;
+    min-height: 1.08rem;
+    max-width: 1.08rem;
+    max-height: 1.08rem;
+    margin-inline-end: 0.28rem;
+    object-fit: contain;
+    font-size: 1.08rem !important;
+    line-height: 1 !important;
+    vertical-align: -0.18em;
+}
+
+.desktopUtilityRailMoreButton {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.45rem;
+    width: 2.45rem;
+    flex: 0 0 auto;
+    border-radius: 0.74rem;
+    padding: 0;
+    background: color-mix(in srgb, var(--background-floating) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+    color: color-mix(in srgb, var(--text-primary) 72%, var(--brand-primary) 28%);
+    cursor: pointer;
+    transition:
+        background-color 150ms var(--motion-ease-smooth),
+        border-color 150ms var(--motion-ease-smooth),
+        color 150ms var(--motion-ease-smooth),
+        transform 150ms var(--motion-ease-smooth);
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailMoreButton {
+    flex: 0 0 var(--desktop-utility-rail-button-size);
+    width: var(--desktop-utility-rail-button-size);
+    height: var(--desktop-utility-rail-button-size);
+    min-width: var(--desktop-utility-rail-button-size);
+    min-height: var(--desktop-utility-rail-button-size);
+    max-width: var(--desktop-utility-rail-button-size);
+    max-height: var(--desktop-utility-rail-button-size);
+    margin-left: auto;
+}
+
+.desktopUtilityRailClassicVoice .desktopUtilityRailMoreButton {
+    margin-left: 0;
+    margin-right: 0;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    opacity: 0;
+    translate: 0.7rem 0;
+    scale: 0.94;
+    animation: desktopUtilityRailBottomButtonEnter 300ms cubic-bezier(0.2, 0.92, 0.24, 1.16) 125ms forwards;
+}
+
+.desktopUtilityRailMoreButton:hover,
+.desktopUtilityRailMoreButtonOpen {
+    background: color-mix(in srgb, var(--brand-primary) 14%, var(--background-floating) 86%);
+    border-color: color-mix(in srgb, var(--brand-primary) 24%, transparent);
+    color: var(--text-primary);
+}
+
+.desktopUtilityRailClassicVoice .desktopUtilityRailMoreButton:hover,
+.desktopUtilityRailClassicVoice .desktopUtilityRailMoreButtonOpen {
+    background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+    border-color: transparent;
+}
+
+.desktopUtilityRailMoreButtonOpen {
+    transform: none;
+}
+
+.desktopUtilityRailMoreButtonVoice::after {
+    content: '';
+    position: absolute;
+    right: 0.42rem;
+    top: 0.42rem;
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 999px;
+    background: var(--status-online);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--background-secondary-alt) 90%, transparent);
+}
+
+.desktopUtilityRailMoreIcon {
+    width: 1.24rem;
+    height: 1.24rem;
+}
+
 .desktopUtilityRailVoiceButton {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 2.45rem;
     width: 2.45rem;
-    border-radius: 0.95rem;
+    border-radius: 0.68rem;
     padding: 0;
     background: color-mix(in srgb, var(--background-floating) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
     color: color-mix(in srgb, var(--text-primary) 76%, var(--brand-primary) 24%);
     cursor: pointer;
     transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailVoiceButton,
+.desktopUtilityRailClassic .desktopUtilityRailVoiceHandle {
+    flex: 0 0 var(--desktop-utility-rail-button-size);
+    width: var(--desktop-utility-rail-button-size);
+    height: var(--desktop-utility-rail-button-size);
+    min-width: var(--desktop-utility-rail-button-size);
+    min-height: var(--desktop-utility-rail-button-size);
+    max-width: var(--desktop-utility-rail-button-size);
+    max-height: var(--desktop-utility-rail-button-size);
+    border-radius: 0.74rem;
 }
 
 .desktopUtilityRailVoiceButton:hover {
@@ -761,6 +1525,246 @@
 .desktopUtilityRailVoiceButtonIcon {
     height: 1.08rem;
     width: 1.08rem;
+}
+
+.desktopUtilityRailMenuGrid {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    min-width: 0;
+    z-index: 6;
+    animation: desktopUtilityRailInlineEnter 150ms var(--motion-ease-smooth) both;
+}
+
+.desktopUtilityRailMenuGrid > * {
+    flex: 0 0 auto;
+}
+
+.desktopUtilityRailInlineVoice {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    animation: desktopUtilityRailInlineEnter 150ms var(--motion-ease-smooth) both;
+}
+
+.desktopUtilityRailUserPanelVoice {
+    min-width: min(18.5rem, calc(100vw - 6rem));
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailInlineVoice {
+    height: 100%;
+    max-width: 100%;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailMenuGrid {
+    gap: 0.24rem;
+    width: 100%;
+    max-width: 100%;
+    justify-content: flex-end;
+}
+
+.desktopUtilityRailMenuGridVoice {
+    inset: auto 0 calc(100% + 0.42rem) auto;
+    width: max-content;
+    max-width: max-content;
+    padding: 0.34rem;
+    border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
+    border-radius: 0.88rem;
+    background: color-mix(in srgb, var(--background-secondary-alt) 96%, var(--background-primary) 4%);
+    box-shadow: 0 16px 34px rgb(5 9 18 / 0.28);
+    bottom: calc(100% + 0.42rem);
+    justify-content: center;
+    transform-origin: calc(100% - 1.2rem) calc(100% + 0.86rem);
+    animation: desktopUtilityRailMenuFromMore 240ms cubic-bezier(0.2, 0.92, 0.24, 1.18) both;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailMenuGridVoice {
+    width: max-content;
+    max-width: max-content;
+    justify-content: flex-end;
+}
+
+.desktopUtilityRailMenuPing {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+    height: var(--desktop-utility-rail-button-size);
+    min-width: 0;
+    max-width: 100%;
+    padding: 0 0.62rem;
+    border-radius: 0.74rem;
+    border: 1px solid transparent;
+    background: transparent;
+    color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-primary));
+    font-size: 0.7rem;
+    font-weight: 720;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+        background-color 150ms var(--motion-ease-smooth),
+        border-color 150ms var(--motion-ease-smooth),
+        color 150ms var(--motion-ease-smooth),
+        transform 150ms var(--motion-ease-smooth);
+}
+
+.desktopUtilityRailMenuPing:hover {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+    border-color: transparent;
+    color: var(--text-primary);
+}
+
+.desktopUtilityRailMenuGridVoice > * {
+    opacity: 0;
+    transform: translate(1.25rem, 0.86rem) scale(0.7);
+    transform-origin: 100% 100%;
+    animation: desktopUtilityRailMenuButtonFromMore 280ms cubic-bezier(0.2, 0.92, 0.24, 1.18) forwards;
+}
+
+.desktopUtilityRailMenuGridVoice > *:nth-child(1) {
+    animation-delay: 28ms;
+}
+
+.desktopUtilityRailMenuGridVoice > *:nth-child(2) {
+    animation-delay: 58ms;
+}
+
+.desktopUtilityRailMenuGridVoice > *:nth-child(3) {
+    animation-delay: 88ms;
+}
+
+.desktopUtilityRailMenuGridVoice > *:nth-child(4) {
+    animation-delay: 118ms;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailMenuGrid .desktopUtilityRailButton {
+    flex: 0 0 var(--desktop-utility-rail-menu-button-size);
+    width: var(--desktop-utility-rail-menu-button-size);
+    height: var(--desktop-utility-rail-menu-button-size);
+    min-width: var(--desktop-utility-rail-menu-button-size);
+    min-height: var(--desktop-utility-rail-menu-button-size);
+    max-width: var(--desktop-utility-rail-menu-button-size);
+    max-height: var(--desktop-utility-rail-menu-button-size);
+    border-radius: 0.7rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .desktopUtilityRailClassic .desktopUtilityRailMenuGrid .desktopUtilityRailButton:hover {
+        transform: none;
+        box-shadow: none;
+    }
+}
+
+@keyframes desktopUtilityRailInlineEnter {
+    from {
+        opacity: 0;
+        transform: translateY(3px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes desktopUtilityRailMenuEnter {
+    from {
+        opacity: 0;
+        transform: translateY(4px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes desktopUtilityRailMenuFromMore {
+    from {
+        opacity: 0;
+        transform: translateX(1.25rem) translateY(0.8rem) scale(0.72);
+        filter: blur(2px);
+    }
+
+    65% {
+        opacity: 1;
+        transform: translateX(-0.08rem) translateY(-0.04rem) scale(1.025);
+        filter: blur(0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0) translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes desktopUtilityRailMenuButtonFromMore {
+    from {
+        opacity: 0;
+        transform: translate(1.25rem, 0.86rem) scale(0.7);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translate(-0.05rem, -0.03rem) scale(1.04);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(0) scale(1);
+    }
+}
+
+@keyframes desktopUtilityRailAudioQuickEnter {
+    from {
+        opacity: 0;
+        transform: translateY(-0.18rem) scale(0.92);
+    }
+
+    65% {
+        opacity: 1;
+        transform: translateY(0.03rem) scale(1.025);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes desktopUtilityRailBottomButtonEnter {
+    from {
+        opacity: 0;
+        translate: 0.7rem 0;
+        scale: 0.94;
+    }
+
+    70% {
+        opacity: 1;
+        translate: -0.04rem 0;
+        scale: 1.025;
+    }
+
+    to {
+        opacity: 1;
+        translate: 0 0;
+        scale: 1;
+    }
 }
 
 @keyframes desktopUtilityRailVoiceButtonPulse {
@@ -782,7 +1786,7 @@
     justify-content: center;
     height: 2.82rem;
     width: 2.82rem;
-    border-radius: 1.05rem;
+    border-radius: 0.72rem;
     padding: 0;
     background: color-mix(in srgb, var(--background-floating) 8%, transparent);
     border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
@@ -796,7 +1800,30 @@
     display: block;
     height: 2.2rem;
     width: 2.2rem;
-    border-radius: 0.84rem;
+    border-radius: 50%;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailAvatar {
+    flex: 0 0 min(2rem, calc(var(--desktop-utility-rail-button-size) - 0.04rem));
+    width: min(2rem, calc(var(--desktop-utility-rail-button-size) - 0.04rem)) !important;
+    height: min(2rem, calc(var(--desktop-utility-rail-button-size) - 0.04rem)) !important;
+    min-width: min(2rem, calc(var(--desktop-utility-rail-button-size) - 0.04rem));
+    min-height: min(2rem, calc(var(--desktop-utility-rail-button-size) - 0.04rem));
+    max-width: min(2rem, calc(var(--desktop-utility-rail-button-size) - 0.04rem));
+    max-height: min(2rem, calc(var(--desktop-utility-rail-button-size) - 0.04rem));
+    contain: layout size;
+    overflow: visible;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailAvatar,
+.desktopUtilityRailClassic .desktopUtilityRailAvatar > div {
+    transform: none !important;
+    transition: none;
+}
+
+.desktopUtilityRailClassic .desktopUtilityRailAvatar:hover,
+.desktopUtilityRailClassic .desktopUtilityRailAvatar:focus-visible {
+    transform: none;
 }
 
 .desktopUtilityRailUserPanel {
@@ -805,14 +1832,10 @@
     flex-direction: column;
     gap: 0.16rem;
     padding: 0.24rem;
-    border-radius: 1.6rem;
+    border-radius: 0.75rem;
     border: 1px solid var(--guild-shell-stroke);
-    background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%),
-        color-mix(in srgb, var(--background-secondary) 84%, var(--background-primary) 16%)
-    );
-    box-shadow: 0 16px 34px rgb(5 9 18 / 0.24);
+    background: color-mix(in srgb, var(--background-secondary) 94%, var(--background-primary) 6%);
+    box-shadow: 0 16px 34px rgb(5 9 18 / 0.3);
     overflow: visible;
     opacity: 0;
     transform: translateY(10px) scale(0.96);
@@ -841,7 +1864,7 @@
 
 .desktopUtilityRailUserPanel[data-density='compact'] {
     padding: 0.2rem;
-    border-radius: 1.45rem;
+    border-radius: 0.7rem;
 }
 
 .desktopUtilityRailUserPanel[data-density='compact'] .desktopUtilityRailUserPanelBody {
@@ -857,7 +1880,7 @@
 }
 
 .desktopUtilityRailUserPanelPinned {
-    filter: drop-shadow(0 18px 40px rgb(5 9 18 / 0.35));
+    box-shadow: 0 12px 28px rgb(5 9 18 / 0.2);
 }
 
 .desktopUtilityRailUserPanelDragging {
@@ -920,7 +1943,7 @@
     height: 1.7rem;
     padding: 0;
     border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
-    border-radius: 0.65rem;
+    border-radius: 50%;
     background: color-mix(in srgb, var(--background-floating) 14%, transparent);
     color: var(--text-primary-muted);
     cursor: pointer;
@@ -1102,6 +2125,20 @@
     }
 }
 
+@keyframes utilityNftHammerTap {
+    0%,
+    62%,
+    100% {
+        transform: rotate(0deg) translate(0, 0);
+    }
+    72% {
+        transform: rotate(-18deg) translate(-0.5px, 0.6px);
+    }
+    82% {
+        transform: rotate(2deg) translate(0, 0);
+    }
+}
+
 @keyframes utilityCompassSpin {
     from {
         transform: rotate(0deg);
@@ -1137,6 +2174,25 @@
     }
 }
 
+@keyframes utilityLifetimeHintSlide {
+    0% {
+        opacity: 0;
+        transform: translate3d(-10px, -50%, 0);
+    }
+    10% {
+        opacity: 1;
+        transform: translate3d(0, -50%, 0);
+    }
+    84% {
+        opacity: 1;
+        transform: translate3d(0, -50%, 0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate3d(-8px, -50%, 0);
+    }
+}
+
 @keyframes utilityAiTalk {
     0%,
     100% {
@@ -1166,7 +2222,6 @@
     .desktopUtilityRailButton:hover {
         background: color-mix(in srgb, var(--background-floating) 16%, transparent);
         color: var(--text-primary);
-        border-color: color-mix(in srgb, var(--brand-primary) 16%, transparent);
         transform: translateY(-1px);
     }
     .desktopUtilityRailButtonPlutonium:hover {
@@ -1177,12 +2232,8 @@
         background: color-mix(in srgb, var(--background-floating) 16%, transparent);
         border-color: color-mix(in srgb, var(--brand-primary) 18%, transparent);
         color: var(--text-primary);
-        transform: translateY(-1px);
+        transform: none;
     }
-    .desktopUtilityRailUserPanel:hover {
-        border-color: color-mix(in srgb, var(--brand-primary) 18%, transparent);
-    }
-
     .desktopUtilityRailButtonDm::after {
         content: '';
         position: absolute;
@@ -1200,8 +2251,8 @@
         animation: utilityTypingDots 1s steps(1, end) infinite;
     }
 
-    .desktopUtilityRailButtonNotes:hover .desktopUtilityRailIconNotes {
-        animation: utilityPencilWrite 920ms ease-in-out infinite alternate;
+    .desktopUtilityRailButtonNft:hover .desktopUtilityRailIconNftHammer {
+        animation: utilityNftHammerTap 1.05s cubic-bezier(0.22, 1, 0.36, 1) infinite;
     }
 
     .desktopUtilityRailButtonDiscover:hover .desktopUtilityRailIconDiscover {
@@ -1256,8 +2307,30 @@
         animation: none !important;
         opacity: 0 !important;
     }
+    .desktopUtilityRailMenuGridVoice,
+    .desktopUtilityRailMenuGridVoice > * {
+        animation: none !important;
+        opacity: 1 !important;
+        filter: none !important;
+    }
+    .desktopUtilityRailMenuGridVoice {
+        transform: translateX(-50%) !important;
+    }
+    .desktopUtilityRailMenuGridVoice > * {
+        transform: none !important;
+    }
+    .desktopUtilityRailAudioQuickActions,
+    .desktopUtilityRailClassicVoice .desktopUtilityRailAudioQuickButton,
+    .desktopUtilityRailClassicVoice .desktopUtilityRailMoreButton {
+        animation: none !important;
+        opacity: 1 !important;
+        translate: 0 0 !important;
+        scale: 1 !important;
+        transform: none !important;
+    }
     .desktopUtilityRailIconDm,
     .desktopUtilityRailIconNotes,
+    .desktopUtilityRailIconNftHammer,
     .desktopUtilityRailIconDiscover,
     .desktopUtilityRailIconPlutonium,
     .desktopUtilityRailIconAi,
@@ -1266,6 +2339,10 @@
         animation: none !important;
         transform: none !important;
         filter: none !important;
+    }
+    .desktopUtilityRailPlutoniumHint {
+        animation: none !important;
+        opacity: 1;
     }
 }
 
@@ -1285,6 +2362,28 @@
     align-items: center;
     gap: 0.35rem;
     flex: 0 0 auto;
+}
+
+.guildListUtilitySection {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-1);
+    width: 100%;
+    margin-top: auto;
+    padding-top: 0.8rem;
+    padding-bottom: 0.1rem;
+    background:
+        linear-gradient(
+            180deg,
+            transparent,
+            color-mix(in srgb, var(--background-secondary) 82%, transparent) 18%,
+            var(--background-secondary) 44%
+        );
 }
 
 .guildDockRevealZone {
@@ -1308,18 +2407,17 @@
     height: 1.05rem;
     width: 1.9rem;
     border-radius: 999px;
-    border: 1px solid var(--guild-shell-stroke);
+    border: none;
     background: color-mix(in srgb, var(--background-tertiary) 88%, var(--background-secondary) 12%);
     color: var(--text-primary-muted);
     cursor: pointer;
     pointer-events: auto;
-    transition: background-color var(--motion-dur-short) var(--motion-ease-smooth), border-color var(--motion-dur-short) var(--motion-ease-smooth), color var(--motion-dur-short) var(--motion-ease-smooth);
+    transition: background-color var(--motion-dur-short) var(--motion-ease-smooth), color var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 @media (hover: hover) and (pointer: fine) {
     .guildDockToggleButton:hover {
         background: color-mix(in srgb, var(--background-secondary) 86%, var(--brand-primary) 14%);
-        border-color: color-mix(in srgb, var(--brand-primary) 22%, transparent);
         color: var(--text-primary);
     }
 }
@@ -1376,7 +2474,7 @@
     .desktopUtilityRailAvatar {
         width: 2rem;
         height: 2rem;
-        border-radius: 0.72rem;
+        border-radius: 50%;
     }
     .desktopUtilityRailUserPanel {
         width: min(18.75rem, 32vw);
@@ -1443,6 +2541,30 @@
     align-items: stretch;
 }
 
+.dmUtilityShortcutButton {
+    composes: dmListItem;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+.dmUtilityShortcutIcon {
+    composes: guildIcon;
+    border-radius: var(--radius-full);
+    transition: border-radius var(--motion-dur-short) var(--motion-ease-smooth);
+}
+
+.dmUtilityShortcutIconSelected {
+    background-color: var(--brand-primary);
+    color: white;
+    border-radius: 30%;
+}
+
+.dmUtilityShortcutGlyph {
+    width: 1.3rem;
+    height: 1.3rem;
+}
+
 .dmIcon {
     composes: guildIcon;
 }
@@ -1492,7 +2614,7 @@
     background: linear-gradient(180deg, var(--guild-shell-card-top), var(--guild-shell-card-bottom));
     color: var(--text-primary);
     transition-property: border-radius, border-color;
-    transition-duration: 70ms;
+    transition-duration: var(--motion-dur-short);
     transition-timing-function: ease-out;
     box-shadow: none;
 }
@@ -1571,9 +2693,15 @@
 }
 
 .plutoniumPlanetIcon {
-    animation: plutoniumFloat 5.2s ease-in-out infinite, plutoniumShade 3.8s ease-in-out infinite;
+    animation: none;
     transform-origin: 50% 50%;
-    will-change: transform, filter;
+    will-change: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .plutoniumButton:hover .plutoniumPlanetIcon {
+        animation: plutoniumFloat 3.2s ease-in-out infinite;
+    }
 }
 
 @keyframes plutoniumFloat {
@@ -1636,7 +2764,7 @@
     color: var(--text-primary);
     transition-property: color, background-color;
     transition-timing-function: ease-out;
-    transition-duration: 150ms;
+    transition-duration: var(--motion-dur-short);
 }
 
 @media (hover: hover) and (pointer: fine) {

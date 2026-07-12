@@ -20,7 +20,7 @@
 import type {MessageDescriptor} from '@lingui/core';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import * as UnsavedChangesActionCreators from '~/actions/UnsavedChangesActionCreators';
-import {ChannelTypes} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType} from '~/Constants';
 import {
 	type ChannelSettingsTab,
 	type ChannelSettingsTabType,
@@ -50,7 +50,7 @@ export const getAvailableTabs = (
 		filteredTabs = filteredTabs.filter((tab) => tab.type === 'overview' || tab.type === 'permissions');
 	}
 
-	if (channel.type === ChannelTypes.GUILD_VOICE) {
+	if (isGuildRtcChannelType(channel.type)) {
 		filteredTabs = filteredTabs.filter((tab) => tab.type !== 'webhooks');
 	}
 

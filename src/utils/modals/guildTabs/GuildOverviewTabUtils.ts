@@ -74,6 +74,10 @@ export interface SelectOption {
 	label: string;
 }
 
+type GuildUpdatePayload = {
+	-readonly [K in keyof Parameters<typeof GuildActionCreators.update>[1]]: Parameters<typeof GuildActionCreators.update>[1][K];
+};
+
 export const useGuildOverviewData = (guildId: string) => {
 	const guild = GuildStore.getGuild(guildId);
 	const channels = ChannelStore.getGuildChannels(guildId);
@@ -194,19 +198,23 @@ export const useGuildOverviewData = (guildId: string) => {
 				systemChannelFlags &= ~SystemChannelFlags.SUPPRESS_JOIN_NOTIFICATIONS;
 			}
 
-			await GuildActionCreators.update(guild.id, {
-				icon: data.icon,
-				banner: data.banner,
-				splash: data.splash,
+			const guildPatch: GuildUpdatePayload = {
 				splash_card_alignment: data.splash_card_alignment,
-				embed_splash: data.embed_splash,
 				name: data.name,
 				afk_channel_id: data.afk_channel_id,
 				afk_timeout: data.afk_timeout,
 				system_channel_id: data.system_channel_id,
 				system_channel_flags: systemChannelFlags,
 				default_message_notifications: data.default_message_notifications,
-			});
+			};
+
+			if (previewIconUrl || hasClearedIcon) guildPatch.icon = data.icon ?? null;
+			if (previewBannerUrl || hasClearedBanner) guildPatch.banner = data.banner ?? null;
+			if (previewSplashUrl || hasClearedSplash) guildPatch.splash = data.splash ?? null;
+			if (previewEmbedSplashUrl || hasClearedEmbedSplash) guildPatch.embed_splash = data.embed_splash ?? null;
+
+			const updatedGuild = await GuildActionCreators.update(guild.id, guildPatch);
+			GuildStore.handleGuildUpdate(updatedGuild);
 
 			const currentlyEnabled = guild.features.has(GuildFeatures.TEXT_CHANNEL_FLEXIBLE_NAMES);
 			if (data.text_channel_flexible_names !== currentlyEnabled) {
@@ -228,7 +236,13 @@ export const useGuildOverviewData = (guildId: string) => {
 				await GuildActionCreators.toggleDisallowUnclaimedAccounts(guild.id, data.disallow_unclaimed_accounts);
 			}
 
-			formInstance.reset(data);
+			formInstance.reset({
+				...data,
+				icon: undefined,
+				banner: undefined,
+				splash: undefined,
+				embed_splash: undefined,
+			});
 			setPreviewIconUrl(null);
 			setHasClearedIcon(false);
 			setPreviewBannerUrl(null);
@@ -244,6 +258,14 @@ export const useGuildOverviewData = (guildId: string) => {
 		},
 		[
 			guild,
+			hasClearedIcon,
+			hasClearedBanner,
+			hasClearedSplash,
+			hasClearedEmbedSplash,
+			previewIconUrl,
+			previewBannerUrl,
+			previewSplashUrl,
+			previewEmbedSplashUrl,
 			setPreviewIconUrl,
 			setHasClearedIcon,
 			setPreviewBannerUrl,

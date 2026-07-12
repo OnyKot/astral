@@ -20,34 +20,61 @@
 .container {
 	display: flex;
 	flex-direction: column;
-	gap: var(--spacing-6);
+	gap: var(--spacing-5);
 }
 
 .header {
 	display: flex;
 	flex-direction: column;
 	gap: var(--spacing-2);
+	padding: 0 0.125rem;
 }
 
 .title {
-	font-size: 1.25rem;
+	font-size: 1.28rem;
 	font-weight: 600;
 	color: var(--text-primary);
+	line-height: 1.22;
 }
 
 .description {
 	color: var(--text-primary-muted);
 	font-size: 0.875rem;
+	line-height: 1.5;
 }
 
 .content {
 	display: flex;
 	flex-direction: column;
-	gap: var(--spacing-6);
+	gap: var(--spacing-4);
 }
 
 .subsection {
 	display: flex;
 	flex-direction: column;
 	gap: var(--spacing-4);
+}
+
+@media (max-width: 380px) {
+	.container,
+	.content {
+		gap: var(--spacing-4);
+		min-width: 0;
+	}
+
+	.header,
+	.subsection {
+		min-width: 0;
+	}
+
+	.title {
+		font-size: 1rem;
+		overflow-wrap: anywhere;
+	}
+
+	.description {
+		font-size: 0.78rem;
+		line-height: 1.35;
+		overflow-wrap: anywhere;
+	}
 }

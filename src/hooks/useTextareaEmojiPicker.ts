@@ -30,9 +30,10 @@ interface UseTextareaEmojiPickerReturn {
 interface UseTextareaEmojiPickerParams {
 	setValue: React.Dispatch<React.SetStateAction<string>>;
 	textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-	insertSegment: (
+	replaceWithSegment: (
 		currentText: string,
-		insertPosition: number,
+		start: number,
+		end: number,
 		displayText: string,
 		actualText: string,
 		type: MentionSegment['type'],
@@ -46,7 +47,7 @@ interface UseTextareaEmojiPickerParams {
 export function useTextareaEmojiPicker({
 	setValue,
 	textareaRef,
-	insertSegment,
+	replaceWithSegment,
 	previousValueRef,
 	allowUnicodeEmojiSelection = true,
 }: UseTextareaEmojiPickerParams): UseTextareaEmojiPickerReturn {
@@ -59,6 +60,11 @@ export function useTextareaEmojiPicker({
 				return;
 			}
 
+			let nextCursorPosition: number | null = null;
+			const textarea = textareaRef.current;
+			const selectionStart = textarea?.selectionStart ?? previousValueRef.current.length;
+			const selectionEnd = textarea?.selectionEnd ?? selectionStart;
+
 			if (!isCustomEmoji) {
 				const unicodeText = emoji.surrogates ?? '';
 				if (!unicodeText) {
@@ -66,15 +72,34 @@ export function useTextareaEmojiPicker({
 				}
 
 				setValue((prevValue) => {
-					const needsSpace = prevValue.length > 0 && !prevValue.endsWith(' ');
-					const prefix = prevValue.length === 0 ? '' : needsSpace ? ' ' : '';
-					const newText = `${prevValue}${prefix}${unicodeText}`;
+					const start = Math.max(0, Math.min(prevValue.length, selectionStart));
+					const end = Math.max(start, Math.min(prevValue.length, selectionEnd));
+					const displayText = getEmojiDisplayText(emoji);
+					const {newText} = replaceWithSegment(
+						prevValue,
+						start,
+						end,
+						displayText,
+						unicodeText,
+						'emoji',
+						emoji.uniqueName || emoji.name || unicodeText,
+					);
+					nextCursorPosition = start + displayText.length;
 					previousValueRef.current = newText;
 					return newText;
 				});
 				if (!isMobileLayoutEnabled) {
 					textareaRef.current?.focus();
 				}
+				window.requestAnimationFrame(() => {
+					const node = textareaRef.current;
+					if (!node) {
+						return;
+					}
+
+					const cursorPosition = nextCursorPosition ?? node.value.length;
+					node.setSelectionRange(cursorPosition, cursorPosition);
+				});
 				return;
 			}
 
@@ -82,27 +107,43 @@ export function useTextareaEmojiPicker({
 			const displayText = getEmojiDisplayText(emoji);
 
 			setValue((prevValue) => {
-				const needsSpace = prevValue.length > 0 && !prevValue.endsWith(' ');
-				const prefix = prevValue.length === 0 ? '' : needsSpace ? ' ' : '';
-				const insertPosition = prevValue.length + prefix.length;
-
-				const {newText} = insertSegment(
-					prevValue + prefix,
-					insertPosition,
+				const start = Math.max(0, Math.min(prevValue.length, selectionStart));
+				const end = Math.max(start, Math.min(prevValue.length, selectionEnd));
+				const {newText} = replaceWithSegment(
+					prevValue,
+					start,
+					end,
 					displayText,
 					actualText,
 					'emoji',
 					emoji.id ?? emoji.uniqueName,
 				);
 
+				nextCursorPosition = start + displayText.length;
 				previousValueRef.current = newText;
 				return newText;
 			});
 			if (!isMobileLayoutEnabled) {
 				textareaRef.current?.focus();
 			}
+			window.requestAnimationFrame(() => {
+				const node = textareaRef.current;
+				if (!node) {
+					return;
+				}
+
+				const cursorPosition = nextCursorPosition ?? node.value.length;
+				node.setSelectionRange(cursorPosition, cursorPosition);
+			});
 		},
-		[allowUnicodeEmojiSelection, insertSegment, setValue, textareaRef, previousValueRef, isMobileLayoutEnabled],
+		[
+			allowUnicodeEmojiSelection,
+			replaceWithSegment,
+			setValue,
+			textareaRef,
+			previousValueRef,
+			isMobileLayoutEnabled,
+		],
 	);
 
 	return {

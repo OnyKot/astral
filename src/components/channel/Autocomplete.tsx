@@ -76,7 +76,6 @@ export const COMMANDS: Array<Command> = [
 	{type: 'action', name: '/sticker'},
 	{type: 'action', name: '/gif'},
 	{type: 'action', name: '/tenor'},
-	{type: 'action', name: '/ai'},
 ];
 
 export type AutocompleteOption =

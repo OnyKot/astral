@@ -199,6 +199,15 @@ class MessageQueue extends Queue<MessageQueuePayload, HttpResponse<Message> | un
 				throw new Error('Forced message send failure');
 			}
 
+			// Fast-fail while offline so users see an immediate send error
+			// instead of waiting for network timeout.
+			if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+				const offlineError = {status: 0, message: 'Network offline'} as HttpError;
+				this.handleSendError(channelId, nonce, offlineError, i18n, payload.hasAttachments);
+				completed(null, undefined, offlineError);
+				return;
+			}
+
 			let attachments: Array<ApiAttachmentMetadata> | undefined;
 			let files: Array<File> | undefined;
 

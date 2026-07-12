@@ -41,8 +41,9 @@
 	cursor: pointer;
 	padding: 0;
 	transition:
-		background-color 0.1s ease,
-		border-color 0.1s ease;
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		border-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 	color: var(--text-tertiary);
 }
 
@@ -53,6 +54,7 @@
 .reactionButton:hover {
 	background-color: var(--background-modifier-hover);
 	border-color: var(--background-modifier-accent);
+	transform: translateY(-1px);
 }
 
 .reactionMe .reactionButton {
@@ -159,14 +161,32 @@ span.emoji {
 	color: var(--text-tertiary);
 	cursor: pointer;
 	transition:
-		background-color 0.1s ease,
-		color 0.1s ease;
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .addReactionButton:hover,
 .addReactionButtonActive {
 	background-color: var(--background-modifier-hover);
 	color: var(--text-primary);
+	transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.reactionButton,
+	.addReactionButton {
+		transition:
+			background-color var(--motion-dur-short) var(--motion-ease-snap),
+			border-color var(--motion-dur-short) var(--motion-ease-snap),
+			color var(--motion-dur-short) var(--motion-ease-snap);
+	}
+
+	.reactionButton:hover,
+	.addReactionButton:hover,
+	.addReactionButtonActive {
+		transform: none;
+	}
 }
 
 @keyframes reactionAddFeedback {

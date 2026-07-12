@@ -23,16 +23,30 @@ import {makeAutoObservable, runInAction} from 'mobx';
 import type {Subscription} from 'rxjs';
 import {timer} from 'rxjs';
 import {Logger} from '~/lib/Logger';
+import * as ToastActionCreators from '~/actions/ToastActionCreators';
 import RuntimeConfigStore from '~/stores/RuntimeConfigStore';
 import {normalizeHostname} from '~/utils/FirstPartyHosts';
+import {isNativeMobile} from '~/utils/NativeUtils';
 import {VoiceConnectionThrottle} from './VoiceConnectionThrottle';
 import {VoiceReconnectManager} from './VoiceReconnectManager';
 
 const logger = new Logger('VoiceConnectionManager');
 
-const VOICE_SERVER_TIMEOUT_MS = 5000;
+const VOICE_SERVER_TIMEOUT_MS = 18000;
 const LEGACY_VOICE_HOST_SUFFIX = '.asrtal.ru';
 const CANONICAL_VOICE_HOST_SUFFIX = '.astraof.com';
+
+export interface IceServer {
+	urls: Array<string> | string;
+	username?: string;
+	credential?: string;
+}
+
+type NormalizedIceServer = {
+	urls: Array<string>;
+	username?: string;
+	credential?: string;
+};
 
 export interface VoiceServerUpdateData {
 	token: string;
@@ -40,6 +54,7 @@ export interface VoiceServerUpdateData {
 	connection_id: string;
 	guild_id?: string;
 	channel_id?: string;
+	ice_servers?: Array<IceServer>;
 }
 
 export interface VoiceConnectionState {
@@ -52,6 +67,28 @@ export interface VoiceConnectionState {
 	voiceServerEndpoint: string | null;
 	connectionId: string | null;
 }
+
+const sanitizeIceServers = (servers?: Array<IceServer>): Array<NormalizedIceServer> | undefined => {
+	if (!Array.isArray(servers)) return undefined;
+
+	const normalized = servers
+		.map((server) => {
+			const rawUrls = typeof server.urls === 'string' ? [server.urls] : server.urls;
+			const urls = Array.isArray(rawUrls)
+				? rawUrls.map((url) => (typeof url === 'string' ? url.trim() : '')).filter(Boolean)
+				: [];
+			if (urls.length === 0) return null;
+
+			return {
+				urls,
+				...(typeof server.username === 'string' && server.username.length > 0 ? {username: server.username} : {}),
+				...(typeof server.credential === 'string' && server.credential.length > 0 ? {credential: server.credential} : {}),
+			};
+		})
+		.filter((server): server is NormalizedIceServer => server !== null);
+
+	return normalized.length > 0 ? normalized : undefined;
+};
 
 const initialConnectionState: VoiceConnectionState = {
 	room: null,
@@ -68,6 +105,7 @@ class VoiceConnectionManager {
 	connectionState: VoiceConnectionState = initialConnectionState;
 	private throttle = new VoiceConnectionThrottle();
 	private reconnect = new VoiceReconnectManager();
+	private autoReconnectHandler: (() => void) | null = null;
 	private voiceServerTimeoutSub: Subscription | null = null;
 	private isLocalDisconnecting = false;
 
@@ -119,13 +157,31 @@ class VoiceConnectionManager {
 		return this.isLocalDisconnecting;
 	}
 
-	get lastConnectedChannel(): {guildId: string; channelId: string} | null {
+	get lastConnectedChannel(): {guildId: string | null; channelId: string} | null {
 		return this.reconnect.lastConnectedChannel;
+	}
+
+	setAutoReconnectHandler(handler: () => void): void {
+		this.autoReconnectHandler = handler;
+	}
+
+	requestAutoReconnect(): void {
+		if (!this.autoReconnectHandler) {
+			return;
+		}
+
+		this.scheduleReconnect(() => {
+			this.autoReconnectHandler?.();
+		});
 	}
 
 	startConnection(guildId: string | null, channelId: string): void {
 		if (this.throttle.shouldThrottle()) {
 			logger.warn('Connection throttled');
+			ToastActionCreators.createToast({
+				type: 'info',
+				children: 'Please wait before reconnecting to voice',
+			});
 			return;
 		}
 
@@ -228,7 +284,7 @@ class VoiceConnectionManager {
 		const room = new LiveKitRoom({
 			adaptiveStream: true,
 			dynacast: true,
-			disconnectOnPageLeave: true,
+			disconnectOnPageLeave: !isNativeMobile(),
 			publishDefaults: {
 				simulcast: true,
 				dtx: true,
@@ -257,11 +313,15 @@ class VoiceConnectionManager {
 		// is stuck in the middle, the promise can hang indefinitely. Race it
 		// against a 20s timeout so the reconnect manager can kick in instead.
 		const CONNECT_TIMEOUT_MS = 20000;
+		// Backend-provided TURN/STUN relays. We sanitize before passing them to
+		// WebRTC so a malformed payload cannot crash voice join on mobile.
+		const iceServers = sanitizeIceServers(raw.ice_servers);
 		const connectPromise = room.connect(endpoint, token, {
 			autoSubscribe: false,
 			// Accept slightly slow ICE before giving up. LiveKit default is
 			// 15s; we bump it to 30s for tough networks (mobile LTE / VPN).
 			peerConnectionTimeout: 30000,
+			...(iceServers ? {rtcConfig: {iceServers}} : {}),
 		});
 
 		let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
@@ -318,6 +378,7 @@ class VoiceConnectionManager {
 					});
 					this.throttle.setInFlightConnect(false);
 					this.reconnect.setReconnectState('error');
+					this.requestAutoReconnect();
 				}
 			});
 	}
@@ -586,6 +647,14 @@ class VoiceConnectionManager {
 	abortConnection(): void {
 		this.clearVoiceServerTimeout();
 
+		const {room} = this.connectionState;
+		if (room) {
+			try {
+				room.removeAllListeners();
+				room.disconnect();
+			} catch {}
+		}
+
 		runInAction(() => {
 			this.connectionState = {
 				...initialConnectionState,
@@ -613,11 +682,10 @@ class VoiceConnectionManager {
 						connecting: false,
 						connected: false,
 						reconnecting: false,
-						guildId: null,
-						channelId: null,
 					};
 					this.throttle.setInFlightConnect(false);
 					this.reconnect.setReconnectState('error');
+					this.requestAutoReconnect();
 				}
 			});
 		});

@@ -1,0 +1,369 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	min-height: 100vh;
+	padding: 48px 24px;
+	background-color: var(--background-primary);
+	overflow-x: hidden;
+}
+
+.header {
+	text-align: center;
+	margin-bottom: 32px;
+}
+
+.title {
+	font-size: 2.5rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin: 0 0 12px 0;
+	letter-spacing: -0.02em;
+}
+
+.loveWord {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 16px;
+	border-radius: 16px;
+	background: var(--brand-primary);
+	color: var(--white);
+	cursor: default;
+	transition: background-color 0.3s ease;
+}
+
+.loveWord:hover {
+	background: var(--brand-secondary);
+}
+
+.emoji {
+	display: inline-block;
+}
+
+.subtitle {
+	font-size: 1rem;
+	color: var(--text-muted);
+	margin: 0;
+	max-width: 400px;
+}
+
+.folderContainer {
+	width: 320px;
+	height: 208px;
+	position: relative;
+	margin-bottom: 40px;
+	cursor: pointer;
+}
+
+.folderBack {
+	position: absolute;
+	inset: 0;
+	z-index: 10;
+	transform-origin: bottom center;
+	perspective: 1000px;
+}
+
+.folderCover {
+	width: 100%;
+	height: 100%;
+	position: relative;
+}
+
+.folderSvg {
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+.folderDetails {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding-top: 32px;
+	pointer-events: none;
+}
+
+.folderDots {
+	display: flex;
+	gap: 44px;
+	margin-bottom: 10px;
+}
+
+.folderDot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.2);
+}
+
+.folderLine {
+	width: 36px;
+	height: 4px;
+	border-radius: 2px;
+	background: rgba(0, 0, 0, 0.2);
+}
+
+.flyingPages {
+	position: absolute;
+	inset: 8px;
+	pointer-events: none;
+}
+
+.flyingPage {
+	position: absolute;
+	top: 8px;
+	width: 128px;
+	height: 160px;
+	background: linear-gradient(180deg, var(--white) 0%, var(--background-modifier-accent) 100%);
+	border-radius: 12px;
+	border: 1px solid var(--border-subtle);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	transform-origin: bottom center;
+}
+
+.pageContent {
+	padding: 16px;
+	height: 100%;
+}
+
+.pageLines {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.pageLine {
+	width: 100%;
+	height: 6px;
+	background: var(--background-secondary);
+	border-radius: 3px;
+}
+
+.pageRow {
+	display: flex;
+	gap: 8px;
+}
+
+.notesSection {
+	width: 100%;
+	max-width: 600px;
+	text-align: center;
+}
+
+.notesCount {
+	font-size: 0.875rem;
+	color: var(--text-muted);
+	margin: 0 0 24px 0;
+}
+
+.notesGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.note {
+	padding: 16px;
+	border-radius: 12px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	text-align: left;
+	min-height: 80px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.noteText {
+	font-size: 0.875rem;
+	color: #1a1a1a;
+	margin: 0 0 8px 0;
+	line-height: 1.4;
+	word-break: break-word;
+}
+
+.noteFooter {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 0.75rem;
+	color: rgba(0, 0, 0, 0.5);
+}
+
+.noteAuthor {
+	font-weight: 500;
+}
+
+.noteTime {
+	opacity: 0.7;
+}
+
+.addNoteButton {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 24px;
+	border-radius: 24px;
+	border: 2px dashed var(--border-subtle);
+	background: transparent;
+	color: var(--text-primary);
+	font-size: 1rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.addNoteButton:hover {
+	border-color: var(--brand-primary);
+	background: var(--brand-primary);
+	color: var(--white);
+}
+
+.addIcon {
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	background: var(--brand-primary);
+	color: var(--white);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.25rem;
+	font-weight: 300;
+}
+
+.addNoteButton:hover .addIcon {
+	background: var(--white);
+	color: var(--brand-primary);
+}
+
+.noteForm {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 24px;
+	background: var(--background-secondary);
+	border-radius: 16px;
+	margin-top: 16px;
+	overflow: hidden;
+}
+
+.noteInput {
+	width: 100%;
+	padding: 12px 16px;
+	border: 1px solid var(--border-subtle);
+	border-radius: 12px;
+	background: var(--background-primary);
+	color: var(--text-primary);
+	font-size: 0.875rem;
+	resize: none;
+	font-family: inherit;
+}
+
+.noteInput:focus {
+	outline: none;
+	border-color: var(--brand-primary);
+}
+
+.noteInput::placeholder {
+	color: var(--text-muted);
+}
+
+.authorInput {
+	width: 100%;
+	padding: 10px 16px;
+	border: 1px solid var(--border-subtle);
+	border-radius: 12px;
+	background: var(--background-primary);
+	color: var(--text-primary);
+	font-size: 0.875rem;
+}
+
+.authorInput:focus {
+	outline: none;
+	border-color: var(--brand-primary);
+}
+
+.authorInput::placeholder {
+	color: var(--text-muted);
+}
+
+.submitButton {
+	padding: 12px 24px;
+	border: none;
+	border-radius: 12px;
+	background: var(--brand-primary);
+	color: var(--white);
+	font-size: 0.875rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.submitButton:hover {
+	background: var(--brand-secondary);
+}
+
+.homeLink {
+	margin-top: 48px;
+	padding-top: 24px;
+	border-top: 1px solid var(--border-subtle);
+	width: 100%;
+	max-width: 600px;
+	text-align: center;
+}
+
+.homeLink a {
+	color: var(--brand-primary);
+	text-decoration: none;
+	font-size: 0.875rem;
+	transition: opacity 0.2s ease;
+}
+
+.homeLink a:hover {
+	opacity: 0.8;
+}
+
+@media (max-width: 640px) {
+	.title {
+		font-size: 1.75rem;
+	}
+
+	.folderContainer {
+		width: 260px;
+		height: 169px;
+	}
+
+	.flyingPage {
+		width: 100px;
+		height: 130px;
+	}
+
+	.notesGrid {
+		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	}
+}

@@ -185,7 +185,7 @@
 }
 
 .voiceConnectionEmbeddedCollapsed .statusRow {
-	grid-template-columns: auto 4.55rem minmax(0, 1fr);
+	grid-template-columns: auto minmax(4rem, 1fr) auto;
 	padding: 0.52rem;
 	gap: 0.5rem;
 	border-radius: 1.04rem;
@@ -201,7 +201,8 @@
 .voiceConnectionEmbeddedCollapsed .statusButton {
 	justify-content: center;
 	gap: 0.28rem;
-	width: 4.55rem;
+	width: 100%;
+	max-width: 5rem;
 	min-width: 0;
 	min-height: 2rem;
 	padding: 0;
@@ -229,13 +230,29 @@
 	white-space: nowrap;
 }
 
+.reconnectOrbit {
+	margin-inline: auto;
+}
+
 .voiceConnectionEmbeddedCollapsed .compactPing {
 	display: inline-flex;
 }
 
 .voiceConnectionEmbeddedCollapsed .controls {
-	grid-template-columns: repeat(4, 1.86rem);
-	gap: 0.4rem;
+	grid-template-columns: repeat(4, minmax(1.6rem, 1fr));
+	gap: 0.28rem;
+	min-width: 0;
+}
+
+.voiceConnectionEmbeddedCollapsed .controlButton {
+	width: 100%;
+	height: 1.62rem;
+	border-radius: 0.58rem;
+}
+
+.voiceConnectionEmbeddedCollapsed .icon {
+	height: 0.86rem;
+	width: 0.86rem;
 }
 
 .voiceConnectionEmbeddedCollapsed .mediaSection {
@@ -252,6 +269,157 @@
 .voiceConnectionEmbeddedCollapsed .mediaIcon {
 	height: 0.98rem;
 	width: 0.98rem;
+}
+
+.voiceConnectionDockExpanded {
+	width: 100%;
+	height: 100%;
+	gap: 0;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+.voiceConnectionDockExpanded .mediaSection {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: max(var(--voice-dock-control-gap, 0.3rem), 0.3rem);
+	justify-content: stretch;
+	width: 100%;
+	max-width: 100%;
+	margin-inline: auto;
+	min-width: 0;
+}
+
+.voiceConnectionDockExpanded .mediaSection > * {
+	min-width: 0;
+	opacity: 0;
+	transform: translateY(0.42rem) scale(0.94);
+	transform-origin: 50% 100%;
+	animation: voiceDockControlEnter 320ms cubic-bezier(0.2, 0.92, 0.24, 1.16) forwards;
+}
+
+.voiceConnectionDockExpanded .mediaSection > *:nth-child(1) {
+	animation-delay: 20ms;
+}
+
+.voiceConnectionDockExpanded .mediaSection > *:nth-child(2) {
+	animation-delay: 55ms;
+}
+
+.voiceConnectionDockExpanded .mediaSection > *:nth-child(3) {
+	animation-delay: 90ms;
+}
+
+.voiceConnectionDockExpanded .mediaSection > *:nth-child(4) {
+	animation-delay: 125ms;
+}
+
+.voiceConnectionDockExpanded .mediaSection > *:nth-child(5) {
+	animation-delay: 160ms;
+}
+
+.voiceConnectionDockExpanded .mediaButton {
+	width: 100%;
+	min-width: 0;
+	height: var(--voice-dock-control-size, 1.9rem);
+	border-radius: clamp(0.66rem, calc(var(--voice-dock-control-size, 1.9rem) * 0.36), 0.78rem);
+}
+
+.voiceConnectionDockExpanded .mediaIcon {
+	width: clamp(0.9rem, calc(var(--voice-dock-control-size, 1.9rem) * 0.5), 1.1rem);
+	height: clamp(0.9rem, calc(var(--voice-dock-control-size, 1.9rem) * 0.5), 1.1rem);
+}
+
+.voiceConnectionDockExpanded .statusRow {
+	display: none;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 0.24rem;
+	width: 100%;
+	min-width: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+.voiceConnectionDockExpanded .signalIcon {
+	display: none;
+}
+
+.voiceConnectionDockExpanded .signalIcon::after {
+	display: none;
+}
+
+.voiceConnectionDockExpanded .statusButton {
+	min-width: 0;
+	min-height: 1.72rem;
+	max-width: none;
+	padding: 0.2rem 0.54rem;
+	border-radius: 0.68rem;
+	font-size: 0.7rem;
+	line-height: 0.86rem;
+	background: color-mix(in srgb, var(--voice-panel-card-soft) 88%, var(--brand-primary) 12%);
+	border-color: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+}
+
+.voiceConnectionDockExpanded .statusMeta {
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 0.24rem;
+}
+
+.voiceConnectionDockExpanded .statusTimer {
+	min-height: 1.05rem;
+	padding: 0.08rem 0.36rem;
+	font-size: 0.58rem;
+	letter-spacing: 0;
+}
+
+.voiceConnectionDockExpanded .compactPing {
+	display: none;
+}
+
+.voiceConnectionDockExpanded .controls {
+	display: none;
+	grid-auto-flow: column;
+	grid-auto-columns: 1.68rem;
+	gap: 0.24rem;
+	width: auto;
+	justify-content: end;
+	min-width: 0;
+}
+
+.voiceConnectionDockExpanded .controlButton {
+	width: 1.68rem;
+	height: 1.68rem;
+	border-radius: 0.62rem;
+}
+
+.voiceConnectionDockExpanded .icon {
+	width: 0.9rem;
+	height: 0.9rem;
+}
+
+.mediaButtonDisconnect {
+	color: color-mix(in srgb, var(--status-danger) 78%, var(--text-primary));
+	background: color-mix(in srgb, var(--status-danger) 12%, var(--voice-panel-card-soft));
+	border-color: color-mix(in srgb, var(--status-danger) 24%, transparent);
+}
+
+.mediaButtonDisconnect:hover:not(:disabled) {
+	color: var(--text-primary);
+	background: color-mix(in srgb, var(--status-danger) 22%, var(--voice-panel-card-hover));
+	border-color: color-mix(in srgb, var(--status-danger) 34%, transparent);
+}
+
+.voiceConnectionDockExpanded .guildSeparator,
+.voiceConnectionDockExpanded .guildName {
+	display: none;
+}
+
+.voiceConnectionDockExpanded .collapsibleSection {
+	min-width: 0;
 }
 
 .voiceConnectionCollapsed {
@@ -321,6 +489,12 @@
 	background: color-mix(in srgb, var(--brand-primary) 16%, var(--voice-panel-bg-bottom));
 	color: color-mix(in srgb, var(--brand-primary) 84%, var(--text-primary));
 	border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+}
+
+.noiseSuppressionUnavailable {
+	opacity: 0.58;
+	border-style: dashed;
+	cursor: not-allowed;
 }
 
 .voiceConnectionCompact .mediaIcon {
@@ -570,17 +744,6 @@
 
 .controlButton.selected:hover {
 	color: color-mix(in srgb, var(--brand-primary) 84%, var(--text-primary));
-}
-
-.controlButton:disabled,
-.controlButton.disabled {
-	opacity: 0.6;
-	cursor: not-allowed;
-	transform: none;
-	background: color-mix(in srgb, var(--voice-panel-card) 82%, var(--black-a40));
-	color: color-mix(in srgb, var(--text-muted) 90%, var(--text-primary));
-	border-color: color-mix(in srgb, var(--voice-panel-border) 80%, transparent);
-	box-shadow: none;
 }
 
 .icon {
@@ -859,6 +1022,36 @@
 	}
 }
 
+@container (max-width: 320px) {
+	.statusRow {
+		display: flex;
+		flex-wrap: wrap;
+	}
+
+	.statusButton {
+		min-width: 100%;
+	}
+
+	.statusMeta {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.statusLabel {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+
+	.statusTimer {
+		justify-self: start;
+	}
+
+	.controls {
+		width: 100%;
+		justify-content: flex-end;
+		padding-inline-start: 2.5rem;
+	}
+}
+
 @container (max-width: 210px) {
 	.voiceConnectionEmbedded .mediaSection,
 	.voiceConnectionEmbeddedCollapsed .mediaSection {
@@ -919,6 +1112,46 @@
 	backdrop-filter: none;
 }
 
+.popoutContainerCompact {
+	gap: 0.5rem;
+	width: min(16.75rem, calc(100vw - 1.5rem));
+	padding: 0.64rem;
+	border-radius: 0.95rem;
+	box-shadow: 0 14px 30px rgb(5 9 18 / 0.28);
+}
+
+.popoutContainerCompact .popoutHeader {
+	min-height: 0;
+}
+
+.popoutContainerCompact .popoutTitle {
+	font-size: 0.76rem;
+}
+
+.popoutContainerCompact .popoutSummaryRow {
+	padding: 0.48rem 0.58rem;
+	border-radius: 0.72rem;
+}
+
+.popoutContainerCompact .popoutDetailsInner {
+	gap: 0.45rem;
+}
+
+.popoutContainerCompact .popoutStats {
+	gap: 0.34rem;
+}
+
+.popoutContainerCompact .popoutStatRow {
+	min-height: 1.62rem;
+	padding: 0.38rem 0.5rem;
+	border-radius: 0.68rem;
+}
+
+.popoutContainerCompact .deviceBadge,
+.popoutContainerCompact .endpointBadge {
+	max-width: 9.8rem;
+}
+
 .popoutHeader {
 	display: flex;
 	align-items: center;
@@ -930,6 +1163,9 @@
 	display: flex;
 	align-items: center;
 	gap: 0.35rem;
+	position: relative;
+	z-index: 2;
+	pointer-events: auto;
 }
 
 .popoutTitle {
@@ -1267,6 +1503,23 @@
 	}
 }
 
+@keyframes voiceDockControlEnter {
+	from {
+		opacity: 0;
+		transform: translateY(0.42rem) scale(0.94);
+	}
+
+	60% {
+		opacity: 1;
+		transform: translateY(-0.05rem) scale(1.025);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.voiceConnectionContainer,
 	.signalIcon,
@@ -1274,8 +1527,11 @@
 	.signalIcon::after,
 	.statusIndicator,
 	.statusButtonConnecting,
-	.pingSearchingValue {
+	.pingSearchingValue,
+	.voiceConnectionDockExpanded .mediaSection > * {
 		animation: none;
+		opacity: 1;
+		transform: none;
 	}
 
 	.statusButton,
@@ -1317,4 +1573,16 @@
 		justify-content: flex-end;
 		padding-inline-start: 2.5rem;
 	}
+}
+
+
+.disabled {
+	opacity: 0.45;
+	pointer-events: none;
+	cursor: not-allowed;
+}
+
+.selected {
+	background: color-mix(in srgb, var(--brand-primary) 28%, transparent);
+	color: var(--text-primary);
 }

@@ -155,7 +155,7 @@ const ResultRow = observer(
 				<motion.button
 					type="button"
 					className={clsx(quickStyles.option, isActive && quickStyles.optionActive)}
-					ref={innerRef}
+					ref={innerRef as React.ComponentProps<typeof motion.button>['ref']}
 					onMouseEnter={handleMouseEnter}
 					onMouseLeave={onMouseLeave}
 					onMouseDown={(event) => event.preventDefault()}

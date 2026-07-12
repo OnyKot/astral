@@ -38,6 +38,16 @@ const isGuildLike = (value: unknown): value is Guild | GuildRecord => {
 	return Boolean(value && typeof value === 'object' && ('owner_id' in value || 'ownerId' in value));
 };
 
+const toApiShape = <T,>(value: T): T => {
+	if (value && typeof value === 'object' && 'toJSON' in (value as object)) {
+		const toJSON = (value as {toJSON?: () => T}).toJSON;
+		if (typeof toJSON === 'function') {
+			return toJSON.call(value);
+		}
+	}
+	return value;
+};
+
 class PermissionStore {
 	private readonly guildPermissions = observable.map<GuildId, bigint>();
 	private readonly channelPermissions = observable.map<ChannelId, bigint>();
@@ -71,13 +81,43 @@ class PermissionStore {
 		let permissions = PermissionUtils.NONE;
 
 		if (isChannelLike(context)) {
-			permissions = this.channelPermissions.get(context.id) ?? PermissionUtils.NONE;
+			if (this.channelPermissions.has(context.id)) {
+				permissions = this.channelPermissions.get(context.id) ?? PermissionUtils.NONE;
+			} else {
+				const currentUser = UserStore.currentUser;
+				if (currentUser) {
+					permissions = PermissionUtils.computePermissions(currentUser, toApiShape(context));
+				}
+			}
 		} else if (isGuildLike(context)) {
-			permissions = this.guildPermissions.get(context.id) ?? PermissionUtils.NONE;
+			if (this.guildPermissions.has(context.id)) {
+				permissions = this.guildPermissions.get(context.id) ?? PermissionUtils.NONE;
+			} else {
+				const currentUser = UserStore.currentUser;
+				if (currentUser) {
+					permissions = PermissionUtils.computePermissions(currentUser, toApiShape(context) as Guild);
+				}
+			}
 		} else if (context.channelId) {
-			permissions = this.channelPermissions.get(context.channelId) ?? PermissionUtils.NONE;
+			if (this.channelPermissions.has(context.channelId)) {
+				permissions = this.channelPermissions.get(context.channelId) ?? PermissionUtils.NONE;
+			} else {
+				const currentUser = UserStore.currentUser;
+				const channel = ChannelStore.getChannel(context.channelId);
+				if (currentUser && channel) {
+					permissions = PermissionUtils.computePermissions(currentUser, channel.toJSON());
+				}
+			}
 		} else if (context.guildId) {
-			permissions = this.guildPermissions.get(context.guildId) ?? PermissionUtils.NONE;
+			if (this.guildPermissions.has(context.guildId)) {
+				permissions = this.guildPermissions.get(context.guildId) ?? PermissionUtils.NONE;
+			} else {
+				const currentUser = UserStore.currentUser;
+				const guild = GuildStore.getGuild(context.guildId);
+				if (currentUser && guild) {
+					permissions = PermissionUtils.computePermissions(currentUser, guild.toJSON());
+				}
+			}
 		}
 
 		return (permissions & permission) === permission;

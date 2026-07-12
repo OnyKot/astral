@@ -35,15 +35,15 @@ export const EmojiPickerInspector = observer(({hoveredEmoji}: EmojiPickerInspect
 
 	const getEmojiForDisplay = (
 		emoji: Emoji | null,
-	): {useImg: boolean; useNative: boolean; url?: string; style?: React.CSSProperties} | null => {
+	): {useImg: boolean; useNative: boolean; isUnicode: boolean; url?: string; style?: React.CSSProperties} | null => {
 		if (!emoji) return null;
 
 		if (emoji.guildId || emoji.id) {
-			return {url: emoji.url, useImg: true, useNative: false};
+			return {url: emoji.url, useImg: true, useNative: false, isUnicode: false};
 		}
 
 		if (shouldUseNativeEmoji && emoji.surrogates) {
-			return {useImg: false, useNative: true};
+			return {useImg: false, useNative: true, isUnicode: true};
 		}
 
 		/*
@@ -57,17 +57,17 @@ export const EmojiPickerInspector = observer(({hoveredEmoji}: EmojiPickerInspect
 			const displayEmoji = hasDiversity ? emoji.surrogates + skinTone : emoji.surrogates;
 			const twemojiUrl = EmojiUtils.getEmojiURL(displayEmoji);
 			if (twemojiUrl) {
-				return {url: twemojiUrl, useImg: true, useNative: false};
+				return {url: twemojiUrl, useImg: true, useNative: false, isUnicode: true};
 			}
 		}
 
 		if (!emoji.useSpriteSheet) {
-			return {url: emoji.url, useImg: true, useNative: false};
+			return {url: emoji.url, useImg: true, useNative: false, isUnicode: false};
 		}
 
 		const hasDiversity = emoji.hasDiversity && skinTone;
 		const index = hasDiversity ? emoji.diversityIndex : emoji.index;
-		if (index === undefined) return {url: emoji.url, useImg: true, useNative: false};
+		if (index === undefined) return {url: emoji.url, useImg: true, useNative: false, isUnicode: false};
 
 		const perRow = hasDiversity ? EMOJI_SPRITES.DiversityPerRow : EMOJI_SPRITES.NonDiversityPerRow;
 		const x = -(index % perRow) * EMOJI_SPRITE_SIZE;
@@ -83,6 +83,7 @@ export const EmojiPickerInspector = observer(({hoveredEmoji}: EmojiPickerInspect
 			},
 			useImg: false,
 			useNative: false,
+			isUnicode: false,
 		};
 	};
 
@@ -96,7 +97,19 @@ export const EmojiPickerInspector = observer(({hoveredEmoji}: EmojiPickerInspect
 			return <span className={styles.inspectorNativeEmoji}>{displayEmoji}</span>;
 		}
 		if (emojiDisplay.useImg) {
-			return <img src={hoveredEmoji.url ?? ''} alt={hoveredEmoji.name} className={styles.inspectorEmoji} />;
+			return (
+				<img
+					src={emojiDisplay.url ?? ''}
+					alt={hoveredEmoji.name}
+					className={styles.inspectorEmoji}
+					crossOrigin={emojiDisplay.isUnicode ? 'anonymous' : undefined}
+					onLoad={
+						emojiDisplay.isUnicode
+							? (event) => EmojiUtils.applyEmojiVisualNormalization(event.currentTarget)
+							: undefined
+					}
+				/>
+			);
 		}
 		return <div className={styles.inspectorEmojiSprite} style={emojiDisplay.style} />;
 	};

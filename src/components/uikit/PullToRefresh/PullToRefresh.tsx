@@ -20,6 +20,7 @@
 import {ArrowClockwiseIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import React from 'react';
+import {useKeyboardOpen} from '~/hooks/useKeyboardOpen';
 import {usePullToRefresh} from '~/hooks/usePullToRefresh';
 import styles from './PullToRefresh.module.css';
 
@@ -31,7 +32,9 @@ interface PullToRefreshProps {
 }
 
 export const PullToRefresh: React.FC<PullToRefreshProps> = ({onRefresh, enabled = true, children, className}) => {
-	const {gestureProps, pullDistance, progress, isRefreshing} = usePullToRefresh({onRefresh, enabled});
+	const keyboardOpen = useKeyboardOpen();
+	const gestureEnabled = enabled && !keyboardOpen;
+	const {gestureProps, pullDistance, progress, isRefreshing} = usePullToRefresh({onRefresh, enabled: gestureEnabled});
 
 	const armed = progress >= 1;
 	const showIndicator = pullDistance > 0 && !isRefreshing;

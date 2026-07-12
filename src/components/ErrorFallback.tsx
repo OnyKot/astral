@@ -25,18 +25,20 @@ import {AstralIcon} from '~/components/icons/AstralIcon';
 import {NativeTitlebar} from '~/components/layout/NativeTitlebar';
 import {Button} from '~/components/uikit/Button/Button';
 import {useNativePlatform} from '~/hooks/useNativePlatform';
-import AppStorage from '~/lib/AppStorage';
 import {ensureLatestAssets} from '~/lib/versioning';
+import {factoryReset, reloadAppHard} from '~/utils/factoryReset';
 
 interface ErrorFallbackProps {
 	error?: Error;
-	reset?: () => void;
+	eventId?: string;
+	resetError?: () => void;
 }
 
-export const ErrorFallback: React.FC<ErrorFallbackProps> = observer(() => {
+export const ErrorFallback: React.FC<ErrorFallbackProps> = observer(({error, eventId}) => {
 	const {platform, isNative, isMacOS} = useNativePlatform();
 	const [updateAvailable, setUpdateAvailable] = React.useState(false);
 	const [isUpdating, setIsUpdating] = React.useState(false);
+	const [isResetting, setIsResetting] = React.useState(false);
 	const [checkingForUpdates, setCheckingForUpdates] = React.useState(true);
 
 	React.useEffect(() => {
@@ -44,7 +46,10 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = observer(() => {
 
 		const run = async () => {
 			try {
-				const {updateFound} = await ensureLatestAssets({force: true});
+				const timeout = new Promise<{updateFound: false}>((resolve) => {
+					window.setTimeout(() => resolve({updateFound: false}), 4500);
+				});
+				const {updateFound} = await Promise.race([ensureLatestAssets({force: true}), timeout]);
 				if (isMounted) {
 					setUpdateAvailable(updateFound);
 				}
@@ -70,7 +75,7 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = observer(() => {
 			const {updateFound} = await ensureLatestAssets({force: true});
 			if (!updateFound) {
 				setIsUpdating(false);
-				window.location.reload();
+				await reloadAppHard();
 			}
 		} catch (error) {
 			console.error('[ErrorFallback] Failed to apply update:', error);
@@ -98,8 +103,8 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = observer(() => {
 			</div>
 			<div className={errorFallbackStyles.errorFallbackActions}>
 				<Button
-					onClick={updateAvailable ? handleUpdate : () => location.reload()}
-					disabled={checkingForUpdates || isUpdating}
+					onClick={updateAvailable ? handleUpdate : reloadAppHard}
+					disabled={isUpdating || isResetting}
 				>
 					{isUpdating ? (
 						<Trans>Updating...</Trans>
@@ -110,16 +115,27 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = observer(() => {
 					)}
 				</Button>
 				<Button
-					onClick={() => {
-						AppStorage.clear();
-						location.reload();
+					onClick={async () => {
+						setIsResetting(true);
+						try {
+							await factoryReset();
+						} finally {
+							reloadAppHard();
+						}
 					}}
 					variant="danger-primary"
-					disabled={checkingForUpdates}
+					disabled={isResetting || isUpdating}
 				>
-					<Trans>Reset app data</Trans>
+					{isResetting ? <Trans>Resetting...</Trans> : <Trans>Reset app data</Trans>}
 				</Button>
 			</div>
+			{(error || eventId) && (
+				<p className={errorFallbackStyles.errorFallbackDiagnostics}>
+					{error?.name ? <code>{error.name}</code> : null}
+					{error?.name && eventId ? ' · ' : null}
+					{eventId ? <code>id: {eventId}</code> : null}
+				</p>
+			)}
 		</div>
 	);
 });

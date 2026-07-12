@@ -57,6 +57,7 @@ import {
 	BUTTON_STYLE_SUCCESS,
 	type ButtonComponent,
 	COMPONENT_TYPE_BUTTON,
+	COMPONENT_TYPE_STORY_PREVIEW,
 	COMPONENT_TYPE_STRING_SELECT,
 	type StringSelectComponent,
 } from '~/records/MessageComponentTypes';
@@ -222,9 +223,18 @@ export const MessageComponents = observer(function MessageComponents() {
 	const components = message.components;
 	if (!components || components.length === 0) return null;
 
+	const visibleRows = components
+		.map((row) => ({
+			...row,
+			components: row.components.filter((child) => child.type !== COMPONENT_TYPE_STORY_PREVIEW),
+		}))
+		.filter((row) => row.components.length > 0);
+
+	if (visibleRows.length === 0) return null;
+
 	return (
 		<div className={styles.componentsContainer}>
-			{components.map((row, rowIdx) => (
+			{visibleRows.map((row, rowIdx) => (
 				// biome-ignore lint/suspicious/noArrayIndexKey: action rows have no stable id
 				<div key={rowIdx} className={styles.actionRow}>
 					{row.components.map((child, childIdx) => {

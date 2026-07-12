@@ -39,30 +39,30 @@ pub type ButtonStyle {
   Dark
 }
 
-const light_bg = "bg-white/[0.03] border border-white/10 backdrop-blur-xl"
+const light_bg = "bg-white/[0.055]"
 
 const light_text = "text-white"
 
-const light_hover = "hover:bg-white/[0.06]"
+const light_hover = "hover:bg-white/[0.09]"
 
 const light_helper = "text-sm text-[hsl(var(--muted-foreground))]"
 
-const dark_bg = "bg-white/[0.08] border border-white/10 backdrop-blur-xl"
+const dark_bg = "bg-white/[0.075]"
 
 const dark_text = "text-white"
 
-const dark_hover = "hover:bg-white/[0.12]"
+const dark_hover = "hover:bg-white/[0.11]"
 
 const dark_helper = "text-sm text-[hsl(var(--muted-foreground))]"
 
 const btn_base =
-  "download-link liquid-glass interactive-glass flex flex-col items-start justify-center gap-1 rounded-l-[24px] px-6 py-5 md:px-8 md:py-6 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.6)]"
+  "astral-button download-link flex flex-col items-start justify-center gap-1 px-6 py-5 md:px-8 md:py-6"
 
 const chevron_base =
-  "overlay-toggle liquid-glass interactive-glass flex items-center self-stretch rounded-r-[24px] px-4 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.6)]"
+  "astral-button overlay-toggle flex items-center self-stretch px-4"
 
 const mobile_btn_base =
-  "liquid-glass interactive-glass inline-flex flex-col items-center justify-center gap-1 rounded-[24px] px-6 py-5 md:px-8 md:py-6 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.6)]"
+  "astral-button download-link inline-flex flex-col items-center justify-center gap-1 px-6 py-5 md:px-8 md:py-6"
 
 fn channel_segment(ctx: Context) -> String {
   case web.is_canary(ctx) {
@@ -269,11 +269,8 @@ pub fn render_with_overlay(ctx: Context) -> Element(a) {
         [
           attribute.href(web.prepend_base_path(ctx, "/download")),
           attribute.class(
-            "liquid-glass interactive-glass inline-flex items-center justify-center gap-3 rounded-[24px] border border-white/10 bg-white/[0.03] backdrop-blur-xl "
-            <> light_bg
-            <> " px-8 py-5 md:px-10 md:py-6 text-lg md:text-xl font-semibold "
-            <> light_text
-            <> " shadow-[0_24px_60px_-40px_rgba(0,0,0,0.6)]",
+            "astral-button astral-button-primary inline-flex items-center justify-center gap-3 px-8 py-5 md:px-10 md:py-6 text-lg md:text-xl font-semibold "
+            <> light_text,
           ),
         ],
         [
@@ -435,6 +432,8 @@ pub fn render_desktop_button(
     False -> g_(i18n_ctx, "Download for ") <> platform_name
   }
 
+  let has_overlay = list.length(options) > 1
+
   let overlay_items =
     options
     |> list.map(fn(opt) {
@@ -454,63 +453,77 @@ pub fn render_desktop_button(
       )
     })
 
+  let main_button =
+    html.a(
+      [
+        attribute.class(button_class),
+        attribute.href(default_url),
+        attribute.attribute("data-base-url", default_url),
+        attribute.attribute("data-arch", default_arch_label),
+        attribute.attribute("data-format", default_fmt),
+        attribute.attribute("data-platform", platform_id),
+      ],
+      [
+        html.div([attribute.class("flex items-center gap-3")], [
+          icon,
+          html.span(
+            [attribute.class("text-base md:text-lg font-semibold")],
+            [
+              html.text(button_label),
+            ],
+          ),
+        ]),
+        html.span([attribute.class(helper_class)], [
+          html.text(helper_text),
+        ]),
+      ],
+    )
+
+  let controls = case has_overlay {
+    True -> [
+      main_button,
+      html.button(
+        [
+          attribute.class(chevron_class),
+          attribute.attribute(
+            "data-overlay-target",
+            platform_id <> "-overlay",
+          ),
+          attribute.attribute(
+            "aria-label",
+            g_(i18n_ctx, "Show download options"),
+          ),
+          attribute.attribute("type", "button"),
+        ],
+        [icons.caret_down([attribute.class("h-5 w-5")])],
+      ),
+    ]
+    False -> [main_button]
+  }
+
+  let overlay = case has_overlay {
+    True ->
+      html.div(
+        [
+          attribute.id(platform_id <> "-overlay"),
+          attribute.class(
+            "download-overlay marketing-panel absolute left-0 z-20 mt-2 w-full min-w-[220px] hidden",
+          ),
+        ],
+        [html.div([attribute.class("py-1")], overlay_items)],
+      )
+    False -> element.none()
+  }
+
   html.div([attribute.class("relative")], [
     html.div(
       [
         attribute.class(container_class),
         attribute.id(platform_id <> "-download-buttons"),
       ],
-      [
-        html.a(
-          [
-            attribute.class(button_class),
-            attribute.href(default_url),
-            attribute.attribute("data-base-url", default_url),
-            attribute.attribute("data-arch", default_arch_label),
-            attribute.attribute("data-format", default_fmt),
-            attribute.attribute("data-platform", platform_id),
-          ],
-          [
-            html.div([attribute.class("flex items-center gap-3")], [
-              icon,
-              html.span(
-                [attribute.class("text-base md:text-lg font-semibold")],
-                [
-                  html.text(button_label),
-                ],
-              ),
-            ]),
-            html.span([attribute.class(helper_class)], [
-              html.text(helper_text),
-            ]),
-          ],
-        ),
-        html.button(
-          [
-            attribute.class(chevron_class),
-            attribute.attribute(
-              "data-overlay-target",
-              platform_id <> "-overlay",
-            ),
-            attribute.attribute(
-              "aria-label",
-              g_(i18n_ctx, "Show download options"),
-            ),
-            attribute.attribute("type", "button"),
-          ],
-          [icons.caret_down([attribute.class("h-5 w-5")])],
-        ),
-      ],
+      controls,
     ),
-    html.div(
-      [
-        attribute.id(platform_id <> "-overlay"),
-        attribute.class(
-          "download-overlay marketing-panel absolute left-0 z-20 mt-2 w-full min-w-[220px] rounded-[24px] border border-white/10 bg-[#11161f]/96 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.72)] hidden",
-        ),
-      ],
-      [html.div([attribute.class("py-1")], overlay_items)],
-    ),
+    overlay,
   ])
 }
 
@@ -537,8 +550,17 @@ pub fn render_mobile_button(
   }
 
   let #(btn_class, helper_class) = get_mobile_btn_classes(style)
+  let attrs = [attribute.class(btn_class), attribute.href(url)]
+  let attrs = case platform {
+    Android ->
+      attrs
+      |> list.append([
+        attribute.download("Astral-android-1.5.0-release.apk"),
+      ])
+    _ -> attrs
+  }
 
-  html.a([attribute.class(btn_class), attribute.href(url)], [
+  html.a(attrs, [
     html.div([attribute.class("flex items-center gap-3")], [
       icon,
       html.span([attribute.class("text-base md:text-lg font-semibold")], [

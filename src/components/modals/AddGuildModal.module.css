@@ -27,31 +27,56 @@
 .landingContainer {
 	display: flex;
 	flex-direction: column;
-	gap: 24px;
+	gap: 18px;
+}
+
+.landingIntro {
+	display: grid;
+	gap: 6px;
+}
+
+.landingIntro p {
+	margin: 0;
+	color: var(--text-secondary);
+	font-size: 14px;
+	line-height: 1.45;
+}
+
+.landingEyebrow {
+	color: var(--brand-primary);
+	font-size: 12px;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
 }
 
 .actionButtons {
-	display: flex;
+	display: grid;
 	width: 100%;
-	flex-direction: row;
-	gap: 12px;
-	flex-wrap: wrap;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
 }
 
 .actionButton {
-	display: flex;
-	flex: 1;
-	min-width: 150px;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: 12px;
-	padding: 24px 16px;
+	position: relative;
+	display: grid;
+	min-width: 0;
+	grid-template-rows: auto auto 1fr;
+	align-items: start;
+	justify-items: start;
+	gap: 10px;
+	padding: 16px;
 	border: 1px solid var(--background-modifier-accent);
 	border-radius: 8px;
 	background: var(--background-secondary);
 	color: var(--text-primary);
 	cursor: pointer;
+	text-align: left;
+	touch-action: manipulation;
+	transition:
+		background-color 160ms ease,
+		border-color 160ms ease,
+		transform 120ms ease;
 }
 
 .actionButton:hover {
@@ -63,15 +88,32 @@
 	border-color: var(--brand-primary);
 }
 
+.actionButton:active {
+	transform: translateY(1px);
+}
+
+.actionStep {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 20px;
+	min-width: 20px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+	color: var(--brand-primary);
+	font-size: 11px;
+	font-weight: 800;
+}
+
 .actionIcon {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 48px;
-	height: 48px;
-	border-radius: 50%;
-	background: var(--brand-primary);
-	color: var(--brand-primary-fill);
+	width: 42px;
+	height: 42px;
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--brand-primary) 18%, var(--background-primary) 82%);
+	color: var(--brand-primary);
 }
 
 .actionIcon > svg {
@@ -79,10 +121,22 @@
 	height: 24px;
 }
 
+.actionText {
+	display: grid;
+	gap: 4px;
+	min-width: 0;
+}
+
 .actionLabel {
 	font-weight: 600;
 	font-size: 14px;
-	text-align: center;
+	line-height: 1.2;
+}
+
+.actionDescription {
+	color: var(--text-secondary);
+	font-size: 12px;
+	line-height: 1.38;
 }
 
 .formContainer {
@@ -93,6 +147,41 @@
 
 .formContainer > p {
 	margin: 0;
+}
+
+.formLead {
+	color: var(--text-secondary);
+	font-size: 14px;
+	line-height: 1.45;
+}
+
+.joinHint {
+	display: flex;
+	gap: 12px;
+	padding: 12px;
+	border-radius: 8px;
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 20%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 8%, var(--background-secondary) 92%);
+}
+
+.joinHint > svg {
+	flex-shrink: 0;
+	margin-top: 1px;
+	color: var(--brand-primary);
+}
+
+.joinHint strong {
+	display: block;
+	margin-bottom: 3px;
+	color: var(--text-primary);
+	font-size: 14px;
+}
+
+.joinHint p {
+	margin: 0;
+	color: var(--text-secondary);
+	font-size: 13px;
+	line-height: 1.4;
 }
 
 .iconSection {
@@ -200,4 +289,32 @@
 .guidelines {
 	color: var(--text-primary-muted);
 	font-size: 12px;
+}
+
+@media (max-width: 620px) {
+	.actionButtons {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.actionButton {
+		grid-template-columns: auto auto minmax(0, 1fr);
+		grid-template-rows: auto;
+		align-items: center;
+	}
+
+	.actionStep {
+		grid-column: 1;
+	}
+
+	.actionIcon {
+		grid-column: 2;
+	}
+
+	.actionText {
+		grid-column: 3;
+	}
+
+	.iconPreview {
+		align-items: flex-start;
+	}
 }

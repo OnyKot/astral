@@ -195,11 +195,11 @@ export const CommunicationTabContent: React.FC = observer(() => {
 							<Trans>Ring Behavior</Trans>
 						</div>
 						<Switch
-							label={<Trans>Silent calls from everyone</Trans>}
+							label={<Trans>Receive calls without sound</Trans>}
 							description={
 								<Trans>
-									All calls will notify silently instead of ringing. By default, calls from non-friends are always
-									silent.
+									Show incoming call notifications without playing a ringtone. Calls from people who are not your
+									friends are already silent.
 								</Trans>
 							}
 							value={hasCallFlag(IncomingCallFlags.SILENT_EVERYONE)}
@@ -225,7 +225,7 @@ export const CommunicationTabContent: React.FC = observer(() => {
 						{
 							value: 'nobody',
 							name: t`Nobody`,
-							desc: t`Don't let anyone add you to group chats without asking`,
+							desc: t`Require an invitation before you join any group chat`,
 						},
 						{
 							value: 'friends_only',

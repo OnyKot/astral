@@ -45,6 +45,7 @@ interface BottomSheetProps {
 	backdropOpacity?: number;
 	showBackdrop?: boolean;
 	disableBackdropBlur?: boolean;
+	animationPreset?: 'default' | 'keyboard-replacement';
 }
 
 export const BottomSheet: React.FC<BottomSheetProps> = observer(
@@ -72,6 +73,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = observer(
 		backdropOpacity,
 		showBackdrop,
 		disableBackdropBlur = false,
+		animationPreset = 'default',
 	}) => {
 		const resolvedInitialSnap = initialSnap ?? undefined;
 		const shouldRenderDefaultHeader =
@@ -109,6 +111,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = observer(
 				backdropOpacity={backdropOpacity}
 				showBackdrop={showBackdrop}
 				disableBackdropBlur={disableBackdropBlur}
+				animationPreset={animationPreset}
 			>
 				{showHandle && <Sheet.Handle />}
 				{shouldRenderDefaultHeader && (

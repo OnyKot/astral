@@ -522,6 +522,7 @@ export class MessageRecord {
 		if (this.webhookId !== other.webhookId) return false;
 		if (this.applicationId !== other.applicationId) return false;
 		if (this.loggingName !== other.loggingName) return false;
+		if (JSON.stringify(this.components ?? null) !== JSON.stringify(other.components ?? null)) return false;
 
 		if (this.timestamp.getTime() !== other.timestamp.getTime()) return false;
 		if (this.editedTimestamp?.getTime() !== other.editedTimestamp?.getTime()) return false;

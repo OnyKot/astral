@@ -30,7 +30,6 @@ import {
 	TrashIcon,
 } from '@phosphor-icons/react';
 import {clsx} from 'clsx';
-import {AnimatePresence, motion} from 'framer-motion';
 import React from 'react';
 import * as PremiumModalActionCreators from '~/actions/PremiumModalActionCreators';
 import type {ExpressionPickerTabType} from '~/components/popouts/ExpressionPickerPopout';
@@ -58,6 +57,7 @@ interface TextareaButtonsProps {
 	isOverLimit: boolean;
 	hasContent: boolean;
 	hasAttachments: boolean;
+	isMessageSending?: boolean;
 	expressionPickerTriggerRef: React.RefObject<HTMLButtonElement | null>;
 	invisibleExpressionPickerTriggerRef: React.RefObject<HTMLDivElement | null>;
 	onExpressionPickerToggle: (tab: ExpressionPickerTabType) => void;
@@ -68,7 +68,6 @@ interface TextareaButtonsProps {
 	onVoiceRecordStop?: () => void;
 	onVoiceRecordCancel?: () => void;
 	voiceDisabled?: boolean;
-	voiceInputLevel?: number;
 	onVoiceInteractionChange?: (active: boolean) => void;
 }
 
@@ -93,6 +92,7 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 			isOverLimit,
 			hasContent,
 			hasAttachments,
+			isMessageSending = false,
 			expressionPickerTriggerRef,
 			invisibleExpressionPickerTriggerRef,
 			onExpressionPickerToggle,
@@ -103,7 +103,6 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 			onVoiceRecordStop,
 			onVoiceRecordCancel,
 			voiceDisabled,
-			voiceInputLevel = 0,
 			onVoiceInteractionChange,
 		},
 		ref,
@@ -111,6 +110,7 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 		const {t} = useLingui();
 		const [isVoiceRecording, setIsVoiceRecording] = React.useState(false);
 		const [isVoiceLocked, setIsVoiceLocked] = React.useState(false);
+		const [mobileSendCooldownActive, setMobileSendCooldownActive] = React.useState(false);
 		const [voiceCancelProgress, setVoiceCancelProgress] = React.useState(0);
 		const [voiceLockProgress, setVoiceLockProgress] = React.useState(0);
 		const [voiceLockedCancelProgress, setVoiceLockedCancelProgress] = React.useState(0);
@@ -122,13 +122,19 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 		const gestureModeRef = React.useRef<'undecided' | 'lock' | 'cancel'>('undecided');
 		const isVoiceRecordingRef = React.useRef(false);
 		const isVoiceLockedRef = React.useRef(false);
+		const mobileSendCooldownTimerRef = React.useRef<number | null>(null);
+		const suppressLostPointerCaptureRef = React.useRef(false);
 
 		if (disabled) {
 			return null;
 		}
 
 		const shouldShowDesktopSendButton = showMessageSendButton;
-		const shouldShowVoiceButton = showVoiceMessageButton && !isComposing && !hasAttachments;
+		const shouldShowVoiceButton =
+			showVoiceMessageButton &&
+			!isComposing &&
+			!hasAttachments &&
+			!(isMobile && (mobileSendCooldownActive || isMessageSending));
 		const isVoiceButtonDisabled = Boolean(voiceDisabled || disableSendButton || isSlowmodeActive || isOverLimit);
 		const shouldShowMobileSendButton = isMobile && !shouldShowVoiceButton;
 		const shouldShowDesktopSend = !isMobile && shouldShowDesktopSendButton && !shouldShowVoiceButton;
@@ -158,8 +164,34 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 			return () => onVoiceInteractionChange?.(false);
 		}, [onVoiceInteractionChange]);
 
+		React.useEffect(() => {
+			return () => {
+				if (mobileSendCooldownTimerRef.current != null) {
+					window.clearTimeout(mobileSendCooldownTimerRef.current);
+					mobileSendCooldownTimerRef.current = null;
+				}
+			};
+		}, []);
+
+		const startMobileSendCooldown = React.useCallback(() => {
+			if (!isMobile) {
+				return;
+			}
+
+			setMobileSendCooldownActive(true);
+			if (mobileSendCooldownTimerRef.current != null) {
+				window.clearTimeout(mobileSendCooldownTimerRef.current);
+			}
+			mobileSendCooldownTimerRef.current = window.setTimeout(() => {
+				setMobileSendCooldownActive(false);
+				mobileSendCooldownTimerRef.current = null;
+			}, 420);
+		}, [isMobile]);
+
 		const handleVoicePointerDown = React.useCallback(
 			async (event: React.PointerEvent<HTMLButtonElement>) => {
+				const pointerTarget = event.currentTarget;
+
 				if (event.pointerType === 'mouse' && event.button !== 0) {
 					return;
 				}
@@ -175,7 +207,7 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 					shouldCancelOnReleaseRef.current = false;
 					shouldLockOnReleaseRef.current = false;
 					gestureModeRef.current = 'undecided';
-					event.currentTarget.setPointerCapture(event.pointerId);
+					pointerTarget.setPointerCapture(event.pointerId);
 					return;
 				}
 
@@ -188,7 +220,7 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 				shouldCancelOnReleaseRef.current = false;
 				shouldLockOnReleaseRef.current = false;
 				gestureModeRef.current = 'undecided';
-				event.currentTarget.setPointerCapture(event.pointerId);
+				pointerTarget.setPointerCapture(event.pointerId);
 				if (event.pointerType !== 'mouse') {
 					event.preventDefault();
 				}
@@ -203,8 +235,8 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 				}
 
 				if (!canStart) {
-					if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-						event.currentTarget.releasePointerCapture(event.pointerId);
+					if (pointerTarget.isConnected && pointerTarget.hasPointerCapture(event.pointerId)) {
+						pointerTarget.releasePointerCapture(event.pointerId);
 					}
 					resetVoiceState();
 					return;
@@ -266,13 +298,19 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 		}, [isVoiceLocked, isVoiceRecording]);
 
 		const handleVoiceLostPointerCapture = React.useCallback(() => {
+			if (suppressLostPointerCaptureRef.current) {
+				return;
+			}
 			// When recording is locked, losing pointer capture is expected after swipe-up lock.
 			// Keep recording state until user taps again to send.
 			if (isVoiceRecordingRef.current && isVoiceLockedRef.current) {
 				return;
 			}
+			if (isVoiceRecordingRef.current) {
+				onVoiceRecordCancel?.();
+			}
 			resetVoiceState();
-		}, [resetVoiceState]);
+		}, [onVoiceRecordCancel, resetVoiceState]);
 
 		const handleVoicePointerUp = React.useCallback(
 			(event: React.PointerEvent<HTMLButtonElement>) => {
@@ -283,12 +321,20 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 					return;
 				}
 				if (!isVoiceRecording) {
+					suppressLostPointerCaptureRef.current = true;
 					event.currentTarget.releasePointerCapture(event.pointerId);
+					queueMicrotask(() => {
+						suppressLostPointerCaptureRef.current = false;
+					});
 					resetVoiceState();
 					return;
 				}
 				if (shouldCancelOnReleaseRef.current) {
+					suppressLostPointerCaptureRef.current = true;
 					event.currentTarget.releasePointerCapture(event.pointerId);
+					queueMicrotask(() => {
+						suppressLostPointerCaptureRef.current = false;
+					});
 					onVoiceRecordCancel?.();
 					resetVoiceState();
 					return;
@@ -304,17 +350,29 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 					voicePointerIdRef.current = null;
 					voiceStartXRef.current = null;
 					voiceStartYRef.current = null;
+					suppressLostPointerCaptureRef.current = true;
 					event.currentTarget.releasePointerCapture(event.pointerId);
+					queueMicrotask(() => {
+						suppressLostPointerCaptureRef.current = false;
+					});
 					return;
 				}
 				if (isVoiceLocked) {
+					suppressLostPointerCaptureRef.current = true;
 					event.currentTarget.releasePointerCapture(event.pointerId);
+					queueMicrotask(() => {
+						suppressLostPointerCaptureRef.current = false;
+					});
 					onVoiceRecordStop?.();
 					resetVoiceState();
 					return;
 				}
 				if (isVoiceRecording) {
+					suppressLostPointerCaptureRef.current = true;
 					event.currentTarget.releasePointerCapture(event.pointerId);
+					queueMicrotask(() => {
+						suppressLostPointerCaptureRef.current = false;
+					});
 					onVoiceRecordStop?.();
 				}
 				resetVoiceState();
@@ -394,30 +452,21 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 
 				<div
 					ref={invisibleExpressionPickerTriggerRef}
-					style={{position: 'absolute', pointerEvents: 'none', opacity: 0, width: 0, height: 0}}
+					className={styles.expressionPickerAnchor}
 				/>
 
 				{isMobile && !isVoiceInteractionActive && (
-					<AnimatePresence initial={false}>
-						{shouldShowMobileGiftButton && !isComposing && (
-							<motion.div
-								key="mobile-gift"
-								initial={{width: 0, opacity: 0, x: 8}}
-								animate={{width: 'auto', opacity: 1, x: 0}}
-								exit={{width: 0, opacity: 0, x: 8}}
-								transition={{type: 'tween', duration: 0.18}}
-								style={{overflow: 'hidden', display: 'flex', alignItems: 'stretch'}}
-							>
-								<TextareaButton
-									icon={GiftIcon}
-									label={t`Gift Plutonium`}
-									onClick={() => PremiumModalActionCreators.open(true)}
-									onContextMenu={onContextMenu}
-									className={styles.utilityActionButton}
-								/>
-							</motion.div>
+					<>
+						{shouldShowMobileGiftButton && (
+							<TextareaButton
+								icon={GiftIcon}
+								label={t`Gift Plutonium`}
+								onClick={() => PremiumModalActionCreators.open(true)}
+								onContextMenu={onContextMenu}
+								className={styles.utilityActionButton}
+							/>
 						)}
-					</AnimatePresence>
+					</>
 				)}
 
 				{shouldShowMobileSendButton && !isVoiceInteractionActive && (
@@ -425,8 +474,12 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 						disabled={isSlowmodeActive || isOverLimit || (!hasContent && !hasAttachments) || disableSendButton}
 						icon={PaperPlaneRightIcon}
 						label={t`Send Message · Right-click to schedule`}
+						onPointerDown={(event) => {
+							event.preventDefault();
+						}}
 						onClick={() => {
 							hapticTap();
+							startMobileSendCooldown();
 							onSubmit();
 						}}
 						onContextMenu={onContextMenu}
@@ -473,7 +526,6 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 							disabled={isVoiceButtonDisabled}
 							style={
 								{
-									'--voice-level': `${Math.max(0, Math.min(1, voiceInputLevel))}`,
 									'--voice-cancel-progress': `${Math.max(voiceCancelProgress, voiceLockedCancelProgress)}`,
 									'--voice-lock-progress': `${voiceLockProgress}`,
 									'--voice-locked-cancel-progress': `${voiceLockedCancelProgress}`,
@@ -488,8 +540,6 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 							}}
 							onLostPointerCapture={handleVoiceLostPointerCapture}
 						>
-							<span className={styles.voicePulseRingOuter} aria-hidden />
-							<span className={styles.voicePulseRingInner} aria-hidden />
 							{isVoiceLocked ? (
 								<PaperPlaneRightIcon weight="fill" className={clsx(styles.voiceRecorderIcon, styles.voiceRecorderIconSend)} />
 							) : (

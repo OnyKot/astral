@@ -27,6 +27,14 @@ import {EmbedGif} from '~/components/channel/embeds/media/EmbedGifv';
 import {EmbedImage} from '~/components/channel/embeds/media/EmbedImage';
 import EmbedVideo from '~/components/channel/embeds/media/EmbedVideo';
 import {MessageUploadProgress} from '~/components/channel/MessageUploadProgress';
+import {
+	isAudioAttachment,
+	isAudioType,
+	isGifType,
+	isImageType,
+	isVideoAttachment,
+	isVoiceLikeAttachment,
+} from '~/components/channel/messageAttachmentUtils';
 import {ExpiryFootnote} from '~/components/common/ExpiryFootnote';
 import {SpoilerOverlay} from '~/components/common/SpoilerOverlay';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
@@ -55,22 +63,18 @@ interface AttachmentMediaProps {
 	mediaAttachments?: ReadonlyArray<MessageAttachment>;
 }
 
-const isImageType = (contentType?: string): boolean => contentType?.startsWith('image/') ?? false;
-const isVideoType = (contentType?: string): boolean => contentType?.startsWith('video/') ?? false;
-const isAudioType = (contentType?: string): boolean => contentType?.startsWith('audio/') ?? false;
-const isGifType = (contentType?: string): boolean => contentType === 'image/gif';
-const hasVoiceMessageFlag = (flags: number): boolean =>
-	(flags & MessageAttachmentFlags.IS_VOICE_MESSAGE) === MessageAttachmentFlags.IS_VOICE_MESSAGE;
-const isWebmFilename = (filename?: string): boolean => filename?.toLowerCase().endsWith('.webm') ?? false;
-const isVoiceLikeAttachment = (attachment: MessageAttachment): boolean =>
-	hasVoiceMessageFlag(attachment.flags) || isAudioType(attachment.content_type) || isWebmFilename(attachment.filename);
-
 const isAnimated = (flags: number): boolean => (flags & MessageAttachmentFlags.IS_ANIMATED) !== 0;
 
 const isUploading = (flags: number): boolean => (flags & 0x1000) !== 0;
 
 const hasValidDimensions = (attachment: MessageAttachment): boolean =>
 	typeof attachment.width === 'number' && typeof attachment.height === 'number';
+const FALLBACK_VIDEO_DIMENSIONS = {width: 640, height: 360};
+
+const getVideoDimensions = (attachment: MessageAttachment): {width: number; height: number} =>
+	hasValidDimensions(attachment)
+		? {width: attachment.width!, height: attachment.height!}
+		: FALLBACK_VIDEO_DIMENSIONS;
 
 const AnimatedAttachment: FC<AttachmentMediaProps & {message?: MessageRecord; isPreview?: boolean}> = observer(
 	({attachment, message, isPreview}) => {
@@ -108,19 +112,14 @@ const VideoAttachment: FC<AttachmentMediaProps & {message?: MessageRecord; isPre
 		const proxyUrl = attachment.proxy_url ?? embedUrl;
 		const nsfw = attachment.nsfw || (attachment.flags & MessageAttachmentFlags.CONTAINS_EXPLICIT_MEDIA) !== 0;
 		const attachmentDimensions = getAttachmentMediaDimensions(message);
+		const naturalDimensions = getVideoDimensions(attachment);
 		const mediaCalculator = createCalculator({
 			maxWidth: attachmentDimensions.maxWidth,
 			maxHeight: attachmentDimensions.maxHeight,
 			responsive: true,
 		});
 
-		const {dimensions} = mediaCalculator.calculate(
-			{
-				width: attachment.width!,
-				height: attachment.height!,
-			},
-			{forceScale: true},
-		);
+		const {dimensions} = mediaCalculator.calculate(naturalDimensions, {forceScale: true});
 
 		return (
 			<FocusRing within ringClassName={messageStyles.mediaFocusRing}>
@@ -230,7 +229,7 @@ const AttachmentMedia: FC<AttachmentMediaProps & {message?: MessageRecord; isPre
 	},
 );
 
-export const Attachment: FC<AttachmentProps> = observer(({attachment, isPreview, message, renderInMosaic}) => {
+export const Attachment: FC<AttachmentProps> = observer(({attachment, isPreview, message, renderInMosaic, mediaAttachments}) => {
 	const {t} = useLingui();
 	const isSpoiler = (attachment.flags & MessageAttachmentFlags.IS_SPOILER) !== 0;
 	const {hidden: spoilerHidden, reveal: revealSpoiler} = useSpoilerState(isSpoiler, message?.channelId);
@@ -277,13 +276,14 @@ export const Attachment: FC<AttachmentProps> = observer(({attachment, isPreview,
 
 	if (
 		renderInMosaic &&
-		hasValidDimensions(att) &&
-		(isImageType(att.content_type) || isVideoType(att.content_type) || isAudioType(att.content_type))
+		(isVideoAttachment(att) ||
+			isAudioAttachment(att) ||
+			(hasValidDimensions(att) && isImageType(att.content_type)))
 	) {
 		return null;
 	}
 
-	if (!inlineAttachmentMedia && (isImageType(att.content_type) || isVideoType(att.content_type))) {
+	if (!inlineAttachmentMedia && (isImageType(att.content_type) || isVideoAttachment(att))) {
 		return renderWithFootnote(
 			wrapSpoiler(
 				<FocusRing within ringClassName={messageStyles.mediaFocusRing}>
@@ -304,6 +304,22 @@ export const Attachment: FC<AttachmentProps> = observer(({attachment, isPreview,
 		);
 	}
 
+	if (isVideoAttachment(att)) {
+		return renderWithFootnote(
+			wrapSpoiler(
+				<div className={effectiveExpired ? styles.expiredContent : undefined}>
+					{effectiveExpired && <div className={styles.expiredOverlay}>{t`This attachment has expired`}</div>}
+					<VideoAttachment
+						attachment={enrichedAttachment}
+						message={message}
+						mediaAttachments={mediaAttachments}
+						isPreview={isPreview}
+					/>
+				</div>,
+			),
+		);
+	}
+
 	if (!hasValidDimensions(att)) {
 		return renderWithFootnote(
 			wrapSpoiler(
@@ -319,18 +335,12 @@ export const Attachment: FC<AttachmentProps> = observer(({attachment, isPreview,
 			wrapSpoiler(
 				<div className={effectiveExpired ? styles.expiredContent : undefined}>
 					{effectiveExpired && <div className={styles.expiredOverlay}>{t`This attachment has expired`}</div>}
-					<AttachmentMedia attachment={enrichedAttachment} message={message} isPreview={isPreview} />
-				</div>,
-			),
-		);
-	}
-
-	if (isVideoType(att.content_type)) {
-		return renderWithFootnote(
-			wrapSpoiler(
-				<div className={effectiveExpired ? styles.expiredContent : undefined}>
-					{effectiveExpired && <div className={styles.expiredOverlay}>{t`This attachment has expired`}</div>}
-					<VideoAttachment attachment={enrichedAttachment} message={message} isPreview={isPreview} />
+					<AttachmentMedia
+						attachment={enrichedAttachment}
+						message={message}
+						mediaAttachments={mediaAttachments}
+						isPreview={isPreview}
+					/>
 				</div>,
 			),
 		);

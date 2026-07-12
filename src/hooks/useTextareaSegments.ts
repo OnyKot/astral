@@ -34,6 +34,21 @@ interface UseTextareaSegmentsReturn {
 		type: MentionSegment['type'],
 		id: string,
 	) => {newText: string; newSegments: Array<MentionSegment>};
+	replaceText: (
+		currentText: string,
+		start: number,
+		end: number,
+		replacementText: string,
+	) => {newText: string; newSegments: Array<MentionSegment>};
+	replaceWithSegment: (
+		currentText: string,
+		start: number,
+		end: number,
+		displayText: string,
+		actualText: string,
+		type: MentionSegment['type'],
+		id: string,
+	) => {newText: string; newSegments: Array<MentionSegment>};
 	handleTextChange: (newValue: string, oldValue: string) => void;
 	clearSegments: () => void;
 }
@@ -70,6 +85,25 @@ export function useTextareaSegments(): UseTextareaSegmentsReturn {
 		previousValueRef.current = newValue;
 	}, []);
 
+	const replaceText = React.useCallback(
+		(currentText: string, start: number, end: number, replacementText: string) =>
+			segmentManagerRef.current.replaceText(currentText, start, end, replacementText),
+		[],
+	);
+
+	const replaceWithSegment = React.useCallback(
+		(
+			currentText: string,
+			start: number,
+			end: number,
+			displayText: string,
+			actualText: string,
+			type: MentionSegment['type'],
+			id: string,
+		) => segmentManagerRef.current.replaceWithSegment(currentText, start, end, displayText, actualText, type, id),
+		[],
+	);
+
 	const clearSegments = React.useCallback(() => {
 		segmentManagerRef.current.clear();
 		previousValueRef.current = '';
@@ -81,6 +115,8 @@ export function useTextareaSegments(): UseTextareaSegmentsReturn {
 		displayToActual,
 		displayToActualSubstring,
 		insertSegment,
+		replaceText,
+		replaceWithSegment,
 		handleTextChange,
 		clearSegments,
 	};

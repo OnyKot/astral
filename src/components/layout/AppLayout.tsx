@@ -24,6 +24,7 @@ import * as AuthenticationActionCreators from '~/actions/AuthenticationActionCre
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import {GatewayConnectionBanner} from '~/components/app/GatewayConnectionBanner';
+import {MobileUiWelcome} from '~/components/app/MobileUiWelcome';
 import {NewDesktopDesignNotice} from '~/components/app/NewDesktopDesignNotice';
 import {OnboardingChecklist} from '~/components/app/OnboardingChecklist';
 import {TelegramWebViewWarning} from '~/components/app/TelegramWebViewWarning';
@@ -90,6 +91,7 @@ export const AppLayout = observer(({children}: {children: React.ReactNode}) => {
 			<div className={clsx(styles.appLayout, appState.isStandalone && styles.appLayoutStandalone)}>
 				{isAuthenticated && <UpdateBanner />}
 				{isAuthenticated && <NewDesktopDesignNotice />}
+				{isAuthenticated && <MobileUiWelcome />}
 				{isAuthenticated && <GatewayConnectionBanner />}
 				{isAuthenticated && <OnboardingChecklist />}
 				{children}

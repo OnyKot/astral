@@ -20,7 +20,6 @@
 import type {FC, SVGProps} from 'react';
 import Config from '~/Config';
 import {MODE} from '~/lib/env';
-import {Platform} from '~/lib/Platform';
 
 export type TwemojiComponent = FC<SVGProps<SVGSVGElement>>;
 
@@ -30,14 +29,16 @@ const SUPPORTED_EMOJI_FILE_EXTENSIONS = new Set(['svg', 'png', 'webp']);
 const codePointCache = new Map<string, string>();
 const twemojiUrlCache = new Map<string, string | null>();
 const emojiUrlCache = new Map<string, string | null>();
+const emojiVisualScaleCache = new Map<string, number>();
+const MAX_VISUAL_SCALE_CACHE = 1200;
+const VISUAL_SAMPLE_SIZE = 48;
+const VISUAL_TARGET_COVERAGE = 0.82;
+const VISUAL_MAX_SCALE = 1.18;
+let visualSampleCanvas: HTMLCanvasElement | null = null;
 
 export const emojiStyle = Config.PUBLIC_EMOJI_STYLE;
-/*
- * Keep emoji style consistent across desktop and mobile:
- * when the app style is telegram/twemoji/vk we always render CDN emoji,
- * including iOS. Native Apple glyphs are used only for explicit apple style.
- */
-export const shouldUseNativeEmoji = Platform.isAppleDevice && emojiStyle === 'apple';
+// Keep chat emoji assets identical across Windows, macOS, iOS, and Android.
+export const shouldUseNativeEmoji = false;
 
 function normalizeCdnBaseUrl(url: string | null | undefined): string {
 	const trimmed = url?.trim() ?? '';
@@ -153,3 +154,66 @@ export const getEmojiURL = (unicode: string): string | null => {
 
 export const getTwemojiSvg = (_codePoints: string): TwemojiComponent | null => null;
 export const getEmojiSvg = (_unicode: string): TwemojiComponent | null => null;
+
+function cacheEmojiVisualScale(url: string, scale: number): void {
+	emojiVisualScaleCache.set(url, scale);
+	if (emojiVisualScaleCache.size <= MAX_VISUAL_SCALE_CACHE) return;
+
+	const firstKey = emojiVisualScaleCache.keys().next().value;
+	if (typeof firstKey === 'string') {
+		emojiVisualScaleCache.delete(firstKey);
+	}
+}
+
+export const applyEmojiVisualNormalization = (image: HTMLImageElement): void => {
+	const url = image.currentSrc || image.src;
+	if (!url || !image.complete || image.naturalWidth === 0 || image.naturalHeight === 0) return;
+
+	const cachedScale = emojiVisualScaleCache.get(url);
+	if (cachedScale !== undefined) {
+		image.style.setProperty('--emoji-visual-scale', String(cachedScale));
+		return;
+	}
+
+	try {
+		const canvas = visualSampleCanvas ?? document.createElement('canvas');
+		visualSampleCanvas = canvas;
+		canvas.width = VISUAL_SAMPLE_SIZE;
+		canvas.height = VISUAL_SAMPLE_SIZE;
+
+		const context = canvas.getContext('2d', {willReadFrequently: true});
+		if (!context) return;
+
+		context.clearRect(0, 0, VISUAL_SAMPLE_SIZE, VISUAL_SAMPLE_SIZE);
+		context.drawImage(image, 0, 0, VISUAL_SAMPLE_SIZE, VISUAL_SAMPLE_SIZE);
+		const pixels = context.getImageData(0, 0, VISUAL_SAMPLE_SIZE, VISUAL_SAMPLE_SIZE).data;
+
+		let minX = VISUAL_SAMPLE_SIZE;
+		let minY = VISUAL_SAMPLE_SIZE;
+		let maxX = -1;
+		let maxY = -1;
+
+		for (let y = 0; y < VISUAL_SAMPLE_SIZE; y += 1) {
+			for (let x = 0; x < VISUAL_SAMPLE_SIZE; x += 1) {
+				const alpha = pixels[(y * VISUAL_SAMPLE_SIZE + x) * 4 + 3];
+				if (alpha < 12) continue;
+				minX = Math.min(minX, x);
+				minY = Math.min(minY, y);
+				maxX = Math.max(maxX, x);
+				maxY = Math.max(maxY, y);
+			}
+		}
+
+		if (maxX < minX || maxY < minY) return;
+
+		const visibleWidth = maxX - minX + 1;
+		const visibleHeight = maxY - minY + 1;
+		const coverage = Math.max(visibleWidth, visibleHeight) / VISUAL_SAMPLE_SIZE;
+		const scale = Math.round(Math.min(VISUAL_MAX_SCALE, Math.max(1, VISUAL_TARGET_COVERAGE / coverage)) * 1000) / 1000;
+
+		cacheEmojiVisualScale(url, scale);
+		image.style.setProperty('--emoji-visual-scale', String(scale));
+	} catch {
+		cacheEmojiVisualScale(url, 1);
+	}
+};

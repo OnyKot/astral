@@ -25,6 +25,7 @@ import type {Channel} from '~/records/ChannelRecord';
 import type {Invite} from '~/records/MessageRecord';
 import ChannelStore from '~/stores/ChannelStore';
 import InviteStore from '~/stores/InviteStore';
+import PermissionStore from '~/stores/PermissionStore';
 
 const logger = new Logger('Channels');
 
@@ -40,6 +41,7 @@ export const create = async (
 ) => {
 	try {
 		const response = await http.post<Channel>(Endpoints.GUILD_CHANNELS(guildId), params);
+		ChannelStore.handleChannelCreate({channel: response.body});
 		return response.body;
 	} catch (error) {
 		logger.error('Failed to create channel:', error);
@@ -115,6 +117,8 @@ export const updatePermissionOverwrites = async (
 			url: Endpoints.CHANNEL(channelId),
 			body: {permission_overwrites: permissionOverwrites},
 		});
+		ChannelStore.handleChannelCreate({channel: response.body});
+		PermissionStore.handleChannelUpdate(channelId);
 		return response.body;
 	} catch (error) {
 		logger.error(`Failed to update permission overwrites for channel ${channelId}:`, error);

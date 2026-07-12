@@ -85,7 +85,9 @@
 	gap: 0.75rem;
 	padding: 0.875rem 1rem;
 	text-align: left;
-	transition: background-color 0.15s;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 	cursor: pointer;
 	-webkit-tap-highlight-color: transparent;
 	user-select: none;
@@ -106,6 +108,7 @@
 @media (hover: hover) and (pointer: fine) {
 	.memberItemInteractive:hover {
 		background-color: var(--background-modifier-hover);
+		transform: translateX(2px);
 	}
 
 	.memberItemInteractive:active {
@@ -115,6 +118,17 @@
 	.memberItem[data-non-interactive]:hover {
 		background-color: transparent;
 		cursor: default;
+		transform: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.memberItem {
+		transition: background-color var(--motion-dur-short) var(--motion-ease-snap);
+	}
+
+	.memberItemInteractive:hover {
+		transform: none;
 	}
 }
 

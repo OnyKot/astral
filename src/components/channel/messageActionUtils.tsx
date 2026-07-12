@@ -44,6 +44,7 @@ import RelationshipStore from '~/stores/RelationshipStore';
 import {buildMessageJumpLink} from '~/utils/messageLinkUtils';
 import {type ReactionEmoji, toReactionEmoji, type UnicodeEmoji} from '~/utils/ReactionUtils';
 import * as SnowflakeUtils from '~/utils/SnowflakeUtils';
+import {isStoryForwardPayload} from '~/utils/StoryForwardPayload';
 
 export function isEmbedsSuppressed(message: MessageRecord): boolean {
 	return (message.flags & MessageFlags.SUPPRESS_EMBEDS) !== 0;
@@ -180,7 +181,7 @@ export function useMessageActionHandlers(message: MessageRecord, options?: {onCl
 	};
 
 	const handleCopyMessage = () => {
-		if (message.content) {
+		if (message.content && !isStoryForwardPayload(message.content)) {
 			TextCopyActionCreators.copy(i18n, message.content);
 			onClose?.();
 		}
@@ -193,7 +194,7 @@ export function useMessageActionHandlers(message: MessageRecord, options?: {onCl
 			channelId: message.channelId,
 			messageId: message.id,
 		});
-		const messageContent = message.content.trim();
+		const messageContent = isStoryForwardPayload(message.content) ? '' : message.content.trim();
 		if (messageContent.length === 0) {
 			TextCopyActionCreators.copy(i18n, jumpLink);
 			onClose?.();
@@ -230,7 +231,7 @@ export function useMessageActionHandlers(message: MessageRecord, options?: {onCl
 			try {
 				await navigator.share({
 					title: 'Astral message',
-					text: message.content ? message.content.slice(0, 280) : undefined,
+					text: message.content && !isStoryForwardPayload(message.content) ? message.content.slice(0, 280) : undefined,
 					url: jumpLink,
 				});
 				return;

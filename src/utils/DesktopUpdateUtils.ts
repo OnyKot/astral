@@ -19,6 +19,8 @@
 
 import {isDesktop, type NativePlatform} from '~/utils/NativeUtils';
 
+import {fetchReleaseManifest} from '~/utils/ReleaseClient';
+
 export interface DesktopVersionGateInfo {
 	desktopVersion?: string;
 	desktopChannel?: string;
@@ -26,7 +28,7 @@ export interface DesktopVersionGateInfo {
 	desktopOS?: string;
 }
 
-export const MINIMUM_SUPPORTED_DESKTOP_VERSION = '1.2.17';
+export const MINIMUM_SUPPORTED_DESKTOP_VERSION = '1.5.0';
 
 const VERSION_PART_SPLIT_PATTERN = /[.-]/u;
 const NUMERIC_PREFIX_PATTERN = /^\d+/u;
@@ -81,6 +83,26 @@ export const isDesktopUpdateRequired = (info: DesktopVersionGateInfo | null | un
 
 	return compareVersionStrings(info.desktopVersion, MINIMUM_SUPPORTED_DESKTOP_VERSION) < 0;
 };
+
+export async function resolveMinimumSupportedDesktopVersion(): Promise<string> {
+	const manifest = await fetchReleaseManifest();
+	return manifest?.desktop?.minVersion ?? MINIMUM_SUPPORTED_DESKTOP_VERSION;
+}
+
+export async function isDesktopUpdateRequiredAsync(
+	info: DesktopVersionGateInfo | null | undefined,
+): Promise<boolean> {
+	if (!isDesktop()) {
+		return false;
+	}
+
+	if (!info?.desktopVersion) {
+		return true;
+	}
+
+	const minimumVersion = await resolveMinimumSupportedDesktopVersion();
+	return compareVersionStrings(info.desktopVersion, minimumVersion) < 0;
+}
 
 const normalizeDesktopChannel = (value: string | null | undefined): 'stable' | 'canary' => {
 	return value === 'canary' ? 'canary' : 'stable';

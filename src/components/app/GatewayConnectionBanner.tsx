@@ -21,6 +21,7 @@ import {Trans} from '@lingui/react/macro';
 import {AnimatePresence, motion, useReducedMotion} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
+import {ReconnectOrbit} from '~/components/voice/ReconnectOrbit';
 import ConnectionStore from '~/stores/ConnectionStore';
 import styles from './GatewayConnectionBanner.module.css';
 
@@ -66,18 +67,25 @@ export const GatewayConnectionBanner = observer(function GatewayConnectionBanner
 	return (
 		<AnimatePresence>
 			{shouldShow && (
-				<motion.div
-					key="gateway-banner"
-					className={styles.banner}
-					role="status"
-					aria-live="polite"
-					{...motionProps}
-				>
-					<span className={styles.dot} />
-					<span className={styles.text}>
-						{isConnecting ? <Trans>Reconnecting to Astral…</Trans> : <Trans>You're offline. Trying to reconnect…</Trans>}
-					</span>
-				</motion.div>
+				<div className={styles.bannerWrap}>
+					<motion.div
+						key="gateway-banner"
+						className={styles.banner}
+						role="status"
+						aria-live="polite"
+						{...motionProps}
+					>
+						<ReconnectOrbit size="compact" className={styles.orbit} />
+						<span className={styles.text}>
+							<strong>
+								{isConnecting ? <Trans>Reconnecting to Astral...</Trans> : <Trans>You're offline</Trans>}
+							</strong>
+							<span>
+								<Trans>Messages will sync as soon as the connection returns.</Trans>
+							</span>
+						</span>
+					</motion.div>
+				</div>
 			)}
 		</AnimatePresence>
 	);

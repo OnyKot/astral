@@ -20,6 +20,8 @@
 import {Trans} from '@lingui/react/macro';
 import {BookmarkSimpleIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
+import {MobileNavigationMenuButton} from '~/components/layout/MobileNavigationDrawer';
+import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import styles from './NotificationsPage.module.css';
 
 interface NotificationsPageProps {
@@ -27,12 +29,17 @@ interface NotificationsPageProps {
 }
 
 export const NotificationsPage = observer(({onBookmarksClick}: NotificationsPageProps) => {
+	const isMobile = MobileLayoutStore.isMobileLayout();
+
 	return (
 		<div className={styles.container}>
 			<div className={styles.header}>
-				<h1 className={styles.title}>
-					<Trans>Notifications</Trans>
-				</h1>
+				<div className={styles.headerTitle}>
+					{isMobile && <MobileNavigationMenuButton />}
+					<h1 className={styles.title}>
+						<Trans>Notifications</Trans>
+					</h1>
+				</div>
 				<button type="button" onClick={onBookmarksClick} className={styles.bookmarkButton}>
 					<BookmarkSimpleIcon weight="fill" className={styles.bookmarkIcon} />
 				</button>

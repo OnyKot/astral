@@ -27,6 +27,7 @@ import '~/components/quick-switcher/QuickSwitcherModal';
 import {i18n} from '@lingui/core';
 import {I18nProvider} from '@lingui/react';
 import * as Sentry from '@sentry/react';
+import {useEffect, useRef, useState} from 'react';
 import ReactDOM from 'react-dom/client';
 
 import {App} from '~/App';
@@ -52,9 +53,23 @@ import {registerServiceWorker} from '~/sw/register';
 import {getClientInfo, preloadClientInfo} from '~/utils/ClientInfoUtils';
 import {
 	getDesktopUpdateDownloadUrl,
-	isDesktopUpdateRequired,
-	MINIMUM_SUPPORTED_DESKTOP_VERSION,
+	isDesktopUpdateRequiredAsync,
+	resolveMinimumSupportedDesktopVersion,
 } from '~/utils/DesktopUpdateUtils';
+import {getAndroidUpdateDownloadUrl, getAndroidUpdateGateInfo} from '~/utils/AndroidUpdateUtils';
+import {
+	fetchLiveBuildIdentity,
+	formatBuildSha,
+	getLocalBuildSha,
+	getLocalBuildTimestamp,
+	getLocalProjectEnv,
+	isBuildShaStale,
+	resolveChannelLabel,
+} from '~/utils/BuildIdentityUtils';
+import {fetchReleaseManifest} from '~/utils/ReleaseClient';
+import {getWebUpdateGateInfo} from '~/utils/WebUpdateUtils';
+import {reloadAppHard} from '~/utils/factoryReset';
+import {navigateToWebUpdatePage} from '~/utils/WebUpdateNavigate';
 import Config from './Config';
 
 preloadClientInfo();
@@ -139,7 +154,12 @@ if (shouldInitializeSentry) {
 	Sentry.init({
 		dsn: resolvedSentryDsn!,
 		environment: Config.PUBLIC_PROJECT_ENV,
+		release: Config.PUBLIC_BUILD_SHA,
 		sendDefaultPii: true,
+		// Capture user-facing breakage, not just hard crashes: everything the
+		// app logs as console.error (render warnings, failed chunk loads,
+		// store errors) lands in the crash-ingest too, tagged by release.
+		integrations: [Sentry.captureConsoleIntegration({levels: ['error']})],
 		beforeSend(event, hint) {
 			const error = hint.originalException;
 			if (error instanceof Error) {
@@ -152,18 +172,128 @@ if (shouldInitializeSentry) {
 	});
 }
 
+// Auto-recovery budget for transient render crashes. If the root error boundary
+// trips, we silently re-mount the app a couple of times before falling back to
+// the full crash screen. This absorbs one-off render glitches (stale chunk,
+// transient store state) without dumping the user onto the crash UI, while the
+// rolling window guarantees a genuinely broken build can't loop forever.
+const AUTO_RECOVER_KEY = '__astral_auto_recover';
+const AUTO_RECOVER_MAX = 2;
+const AUTO_RECOVER_WINDOW_MS = 20000;
+
+const readRecentRecoveries = (): Array<number> => {
+	try {
+		const now = Date.now();
+		const raw = sessionStorage.getItem(AUTO_RECOVER_KEY);
+		const times: Array<number> = raw ? JSON.parse(raw) : [];
+		return times.filter((t) => now - t < AUTO_RECOVER_WINDOW_MS);
+	} catch {
+		return [];
+	}
+};
+
+const canAutoRecover = (): boolean => readRecentRecoveries().length < AUTO_RECOVER_MAX;
+
+const recordAutoRecover = (): void => {
+	try {
+		const recent = readRecentRecoveries();
+		recent.push(Date.now());
+		sessionStorage.setItem(AUTO_RECOVER_KEY, JSON.stringify(recent));
+	} catch {
+		// Best-effort; if sessionStorage is unavailable we just show the crash screen.
+	}
+};
+
+function RecoverableErrorFallback({
+	error,
+	eventId,
+	resetError,
+}: {
+	error: unknown;
+	eventId: string;
+	resetError: () => void;
+}) {
+	const [showCrash, setShowCrash] = useState(() => !canAutoRecover());
+	const attempted = useRef(false);
+
+	useEffect(() => {
+		if (showCrash || attempted.current) return;
+		attempted.current = true;
+		recordAutoRecover();
+		const timer = window.setTimeout(() => {
+			if (canAutoRecover() || readRecentRecoveries().length <= AUTO_RECOVER_MAX) {
+				resetError();
+			} else {
+				setShowCrash(true);
+			}
+		}, 60);
+		return () => window.clearTimeout(timer);
+	}, [showCrash, resetError]);
+
+	if (!showCrash) {
+		return null;
+	}
+
+	return (
+		<I18nProvider i18n={i18n}>
+			<ErrorFallback error={error instanceof Error ? error : undefined} eventId={eventId} />
+		</I18nProvider>
+	);
+}
+
 async function bootstrap(): Promise<void> {
 	await initI18n();
 
 	const clientInfo = await getClientInfo();
-	if (isDesktopUpdateRequired(clientInfo)) {
+	if (await isDesktopUpdateRequiredAsync(clientInfo)) {
+		const [requiredVersion, manifest] = await Promise.all([
+			resolveMinimumSupportedDesktopVersion(),
+			fetchReleaseManifest(),
+		]);
 		const root = ReactDOM.createRoot(document.getElementById('root')!);
 		root.render(
 			<I18nProvider i18n={i18n}>
 				<ForcedUpdateScreen
 					currentVersion={clientInfo.desktopVersion ?? null}
-					requiredVersion={MINIMUM_SUPPORTED_DESKTOP_VERSION}
+					requiredVersion={requiredVersion}
 					downloadUrl={getDesktopUpdateDownloadUrl(clientInfo)}
+					notes={manifest?.notes ?? null}
+				/>
+			</I18nProvider>,
+		);
+		return;
+	}
+
+	const androidGate = await getAndroidUpdateGateInfo();
+	if (androidGate.required) {
+		const root = ReactDOM.createRoot(document.getElementById('root')!);
+		root.render(
+			<I18nProvider i18n={i18n}>
+				<ForcedUpdateScreen
+					platform="android"
+					currentVersion={androidGate.info?.versionName ?? androidGate.info?.versionCode?.toString() ?? null}
+					requiredVersion={androidGate.requiredVersionCode.toString()}
+					downloadUrl={getAndroidUpdateDownloadUrl()}
+				/>
+			</I18nProvider>,
+		);
+		return;
+	}
+
+	const webGate = await getWebUpdateGateInfo();
+	if (webGate.required && webGate.liveSha) {
+		const root = ReactDOM.createRoot(document.getElementById('root')!);
+		root.render(
+			<I18nProvider i18n={i18n}>
+				<ForcedUpdateScreen
+					platform="web"
+					currentVersion={formatBuildSha(getLocalBuildSha())}
+					requiredVersion={formatBuildSha(webGate.liveSha)}
+					downloadUrl={window.location.href}
+					notes={webGate.notes}
+					onReload={() => {
+						navigateToWebUpdatePage({sha: webGate.liveSha});
+					}}
 				/>
 			</I18nProvider>,
 		);
@@ -200,11 +330,9 @@ async function bootstrap(): Promise<void> {
 	const root = ReactDOM.createRoot(document.getElementById('root')!);
 	root.render(
 		<Sentry.ErrorBoundary
-			fallback={
-				<I18nProvider i18n={i18n}>
-					<ErrorFallback />
-				</I18nProvider>
-			}
+			fallback={({error, eventId, resetError}) => (
+				<RecoverableErrorFallback error={error} eventId={eventId} resetError={resetError} />
+			)}
 		>
 			<App />
 		</Sentry.ErrorBoundary>,

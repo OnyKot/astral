@@ -54,7 +54,7 @@ interface FlattenedPresence {
 
 type StatusListener = (userId: string, status: StatusType, isMobile: boolean) => void;
 
-class PresenceStore {
+export class PresenceStore {
 	private presences = new Map<string, FlattenedPresence>();
 	private customStatuses = new Map<string, CustomStatus | null>();
 	private musicActivities = new Map<string, MusicActivity | null>();
@@ -91,6 +91,10 @@ class PresenceStore {
 
 	getStatus(userId: string): StatusType {
 		return this.statuses.get(userId) ?? StatusTypes.OFFLINE;
+	}
+
+	hasKnownStatus(userId: string): boolean {
+		return this.statuses.has(userId);
 	}
 
 	isMobile(userId: string): boolean {
@@ -357,9 +361,22 @@ class PresenceStore {
 		} else {
 			existing.guildIds.add(guildId);
 		}
-		existing.status = normalizedStatus;
 		existing.timestamp = now;
 
+		if (isOfflineLike) {
+			if (existing.guildIds.size === 0) {
+				this.evictPresence(userId);
+				return;
+			}
+
+			// Presence updates are scoped to a guild (or the ME context). A delayed
+			// offline event for one context must not overwrite a still-online
+			// presence from another context.
+			this.bumpPresenceVersion();
+			return;
+		}
+
+		existing.status = normalizedStatus;
 		if (afk !== undefined) {
 			existing.afk = afk;
 		}
@@ -370,13 +387,6 @@ class PresenceStore {
 		existing.musicActivity = musicActivity;
 		this.customStatuses.set(userId, customStatus);
 		this.musicActivities.set(userId, musicActivity);
-
-		if (isOfflineLike) {
-			if (existing.guildIds.size === 0) {
-				this.evictPresence(userId);
-				return;
-			}
-		}
 
 		this.updateStatusFromPresence(userId, existing);
 		this.bumpPresenceVersion();

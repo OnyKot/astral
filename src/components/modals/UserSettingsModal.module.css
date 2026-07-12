@@ -26,7 +26,7 @@
 	margin-bottom: 20px;
 	min-width: 0;
 	background: color-mix(in srgb, var(--background-floating) 14%, var(--background-primary) 86%);
-	border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
+	border: none;
 	box-shadow: none;
 }
 
@@ -55,9 +55,7 @@
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
-	background:
-		radial-gradient(circle at top center, color-mix(in srgb, var(--brand-primary) 10%, transparent), transparent 42%),
-		linear-gradient(180deg, color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%), var(--background-secondary));
+	background: var(--background-secondary);
 	display: flex;
 	flex-direction: column;
 }
@@ -66,8 +64,8 @@
 	position: relative;
 	flex-shrink: 0;
 	z-index: 10;
-	background: color-mix(in srgb, var(--background-primary) 92%, transparent);
-	backdrop-filter: blur(20px);
+	background: var(--background-primary);
+	backdrop-filter: none;
 }
 
 .mobileHeaderContent {
@@ -88,8 +86,7 @@
 	height: 100%;
 	display: flex;
 	flex-direction: column;
-	background:
-		linear-gradient(180deg, color-mix(in srgb, var(--background-secondary) 96%, var(--background-primary) 4%), var(--background-secondary));
+	background: var(--background-secondary);
 	contain: layout style paint;
 }
 

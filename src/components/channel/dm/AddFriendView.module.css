@@ -22,12 +22,12 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
+	justify-content: flex-start;
 	height: 100%;
-	padding: 1.5rem;
+	padding: clamp(1.25rem, 6vh, 4rem) 1.5rem 1.5rem;
 	padding-bottom: calc(1.5rem + 48px);
 	overflow: hidden;
-	background: color-mix(in srgb, var(--background-primary) 97%, transparent);
+	background: transparent;
 }
 
 .card {
@@ -35,31 +35,30 @@
 	z-index: 1;
 	display: flex;
 	flex-direction: column;
-	align-items: center;
+	align-items: flex-start;
 	width: 100%;
 	max-width: 42rem;
-	padding: clamp(1.5rem, 3vw, 2.5rem);
-	text-align: center;
-	border-radius: 1.25rem;
-	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
-	background: color-mix(in srgb, var(--background-floating) 84%, var(--background-secondary) 16%);
-	box-shadow: 0 14px 28px color-mix(in srgb, var(--background-primary) 24%, transparent);
+	padding: clamp(1rem, 2.5vw, 1.75rem) 0;
+	text-align: left;
+	border-radius: 0;
+	border: none;
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: transparent;
+	box-shadow: none;
 	overflow: visible;
 }
 
 .heroIcon {
 	position: relative;
 	z-index: 1;
-	width: 72px;
-	height: 72px;
-	margin-bottom: 1.1rem;
-	padding: 0.9rem;
-	border-radius: 1.55rem;
-	border: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
-	background: color-mix(in srgb, var(--brand-primary) 10%, var(--background-floating) 90%);
-	box-shadow:
-		0 12px 24px color-mix(in srgb, var(--brand-primary) 18%, transparent),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
+	width: 3rem;
+	height: 3rem;
+	margin-bottom: 0.95rem;
+	padding: 0.62rem;
+	border-radius: 999px;
+	border: none;
+	background: color-mix(in srgb, var(--brand-primary) 10%, transparent);
+	box-shadow: none;
 	color: color-mix(in srgb, var(--brand-primary) 78%, var(--text-primary));
 }
 
@@ -70,19 +69,19 @@
 .title {
 	position: relative;
 	z-index: 1;
-	margin: 0 0 0.55rem 0;
+	margin: 0 0 0.42rem 0;
 	font-weight: 700;
-	font-size: 1.55rem;
-	line-height: 2rem;
+	font-size: 1.35rem;
+	line-height: 1.7rem;
 	color: var(--text-primary);
 }
 
 .subtitle {
 	position: relative;
 	z-index: 1;
-	margin: 0 0 1.75rem 0;
+	margin: 0 0 1.35rem 0;
 	max-width: 29rem;
-	font-size: 0.97rem;
+	font-size: 0.93rem;
 	line-height: 1.5rem;
 	color: color-mix(in srgb, var(--text-primary-muted) 92%, var(--text-secondary));
 }
@@ -106,7 +105,7 @@
 
 @media (max-width: 480px) {
 	.addFriendContainer {
-		padding: 1rem;
+		padding: 1rem 0;
 		padding-bottom: calc(1rem + 48px);
 	}
 
@@ -136,8 +135,28 @@
 	}
 
 	.card {
+		align-items: flex-start;
+		padding: 1rem;
+		text-align: left;
+		border: none;
+		border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+	}
+
+	.heroIcon {
+		width: 48px;
+		height: 48px;
+		margin-bottom: 0.8rem;
+		padding: 0.65rem;
 		border-radius: 1rem;
 		box-shadow: none;
+	}
+
+	.title {
+		font-size: 1.2rem;
+		line-height: 1.45rem;
 	}
 
 	.subtitle {
@@ -153,13 +172,13 @@
 
 @media (max-width: 360px) {
 	.card {
-		padding: 1rem;
+		padding: 0.75rem;
 	}
 
 	.heroIcon {
-		width: 56px;
-		height: 56px;
-		padding: 0.75rem;
+		width: 44px;
+		height: 44px;
+		padding: 0.58rem;
 	}
 
 	.title {

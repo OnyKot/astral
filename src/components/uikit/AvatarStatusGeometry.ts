@@ -48,6 +48,18 @@ export function getStatusGeometry(avatarSize: number, isMobile: boolean = false)
 	const closestSize = Object.keys(map)
 		.map(Number)
 		.reduce((prev, curr) => (Math.abs(curr - avatarSize) < Math.abs(prev - avatarSize) ? curr : prev));
+	const closest = map[closestSize];
+	const scale = avatarSize / closestSize;
+	const scaleValue = (value: number) => Math.round(value * scale * 100) / 100;
 
-	return map[closestSize];
+	return {
+		...closest,
+		size: scaleValue(closest.size),
+		cx: scaleValue(closest.cx),
+		cy: scaleValue(closest.cy),
+		radius: scaleValue(closest.radius),
+		borderWidth: scaleValue(closest.borderWidth),
+		...(closest.phoneWidth ? {phoneWidth: scaleValue(closest.phoneWidth)} : {}),
+		...(closest.phoneHeight ? {phoneHeight: scaleValue(closest.phoneHeight)} : {}),
+	};
 }

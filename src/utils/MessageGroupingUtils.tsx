@@ -140,12 +140,18 @@ export function createChannelStream(props: {
 	let lastDateDivider: string | undefined;
 	let groupId: string | undefined;
 	let lastMessageInGroup: MessageRecord | undefined;
+	const seenMessageIds = new Set<string>();
 
 	let unreadTimestamp: number | null = oldestUnreadMessageId
 		? SnowflakeUtils.extractTimestamp(oldestUnreadMessageId)
 		: null;
 
 	messages.forEach((message): boolean | undefined => {
+		if (seenMessageIds.has(message.id)) {
+			return undefined;
+		}
+		seenMessageIds.add(message.id);
+
 		const dateString = DateUtils.getFormattedFullDate(message.timestamp);
 		if (dateString !== lastDateDivider) {
 			stream.push({

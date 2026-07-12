@@ -52,6 +52,8 @@ export interface VideoPlayerProps {
 	height?: number;
 	autoPlay?: boolean;
 	loop?: boolean;
+	preload?: 'none' | 'metadata' | 'auto';
+	loadBeforePlay?: boolean;
 	fillContainer?: boolean;
 	isMobile?: boolean;
 	onInitialPlay?: () => void;
@@ -69,6 +71,8 @@ export const VideoPlayer = observer(function VideoPlayer({
 	height,
 	autoPlay = false,
 	loop = false,
+	preload = 'none',
+	loadBeforePlay = false,
 	fillContainer = false,
 	isMobile = false,
 	onInitialPlay,
@@ -264,9 +268,9 @@ export const VideoPlayer = observer(function VideoPlayer({
 			{/* biome-ignore lint/a11y/useMediaCaption: Video player doesn't require captions for now */}
 			<video
 				ref={mediaRef as React.RefObject<HTMLVideoElement>}
-				className={clsx(styles.video, !hasPlayed && styles.videoHidden)}
-				src={hasPlayed ? src : undefined}
-				preload="none"
+				className={clsx(styles.video, !hasPlayed && !loadBeforePlay && styles.videoHidden)}
+				src={hasPlayed || loadBeforePlay ? src : undefined}
+				preload={preload}
 				playsInline
 				onClick={handleVideoClick}
 				aria-label={t`Video`}

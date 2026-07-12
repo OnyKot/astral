@@ -1,5 +1,6 @@
 import {registerPlugin} from '@capacitor/core';
 import {isNativeAndroidApp} from '~/utils/AndroidAppInfo';
+import {getAndroidWebViewBridge, parseAndroidBridgeJson} from '~/utils/AndroidWebViewBridge';
 
 export type AndroidPermissionName = 'camera' | 'microphone' | 'notifications' | 'bluetooth';
 export type AndroidPermissionStatus = 'granted' | 'denied' | 'permanently-denied' | 'unsupported';
@@ -54,6 +55,10 @@ export const getAndroidPermissionStatuses = async (): Promise<AndroidPermissionS
 	}
 
 	try {
+		const bridge = getAndroidWebViewBridge();
+		if (bridge) {
+			return normalizeSnapshot(parseAndroidBridgeJson<Record<string, string>>(bridge.getPermissionStatuses()));
+		}
 		return normalizeSnapshot(await AndroidPermissions.getStatuses());
 	} catch {
 		return {...DEFAULT_SNAPSHOT};
@@ -68,6 +73,11 @@ export const checkAndroidPermission = async (
 	}
 
 	try {
+		const bridge = getAndroidWebViewBridge();
+		if (bridge) {
+			const statuses = parseAndroidBridgeJson<Record<string, string>>(bridge.getPermissionStatuses());
+			return normalizeStatus(statuses?.[permission]);
+		}
 		const result = await AndroidPermissions.checkPermission({permission});
 		return normalizeStatus(result.status);
 	} catch {
@@ -83,6 +93,10 @@ export const requestAndroidPermission = async (
 	}
 
 	try {
+		const bridge = getAndroidWebViewBridge();
+		if (bridge) {
+			return normalizeStatus(bridge.requestPermission(permission));
+		}
 		const result = await AndroidPermissions.requestPermission({permission});
 		return normalizeStatus(result.status);
 	} catch {
@@ -98,6 +112,13 @@ export const requestAndroidPermissions = async (
 	}
 
 	try {
+		const bridge = getAndroidWebViewBridge();
+		if (bridge) {
+			for (const permission of permissions) {
+				bridge.requestPermission(permission);
+			}
+			return normalizeSnapshot(parseAndroidBridgeJson<Record<string, string>>(bridge.getPermissionStatuses()));
+		}
 		return normalizeSnapshot(await AndroidPermissions.requestPermissions({permissions}));
 	} catch {
 		return {...DEFAULT_SNAPSHOT};
@@ -110,6 +131,11 @@ export const openAndroidAppSettings = async (): Promise<void> => {
 	}
 
 	try {
+		const bridge = getAndroidWebViewBridge();
+		if (bridge) {
+			bridge.openAppSettings();
+			return;
+		}
 		await AndroidPermissions.openAppSettings();
 	} catch {
 		// ignore

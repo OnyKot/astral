@@ -76,3 +76,34 @@
 	height: 3rem;
 	width: 3rem;
 }
+
+@media (max-width: 767px) {
+	.container {
+		margin: 0.75rem;
+		margin-top: auto;
+		margin-bottom: 1rem;
+		padding-top: 28px;
+		gap: 0.2rem;
+	}
+
+	.channelIcon {
+		width: 3.25rem;
+		height: 3.25rem;
+	}
+
+	.iconSize {
+		width: 1.9rem;
+		height: 1.9rem;
+	}
+
+	.heading {
+		margin-top: 0.45rem;
+		font-size: 1.22rem;
+		line-height: 1.25;
+	}
+
+	.description {
+		font-size: 0.88rem;
+		line-height: 1.35;
+	}
+}

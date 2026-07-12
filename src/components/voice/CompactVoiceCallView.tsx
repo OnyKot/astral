@@ -35,10 +35,13 @@ import {motion, useReducedMotion} from 'framer-motion';
 import {ConnectionState, Track} from 'livekit-client';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
+import * as Sentry from '@sentry/react';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
 import type {ChannelRecord} from '~/records/ChannelRecord';
+import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import styles from './CompactVoiceCallView.module.css';
+import {ReconnectOrbit} from './ReconnectOrbit';
 import {VoiceControlBar} from './VoiceControlBar';
 import {VoiceParticipantTile} from './VoiceParticipantTile';
 
@@ -111,6 +114,28 @@ function getConnectionLabel(state: ConnectionState, t: (m: MessageDescriptor) =>
 	}
 }
 
+function CompactVoiceUnavailable({hideHeader = false, onRetry}: {hideHeader?: boolean; onRetry?: () => void}) {
+	const {t} = useLingui();
+
+	if (hideHeader) {
+		return null;
+	}
+
+	return (
+		<section className={clsx(styles.container, styles.unavailableContainer)} aria-label={t`Voice call unavailable`}>
+			<div className={styles.unavailableContent}>
+				<strong>{t`Voice view is recovering`}</strong>
+				<span>{t`The call is still connected. Reopen the voice view in a moment.`}</span>
+			</div>
+			{onRetry && (
+				<button type="button" className={styles.unavailableButton} onClick={onRetry}>
+					{t`Try again`}
+				</button>
+			)}
+		</section>
+	);
+}
+
 function trackSortKey(tr: TrackReference) {
 	const sourceRank = tr.source === Track.Source.ScreenShare ? 0 : 1;
 	return `${sourceRank}:${tr.participant?.identity ?? ''}:${tr.publication?.trackSid ?? ''}`;
@@ -118,8 +143,10 @@ function trackSortKey(tr: TrackReference) {
 
 function getUserIdFromIdentity(identity: string | undefined): string | null {
 	if (!identity) return null;
-	const match = identity.match(/^user_(\d+)(?:_(.+))?$/);
-	return match ? match[1] : null;
+	if (!identity.startsWith('user_')) return null;
+	const value = identity.slice(5);
+	const delimiterIndex = value.indexOf('_');
+	return delimiterIndex === -1 ? value : value.slice(0, delimiterIndex);
 }
 
 function dedupeTrackRefsByUserAndSource(trackRefs: Array<TrackReference>): Array<TrackReference> {
@@ -148,7 +175,7 @@ function dedupeTrackRefsByUserAndSource(trackRefs: Array<TrackReference>): Array
 	return Array.from(bestByUserAndSource.values());
 }
 
-export const CompactVoiceCallView: React.FC<CompactVoiceCallViewProps> = observer(function CompactVoiceCallView({
+const CompactVoiceCallViewInner: React.FC<CompactVoiceCallViewProps> = observer(function CompactVoiceCallViewInner({
 	channel,
 	className,
 	hideHeader = false,
@@ -294,10 +321,14 @@ export const CompactVoiceCallView: React.FC<CompactVoiceCallViewProps> = observe
 			{!hideHeader && (
 				<motion.header className={styles.header} {...getTileMotion(reducedMotion, 0.02)}>
 					<div className={styles.headerContent}>
-						<div className={styles.statusContainer} data-state={connectionState}>
-							<span className={styles.statusDot} aria-hidden="true" />
-							<span className={styles.statusText}>{statusText}</span>
-						</div>
+						{connectionState === ConnectionState.Reconnecting ? (
+							<ReconnectOrbit size="compact" className={styles.reconnectOrbit} />
+						) : (
+							<div className={styles.statusContainer} data-state={connectionState}>
+								<span className={styles.statusDot} aria-hidden="true" />
+								<span className={styles.statusText}>{statusText}</span>
+							</div>
+						)}
 						{participantSummary && <span className={styles.participantPill}>{participantSummary}</span>}
 					</div>
 					<div className={styles.headerActions}>
@@ -389,5 +420,19 @@ export const CompactVoiceCallView: React.FC<CompactVoiceCallViewProps> = observe
 				</motion.footer>
 			)}
 		</motion.section>
+	);
+});
+
+export const CompactVoiceCallView: React.FC<CompactVoiceCallViewProps> = observer(function CompactVoiceCallView(props) {
+	const room = MediaEngineStore.room;
+
+	if (!room) {
+		return <CompactVoiceUnavailable hideHeader={props.hideHeader} />;
+	}
+
+	return (
+		<Sentry.ErrorBoundary fallback={({resetError}) => <CompactVoiceUnavailable hideHeader={props.hideHeader} onRetry={resetError} />}>
+			<CompactVoiceCallViewInner {...props} />
+		</Sentry.ErrorBoundary>
 	);
 });

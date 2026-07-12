@@ -19,18 +19,30 @@
 
 /// <reference lib="webworker" />
 
+import {handleActivate, handleFetch, handleInstall} from './cache';
+
 declare const self: ServiceWorkerGlobalScope &
 	typeof globalThis & {
 		skipWaiting(): void;
 		__WB_MANIFEST: unknown;
 	};
 
-self.addEventListener('install', () => {
+self.addEventListener('install', (event: ExtendableEvent) => {
+	event.waitUntil(handleInstall());
 	self.skipWaiting();
 });
 
 self.addEventListener('activate', (event: ExtendableEvent) => {
-	event.waitUntil(self.clients.claim());
+	event.waitUntil(
+		(async () => {
+			await handleActivate();
+			await self.clients.claim();
+		})(),
+	);
+});
+
+self.addEventListener('fetch', (event: FetchEvent) => {
+	handleFetch(event);
 });
 
 self.addEventListener('message', (event: ExtendableMessageEvent) => {

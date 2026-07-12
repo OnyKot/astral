@@ -19,6 +19,7 @@
 
 import {useLingui} from '@lingui/react/macro';
 import {
+	ArrowBendUpRightIcon,
 	ArrowLeftIcon,
 	CaretRightIcon,
 	EyeSlashIcon,
@@ -27,9 +28,11 @@ import {
 	PencilIcon,
 	PhoneIcon,
 	StarFourIcon,
+	TrashIcon,
 	UserPlusIcon,
 	UsersIcon,
 	VideoCameraIcon,
+	XIcon,
 } from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
@@ -38,11 +41,13 @@ import * as CallActionCreators from '~/actions/CallActionCreators';
 import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators';
 import * as FavoritesActionCreators from '~/actions/FavoritesActionCreators';
 import * as LayoutActionCreators from '~/actions/LayoutActionCreators';
+import * as MessageActionCreators from '~/actions/MessageActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
 import * as UserProfileActionCreators from '~/actions/UserProfileActionCreators';
 import {ChannelTypes, ME, RelationshipTypes} from '~/Constants';
+import {ChannelSearchBottomSheet} from '~/components/bottomsheets/ChannelSearchBottomSheet';
 import {ChannelDetailsBottomSheet} from '~/components/bottomsheets/ChannelDetailsBottomSheet';
 import {MessageSearchBar} from '~/components/channel/MessageSearchBar';
 import {GroupDMAvatar} from '~/components/common/GroupDMAvatar';
@@ -50,6 +55,8 @@ import {NativeDragRegion} from '~/components/layout/NativeDragRegion';
 import {AddFriendsToGroupModal} from '~/components/modals/AddFriendsToGroupModal';
 import {CreateDMModal} from '~/components/modals/CreateDMModal';
 import {EditGroupModal} from '~/components/modals/EditGroupModal';
+import {ConfirmModal} from '~/components/modals/ConfirmModal';
+import {ForwardModal} from '~/components/modals/ForwardModal';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
 import {StatusAwareAvatar} from '~/components/uikit/StatusAwareAvatar';
 import {useCanFitMemberList} from '~/hooks/useMemberListVisible';
@@ -60,8 +67,10 @@ import {Routes} from '~/Routes';
 import type {ChannelRecord} from '~/records/ChannelRecord';
 import AccessibilityStore from '~/stores/AccessibilityStore';
 import CallStateStore from '~/stores/CallStateStore';
+import ChannelListLayoutStore from '~/stores/ChannelListLayoutStore';
 import FavoritesStore from '~/stores/FavoritesStore';
 import MemberListStore from '~/stores/MemberListStore';
+import MessageSelectionStore from '~/stores/MessageSelectionStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import RelationshipStore from '~/stores/RelationshipStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
@@ -80,6 +89,7 @@ import {ChannelHeaderIcon} from './ChannelHeader/ChannelHeaderIcon';
 import {ChannelNotificationSettingsButton} from './ChannelHeader/ChannelNotificationSettingsButton';
 import {ChannelPinsButton} from './ChannelHeader/ChannelPinsButton';
 import {UpdaterIcon} from './ChannelHeader/UpdaterIcon';
+import {MobileNavigationMenuButton} from '~/components/layout/MobileNavigationDrawer';
 import {InboxButton} from './ChannelHeader/UtilityButtons';
 import styles from './ChannelHeader.module.css';
 import {useChannelHeaderData} from './channel-header/useChannelHeaderData';
@@ -95,6 +105,7 @@ interface ChannelHeaderProps {
 	onSearchClose?: () => void;
 	isSearchResultsOpen?: boolean;
 	forceVoiceCallStyle?: boolean;
+	showMobileBackButton?: boolean;
 }
 
 export const ChannelHeader = observer(
@@ -107,6 +118,7 @@ export const ChannelHeader = observer(
 		onSearchClose,
 		isSearchResultsOpen,
 		forceVoiceCallStyle = false,
+		showMobileBackButton = true,
 	}: ChannelHeaderProps) => {
 		const {t, i18n} = useLingui();
 
@@ -126,6 +138,7 @@ export const ChannelHeader = observer(
 		const canFitMemberList = useCanFitMemberList();
 
 		const [channelDetailsOpen, setChannelDetailsOpen] = React.useState(false);
+		const [channelSearchOpen, setChannelSearchOpen] = React.useState(false);
 		const [openSearchImmediately, setOpenSearchImmediately] = React.useState(false);
 		const [initialTab, setInitialTab] = React.useState<'members' | 'pins'>('members');
 		const [searchQuery, setSearchQuery] = React.useState('');
@@ -159,6 +172,7 @@ export const ChannelHeader = observer(
 			channelTypeLabel,
 		} = useChannelHeaderData(channel);
 		const isBotDMRecipient = isDM && recipient?.bot;
+		const isChannelSidebarCollapsed = !isMobile && isGuildChannel && ChannelListLayoutStore.getSidebarCollapsed();
 
 		const isFavorited = channel && !isPersonalNotes ? !!FavoritesStore.getChannel(channel.id) : false;
 
@@ -183,9 +197,14 @@ export const ChannelHeader = observer(
 		}, [channel]);
 
 		const handleToggleMembers = React.useCallback(() => {
-			if (!canFitMemberList) return;
+			if (!canFitMemberList || isMobile) {
+				setInitialTab('members');
+				setOpenSearchImmediately(false);
+				setChannelDetailsOpen(true);
+				return;
+			}
 			LayoutActionCreators.toggleMembers(!isMembersOpen);
-		}, [isMembersOpen, canFitMemberList]);
+		}, [isMembersOpen, canFitMemberList, isMobile]);
 
 		React.useEffect(() => {
 			const handleChannelDetailsOpen = (payload?: unknown) => {
@@ -201,11 +220,16 @@ export const ChannelHeader = observer(
 		React.useEffect(() => {
 			if (!showMembersToggle) return;
 			return ComponentDispatch.subscribe('CHANNEL_MEMBER_LIST_TOGGLE', () => {
-				if (canFitMemberList) {
+				if (canFitMemberList && !isMobile) {
 					LayoutActionCreators.toggleMembers(!isMembersOpen);
+					return;
 				}
+
+				setInitialTab('members');
+				setOpenSearchImmediately(false);
+				setChannelDetailsOpen(true);
 			});
-		}, [showMembersToggle, canFitMemberList, isMembersOpen]);
+		}, [showMembersToggle, canFitMemberList, isMembersOpen, isMobile]);
 
 		const handleOpenUserProfile = React.useCallback(() => {
 			if (!recipient) return;
@@ -224,16 +248,18 @@ export const ChannelHeader = observer(
 			}
 		}, [isDM, isGroupDM, isPersonalNotes, isGuildChannel, channel?.guildId, location.pathname]);
 
+		const handleRevealChannelList = React.useCallback(() => {
+			ChannelListLayoutStore.setSidebarCollapsed(false);
+		}, []);
+
 		const handleChannelDetailsClick = () => {
 			setInitialTab('members');
 			setOpenSearchImmediately(false);
 			setChannelDetailsOpen(true);
 		};
 
-		const handleSearchClick = () => {
-			setInitialTab('members');
-			setOpenSearchImmediately(true);
-			setChannelDetailsOpen(true);
+		const handleMobileSearchClick = () => {
+			setChannelSearchOpen(true);
 		};
 
 		const handleContextMenu = React.useCallback(
@@ -333,6 +359,51 @@ export const ChannelHeader = observer(
 			(isGuildChannel && channel?.topic?.trim()) || channelTypeLabel || (isDM || isGroupDM ? t`Conversation` : '');
 		const shouldShowCreateGroupButton = !!channel && !isMobile && !isPersonalNotes && isFriendDM && !isGroupDM;
 		const shouldShowAddFriendsButton = !!channel && !isMobile && !isPersonalNotes && isGroupDM && !isGroupDMFull;
+		const selectionActive = channel ? MessageSelectionStore.isActiveForChannel(channel.id) : false;
+		const selectedMessages = selectionActive ? MessageSelectionStore.getSelectedMessages() : [];
+		const selectedCount = selectedMessages.length;
+
+		const handleForwardSelectedMessages = React.useCallback(() => {
+			if (selectedMessages.length === 0) return;
+			ModalActionCreators.push(
+				modal(() => (
+					<ForwardModal
+						messages={selectedMessages}
+						onForwarded={() => {
+							MessageSelectionStore.clear();
+						}}
+					/>
+				)),
+			);
+		}, [selectedMessages]);
+
+		const handleDeleteSelectedMessages = React.useCallback(() => {
+			if (selectedMessages.length === 0) return;
+			const currentSelection = [...selectedMessages];
+			ModalActionCreators.push(
+				modal(() => (
+					<ConfirmModal
+						title={t`Delete selected messages`}
+						description={t`${currentSelection.length} selected messages will be removed from this view. Your own messages are deleted for everyone; messages from other people are hidden locally for you.`}
+						primaryText={t`Delete`}
+						onPrimary={async () => {
+							for (const selectedMessage of currentSelection) {
+								if (selectedMessage.isCurrentUserAuthor()) {
+									await MessageActionCreators.remove(selectedMessage.channelId, selectedMessage.id);
+								} else {
+									MessageActionCreators.deleteOptimistic(selectedMessage.channelId, selectedMessage.id);
+								}
+							}
+							MessageSelectionStore.clear();
+							ToastActionCreators.createToast({
+								type: 'success',
+								children: t`Selected messages removed`,
+							});
+						}}
+					/>
+				)),
+			);
+		}, [selectedMessages, t]);
 
 		return (
 			<>
@@ -348,28 +419,35 @@ export const ChannelHeader = observer(
 					>
 						<div className={styles.headerLeftSection}>
 							{isMobile ? (
-								<FocusRing offset={-2}>
-									<button
-										type="button"
-										className={styles.backButton}
-										onClick={handleBackClick}
-										data-edge-swipe-ignore="true"
-									>
-										<ArrowLeftIcon className={styles.backIconBold} weight="bold" />
-									</button>
-								</FocusRing>
-							) : (
+								<>
+									<MobileNavigationMenuButton className={styles.mobileMenuButton} />
+									{showMobileBackButton && (
+										<FocusRing offset={-2}>
+											<button
+												type="button"
+												className={styles.backButton}
+												onClick={handleBackClick}
+												data-edge-swipe-ignore="true"
+											>
+												<ArrowLeftIcon className={styles.backIconBold} weight="bold" />
+											</button>
+										</FocusRing>
+									)}
+								</>
+							) : isChannelSidebarCollapsed ? (
 								<FocusRing offset={-2}>
 									<button
 										type="button"
 										className={styles.backButtonDesktop}
-										onClick={handleBackClick}
+										style={{display: 'flex'}}
+										aria-label={t`Expand channel list`}
+										onClick={handleRevealChannelList}
 										data-edge-swipe-ignore="true"
 									>
 										<ListIcon className={styles.backIcon} />
 									</button>
 								</FocusRing>
-							)}
+							) : null}
 
 							<div className={styles.leftContentContainer}>
 								{leftContent ? (
@@ -377,10 +455,14 @@ export const ChannelHeader = observer(
 								) : channel ? (
 									isMobile ? (
 										<FocusRing offset={-2}>
-											<button type="button" className={styles.mobileButton} onClick={handleChannelDetailsClick}>
+											<button
+												type="button"
+												className={clsx(styles.mobileButton, (isDM || isGroupDM) && styles.mobileButtonConversation)}
+												onClick={handleChannelDetailsClick}
+											>
 												{isDM && recipient ? (
 													<>
-														<StatusAwareAvatar user={recipient} size={32} showOffline={true} />
+														<StatusAwareAvatar user={recipient} size={40} showOffline={true} />
 														<span className={styles.dmNameWrapper}>
 															<Tooltip text={isDMNameOverflowing && directMessageName ? directMessageName : ''}>
 																<span ref={dmNameRef} className={styles.channelName}>
@@ -393,7 +475,7 @@ export const ChannelHeader = observer(
 													</>
 												) : isGroupDM ? (
 													<>
-														<GroupDMAvatar channel={channel} size={32} />
+														<GroupDMAvatar channel={channel} size={40} />
 														<Tooltip text={isGroupDMNameOverflowing && groupDMName ? groupDMName : ''}>
 															<span ref={groupDMNameRef} className={styles.channelName}>
 																{groupDMName}
@@ -417,7 +499,7 @@ export const ChannelHeader = observer(
 									) : isDM && recipient ? (
 										<FocusRing offset={-2}>
 											<button type="button" className={styles.desktopButton} onClick={handleOpenUserProfile}>
-												<StatusAwareAvatar user={recipient} size={32} showOffline={true} />
+												<StatusAwareAvatar user={recipient} size={40} showOffline={true} />
 												<span className={styles.dmNameWrapper}>
 													<span className={styles.channelCapsuleBody}>
 														<span className={styles.channelTitleRow}>
@@ -460,7 +542,7 @@ export const ChannelHeader = observer(
 													}}
 												>
 													<div className={styles.groupDMHeaderInner}>
-														<GroupDMAvatar channel={channel} size={32} />
+														<GroupDMAvatar channel={channel} size={40} />
 														<div className={styles.dmNameWrapper}>
 															<span className={styles.channelCapsuleBody}>
 																<span className={styles.channelTitleRow}>
@@ -520,20 +602,53 @@ export const ChannelHeader = observer(
 						</div>
 
 						<div className={styles.headerRightSection}>
-							{isMobile && channel && !isPersonalNotes && AccessibilityStore.showFavorites && (
-								<FocusRing offset={-2}>
-									<button
-										type="button"
-										className={styles.iconButtonMobile}
-										aria-label={isFavorited ? t`Remove from Favorites` : t`Add to Favorites`}
-										onClick={handleToggleFavorite}
-										onContextMenu={handleFavoriteContextMenu}
-									>
-										<StarFourIcon className={styles.buttonIconMobile} weight={isFavorited ? 'fill' : 'bold'} />
-									</button>
-								</FocusRing>
-							)}
-
+							{selectionActive ? (
+								<div className={styles.selectionToolbar} role="toolbar" aria-label={t`Selected messages`}>
+									<span className={styles.selectionCount}>
+										<span className={styles.selectionCountNumber}>{selectedCount}</span>
+										<span>{t`Selected messages`}</span>
+									</span>
+									<Tooltip text={t`Forward selected messages`} position="bottom">
+										<FocusRing offset={-2}>
+											<button
+												type="button"
+												className={styles.selectionActionButton}
+												aria-label={t`Forward selected messages`}
+												onClick={handleForwardSelectedMessages}
+												disabled={selectedCount === 0}
+											>
+												<ArrowBendUpRightIcon className={styles.buttonIcon} weight="bold" />
+											</button>
+										</FocusRing>
+									</Tooltip>
+									<Tooltip text={t`Delete selected messages`} position="bottom">
+										<FocusRing offset={-2}>
+											<button
+												type="button"
+												className={clsx(styles.selectionActionButton, styles.selectionActionButtonDanger)}
+												aria-label={t`Delete selected messages`}
+												onClick={handleDeleteSelectedMessages}
+												disabled={selectedCount === 0}
+											>
+												<TrashIcon className={styles.buttonIcon} weight="bold" />
+											</button>
+										</FocusRing>
+									</Tooltip>
+									<Tooltip text={t`Cancel selection`} position="bottom">
+										<FocusRing offset={-2}>
+											<button
+												type="button"
+												className={styles.selectionActionButton}
+												aria-label={t`Cancel selection`}
+												onClick={() => MessageSelectionStore.clear()}
+											>
+												<XIcon className={styles.buttonIcon} weight="bold" />
+											</button>
+										</FocusRing>
+									</Tooltip>
+								</div>
+							) : (
+								<>
 							{isMobile && (isDM || isGroupDM) && !isPersonalNotes && (
 								<>
 									<FocusRing offset={-2}>
@@ -559,15 +674,28 @@ export const ChannelHeader = observer(
 								</>
 							)}
 
-							{isMobile && isGuildChannel && (
+							{isMobile && channel && !isVoiceChannel && (
 								<FocusRing offset={-2}>
 									<button
 										type="button"
 										className={styles.iconButtonMobile}
-										aria-label={t`Search`}
-										onClick={handleSearchClick}
+										aria-label={t`Search messages`}
+										onClick={handleMobileSearchClick}
 									>
 										<MagnifyingGlassIcon className={styles.buttonIconMobile} weight="bold" />
+									</button>
+								</FocusRing>
+							)}
+
+							{isMobile && showMembersToggle && channel && (
+								<FocusRing offset={-2}>
+									<button
+										type="button"
+										className={styles.iconButtonMobile}
+										aria-label={t`Show Members`}
+										onClick={handleChannelDetailsClick}
+									>
+										<UsersIcon className={styles.buttonIconMobile} weight="bold" />
 									</button>
 								</FocusRing>
 							)}
@@ -664,6 +792,8 @@ export const ChannelHeader = observer(
 							{!isMobile && <UpdaterIcon />}
 
 							{!isMobile && <InboxButton />}
+								</>
+							)}
 						</div>
 					</NativeDragRegion>
 				</div>
@@ -679,6 +809,14 @@ export const ChannelHeader = observer(
 						channel={channel}
 						initialTab={initialTab}
 						openSearchImmediately={openSearchImmediately}
+					/>
+				)}
+
+				{channel && (
+					<ChannelSearchBottomSheet
+						isOpen={channelSearchOpen}
+						onClose={() => setChannelSearchOpen(false)}
+						channel={channel}
 					/>
 				)}
 			</>

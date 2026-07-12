@@ -18,7 +18,7 @@
  */
 
 import {msg} from '@lingui/core/macro';
-import {CaretRightIcon} from '@phosphor-icons/react';
+import {CaretRightIcon, PhoneIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
@@ -36,6 +36,7 @@ import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import PresenceStore from '~/stores/PresenceStore';
 import RelationshipStore from '~/stores/RelationshipStore';
 import UserStore from '~/stores/UserStore';
+import * as CallUtils from '~/utils/CallUtils';
 import * as NicknameUtils from '~/utils/NicknameUtils';
 import styles from './FriendsListUtils.module.css';
 
@@ -102,6 +103,7 @@ const useFriendGroups = (friendIds: Array<string>, searchQuery: string) => {
 const FriendItem = observer(({userId}: {userId: string}) => {
 	const user = UserStore.getUser(userId);
 	const status = PresenceStore.getStatus(userId);
+	const [callStarting, setCallStarting] = React.useState(false);
 
 	const handleClick = React.useCallback(async () => {
 		try {
@@ -117,6 +119,31 @@ const FriendItem = observer(({userId}: {userId: string}) => {
 		UserProfileActionCreators.openUserProfile(userId);
 	}, [userId]);
 
+	const handleStartCall = React.useCallback(
+		async (event: React.MouseEvent<HTMLButtonElement>) => {
+			event.preventDefault();
+			event.stopPropagation();
+			if (callStarting) return;
+
+			setCallStarting(true);
+			try {
+				await PrivateChannelActionCreators.openDMChannel(userId);
+				if (MobileLayoutStore.isMobileLayout()) {
+					LayoutActionCreators.updateMobileLayoutState(false, true);
+				}
+				QuickSwitcherActionCreators.hide();
+
+				const channelId = await PrivateChannelActionCreators.ensureDMChannel(userId);
+				await CallUtils.checkAndStartCall(channelId, event.shiftKey);
+			} catch (error) {
+				console.error('Failed to start friend call:', error);
+			} finally {
+				setCallStarting(false);
+			}
+		},
+		[callStarting, userId],
+	);
+
 	if (!user) return null;
 
 	const statusLabel = getStatusTypeLabel(i18n, status);
@@ -124,18 +151,31 @@ const FriendItem = observer(({userId}: {userId: string}) => {
 	return (
 		<LongPressable className={styles.friendItemWrapper} onLongPress={handleLongPress}>
 			<FocusRing offset={-2} enabled={false}>
-				<button type="button" className={styles.friendItem} onClick={handleClick}>
-					<div className={styles.friendItemContent}>
-						<div className={styles.avatar}>
-							<StatusAwareAvatar user={user} size={32} />
+				<div className={styles.friendItem}>
+					<button type="button" className={styles.friendItemMain} onClick={handleClick}>
+						<div className={styles.friendItemContent}>
+							<div className={styles.avatar}>
+								<StatusAwareAvatar user={user} size={32} />
+							</div>
+							<div className={styles.friendItemText}>
+								<div className={styles.friendItemName}>{NicknameUtils.getNickname(user)}</div>
+								{statusLabel && <div className={styles.friendItemStatus}>{statusLabel}</div>}
+							</div>
 						</div>
-						<div className={styles.friendItemText}>
-							<div className={styles.friendItemName}>{NicknameUtils.getNickname(user)}</div>
-							{statusLabel && <div className={styles.friendItemStatus}>{statusLabel}</div>}
-						</div>
+					</button>
+					<div className={styles.friendItemActions}>
+						<button
+							type="button"
+							className={styles.friendCallButton}
+							onClick={handleStartCall}
+							disabled={callStarting}
+							aria-label={i18n._(msg`Start voice call`)}
+						>
+							<PhoneIcon weight="fill" className={styles.friendCallIcon} />
+						</button>
+						<CaretRightIcon weight="bold" className={styles.friendItemCaret} />
 					</div>
-					<CaretRightIcon weight="bold" className={styles.friendItemCaret} />
-				</button>
+				</div>
 			</FocusRing>
 		</LongPressable>
 	);

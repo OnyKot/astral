@@ -35,6 +35,7 @@ interface UseTextareaExpressionPickerOptions {
 	expressionPickerTriggerRef: React.RefObject<HTMLButtonElement | null>;
 	invisibleExpressionPickerTriggerRef: React.RefObject<HTMLDivElement | null>;
 	textareaRef: React.RefObject<HTMLElement | null>;
+	requestTypingFocusAfterPickerClose?: () => void;
 }
 
 export const useTextareaExpressionPicker = ({
@@ -43,6 +44,7 @@ export const useTextareaExpressionPicker = ({
 	expressionPickerTriggerRef,
 	invisibleExpressionPickerTriggerRef,
 	textareaRef,
+	requestTypingFocusAfterPickerClose,
 }: UseTextareaExpressionPickerOptions) => {
 	const [expressionPickerOpen, setExpressionPickerOpen] = React.useState(false);
 	const selectedTab = React.useSyncExternalStore(
@@ -65,7 +67,7 @@ export const useTextareaExpressionPicker = ({
 
 	const openExpressionPicker = React.useCallback(
 		(tab: ExpressionPickerTabType) => {
-			const triggerElement = expressionPickerTriggerRef.current || invisibleExpressionPickerTriggerRef.current;
+			const triggerElement = invisibleExpressionPickerTriggerRef.current || expressionPickerTriggerRef.current;
 			if (!triggerElement) return;
 
 			const popoutKey = getExpressionPickerPopoutKey();
@@ -84,6 +86,7 @@ export const useTextareaExpressionPicker = ({
 					),
 					position: 'top-end',
 					animationType: 'none',
+					shouldAutoUpdate: false,
 					offsetCrossAxis: 16,
 					onOpen: () => setExpressionPickerOpen(true),
 					onClose: closeExpressionPicker,
@@ -124,6 +127,7 @@ export const useTextareaExpressionPicker = ({
 				const isSameTab = ExpressionPickerStore.selectedTab === tab;
 
 				if (isPickerOpenForChannel && isSameTab) {
+					requestTypingFocusAfterPickerClose?.();
 					closeExpressionPicker();
 					return;
 				}
@@ -134,6 +138,9 @@ export const useTextareaExpressionPicker = ({
 					return;
 				}
 
+				requestTypingFocusAfterPickerClose?.();
+				const textarea = textareaRef.current as HTMLTextAreaElement | null;
+				textarea?.blur();
 				ExpressionPickerActionCreators.open(channelId, tab);
 				setExpressionPickerOpen(true);
 				return;
@@ -151,7 +158,15 @@ export const useTextareaExpressionPicker = ({
 				ExpressionPickerActionCreators.setTab(tab);
 			}
 		},
-		[mobileLayout.enabled, channelId, getExpressionPickerPopoutKey, closeExpressionPicker, openExpressionPicker],
+		[
+			mobileLayout.enabled,
+			channelId,
+			getExpressionPickerPopoutKey,
+			closeExpressionPicker,
+			openExpressionPicker,
+			requestTypingFocusAfterPickerClose,
+			textareaRef,
+		],
 	);
 
 	React.useEffect(() => {

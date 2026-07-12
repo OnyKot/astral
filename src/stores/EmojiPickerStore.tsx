@@ -43,6 +43,9 @@ class EmojiPickerStore {
 	emojiUsage: Record<string, EmojiUsageEntry> = {};
 	favoriteEmojis: Array<string> = [];
 	collapsedCategories: Array<string> = [];
+	emojiUsageRevision = 0;
+	favoriteEmojisRevision = 0;
+	collapsedCategoriesRevision = 0;
 
 	constructor() {
 		makeAutoObservable(this, {}, {autoBind: true});
@@ -62,6 +65,7 @@ class EmojiPickerStore {
 			count: newCount,
 			lastUsed: now,
 		};
+		this.emojiUsageRevision += 1;
 
 		logger.debug(`Tracked emoji usage: ${emojiKey}`);
 	}
@@ -76,6 +80,7 @@ class EmojiPickerStore {
 			this.favoriteEmojis.push(emojiKey);
 		}
 
+		this.favoriteEmojisRevision += 1;
 		ComponentDispatch.dispatch('EMOJI_PICKER_RERENDER');
 		logger.debug(`Toggled favorite emoji: ${emojiKey}`);
 	}
@@ -90,6 +95,7 @@ class EmojiPickerStore {
 			this.collapsedCategories.push(category);
 		}
 
+		this.collapsedCategoriesRevision += 1;
 		ComponentDispatch.dispatch('EMOJI_PICKER_RERENDER');
 		logger.debug(`Toggled category: ${category}`);
 	}

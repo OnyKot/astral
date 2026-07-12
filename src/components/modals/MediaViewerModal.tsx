@@ -177,7 +177,9 @@ const MediaViewerModalComponent: FC = observer(() => {
 
 			const deltaX = touch.clientX - swipeStart.x;
 			const deltaY = touch.clientY - swipeStart.y;
-			if (Math.abs(deltaX) < 72 || Math.abs(deltaY) > 48) {
+			const absDeltaX = Math.abs(deltaX);
+			const absDeltaY = Math.abs(deltaY);
+			if (absDeltaX < 72 || absDeltaY > 48 || absDeltaX < absDeltaY * 1.6) {
 				return;
 			}
 
@@ -190,6 +192,10 @@ const MediaViewerModalComponent: FC = observer(() => {
 		},
 		[handleNext, handlePrevious, items.length],
 	);
+
+	const handleMediaSwipeCancel = useCallback(() => {
+		swipeStartRef.current = null;
+	}, []);
 
 	const handleContextMenu = useCallback(
 		(event: MouseEvent<HTMLDivElement>) => {
@@ -460,6 +466,7 @@ const MediaViewerModalComponent: FC = observer(() => {
 				onContextMenu={handleContextMenu}
 				onTouchStart={isMobile ? handleMediaSwipeStart : undefined}
 				onTouchEnd={isMobile ? handleMediaSwipeEnd : undefined}
+				onTouchCancel={isMobile ? handleMediaSwipeCancel : undefined}
 				role="region"
 				aria-label={modalTitle}
 			>

@@ -20,15 +20,12 @@
 import {useLingui} from '@lingui/react/macro';
 import {PhoneCallIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
-import {motion} from 'framer-motion';
 import React from 'react';
 import type {StatusType} from '~/Constants';
 import {getStatusTypeLabel, normalizeStatus, StatusTypes} from '~/Constants';
 import {getStatusGeometry} from '~/components/uikit/AvatarStatusGeometry';
-import {getAvatarStatusLayout} from '~/components/uikit/AvatarStatusLayout';
 import {Tooltip} from '~/components/uikit/Tooltip/Tooltip';
 import FocusManager from '~/lib/FocusManager';
-import typingStyles from '~/styles/Typing.module.css';
 import styles from './BaseAvatar.module.css';
 
 interface BaseAvatarProps {
@@ -46,6 +43,8 @@ interface BaseAvatarProps {
 	statusLabel?: string | null;
 	disableStatusTooltip?: boolean;
 	isMobileStatus?: boolean;
+	isStreaming?: boolean;
+	statusScale?: number;
 }
 
 export const BaseAvatar = React.forwardRef<HTMLDivElement, BaseAvatarProps>(
@@ -64,7 +63,9 @@ export const BaseAvatar = React.forwardRef<HTMLDivElement, BaseAvatarProps>(
 			userTag,
 			statusLabel,
 			disableStatusTooltip = false,
-			isMobileStatus = false,
+			isMobileStatus: _isMobileStatus = false,
+			isStreaming = false,
+			statusScale = 1,
 			...props
 		},
 		ref,
@@ -79,84 +80,58 @@ export const BaseAvatar = React.forwardRef<HTMLDivElement, BaseAvatarProps>(
 
 		const normalizedStatus = status == null ? null : normalizeStatus(status);
 		const renderableStatus = resolveRenderableStatus(normalizedStatus);
-
-		const layout = getAvatarStatusLayout(size, isMobileStatus);
-		const SNAPPY_TRANSITION = {type: 'tween', duration: 0.16, ease: 'easeOut'} as const;
+		const shouldRenderStreaming =
+			isStreaming &&
+			!isTyping &&
+			!isInCall &&
+			normalizedStatus != null &&
+			normalizedStatus !== StatusTypes.INVISIBLE &&
+			renderableStatus !== StatusTypes.OFFLINE;
 
 		const rawId = React.useId();
 		const safeId = rawId.replace(/:/g, '');
 		const dynamicAvatarMaskId = `svg-mask-avatar-dynamic-${safeId}`;
 
-		const isMobileOnline = isMobileStatus && renderableStatus === StatusTypes.ONLINE && !isTyping;
-
 		const shouldShowStatus =
-			layout.supportsStatus &&
+			size > 16 &&
 			(isTyping || isInCall || (normalizedStatus != null && (showOffline || renderableStatus !== StatusTypes.OFFLINE)));
 
-		const shouldUseDynamicAvatarMask = shouldShowStatus && !isMobileOnline;
-		const statusGeom = shouldUseDynamicAvatarMask ? getStatusGeometry(size, false) : null;
+		const statusGeom = shouldShowStatus ? getStatusGeometry(size, false) : null;
 
-		const cutoutR = statusGeom?.radius ?? 0;
+		const rawStatusSize = statusGeom ? Math.round(statusGeom.size) : 0;
+		const safeStatusScale = Number.isFinite(statusScale) ? Math.max(1, Math.min(statusScale, 1.45)) : 1;
+		const statusSize = rawStatusSize > 0 ? Math.round(rawStatusSize * safeStatusScale) : 0;
+		const cutoutR = statusGeom ? (statusGeom.radius ?? 0) + Math.max(0, statusSize - rawStatusSize) / 2 : 0;
 		const cutoutCx = statusGeom?.cx ?? 0;
 		const cutoutCy = statusGeom?.cy ?? 0;
-
-		const typingDeltaW = layout.innerTypingWidth - layout.innerStatusWidth;
-		const extendW = Math.max(0, typingDeltaW);
-
-		const baseBridgeRect = {
-			x: cutoutCx,
-			y: cutoutCy - cutoutR,
-			width: 0,
-			height: cutoutR * 2,
-		};
-
-		const typingBridgeRect = {
-			x: cutoutCx - extendW,
-			y: cutoutCy - cutoutR,
-			width: extendW,
-			height: cutoutR * 2,
-		};
-
-		const baseLeftCap = {cx: cutoutCx};
-		const typingLeftCap = {cx: cutoutCx - extendW};
+		const statusRight = statusGeom ? Math.round((size - statusGeom.cx - statusSize / 2) * 100) / 100 : 0;
+		const statusBottom = statusGeom ? Math.round((size - statusGeom.cy - statusSize / 2) * 100) / 100 : 0;
 
 		const displayUrl = shouldPlayAnimated && hoverAvatarUrl && isFocused ? hoverAvatarUrl : avatarUrl;
 
-		const avatarMaskId = shouldUseDynamicAvatarMask
-			? dynamicAvatarMaskId
-			: resolveAvatarMaskId({shouldShowStatus, isTyping, isMobileOnline, size});
+		const avatarMaskId = shouldShowStatus && statusGeom ? dynamicAvatarMaskId : 'svg-mask-avatar-default';
 
-		const statusMaskId = isMobileOnline
-			? `svg-mask-status-online-mobile-${size}`
-			: `svg-mask-status-${renderableStatus}`;
-
-		const statusColor = `var(--status-cosmic-core, var(--status-${renderableStatus}))`;
-		const statusVariantClassName = getStatusVariantClassName(renderableStatus, isMobileOnline, isTyping, isInCall);
-
-		const baseR = layout.innerStatusHeight / 2;
-		const typingR = layout.innerTypingHeight / 2;
-
-		const typingAnimation = {
-			width: layout.innerTypingWidth,
-			height: layout.innerTypingHeight,
-			right: layout.innerStatusRight,
-			bottom: layout.innerTypingBottom,
-			borderRadius: typingR,
-		};
-
-		const statusAnimation = {
-			width: layout.innerStatusWidth,
-			height: layout.innerStatusHeight,
-			right: layout.innerStatusRight,
-			bottom: layout.innerStatusBottom,
-			borderRadius: isMobileOnline ? 0 : baseR,
-		};
+		const statusColor = shouldRenderStreaming
+			? 'var(--status-cosmic-core, var(--status-streaming, #9147ff))'
+			: `var(--status-cosmic-core, var(--status-${renderableStatus}))`;
+		const statusVariantClassName = getStatusVariantClassName(
+			renderableStatus,
+			isTyping,
+			isInCall,
+			shouldRenderStreaming,
+		);
+		const statusGlyphClassName = getStatusGlyphClassName(
+			shouldRenderStreaming ? StatusTypes.ONLINE : renderableStatus,
+			shouldRenderStreaming,
+		);
 
 		const dotDelays = [0, 250, 500] as const;
 
 		const ariaLabel = statusLabel && userTag ? `${userTag}, ${statusLabel}` : userTag || t`Avatar`;
 		const effectiveStatusLabel = isInCall
 			? t`In call`
+			: shouldRenderStreaming
+				? t`Streaming`
 			: statusLabel || (normalizedStatus ? getStatusTypeLabel(i18n, normalizedStatus) : '');
 
 		return (
@@ -178,27 +153,11 @@ export const BaseAvatar = React.forwardRef<HTMLDivElement, BaseAvatarProps>(
 					aria-hidden
 					role="presentation"
 				>
-					{shouldUseDynamicAvatarMask && statusGeom && (
+					{shouldShowStatus && statusGeom && (
 						<defs>
 							<mask id={dynamicAvatarMaskId} maskUnits="userSpaceOnUse" x={0} y={0} width={size} height={size}>
 								<circle fill="white" cx={size / 2} cy={size / 2} r={size / 2} />
 								<circle fill="black" cx={cutoutCx} cy={cutoutCy} r={cutoutR} />
-								<motion.rect
-									fill="black"
-									rx={0}
-									ry={0}
-									initial={false}
-									animate={isTyping ? typingBridgeRect : baseBridgeRect}
-									transition={SNAPPY_TRANSITION}
-								/>
-								<motion.circle
-									fill="black"
-									cy={cutoutCy}
-									r={cutoutR}
-									initial={false}
-									animate={isTyping ? typingLeftCap : baseLeftCap}
-									transition={SNAPPY_TRANSITION}
-								/>
 							</mask>
 						</defs>
 					)}
@@ -215,68 +174,36 @@ export const BaseAvatar = React.forwardRef<HTMLDivElement, BaseAvatarProps>(
 
 				{shouldShowStatus && (
 					<Tooltip text={effectiveStatusLabel}>
-						<motion.div
+						<div
 							className={clsx(styles.statusContainer, statusVariantClassName)}
 							style={{
 								display: 'flex',
 								alignItems: 'center',
 								justifyContent: 'center',
+								width: statusSize,
+								height: statusSize,
+								right: statusRight,
+								bottom: statusBottom,
 								pointerEvents: isTyping || disableStatusTooltip ? 'none' : 'auto',
-								overflow: 'hidden',
-							}}
-							initial={false}
-							animate={isTyping ? typingAnimation : statusAnimation}
-							transition={SNAPPY_TRANSITION}
+								'--status-color': statusColor,
+							} as React.CSSProperties & {'--status-color': string}}
 							role="img"
 							aria-label={isTyping ? t`Typing indicator` : `${effectiveStatusLabel} status`}
 						>
 							{isTyping ? (
-								<div
-									style={{
-										width: '100%',
-										height: '100%',
-										backgroundColor: statusColor,
-										borderRadius: 'inherit',
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'center',
-									}}
-								>
-									<div
-										style={{
-											display: 'flex',
-											alignItems: 'center',
-											gap: Math.round(layout.innerTypingHeight * 0.12),
-										}}
-									>
-										{dotDelays.map((delay) => (
-											<div
-												key={delay}
-												className={typingStyles.dot}
-												style={{
-													width: Math.round(layout.innerTypingHeight * 0.25),
-													height: Math.round(layout.innerTypingHeight * 0.25),
-													borderRadius: '50%',
-													backgroundColor: 'white',
-													animationDelay: `${delay}ms`,
-												}}
-											/>
-										))}
-									</div>
+								<div className={styles.typingIndicator} aria-hidden>
+									{dotDelays.map((delay) => (
+										<span key={delay} style={{animationDelay: `${delay}ms`}} />
+									))}
 								</div>
 							) : isInCall ? (
 								<div className={styles.inCallIndicator} aria-hidden>
 									<PhoneCallIcon weight="fill" className={styles.inCallIcon} />
 								</div>
 							) : (
-								<StatusIndicatorSvg
-									width={layout.innerStatusWidth}
-									height={isMobileOnline ? layout.innerStatusHeight : layout.innerStatusWidth}
-									statusColor={statusColor}
-									statusMaskId={statusMaskId}
-								/>
+								<span className={clsx(styles.statusGlyph, statusGlyphClassName)} aria-hidden />
 							)}
-						</motion.div>
+						</div>
 					</Tooltip>
 				)}
 			</div>
@@ -292,46 +219,15 @@ const resolveRenderableStatus = (status: StatusType | null | undefined): StatusT
 	return status;
 };
 
-const resolveAvatarMaskId = ({
-	shouldShowStatus,
-	isTyping,
-	isMobileOnline,
-	size,
-}: {
-	shouldShowStatus: boolean;
-	isTyping: boolean;
-	isMobileOnline: boolean;
-	size: number;
-}): string => {
-	if (!shouldShowStatus) return 'svg-mask-avatar-default';
-	if (isTyping) return `svg-mask-avatar-status-typing-${size}`;
-	if (isMobileOnline) return `svg-mask-avatar-status-mobile-${size}`;
-	return `svg-mask-avatar-status-round-${size}`;
-};
-
-interface StatusIndicatorSvgProps {
-	width: number;
-	height: number;
-	statusColor: string;
-	statusMaskId: string;
-}
-
-const StatusIndicatorSvg = ({width, height, statusColor, statusMaskId}: StatusIndicatorSvgProps) => (
-	// biome-ignore lint/a11y/noSvgWithoutTitle: decorative SVG, parent has aria-label
-	<svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden>
-		<rect x={0} y={0} width={width} height={height} fill={statusColor} mask={`url(#${statusMaskId})`} />
-	</svg>
-);
-
 const getStatusVariantClassName = (
 	renderableStatus: StatusType,
-	isMobileOnline: boolean,
 	isTyping: boolean,
 	isInCall: boolean,
+	isStreaming: boolean,
 ): string => {
 	if (isTyping) return styles.statusTyping;
 	if (isInCall) return styles.statusInCall;
-	if (isMobileOnline) return styles.statusMobileOnline;
+	if (isStreaming) return styles.statusStreaming;
 
 	switch (renderableStatus) {
 		case StatusTypes.ONLINE:
@@ -343,5 +239,21 @@ const getStatusVariantClassName = (
 		case StatusTypes.OFFLINE:
 		default:
 			return styles.statusOffline;
+	}
+};
+
+const getStatusGlyphClassName = (renderableStatus: StatusType, isStreaming: boolean): string => {
+	if (isStreaming) return styles.statusGlyphStreaming;
+
+	switch (renderableStatus) {
+		case StatusTypes.IDLE:
+			return styles.statusGlyphIdle;
+		case StatusTypes.DND:
+			return styles.statusGlyphDnd;
+		case StatusTypes.OFFLINE:
+			return styles.statusGlyphOffline;
+		case StatusTypes.ONLINE:
+		default:
+			return styles.statusGlyphOnline;
 	}
 };

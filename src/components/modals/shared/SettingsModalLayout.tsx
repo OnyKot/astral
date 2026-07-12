@@ -39,7 +39,9 @@ export const SettingsModalContainer: React.FC<{children: React.ReactNode; fullsc
 		const contextValue = React.useMemo(() => ({fullscreen}), [fullscreen]);
 		return (
 			<SettingsModalContext.Provider value={contextValue}>
-				<div className={clsx(styles.container, {[styles.containerFullscreen]: fullscreen})}>{children}</div>
+				<div className={clsx(styles.container, {[styles.containerFullscreen]: fullscreen})} data-theme-transition="surface">
+					{children}
+				</div>
 			</SettingsModalContext.Provider>
 		);
 	},
@@ -97,13 +99,15 @@ export const SettingsModalDesktopScroll: React.FC<SettingsModalDesktopScrollProp
 			}
 		});
 
+		React.useEffect(() => {
+			if (!scrollKey) {
+				return;
+			}
+			internalRef.current?.scrollToTop();
+		}, [scrollKey]);
+
 		return (
-			<Scroller
-				ref={internalRef}
-				className={styles.desktopScroll}
-				key={scrollKey ?? 'settings-modal-desktop-scroll'}
-				data-settings-scroll-container
-			>
+			<Scroller ref={internalRef} className={styles.desktopScroll} key="settings-modal-desktop-scroll" data-settings-scroll-container>
 				<div className={styles.desktopScrollSpacerTop} />
 				<div className={styles.desktopScrollInner}>{children}</div>
 				<div className={styles.desktopScrollSpacerBottom} />

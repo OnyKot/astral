@@ -171,7 +171,7 @@ const AuthLayoutContent = observer(function AuthLayoutContent({children}: {child
 
 	useEffect(() => {
 		const root = document.documentElement;
-		const shouldEnableLite = !isMobileExperience && useLiteAuthEffects;
+		const shouldEnableLite = isMobileExperience || useLiteAuthEffects;
 		root.classList.toggle('auth-lite-effects', shouldEnableLite);
 		return () => {
 			root.classList.remove('auth-lite-effects');

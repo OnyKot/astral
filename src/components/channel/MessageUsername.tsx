@@ -18,6 +18,7 @@
  */
 
 import {observer} from 'mobx-react-lite';
+import {clsx} from 'clsx';
 import {PreloadableUserPopout} from '~/components/channel/PreloadableUserPopout';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
 import type {GuildMemberRecord} from '~/records/GuildMemberRecord';
@@ -25,7 +26,11 @@ import type {GuildRecord} from '~/records/GuildRecord';
 import type {MessageRecord} from '~/records/MessageRecord';
 import type {UserRecord} from '~/records/UserRecord';
 import KeyboardModeStore from '~/stores/KeyboardModeStore';
+import styles from '~/styles/Message.module.css';
 import * as NicknameUtils from '~/utils/NicknameUtils';
+import {getChannelListNameEffectPreset} from '~/utils/ProfileEffectResolver';
+
+const messageStyles = styles as unknown as Record<string, string>;
 
 export const MessageUsername = observer(
 	({
@@ -47,7 +52,9 @@ export const MessageUsername = observer(
 		previewName?: string;
 	}) => {
 		const displayName = previewName || NicknameUtils.getNickname(user, guild?.id, message.channelId);
-		const color = previewColor || member?.getColorString();
+		const channelListNameEffect = getChannelListNameEffectPreset(user);
+		const hasNameEffect = channelListNameEffect !== 'none' && !previewName;
+		const color = hasNameEffect ? undefined : previewColor || member?.getColorString();
 
 		return (
 			<PreloadableUserPopout
@@ -59,10 +66,11 @@ export const MessageUsername = observer(
 			>
 				<FocusRing>
 					<span
-						className={className}
+						className={clsx(className, hasNameEffect && messageStyles[`messageUsernameEffect_${channelListNameEffect}`])}
 						style={{color}}
 						data-user-id={user.id}
 						data-guild-id={guild?.id}
+						data-message-swipe-ignore="true"
 						tabIndex={KeyboardModeStore.keyboardModeEnabled ? 0 : -1}
 						role="button"
 						onKeyDown={(e) => {

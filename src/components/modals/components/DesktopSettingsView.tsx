@@ -18,7 +18,7 @@
  */
 
 import {Trans, useLingui} from '@lingui/react/macro';
-import {ArrowLeftIcon, ArrowRightIcon, SignOutIcon} from '@phosphor-icons/react';
+import {ArrowLeftIcon, ArrowRightIcon, HammerIcon, SignOutIcon} from '@phosphor-icons/react';
 import {AnimatePresence, motion} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
 import * as Sentry from '@sentry/react';
@@ -28,11 +28,14 @@ import {modal} from '~/actions/ModalActionCreators';
 import {AllSettingsRenderer} from '~/components/modals/components/AllSettingsRenderer';
 import {ClientInfo} from '~/components/modals/components/ClientInfo';
 import {LogoutModal} from '~/components/modals/components/LogoutModal';
+import {NftForgeModal} from '~/components/modals/NftForgeModal';
 import {SettingsModalHeader} from '~/components/modals/components/SettingsModalHeader';
 import {SettingsSearch} from '~/components/modals/components/SettingsSearch';
 import {ScrollSpyProvider, useScrollSpyContext} from '~/components/modals/hooks/ScrollSpyContext';
 import {useSettingsContentKey} from '~/components/modals/hooks/useSettingsContentKey';
+import {useDesktopSettingsTabDirection} from '~/components/modals/hooks/useDesktopSettingsTabDirection';
 import {useUnsavedChangesFlash} from '~/components/modals/hooks/useUnsavedChangesFlash';
+import {DesktopSettingsPanelTransition} from '~/components/modals/shared/DesktopSettingsPanelTransition';
 import {
 	SettingsModalDesktopContent,
 	SettingsModalDesktopScroll,
@@ -166,6 +169,10 @@ export const DesktopSettingsView: React.FC<DesktopSettingsViewProps> = observer(
 			ModalActionCreators.pop();
 		};
 
+		const handleOpenNftForge = React.useCallback(() => {
+			ModalActionCreators.push(modal(() => <NftForgeModal />));
+		}, []);
+
 		const isDeveloper = DeveloperModeStore.isDeveloper;
 
 		const filterResult: FilteredSettingsResult = React.useMemo(() => {
@@ -200,6 +207,12 @@ export const DesktopSettingsView: React.FC<DesktopSettingsViewProps> = observer(
 			const tabKey = selectedTab ?? 'settings';
 			return `user-settings-${tabKey}-${subtabKey}`;
 		}, [contentKey, initialSubtab, isSearchActive, selectedTab]);
+		const tabOrder = React.useMemo(
+			() => Object.values(filteredGroupedTabs).flat().map((tab) => tab.type),
+			[filteredGroupedTabs],
+		);
+		const panelIdentity = isSearchActive ? ('search' as const) : selectedTab;
+		const direction = useDesktopSettingsTabDirection(panelIdentity, isSearchActive ? ['search', ...tabOrder] : tabOrder);
 		const activeTabComponent = currentTab ? getSettingsTabComponent(currentTab.type) : null;
 		const tabRenderFallback = (
 			<div className={styles.noResults}>
@@ -228,6 +241,12 @@ export const DesktopSettingsView: React.FC<DesktopSettingsViewProps> = observer(
 									</a>
 								</div>
 								<div className={styles.footerSpacer} />
+								<button type="button" className={styles.footerActionButton} onClick={handleOpenNftForge}>
+									<HammerIcon weight="fill" className={styles.footerActionIcon} />
+									<span>
+										<Trans>NFT Forge</Trans>
+									</span>
+								</button>
 							</div>
 						</SettingsModalSidebarFooter>
 					</motion.div>
@@ -334,9 +353,9 @@ export const DesktopSettingsView: React.FC<DesktopSettingsViewProps> = observer(
 																	/>
 																</span>
 															)}
-															{tab.type === 'account_integrations' && (
-																<span className={styles.betaBadge}>
-																	<Trans>Beta</Trans>
+															{tab.type === 'appearance' && (
+																<span className={styles.newBadge}>
+																	<Trans>New</Trans>
 																</span>
 															)}
 														</div>
@@ -377,42 +396,65 @@ export const DesktopSettingsView: React.FC<DesktopSettingsViewProps> = observer(
 						onClose={handleClose}
 					/>
 
-					{!mobileLayout.enabled && selectedTab === 'appearance' && !isSearchActive && (
-						<Sentry.ErrorBoundary fallback={<></>}>
-							<div className={styles.previewDivider}>
-								<div className={settingsModalStyles.previewContainer}>
-									<AppearanceTabPreview />
-								</div>
-							</div>
-						</Sentry.ErrorBoundary>
-					)}
-					{!mobileLayout.enabled && selectedTab === 'accessibility' && !isSearchActive && (
-						<Sentry.ErrorBoundary fallback={<></>}>
-							<div className={styles.previewDivider}>
-								<div className={settingsModalStyles.previewContainer}>
-									<AccessibilityTabPreview />
-								</div>
-							</div>
-						</Sentry.ErrorBoundary>
-					)}
+					<AnimatePresence mode="wait" initial={false}>
+						{!mobileLayout.enabled && selectedTab === 'appearance' && !isSearchActive && (
+							<motion.div
+								key="appearance-preview"
+								initial={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: 8}}
+								animate={{opacity: 1, y: 0}}
+								exit={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: -6}}
+								transition={prefersReducedMotion ? {duration: 0} : {duration: 0.24, ease: [0.22, 1, 0.36, 1]}}
+								className={styles.previewDivider}
+							>
+								<Sentry.ErrorBoundary fallback={<></>}>
+									<div className={settingsModalStyles.previewContainer}>
+										<AppearanceTabPreview />
+									</div>
+								</Sentry.ErrorBoundary>
+							</motion.div>
+						)}
+						{!mobileLayout.enabled && selectedTab === 'accessibility' && !isSearchActive && (
+							<motion.div
+								key="accessibility-preview"
+								initial={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: 8}}
+								animate={{opacity: 1, y: 0}}
+								exit={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: -6}}
+								transition={prefersReducedMotion ? {duration: 0} : {duration: 0.24, ease: [0.22, 1, 0.36, 1]}}
+								className={styles.previewDivider}
+							>
+								<Sentry.ErrorBoundary fallback={<></>}>
+									<div className={settingsModalStyles.previewContainer}>
+										<AccessibilityTabPreview />
+									</div>
+								</Sentry.ErrorBoundary>
+							</motion.div>
+						)}
+					</AnimatePresence>
 
 					<Sentry.ErrorBoundary fallback={tabRenderFallback}>
 						<SettingsModalDesktopScroll scrollKey={scrollKey} scrollerRef={scrollContainerRef}>
-							{isSearchActive ? (
-								<AllSettingsRenderer
-									searchQuery={debouncedSearchQuery}
-									searchResults={searchResults}
-									groupedSettingsTabs={filteredGroupedTabs}
-									initialGuildId={initialGuildId}
-								/>
-							) : (
-								currentTab &&
-								activeTabComponent &&
-								React.createElement(activeTabComponent, {
-									...(initialGuildId ? {initialGuildId} : {}),
-									...(initialSubtab ? {initialSubtab} : {}),
-								} as any)
-							)}
+							<DesktopSettingsPanelTransition
+								panelKey={scrollKey}
+								direction={direction}
+								reducedMotion={prefersReducedMotion}
+								fadeOnly={isSearchActive}
+							>
+								{isSearchActive ? (
+									<AllSettingsRenderer
+										searchQuery={debouncedSearchQuery}
+										searchResults={searchResults}
+										groupedSettingsTabs={filteredGroupedTabs}
+										initialGuildId={initialGuildId}
+									/>
+								) : (
+									currentTab &&
+									activeTabComponent &&
+									React.createElement(activeTabComponent, {
+										...(initialGuildId ? {initialGuildId} : {}),
+										...(initialSubtab ? {initialSubtab} : {}),
+									} as any)
+								)}
+							</DesktopSettingsPanelTransition>
 						</SettingsModalDesktopScroll>
 					</Sentry.ErrorBoundary>
 				</SettingsModalDesktopContent>

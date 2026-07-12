@@ -19,6 +19,7 @@
 
 import {Trans, useLingui} from '@lingui/react/macro';
 import {ChatTeardropIcon, PencilIcon} from '@phosphor-icons/react';
+import {AnimatePresence, motion} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
@@ -29,6 +30,7 @@ import * as UserProfileActionCreators from '~/actions/UserProfileActionCreators'
 import {DEFAULT_ACCENT_COLOR, Permissions} from '~/Constants';
 import {CustomStatusDisplay} from '~/components/common/CustomStatusDisplay/CustomStatusDisplay';
 import {MusicActivityDisplay} from '~/components/common/MusicActivityDisplay/MusicActivityDisplay';
+import {SteamNowPlayingBlock} from '~/components/common/SteamNowPlayingBlock/SteamNowPlayingBlock';
 import {CustomStatusModal} from '~/components/modals/CustomStatusModal';
 import {UserProfileModal} from '~/components/modals/UserProfileModal';
 import {UserSettingsModal} from '~/components/modals/UserSettingsModal';
@@ -50,16 +52,18 @@ import {useHover} from '~/hooks/useHover';
 import type {ProfileRecord} from '~/records/ProfileRecord';
 import type {UserRecord} from '~/records/UserRecord';
 import AuthenticationStore from '~/stores/AuthenticationStore';
+import AccessibilityStore from '~/stores/AccessibilityStore';
 import DeveloperOptionsStore from '~/stores/DeveloperOptionsStore';
 import GuildMemberStore from '~/stores/GuildMemberStore';
-import LocalProfileEffectsStore from '~/stores/LocalProfileEffectsStore';
 import MemberPresenceSubscriptionStore from '~/stores/MemberPresenceSubscriptionStore';
 import PermissionStore from '~/stores/PermissionStore';
 import UserProfileStore from '~/stores/UserProfileStore';
 import * as ColorUtils from '~/utils/ColorUtils';
 import * as NicknameUtils from '~/utils/NicknameUtils';
 import * as ProfileDisplayUtils from '~/utils/ProfileDisplayUtils';
+import {getProfileAccentEffectPreset} from '~/utils/ProfileEffectResolver';
 import {createMockProfile} from '~/utils/ProfileUtils';
+import {getScalePopMotion} from '~/utils/motion/MotionPresets';
 import styles from './UserProfilePopout.module.css';
 
 interface UserProfilePopoutProps {
@@ -187,25 +191,39 @@ export const UserProfilePopout: React.FC<UserProfilePopoutProps> = observer(
 
 		const popoutContainerRef = React.useRef<HTMLDivElement | null>(null);
 		const displayName = NicknameUtils.getNickname(user, guildId);
-
-		if (!profile && !isWebhook) {
-			return (
-				<div className={styles.loadingContainer}>
-					<Spinner />
-				</div>
-			);
-		}
+		const prefersReducedMotion = AccessibilityStore.useReducedMotion;
+		const profileMotion = React.useMemo(() => getScalePopMotion(prefersReducedMotion), [prefersReducedMotion]);
+		const isLoading = !profile && !isWebhook;
 
 		const rawAccentColor = profileData?.accent_color ?? null;
 		const accentColorHex = typeof rawAccentColor === 'number' ? ColorUtils.int2hex(rawAccentColor) : rawAccentColor;
 		const borderColor = accentColorHex || DEFAULT_ACCENT_COLOR;
 		const bannerColor = accentColorHex || DEFAULT_ACCENT_COLOR;
-		const accentEffectPreset = LocalProfileEffectsStore.getUserPreset(user.id);
+		const accentEffectPreset = getProfileAccentEffectPreset(user);
 		const isMemberListVariant = variant === 'memberList';
 
 		return (
-			<FocusRingScope containerRef={popoutContainerRef}>
-				<div ref={popoutContainerRef}>
+			<AnimatePresence mode="wait" initial={false}>
+				{isLoading ? (
+					<motion.div
+						key="profile-popout-loading"
+						className={styles.loadingContainer}
+						initial={{opacity: 0}}
+						animate={{opacity: 1}}
+						exit={{opacity: 0}}
+						transition={prefersReducedMotion ? {duration: 0} : {duration: 0.16, ease: [0.22, 1, 0.36, 1]}}
+					>
+						<Spinner />
+					</motion.div>
+				) : (
+					<motion.div
+						key="profile-popout-content"
+						initial={profileMotion.initial}
+						animate={profileMotion.animate}
+						transition={profileMotion.transition}
+					>
+						<FocusRingScope containerRef={popoutContainerRef}>
+							<div ref={popoutContainerRef}>
 					<ProfileCardLayout
 						borderColor={borderColor}
 						accentEffectPreset={accentEffectPreset}
@@ -271,6 +289,7 @@ export const UserProfilePopout: React.FC<UserProfilePopoutProps> = observer(
 								</div>
 							)}
 							{!isWebhook && <MusicActivityDisplay userId={user.id} compact className={styles.profileMusicActivity} />}
+							{!isWebhook && <SteamNowPlayingBlock userId={user.id} compact className={styles.profileSteamNowPlaying} />}
 							{profile && (
 								<UserProfileBio
 									profile={profile}
@@ -327,6 +346,9 @@ export const UserProfilePopout: React.FC<UserProfilePopoutProps> = observer(
 					</ProfileCardLayout>
 				</div>
 			</FocusRingScope>
+					</motion.div>
+				)}
+			</AnimatePresence>
 		);
 	},
 );

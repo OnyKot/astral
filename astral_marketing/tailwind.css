@@ -17,38 +17,47 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
 @theme {
-	--font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+	--font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
 	--font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	--font-accent: 'Instrument Serif', ui-serif, Georgia, serif;
+	--font-display: 'Space Grotesk', 'Manrope', ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
 	--banner-height: 72px;
-	--font-display: 'Instrument Serif', serif;
-	--font-body: 'Inter', sans-serif;
-	--background: 201 100% 13%;
+	--font-body: 'Manrope', sans-serif;
+	--background: 218 35% 7%;
 	--foreground: 0 0% 100%;
-	--muted-foreground: 240 4% 66%;
+	--muted-foreground: 220 16% 72%;
 	--primary: 0 0% 100%;
 	--primary-foreground: 0 0% 4%;
-	--secondary: 0 0% 10%;
-	--muted: 0 0% 10%;
-	--accent: 0 0% 10%;
-	--border: 0 0% 18%;
-	--input: 0 0% 18%;
-	--astral-bg-0: #000000;
-	--astral-bg-1: #050507;
-	--astral-bg-2: #09090b;
-	--astral-bg-3: #18181b;
-	--astral-border: #27272a;
-	--astral-text: #ffffff;
-	--astral-muted: #a1a1aa;
-	--astral-accent: #6366f1;
+	--secondary: 218 22% 12%;
+	--muted: 219 20% 15%;
+	--accent: 226 82% 64%;
+	--border: 220 18% 22%;
+	--input: 220 18% 18%;
+	--astral-bg-0: #05070d;
+	--astral-bg-1: #080c14;
+	--astral-bg-2: #0d1320;
+	--astral-bg-3: #151d2b;
+	--astral-border: #273142;
+	--astral-text: #f7fbff;
+	--astral-muted: #a7b4c8;
+	--astral-accent: #7ca5ff;
+	--astral-mint: #37d7b2;
+	--astral-rose: #ff7aa8;
+	--astral-amber: #f5c96b;
+	--surface-glass: color-mix(in srgb, #111827 70%, transparent);
+	--surface-glass-strong: color-mix(in srgb, #111827 86%, transparent);
+	--surface-border: rgb(255 255 255 / 0.13);
+	--surface-highlight: rgb(255 255 255 / 0.06);
+	--shadow-deep: 0 42px 110px -64px rgb(0 0 0 / 0.92);
+	--shadow-blue: 0 34px 90px -58px rgb(67 128 255 / 0.62);
 }
 
 @media (min-width: 640px) {
@@ -64,15 +73,53 @@
 }
 
 body {
-	font-weight: 450;
-	letter-spacing: 0.01em;
-	background: hsl(var(--background));
+	font-weight: 500;
+	letter-spacing: 0;
+	background:
+		linear-gradient(180deg, #05070d 0%, #08111e 38%, #05070d 100%);
 	color: hsl(var(--foreground));
 	font-family: var(--font-body);
 }
 
 .marketing-body {
-	background: hsl(var(--background));
+	position: relative;
+	min-height: 100vh;
+	background:
+		linear-gradient(180deg, rgb(5 7 13) 0%, rgb(8 13 24) 44%, rgb(3 5 10) 100%);
+	overflow-x: hidden;
+}
+
+.marketing-body::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -2;
+	pointer-events: none;
+	background:
+		linear-gradient(90deg, rgb(124 165 255 / 0.08) 0 1px, transparent 1px),
+		linear-gradient(180deg, rgb(124 165 255 / 0.06) 0 1px, transparent 1px),
+		linear-gradient(135deg, transparent 0%, rgb(55 215 178 / 0.08) 28%, transparent 58%),
+		linear-gradient(225deg, transparent 0%, rgb(255 122 168 / 0.07) 32%, transparent 62%);
+	background-size:
+		68px 68px,
+		68px 68px,
+		100% 100%,
+		100% 100%;
+	mask-image: linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
+	opacity: 0.72;
+}
+
+.marketing-body::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background:
+		linear-gradient(115deg, transparent 0 18%, rgb(124 165 255 / 0.1) 34%, transparent 52%),
+		linear-gradient(255deg, transparent 0 24%, rgb(55 215 178 / 0.08) 45%, transparent 70%);
+	filter: blur(14px);
+	opacity: 0.68;
 }
 
 .marketing-page main {
@@ -981,4 +1028,2012 @@ html.motion-ready .motion-reveal.is-visible {
 	.coming-features-masonry {
 		align-items: center;
 	}
+}
+
+/* 2026 refresh: dark messenger cosmos. */
+.marketing-page {
+	background:
+		radial-gradient(circle at 18% 8%, rgb(139 92 246 / 0.34), transparent 34rem),
+		radial-gradient(circle at 88% 16%, rgb(236 72 153 / 0.2), transparent 28rem),
+		radial-gradient(circle at 50% 88%, rgb(56 189 248 / 0.12), transparent 32rem),
+		linear-gradient(180deg, #05070d 0%, #080c16 48%, #03050a 100%);
+}
+
+.marketing-page::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background-image:
+		radial-gradient(1px 1px at 8% 13%, rgb(255 255 255 / 0.82), transparent 55%),
+		radial-gradient(1px 1px at 34% 22%, rgb(255 255 255 / 0.48), transparent 55%),
+		radial-gradient(1px 1px at 69% 11%, rgb(255 255 255 / 0.56), transparent 55%),
+		radial-gradient(1px 1px at 92% 35%, rgb(255 255 255 / 0.42), transparent 55%),
+		radial-gradient(1px 1px at 18% 78%, rgb(255 255 255 / 0.48), transparent 55%),
+		radial-gradient(1px 1px at 74% 82%, rgb(255 255 255 / 0.36), transparent 55%);
+	background-size: 520px 520px;
+	opacity: 0.46;
+	animation: astral-stars-drift 90s linear infinite;
+}
+
+.marketing-shell {
+	padding: 9.5rem 1.25rem 5.5rem;
+}
+
+.marketing-shell::before,
+.marketing-hero-stage::before {
+	content: '';
+	position: absolute;
+	inset: 4rem 1rem auto;
+	height: min(48rem, 70vh);
+	border-radius: 999px;
+	background:
+		radial-gradient(ellipse at 28% 38%, rgb(168 85 247 / 0.28), transparent 55%),
+		radial-gradient(ellipse at 72% 48%, rgb(236 72 153 / 0.14), transparent 52%),
+		radial-gradient(ellipse at 50% 20%, rgb(96 165 250 / 0.14), transparent 58%);
+	filter: blur(28px);
+	opacity: 0.9;
+	pointer-events: none;
+}
+
+.marketing-title {
+	font-family: var(--font-display);
+	font-weight: 700;
+	letter-spacing: 0;
+	text-wrap: balance;
+	text-shadow: 0 22px 70px rgb(124 58 237 / 0.22);
+}
+
+.hero-title {
+	font-size: 3rem;
+	line-height: 0.98;
+}
+
+.marketing-subtitle {
+	color: rgb(218 226 239 / 0.78);
+	text-wrap: pretty;
+}
+
+.marketing-kicker {
+	border: 1px solid rgb(255 255 255 / 0.13);
+	background:
+		linear-gradient(135deg, rgb(168 85 247 / 0.18), rgb(56 189 248 / 0.08)),
+		rgb(255 255 255 / 0.04);
+	color: rgb(228 214 255);
+	box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+.marketing-frame,
+.marketing-panel,
+.download-release-panel {
+	position: relative;
+	overflow: hidden;
+	border-radius: 28px;
+	border: 1px solid var(--surface-border);
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.075), rgb(255 255 255 / 0.025)),
+		color-mix(in srgb, #0f172a 76%, transparent);
+	box-shadow:
+		var(--shadow-deep),
+		inset 0 1px 0 rgb(255 255 255 / 0.1);
+	backdrop-filter: blur(24px) saturate(132%);
+	-webkit-backdrop-filter: blur(24px) saturate(132%);
+}
+
+.marketing-frame::before,
+.marketing-panel::before,
+.download-release-panel::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		linear-gradient(115deg, transparent 0 36%, rgb(255 255 255 / 0.08) 48%, transparent 62%),
+		radial-gradient(circle at 18% 0%, rgb(168 85 247 / 0.18), transparent 35%);
+	opacity: 0.78;
+}
+
+.marketing-panel > *,
+.marketing-frame > *,
+.download-release-panel > * {
+	position: relative;
+	z-index: 1;
+}
+
+.hero-icon-shell {
+	border-radius: 24px;
+	border: 1px solid rgb(255 255 255 / 0.15);
+	background:
+		linear-gradient(135deg, rgb(139 92 246 / 0.28), rgb(56 189 248 / 0.11)),
+		rgb(255 255 255 / 0.06);
+	box-shadow:
+		0 22px 62px -34px rgb(168 85 247 / 0.9),
+		inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+.liquid-glass {
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.075), rgb(255 255 255 / 0.025)),
+		color-mix(in srgb, #0f172a 54%, transparent);
+	border: 1px solid rgb(255 255 255 / 0.1);
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.13),
+		0 20px 52px -42px rgb(0 0 0 / 0.86);
+}
+
+.interactive-glass:hover,
+.interactive-glass:focus-visible {
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.04)),
+		color-mix(in srgb, #1d2440 62%, transparent);
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.18),
+		0 20px 50px -28px rgb(139 92 246 / 0.52);
+	transform: translateY(-2px);
+}
+
+.nav-card {
+	border: 1px solid rgb(255 255 255 / 0.12);
+	background:
+		linear-gradient(180deg, rgb(11 18 32 / 0.78), rgb(7 11 20 / 0.56));
+	box-shadow:
+		0 20px 65px -44px rgb(0 0 0 / 0.9),
+		inset 0 1px 0 rgb(255 255 255 / 0.12);
+	backdrop-filter: blur(24px) saturate(140%);
+	-webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+.nav-shell.scrolled .nav-card {
+	background:
+		linear-gradient(180deg, rgb(11 18 32 / 0.86), rgb(7 11 20 / 0.68));
+	border-color: rgb(255 255 255 / 0.14);
+	box-shadow: 0 18px 60px -42px rgb(0 0 0 / 0.9);
+	transform: scale(0.985);
+}
+
+.download-link,
+.overlay-toggle,
+.nav-drawer-link {
+	border-radius: 18px !important;
+}
+
+.download-link {
+	min-height: 5.8rem;
+}
+
+.download-release-panel {
+	background:
+		linear-gradient(135deg, rgb(88 28 135 / 0.46), transparent 46%),
+		linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.025)),
+		rgb(8 13 24 / 0.88);
+}
+
+.reveal-card {
+	border-radius: 22px !important;
+}
+
+.reveal-card:hover {
+	transform: translateY(-7px);
+	border-color: rgb(196 181 253 / 0.52);
+	box-shadow:
+		0 28px 70px -34px rgb(139 92 246 / 0.62),
+		inset 0 1px 0 rgb(255 255 255 / 0.14);
+	background-color: rgb(22 28 44 / 0.86);
+}
+
+.policy-prose {
+	border-radius: 24px !important;
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.065), rgb(255 255 255 / 0.025)),
+		rgb(8 13 24 / 0.88) !important;
+	color: rgb(224 231 242) !important;
+}
+
+.policy-prose h1,
+.policy-prose h2,
+.policy-prose h3 {
+	font-family: var(--font-display) !important;
+	letter-spacing: 0 !important;
+}
+
+.astral-hero-comms {
+	height: 34rem;
+}
+
+.hero-chat-card {
+	position: absolute;
+	width: 18rem;
+	border: 1px solid rgb(255 255 255 / 0.13);
+	border-radius: 22px;
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.035)),
+		rgb(9 14 26 / 0.68);
+	box-shadow: 0 34px 88px -48px rgb(0 0 0 / 0.92);
+	backdrop-filter: blur(20px) saturate(128%);
+	padding: 1rem;
+	text-align: left;
+}
+
+.hero-chat-card--left {
+	left: 1.5rem;
+	top: 3rem;
+	animation: astral-float-a 8s ease-in-out infinite;
+}
+
+.hero-chat-card--right {
+	right: 1.5rem;
+	top: 9rem;
+	animation: astral-float-b 9s ease-in-out infinite;
+}
+
+.hero-chat-card__top {
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+	margin-bottom: 0.7rem;
+	color: rgb(226 232 240 / 0.76);
+	font-size: 0.78rem;
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+.hero-chat-card p {
+	color: white;
+	font-size: 0.95rem;
+	line-height: 1.5;
+}
+
+.hero-presence {
+	width: 0.62rem;
+	height: 0.62rem;
+	border-radius: 999px;
+	box-shadow: 0 0 0 5px rgb(255 255 255 / 0.06);
+}
+
+.hero-presence--online {
+	background: var(--astral-mint);
+}
+
+.hero-presence--idle {
+	background: var(--astral-amber);
+}
+
+.hero-channel-strip {
+	position: absolute;
+	left: 50%;
+	top: 23rem;
+	display: flex;
+	gap: 0.65rem;
+	transform: translateX(-50%);
+	padding: 0.65rem;
+	border-radius: 999px;
+	border: 1px solid rgb(255 255 255 / 0.12);
+	background: rgb(8 13 24 / 0.64);
+	backdrop-filter: blur(18px);
+	box-shadow: 0 26px 78px -52px rgb(139 92 246 / 0.72);
+}
+
+.hero-channel-strip span {
+	border-radius: 999px;
+	background: rgb(255 255 255 / 0.07);
+	padding: 0.52rem 0.85rem;
+	color: rgb(226 232 240 / 0.84);
+	font-size: 0.76rem;
+	font-weight: 700;
+}
+
+@keyframes astral-stars-drift {
+	from {
+		transform: translate3d(0, 0, 0);
+	}
+	to {
+		transform: translate3d(0, -520px, 0);
+	}
+}
+
+@keyframes astral-float-a {
+	0%,
+	100% {
+		transform: translateY(0) rotate(-2deg);
+	}
+	50% {
+		transform: translateY(-18px) rotate(2deg);
+	}
+}
+
+@keyframes astral-float-b {
+	0%,
+	100% {
+		transform: translateY(0) rotate(2deg);
+	}
+	50% {
+		transform: translateY(16px) rotate(-1deg);
+	}
+}
+
+@media (min-width: 768px) {
+	.marketing-shell {
+		padding: 11rem 2rem 7rem;
+	}
+
+	.hero-title {
+		font-size: 4.8rem;
+	}
+}
+
+@media (min-width: 1024px) {
+	.hero-title {
+		font-size: 6.2rem;
+	}
+}
+
+@media (max-width: 767px) {
+	.marketing-shell {
+		padding-top: 8.25rem;
+	}
+
+	.hero-title {
+		font-size: 2.8rem;
+	}
+
+	.marketing-panel,
+	.marketing-frame,
+	.download-release-panel {
+		border-radius: 22px;
+	}
+
+	.download-link,
+	.overlay-toggle {
+		border-radius: 18px !important;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.marketing-page::before,
+	.hero-chat-card--left,
+	.hero-chat-card--right {
+		animation: none !important;
+	}
+}
+
+/* Calmer dark product pass: less glow, more depth. */
+.marketing-body {
+	background: #03050a;
+}
+
+.marketing-body::before {
+	background:
+		linear-gradient(90deg, rgb(148 163 184 / 0.035) 0 1px, transparent 1px),
+		linear-gradient(180deg, rgb(148 163 184 / 0.03) 0 1px, transparent 1px);
+	background-size: 76px 76px;
+	opacity: 0.42;
+	mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+}
+
+.marketing-body::after {
+	background:
+		radial-gradient(circle at 24% 10%, rgb(124 58 237 / 0.12), transparent 30rem),
+		radial-gradient(circle at 82% 12%, rgb(14 165 233 / 0.07), transparent 26rem);
+	filter: blur(20px);
+	opacity: 0.58;
+}
+
+.marketing-page {
+	background:
+		radial-gradient(circle at 18% 0%, rgb(88 28 135 / 0.18), transparent 34rem),
+		linear-gradient(180deg, #03050a 0%, #070b13 48%, #03050a 100%);
+}
+
+.marketing-page::before {
+	animation: none;
+	opacity: 0.18;
+	background-image:
+		radial-gradient(1px 1px at 12% 20%, rgb(255 255 255 / 0.55), transparent 55%),
+		radial-gradient(1px 1px at 72% 18%, rgb(255 255 255 / 0.38), transparent 55%),
+		radial-gradient(1px 1px at 42% 82%, rgb(255 255 255 / 0.28), transparent 55%);
+	background-size: 680px 680px;
+}
+
+.marketing-shell::before,
+.marketing-hero-stage::before {
+	height: min(36rem, 54vh);
+	background:
+		radial-gradient(ellipse at 34% 28%, rgb(124 58 237 / 0.14), transparent 58%),
+		radial-gradient(ellipse at 70% 42%, rgb(14 165 233 / 0.065), transparent 60%);
+	filter: blur(34px);
+	opacity: 0.62;
+}
+
+.marketing-page video {
+	filter: saturate(0.98) contrast(1.04) brightness(0.46);
+}
+
+.marketing-page main > section:first-child::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		linear-gradient(180deg, rgb(3 5 10 / 0.64) 0%, rgb(3 5 10 / 0.2) 42%, rgb(3 5 10 / 0.86) 100%);
+	z-index: 1;
+}
+
+.marketing-page main > section:first-child h1 {
+	max-width: 72rem;
+	text-shadow: 0 20px 72px rgb(0 0 0 / 0.82);
+}
+
+.marketing-frame,
+.marketing-panel,
+.download-release-panel {
+	border-color: rgb(255 255 255 / 0.1);
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.055), rgb(255 255 255 / 0.018)),
+		rgb(8 12 20 / 0.86);
+	box-shadow:
+		0 34px 86px -58px rgb(0 0 0 / 0.9),
+		inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+.marketing-frame::before,
+.marketing-panel::before,
+.download-release-panel::before {
+	opacity: 0.34;
+	background: linear-gradient(115deg, transparent 0 42%, rgb(255 255 255 / 0.045) 52%, transparent 66%);
+}
+
+.download-release-panel {
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.018)),
+		rgb(7 11 19 / 0.92);
+}
+
+.download-release-panel::after {
+	content: none;
+}
+
+.download-release-panel .download-link {
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.075), rgb(255 255 255 / 0.025)),
+		rgb(10 15 25 / 0.92);
+	border: 1px solid rgb(255 255 255 / 0.12);
+	box-shadow:
+		0 22px 64px -50px rgb(0 0 0 / 0.9),
+		inset 0 1px 0 rgb(255 255 255 / 0.11);
+}
+
+.download-release-panel .download-link:hover,
+.download-release-panel .download-link:focus-visible {
+	border-color: rgb(148 163 184 / 0.32);
+	box-shadow:
+		0 24px 70px -54px rgb(0 0 0 / 0.92),
+		inset 0 1px 0 rgb(255 255 255 / 0.13);
+}
+
+.download-release-panel .overlay-toggle {
+	background: rgb(8 12 20 / 0.9);
+	border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.reveal-card:hover {
+	transform: translateY(-3px);
+	border-color: rgb(148 163 184 / 0.26);
+	box-shadow:
+		0 24px 60px -50px rgb(0 0 0 / 0.92),
+		inset 0 1px 0 rgb(255 255 255 / 0.1);
+	background-color: rgb(12 17 28 / 0.86);
+}
+
+.hero-chat-card {
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.065), rgb(255 255 255 / 0.02)),
+		rgb(8 12 20 / 0.72);
+	border-color: rgb(255 255 255 / 0.1);
+	box-shadow: 0 28px 72px -54px rgb(0 0 0 / 0.92);
+}
+
+.hero-channel-strip {
+	background: rgb(8 12 20 / 0.72);
+	box-shadow: 0 24px 64px -54px rgb(0 0 0 / 0.9);
+}
+
+@media (min-width: 768px) {
+	.download-release-panel {
+		padding: 2rem !important;
+	}
+
+	.download-release-panel .download-link {
+		min-width: 17rem;
+	}
+}
+
+@media (max-width: 767px) {
+	.marketing-page main > section:first-child {
+		min-height: 92vh;
+		align-items: end;
+		padding-bottom: 5.5rem;
+	}
+
+	.marketing-page main > section:first-child h1 {
+		font-size: 3rem !important;
+		line-height: 0.98 !important;
+	}
+}
+
+/* Minimal dark correction pass. */
+.marketing-page::before,
+.marketing-body::before {
+	opacity: 0.12;
+	animation: none !important;
+}
+
+.marketing-body::after,
+.marketing-shell::before,
+.marketing-hero-stage::before {
+	opacity: 0.32;
+}
+
+.marketing-page main > section:first-child {
+	position: relative;
+	min-height: 100vh;
+	align-items: center;
+	padding-top: 8.5rem;
+	padding-bottom: 5rem;
+	background: #03050a;
+}
+
+.marketing-page main > section:first-child video {
+	position: absolute !important;
+	inset: 0 !important;
+	z-index: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	filter: saturate(0.86) contrast(1.04) brightness(0.34);
+}
+
+.marketing-page main > section:first-child::after {
+	background: linear-gradient(180deg, rgb(3 5 10 / 0.78) 0%, rgb(3 5 10 / 0.46) 42%, rgb(3 5 10 / 0.88) 100%);
+	z-index: 1;
+}
+
+.marketing-page main > section:first-child .relative.z-10 {
+	position: relative;
+	z-index: 2;
+	max-width: 68rem;
+	padding: 0;
+}
+
+.astral-hero-comms,
+.hero-chat-card,
+.hero-channel-strip {
+	display: none !important;
+}
+
+.marketing-page main > section:first-child h1 {
+	text-shadow: 0 18px 68px rgb(0 0 0 / 0.9);
+}
+
+.marketing-page main > section:first-child p {
+	color: rgb(209 217 230 / 0.76);
+}
+
+.liquid-glass::after,
+.marketing-frame::before,
+.marketing-panel::before,
+.download-release-panel::before {
+	opacity: 0.18;
+}
+
+.interactive-glass:hover,
+.interactive-glass:focus-visible {
+	transform: translateY(-1px);
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.12),
+		0 16px 42px -34px rgb(0 0 0 / 0.9);
+}
+
+@media (max-width: 767px) {
+	.marketing-page main > section:first-child {
+		align-items: center;
+		padding-top: 7.5rem;
+		padding-bottom: 4rem;
+	}
+}
+
+/* Lean dark pass: keep the site fast, calm, and readable. */
+.marketing-body,
+.marketing-page {
+	background: #02040a !important;
+	color: rgb(242 246 255 / 0.94);
+}
+
+.marketing-body::before,
+.marketing-body::after,
+.marketing-page::before,
+.marketing-page::after,
+.marketing-shell::before,
+.marketing-hero-stage::before,
+.marketing-frame::before,
+.marketing-panel::before,
+.download-release-panel::before,
+.download-release-panel::after,
+.liquid-glass::after {
+	content: none !important;
+	display: none !important;
+}
+
+.marketing-page *,
+#hiw-root * {
+	animation: none !important;
+	scroll-behavior: auto !important;
+}
+
+.marketing-page a,
+.marketing-page button,
+#hiw-root a,
+#hiw-root button {
+	transition:
+		background-color 140ms ease,
+		color 140ms ease,
+		border-color 140ms ease,
+		opacity 140ms ease !important;
+}
+
+html.motion-ready .motion-reveal,
+html.motion-ready .motion-reveal.is-visible {
+	opacity: 1 !important;
+	transform: none !important;
+	filter: none !important;
+}
+
+.home-hero-backdrop {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	background:
+		linear-gradient(180deg, rgb(2 4 10 / 0.18) 0%, #02040a 86%),
+		radial-gradient(circle at 52% 30%, rgb(70 48 118 / 0.28), transparent 34rem),
+		radial-gradient(circle at 18% 18%, rgb(35 58 112 / 0.18), transparent 30rem),
+		#02040a;
+}
+
+.marketing-page main > section:first-child {
+	min-height: 100svh !important;
+	padding-top: 7.5rem !important;
+	padding-bottom: 4.5rem !important;
+	background: #02040a !important;
+}
+
+.marketing-page main > section:first-child::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+	background: linear-gradient(180deg, rgb(2 4 10 / 0.14), rgb(2 4 10 / 0.72));
+}
+
+.marketing-page main > section:first-child video {
+	display: none !important;
+}
+
+.marketing-page main > section:first-child .relative.z-10 {
+	position: relative;
+	z-index: 2;
+	max-width: 62rem;
+}
+
+.marketing-page main > section:first-child h1 {
+	max-width: 58rem;
+	text-shadow: none !important;
+	letter-spacing: -0.045em;
+}
+
+.marketing-page main > section:first-child p {
+	max-width: 42rem;
+	color: rgb(194 203 220 / 0.78) !important;
+}
+
+.marketing-frame,
+.marketing-panel,
+.download-release-panel,
+.nav-card,
+.reveal-card,
+.feature-card,
+.how-card,
+.download-card {
+	border-color: transparent !important;
+	background: rgb(8 12 20 / 0.82) !important;
+	box-shadow: 0 18px 54px -46px rgb(0 0 0 / 0.9) !important;
+	backdrop-filter: blur(10px) !important;
+}
+
+.marketing-frame:hover,
+.marketing-panel:hover,
+.download-release-panel:hover,
+.nav-card:hover,
+.reveal-card:hover,
+.feature-card:hover,
+.how-card:hover,
+.download-card:hover {
+	transform: none !important;
+	border-color: transparent !important;
+	background: rgb(10 15 24 / 0.88) !important;
+	box-shadow: 0 18px 54px -46px rgb(0 0 0 / 0.9) !important;
+}
+
+.interactive-glass,
+.liquid-glass,
+.download-link,
+.overlay-toggle {
+	border-color: rgb(255 255 255 / 0.06) !important;
+	background: rgb(12 17 28 / 0.9) !important;
+	box-shadow: none !important;
+	backdrop-filter: blur(8px) !important;
+}
+
+.interactive-glass:hover,
+.interactive-glass:focus-visible,
+.liquid-glass:hover,
+.liquid-glass:focus-visible,
+.download-link:hover,
+.download-link:focus-visible,
+.overlay-toggle:hover,
+.overlay-toggle:focus-visible {
+	transform: none !important;
+	border-color: rgb(255 255 255 / 0.1) !important;
+	background: rgb(18 24 38 / 0.94) !important;
+	box-shadow: none !important;
+}
+
+.astral-hero-comms,
+.hero-chat-card,
+.hero-channel-strip {
+	display: none !important;
+}
+
+@media (max-width: 767px) {
+	.marketing-page main > section:first-child {
+		min-height: 92svh !important;
+		padding-top: 6.75rem !important;
+		padding-bottom: 3.75rem !important;
+	}
+
+	.marketing-page main > section:first-child h1 {
+		font-size: clamp(2.5rem, 14vw, 4rem) !important;
+		line-height: 0.96 !important;
+	}
+
+	.marketing-frame,
+	.marketing-panel,
+	.download-release-panel,
+	.nav-card,
+	.reveal-card,
+	.feature-card,
+	.how-card,
+	.download-card {
+		border-radius: 22px !important;
+		box-shadow: 0 14px 42px -38px rgb(0 0 0 / 0.86) !important;
+	}
+}
+
+/* Simple navbar pass: no glass overload, no glowing outlines, no jumpy motion. */
+.nav-shell {
+	background: transparent !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	transform: none !important;
+	transition: none !important;
+}
+
+.nav-shell > div {
+	padding-top: 0.85rem !important;
+	padding-bottom: 0 !important;
+}
+
+.nav-shell.scrolled > div {
+	padding-top: 0.55rem !important;
+	padding-bottom: 0 !important;
+}
+
+.nav-shell.nav-hidden {
+	transform: none !important;
+}
+
+.nav-card,
+.nav-shell.scrolled .nav-card {
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: rgb(2 4 10 / 0.78) !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: blur(10px) !important;
+	backdrop-filter: blur(10px) !important;
+	transform: none !important;
+	transition: none !important;
+}
+
+.nav-card:hover,
+.nav-card:focus-within {
+	border: 0 !important;
+	background: rgb(2 4 10 / 0.84) !important;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+.nav-brand {
+	opacity: 0.94;
+	transition: opacity 120ms ease !important;
+}
+
+.nav-brand:hover,
+.nav-brand:focus-visible {
+	opacity: 1;
+}
+
+.nav-link-fx {
+	position: relative;
+	padding: 0.25rem 0 !important;
+	color: rgb(169 179 198 / 0.82) !important;
+	font-weight: 500;
+	letter-spacing: -0.01em;
+	text-decoration: none;
+	transition: color 120ms ease, opacity 120ms ease !important;
+}
+
+.nav-link-fx::after {
+	content: none !important;
+	display: none !important;
+}
+
+.nav-link-fx:hover,
+.nav-link-fx:focus-visible,
+.nav-link-fx.is-active {
+	color: rgb(245 248 255 / 0.96) !important;
+	transform: none !important;
+}
+
+.nav-cta {
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: rgb(255 255 255 / 0.075) !important;
+	box-shadow: none !important;
+	text-decoration: none;
+	transition: background-color 120ms ease, color 120ms ease !important;
+}
+
+.nav-cta:hover,
+.nav-cta:focus-visible {
+	background: rgb(255 255 255 / 0.115) !important;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+.nav-icon-btn,
+.icon-button-fx {
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	transition: background-color 120ms ease, opacity 120ms ease !important;
+}
+
+.nav-icon-btn:hover,
+.nav-icon-btn:focus-visible,
+.icon-button-fx:hover,
+.icon-button-fx:focus-visible {
+	background: rgb(255 255 255 / 0.08) !important;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+#nav-backdrop {
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+	transition: opacity 120ms ease !important;
+}
+
+#nav-drawer,
+.nav-drawer-panel {
+	border-left: 1px solid rgb(255 255 255 / 0.06) !important;
+	border-radius: 0 !important;
+	background: rgb(3 6 13 / 0.98) !important;
+	box-shadow: -22px 0 70px -58px rgb(0 0 0 / 0.95) !important;
+	transition: transform 160ms ease !important;
+}
+
+#nav-drawer .liquid-glass {
+	border: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+}
+
+.nav-drawer-link,
+.drawer-link-fx {
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	color: rgb(232 238 250 / 0.92) !important;
+	text-decoration: none;
+	transition: color 120ms ease, opacity 120ms ease !important;
+}
+
+.nav-drawer-link:hover,
+.nav-drawer-link:focus-visible,
+.drawer-link-fx:hover,
+.drawer-link-fx:focus-visible {
+	background: transparent !important;
+	box-shadow: none !important;
+	color: #fff !important;
+	transform: none !important;
+}
+
+@media (max-width: 767px) {
+	.nav-shell > div {
+		padding-left: 0 !important;
+		padding-right: 0 !important;
+		padding-top: 0 !important;
+	}
+
+	.nav-card,
+	.nav-shell.scrolled .nav-card {
+		width: 100% !important;
+		max-width: none !important;
+		padding: 1rem 1.25rem !important;
+		background: rgb(2 4 10 / 0.9) !important;
+	}
+}
+
+/* App-inspired hero scene from the Astral desktop design notice. */
+.home-hero-backdrop {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	overflow: hidden;
+	background:
+		radial-gradient(circle at 20% 10%, rgb(125 211 252 / 0.16) 0%, transparent 52%),
+		radial-gradient(circle at 78% 8%, rgb(129 140 248 / 0.15) 0%, transparent 56%),
+		linear-gradient(180deg, #020617 0%, #030b1f 45%, #050d24 72%, #000 100%) !important;
+}
+
+.home-hero-backdrop::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background-image:
+		radial-gradient(2px 2px at 20px 30px, rgb(255 255 255 / 0.72) 50%, transparent 55%),
+		radial-gradient(1.5px 1.5px at 80px 120px, rgb(255 255 255 / 0.5) 50%, transparent 55%),
+		radial-gradient(1.8px 1.8px at 140px 70px, rgb(191 219 254 / 0.52) 50%, transparent 55%),
+		radial-gradient(1px 1px at 30px 50px, rgb(255 255 255 / 0.45) 50%, transparent 55%),
+		radial-gradient(1px 1px at 110px 90px, rgb(167 243 208 / 0.26) 50%, transparent 55%);
+	background-repeat: repeat;
+	background-size: 180px 180px, 180px 180px, 180px 180px, 220px 220px, 220px 220px;
+	opacity: 0.56;
+}
+
+.home-hero-backdrop::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	bottom: -10.5rem;
+	width: min(118rem, 180vw);
+	height: 18rem;
+	transform: translateX(-50%);
+	border-radius: 100% 100% 0 0;
+	background: radial-gradient(circle at 50% 0%, #1e40af 0%, #030712 58%, #000 78%);
+	box-shadow:
+		0 -14px 70px 5px rgb(59 130 246 / 0.38),
+		inset 0 18px 54px 0 rgb(255 255 255 / 0.16);
+}
+
+.marketing-page main > section:first-child::after {
+	background:
+		linear-gradient(180deg, rgb(2 6 23 / 0.12) 0%, rgb(2 6 23 / 0.2) 38%, rgb(0 0 0 / 0.78) 100%) !important;
+}
+
+.marketing-page main > section:first-child h1 em {
+	color: #dbeafe !important;
+}
+
+/* Unified button system for the landing. */
+.astral-button,
+.marketing-page .astral-button,
+.marketing-page button.astral-button,
+.marketing-page a.astral-button {
+	border: 0 !important;
+	border-radius: 14px !important;
+	background: rgb(255 255 255 / 0.075) !important;
+	box-shadow: none !important;
+	color: rgb(246 249 255 / 0.96) !important;
+	text-decoration: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+	transition:
+		background-color 140ms ease,
+		color 140ms ease,
+		opacity 140ms ease !important;
+}
+
+.astral-button:hover,
+.astral-button:focus-visible {
+	background: rgb(255 255 255 / 0.12) !important;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+.astral-button-primary {
+	background: linear-gradient(135deg, rgb(77 112 255 / 0.92), rgb(69 88 204 / 0.92)) !important;
+}
+
+.astral-button-primary:hover,
+.astral-button-primary:focus-visible {
+	background: linear-gradient(135deg, rgb(95 130 255 / 0.96), rgb(82 103 222 / 0.96)) !important;
+}
+
+.astral-button-secondary {
+	background: rgb(255 255 255 / 0.07) !important;
+}
+
+.download-link {
+	min-height: 0 !important;
+}
+
+.overlay-toggle {
+	margin-left: 1px;
+}
+
+.download-overlay {
+	border: 0 !important;
+	border-radius: 14px !important;
+	background: rgb(8 12 20 / 0.98) !important;
+	box-shadow: 0 18px 54px -44px rgb(0 0 0 / 0.92) !important;
+	overflow: hidden;
+}
+
+.download-overlay-link {
+	color: rgb(230 237 250 / 0.9) !important;
+}
+
+.download-overlay-link:hover,
+.download-overlay-link:focus-visible {
+	background: rgb(255 255 255 / 0.07) !important;
+	color: #fff !important;
+}
+
+.company-prose {
+	border-radius: 18px !important;
+	text-align: left;
+	line-height: 1.78;
+}
+
+.company-prose > div {
+	max-width: 100%;
+}
+
+.company-prose h1 {
+	margin-bottom: 1.25rem !important;
+	font-size: clamp(2.15rem, 5vw, 3.6rem) !important;
+	letter-spacing: -0.045em;
+}
+
+.company-prose h2,
+.company-prose h3 {
+	margin-top: 2.25rem !important;
+	letter-spacing: -0.025em;
+}
+
+.company-prose p,
+.company-prose li {
+	color: rgb(190 200 218 / 0.86) !important;
+}
+
+.company-prose ul {
+	padding-left: 1.2rem !important;
+}
+
+.company-prose a {
+	text-decoration-color: rgb(255 255 255 / 0.28) !important;
+	text-underline-offset: 0.18em;
+}
+
+@media (max-width: 767px) {
+	.home-hero-backdrop::after {
+		bottom: -8.25rem;
+		width: 190vw;
+		height: 14rem;
+	}
+
+	.astral-button,
+	.marketing-page .astral-button {
+		width: 100%;
+		border-radius: 12px !important;
+	}
+
+	.company-prose {
+		border-radius: 16px !important;
+		padding-left: 1.25rem !important;
+		padding-right: 1.25rem !important;
+	}
+}
+
+/* Final polish: premium space, cleaner icons, wider desktop rhythm. */
+@keyframes astral-star-drift {
+	from {
+		background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
+	}
+	to {
+		background-position: 180px 90px, -140px 180px, 90px -120px, 220px 110px, -180px 160px;
+	}
+}
+
+@keyframes astral-soft-pulse {
+	0%, 100% {
+		opacity: 0.58;
+	}
+	50% {
+		opacity: 0.86;
+	}
+}
+
+@keyframes astral-icon-orbit {
+	0%, 100% {
+		transform: translateY(0) rotate(0deg);
+	}
+	50% {
+		transform: translateY(-2px) rotate(-1deg);
+	}
+}
+
+.home-hero-backdrop::before {
+	animation: astral-star-drift 95s linear infinite !important;
+	will-change: background-position;
+}
+
+.home-hero-backdrop::after {
+	bottom: -15rem !important;
+	height: 21rem !important;
+	opacity: 0.42;
+	filter: blur(24px);
+	background: radial-gradient(circle at 50% 0%, rgb(59 130 246 / 0.72) 0%, rgb(30 64 175 / 0.32) 32%, rgb(3 7 18 / 0.18) 58%, transparent 74%) !important;
+	box-shadow:
+		0 -18px 86px 4px rgb(59 130 246 / 0.26),
+		inset 0 22px 60px 0 rgb(255 255 255 / 0.08) !important;
+}
+
+.nav-shell > div,
+.nav-shell.scrolled > div {
+	padding-top: 1rem !important;
+	padding-left: clamp(1rem, 3vw, 2.5rem) !important;
+	padding-right: clamp(1rem, 3vw, 2.5rem) !important;
+}
+
+.nav-card,
+.nav-shell.scrolled .nav-card,
+.nav-card:hover,
+.nav-card:focus-within {
+	max-width: 88rem !important;
+	border: 0 !important;
+	border-radius: 26px !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+	padding: 1.05rem 0 !important;
+}
+
+.nav-card > div {
+	padding: 0.2rem 0;
+}
+
+.nav-brand {
+	font-family: var(--font-display), var(--font-accent), sans-serif !important;
+	font-size: clamp(2rem, 2.5vw, 2.75rem) !important;
+	font-weight: 900 !important;
+	letter-spacing: -0.055em !important;
+	transform: scaleX(1.08);
+	transform-origin: left center;
+	color: rgb(248 251 255 / 0.98) !important;
+	text-shadow: 0 10px 34px rgb(59 130 246 / 0.18);
+	transition:
+		opacity 150ms ease,
+		transform 180ms ease,
+		text-shadow 180ms ease !important;
+}
+
+.nav-brand sup {
+	margin-left: 0.08rem;
+	font-size: 0.55em !important;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	opacity: 0.72;
+	transform: translateY(-0.1em);
+}
+
+.nav-brand:hover,
+.nav-brand:focus-visible {
+	opacity: 1;
+	transform: scaleX(1.08) translateY(-1px);
+	text-shadow: 0 12px 40px rgb(125 211 252 / 0.22);
+}
+
+.nav-link-fx {
+	padding: 0.55rem 0.72rem !important;
+	border-radius: 999px;
+	color: rgb(209 219 235 / 0.74) !important;
+	font-size: 0.95rem !important;
+	transition:
+		color 150ms ease,
+		background-color 150ms ease,
+		transform 150ms ease !important;
+}
+
+.nav-link-fx:hover,
+.nav-link-fx:focus-visible,
+.nav-link-fx.is-active {
+	background: rgb(255 255 255 / 0.065) !important;
+	color: #fff !important;
+	transform: translateY(-1px) !important;
+}
+
+.nav-cta {
+	min-height: 2.45rem;
+	border-radius: 999px !important;
+	padding: 0.58rem 1.1rem !important;
+	background: rgb(255 255 255 / 0.1) !important;
+	font-weight: 650;
+	transition:
+		background-color 150ms ease,
+		transform 150ms ease,
+		box-shadow 150ms ease !important;
+}
+
+.nav-cta:hover,
+.nav-cta:focus-visible {
+	background: rgb(255 255 255 / 0.16) !important;
+	box-shadow: 0 14px 36px -30px rgb(125 211 252 / 0.55) !important;
+	transform: translateY(-1px) !important;
+}
+
+.nav-icon-btn {
+	border-radius: 999px !important;
+	background: rgb(255 255 255 / 0.08) !important;
+	transition:
+		background-color 150ms ease,
+		transform 150ms ease !important;
+}
+
+.nav-icon-btn:hover,
+.nav-icon-btn:focus-visible {
+	background: rgb(255 255 255 / 0.14) !important;
+	transform: translateY(-1px) !important;
+}
+
+.hero-icon-shell,
+.marketing-kicker svg,
+.marketing-panel svg,
+.download-release-panel svg,
+.reveal-card svg,
+.feature-card svg,
+.how-card svg,
+.nav-icon-btn svg,
+.astral-button svg {
+	filter: drop-shadow(0 8px 20px rgb(59 130 246 / 0.12));
+	transition:
+		transform 180ms ease,
+		opacity 180ms ease,
+		filter 180ms ease !important;
+}
+
+.hero-icon-shell {
+	border: 0 !important;
+	border-radius: 22px !important;
+	background: rgb(255 255 255 / 0.055) !important;
+	box-shadow: none !important;
+	animation: astral-icon-orbit 8s ease-in-out infinite !important;
+}
+
+.marketing-panel:hover svg,
+.download-release-panel:hover svg,
+.reveal-card:hover svg,
+.astral-button:hover svg,
+.nav-icon-btn:hover svg {
+	transform: translateY(-1px);
+	filter: drop-shadow(0 10px 24px rgb(125 211 252 / 0.18));
+}
+
+.marketing-frame,
+.marketing-panel,
+.download-release-panel,
+.reveal-card,
+.feature-card,
+.how-card,
+.download-card {
+	border-radius: 18px !important;
+	background: rgb(8 12 20 / 0.76) !important;
+}
+
+.marketing-footer {
+	background:
+		linear-gradient(180deg, rgb(2 4 10 / 0.78), #02040a),
+		#02040a !important;
+}
+
+.marketing-footer a {
+	text-decoration: none !important;
+	transition:
+		color 150ms ease,
+		transform 150ms ease !important;
+}
+
+.marketing-footer a:hover,
+.marketing-footer a:focus-visible {
+	color: #fff !important;
+	transform: translateX(2px);
+}
+
+@media (min-width: 1024px) {
+	.marketing-page .max-w-4xl {
+		max-width: 66rem !important;
+	}
+
+	.marketing-page .max-w-5xl {
+		max-width: 76rem !important;
+	}
+
+	.marketing-page .max-w-6xl {
+		max-width: 84rem !important;
+	}
+
+	.marketing-page .max-w-7xl,
+	.marketing-footer .max-w-7xl {
+		max-width: 90rem !important;
+	}
+
+	.marketing-page .max-w-3xl {
+		max-width: 56rem !important;
+	}
+}
+
+@media (max-width: 767px) {
+	.nav-shell > div,
+	.nav-shell.scrolled > div {
+		padding-top: 0 !important;
+		padding-left: 0 !important;
+		padding-right: 0 !important;
+	}
+
+	.nav-card,
+	.nav-shell.scrolled .nav-card {
+		border-radius: 0 !important;
+		padding: 0.9rem 1.15rem !important;
+		background: rgb(2 4 10 / 0.72) !important;
+		-webkit-backdrop-filter: blur(10px) !important;
+		backdrop-filter: blur(10px) !important;
+	}
+
+	.nav-brand {
+		font-size: 2rem !important;
+	}
+
+	.home-hero-backdrop::after {
+		bottom: -12rem !important;
+		height: 17rem !important;
+		filter: blur(28px);
+		opacity: 0.32;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.home-hero-backdrop::before,
+	.hero-icon-shell {
+		animation: none !important;
+	}
+}
+
+/* Layout rescue pass: help search, desktop spacing, lighter icon surfaces. */
+.help-search-box {
+	border: 0 !important;
+	border-radius: 18px;
+	background: rgb(255 255 255 / 0.065);
+	padding: 0.38rem;
+	box-shadow: 0 18px 60px -52px rgb(0 0 0 / 0.9);
+}
+
+.help-search-input {
+	min-height: 3.1rem;
+	border: 0 !important;
+	border-radius: 14px;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.help-search-input:focus-visible {
+	background: rgb(255 255 255 / 0.045) !important;
+}
+
+.help-search-button {
+	min-height: 3.1rem;
+	border-radius: 14px !important;
+	white-space: nowrap;
+}
+
+.marketing-page section {
+	scroll-margin-top: 7rem;
+}
+
+.marketing-page main > section:not(:first-child),
+.marketing-page main section.relative.z-10,
+.marketing-page main section.px-6 {
+	padding-left: clamp(1.25rem, 4vw, 4rem) !important;
+	padding-right: clamp(1.25rem, 4vw, 4rem) !important;
+}
+
+.marketing-title,
+.display,
+.headline {
+	text-wrap: balance;
+}
+
+.marketing-subtitle,
+.lead,
+.body-lg {
+	text-wrap: pretty;
+}
+
+.marketing-panel,
+.download-release-panel,
+.reveal-card {
+	text-align: inherit;
+}
+
+.reveal-card,
+.marketing-panel {
+	overflow: hidden;
+}
+
+.reveal-card [class*='rounded-2xl'][class*='border'],
+.reveal-card [class*='rounded-3xl'][class*='border'],
+.marketing-panel [class*='rounded-2xl'][class*='border'],
+.marketing-panel [class*='rounded-3xl'][class*='border'] {
+	border-color: transparent !important;
+	background: rgb(255 255 255 / 0.055) !important;
+	box-shadow: none !important;
+}
+
+.reveal-card svg,
+.marketing-panel svg,
+.download-release-panel svg,
+.hero-icon-shell svg {
+	color: rgb(219 234 254 / 0.92);
+}
+
+.reveal-card:hover,
+.marketing-panel:hover,
+.download-release-panel:hover {
+	background: rgb(10 15 24 / 0.86) !important;
+}
+
+.reveal-card:hover svg,
+.marketing-panel:hover svg,
+.download-release-panel:hover svg {
+	animation: astral-icon-orbit 1.8s ease-in-out 1 !important;
+}
+
+@media (min-width: 1280px) {
+	.marketing-shell,
+	.marketing-hero-stage {
+		padding-left: clamp(2rem, 5vw, 5.5rem) !important;
+		padding-right: clamp(2rem, 5vw, 5.5rem) !important;
+	}
+
+	.marketing-page .grid {
+		column-gap: clamp(1.5rem, 2.5vw, 3rem);
+	}
+}
+
+@media (max-width: 639px) {
+	.help-search-box {
+		background: transparent;
+		padding: 0;
+		box-shadow: none;
+	}
+
+	.help-search-input {
+		border-radius: 14px;
+		background: rgb(255 255 255 / 0.075) !important;
+	}
+
+	.help-search-button {
+		width: 100%;
+	}
+}
+
+/* Navbar final rewrite: fully transparent, larger brand, lighter pill controls. */
+.nav-shell,
+.nav-shell.scrolled,
+.nav-shell.nav-hidden {
+	background: transparent !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+	transform: none !important;
+}
+
+.nav-shell > div,
+.nav-shell.scrolled > div {
+	padding-top: clamp(1rem, 1.8vw, 1.55rem) !important;
+	padding-left: clamp(1.15rem, 3.4vw, 3.75rem) !important;
+	padding-right: clamp(1.15rem, 3.4vw, 3.75rem) !important;
+}
+
+.nav-card,
+.nav-shell.scrolled .nav-card,
+.nav-card:hover,
+.nav-card:focus-within {
+	width: 100% !important;
+	max-width: 94rem !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+	padding: 0 !important;
+}
+
+.nav-card > div {
+	min-height: 3.7rem;
+	padding: 0 !important;
+}
+
+.nav-brand {
+	font-size: clamp(2.25rem, 3vw, 3.15rem) !important;
+	font-weight: 950 !important;
+	letter-spacing: -0.075em !important;
+	transform: scaleX(1.12);
+	text-shadow:
+		0 1px 0 rgb(255 255 255 / 0.06),
+		0 14px 42px rgb(37 99 235 / 0.22) !important;
+}
+
+.nav-brand:hover,
+.nav-brand:focus-visible {
+	transform: scaleX(1.12) translateY(-1px);
+	text-shadow:
+		0 1px 0 rgb(255 255 255 / 0.08),
+		0 18px 50px rgb(125 211 252 / 0.28) !important;
+}
+
+.nav-brand sup {
+	margin-left: 0.1rem;
+	font-size: 0.5em !important;
+	opacity: 0.76;
+}
+
+.nav-card .hidden.md\:flex {
+	gap: 0.35rem !important;
+}
+
+.nav-link-fx {
+	min-height: 2.15rem;
+	display: inline-flex;
+	align-items: center;
+	border-radius: 999px !important;
+	padding: 0.34rem 0.9rem !important;
+	background: transparent !important;
+	color: rgb(224 232 246 / 0.78) !important;
+	font-size: 0.96rem !important;
+	font-weight: 620 !important;
+	line-height: 1 !important;
+	text-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
+	transition:
+		background-color 160ms ease,
+		color 160ms ease,
+		transform 160ms ease,
+		box-shadow 160ms ease !important;
+}
+
+.nav-link-fx:hover,
+.nav-link-fx:focus-visible,
+.nav-link-fx.is-active {
+	background: rgb(255 255 255 / 0.105) !important;
+	color: #fff !important;
+	box-shadow: 0 10px 30px -24px rgb(125 211 252 / 0.6) !important;
+	transform: translateY(-1px) !important;
+}
+
+.nav-link-fx:active,
+.nav-cta:active,
+.nav-icon-btn:active {
+	transform: translateY(0) scale(0.98) !important;
+}
+
+.nav-cta {
+	min-height: 2.2rem !important;
+	border-radius: 999px !important;
+	padding: 0.42rem 1rem !important;
+	border: 1px solid rgb(255 255 255 / 0.1) !important;
+	background: rgb(255 255 255 / 0.055) !important;
+	color: rgb(246 249 255 / 0.96) !important;
+	font-size: 0.92rem !important;
+	font-weight: 700 !important;
+	line-height: 1 !important;
+	box-shadow: none !important;
+	transition:
+		background-color 160ms ease,
+		border-color 160ms ease,
+		transform 160ms ease,
+		box-shadow 160ms ease !important;
+}
+
+.nav-cta:hover,
+.nav-cta:focus-visible {
+	border-color: rgb(255 255 255 / 0.18) !important;
+	background: rgb(255 255 255 / 0.13) !important;
+	box-shadow: 0 14px 38px -30px rgb(125 211 252 / 0.7) !important;
+	transform: translateY(-1px) !important;
+}
+
+.nav-icon-btn {
+	width: 2.35rem !important;
+	height: 2.35rem !important;
+	border-radius: 999px !important;
+	border: 1px solid rgb(255 255 255 / 0.08) !important;
+	background: rgb(255 255 255 / 0.05) !important;
+	box-shadow: none !important;
+}
+
+.nav-icon-btn:hover,
+.nav-icon-btn:focus-visible {
+	border-color: rgb(255 255 255 / 0.16) !important;
+	background: rgb(255 255 255 / 0.12) !important;
+	transform: translateY(-1px) !important;
+}
+
+#nav-drawer,
+.nav-drawer-panel {
+	background: rgb(3 6 13 / 0.94) !important;
+}
+
+.nav-drawer-link {
+	min-height: 2.45rem;
+	border-radius: 999px !important;
+	padding: 0.55rem 0.9rem !important;
+}
+
+.nav-drawer-link:hover,
+.nav-drawer-link:focus-visible {
+	background: rgb(255 255 255 / 0.08) !important;
+}
+
+@media (max-width: 767px) {
+	.nav-shell > div,
+	.nav-shell.scrolled > div {
+		padding: 0.85rem 1.05rem 0 !important;
+	}
+
+	.nav-card,
+	.nav-shell.scrolled .nav-card {
+		background: transparent !important;
+		-webkit-backdrop-filter: none !important;
+		backdrop-filter: none !important;
+		padding: 0 !important;
+	}
+
+	.nav-card > div {
+		min-height: 3rem;
+	}
+
+	.nav-brand {
+		font-size: 2.2rem !important;
+	}
+}
+
+/* Navbar radius lock: hover must not morph button shape. */
+.nav-link-fx,
+.nav-link-fx:hover,
+.nav-link-fx:focus-visible,
+.nav-link-fx:active,
+.nav-link-fx.is-active,
+.nav-cta,
+.nav-cta:hover,
+.nav-cta:focus-visible,
+.nav-cta:active,
+.nav-icon-btn,
+.nav-icon-btn:hover,
+.nav-icon-btn:focus-visible,
+.nav-icon-btn:active,
+.nav-drawer-link,
+.nav-drawer-link:hover,
+.nav-drawer-link:focus-visible,
+.nav-drawer-link:active {
+	border-radius: 999px !important;
+}
+
+/* Navbar text-only mode: no button shapes, no hover pills. */
+.nav-shell {
+	position: fixed !important;
+	top: 0 !important;
+}
+
+.nav-link-fx,
+.nav-link-fx:hover,
+.nav-link-fx:focus-visible,
+.nav-link-fx:active,
+.nav-link-fx.is-active,
+.nav-cta,
+.nav-cta:hover,
+.nav-cta:focus-visible,
+.nav-cta:active,
+.nav-drawer-link,
+.nav-drawer-link:hover,
+.nav-drawer-link:focus-visible,
+.nav-drawer-link:active {
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.nav-link-fx,
+.nav-cta {
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+}
+
+.nav-card .hidden.md\:flex {
+	gap: clamp(1.25rem, 2vw, 2.15rem) !important;
+}
+
+.nav-link-fx:hover,
+.nav-link-fx:focus-visible,
+.nav-link-fx.is-active,
+.nav-cta:hover,
+.nav-cta:focus-visible {
+	color: #fff !important;
+	transform: translateY(-1px) !important;
+}
+
+.nav-link-fx::after,
+.nav-cta::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: -0.18rem;
+	height: 1px;
+	background: currentColor;
+	opacity: 0;
+	transform: scaleX(0.2);
+	transform-origin: left center;
+	transition:
+		opacity 150ms ease,
+		transform 150ms ease !important;
+}
+
+.nav-link-fx:hover::after,
+.nav-link-fx:focus-visible::after,
+.nav-link-fx.is-active::after,
+.nav-cta:hover::after,
+.nav-cta:focus-visible::after {
+	opacity: 0.72;
+	transform: scaleX(1);
+}
+
+.nav-cta {
+	position: relative;
+	min-height: 0 !important;
+	font-size: 0.96rem !important;
+}
+
+.nav-icon-btn,
+.nav-icon-btn:hover,
+.nav-icon-btn:focus-visible,
+.nav-icon-btn:active {
+	border-radius: 0 !important;
+	background: transparent !important;
+	border-color: transparent !important;
+}
+
+/* Company page: product-grade grid instead of a document card. */
+.company-product-section {
+	position: relative;
+}
+
+.company-product-grid {
+	display: grid;
+	grid-template-columns: repeat(12, minmax(0, 1fr));
+	gap: clamp(1rem, 2vw, 1.5rem);
+	align-items: stretch;
+}
+
+.company-product-card {
+	grid-column: span 3;
+	min-height: 17rem;
+	padding: clamp(1.35rem, 2.2vw, 2rem);
+	border: 0;
+	border-radius: 22px;
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.075), rgb(255 255 255 / 0.028)),
+		rgb(8 12 20 / 0.82);
+	box-shadow: 0 22px 70px -58px rgb(0 0 0 / 0.94);
+	overflow: hidden;
+}
+
+.company-product-card--hero {
+	grid-column: span 6;
+	min-height: 22rem;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+	background:
+		radial-gradient(circle at 20% 12%, rgb(125 211 252 / 0.16), transparent 34rem),
+		radial-gradient(circle at 86% 4%, rgb(129 140 248 / 0.18), transparent 28rem),
+		linear-gradient(180deg, rgb(8 13 28 / 0.9), rgb(4 7 14 / 0.92));
+}
+
+.company-product-card--wide {
+	grid-column: span 6;
+	min-height: 0;
+}
+
+.company-eyebrow {
+	margin-bottom: 1.1rem;
+	display: inline-flex;
+	width: fit-content;
+	color: rgb(191 219 254 / 0.78);
+	font-size: 0.76rem;
+	font-weight: 800;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+}
+
+.company-heading {
+	max-width: 44rem;
+	margin: 0;
+	color: #fff;
+	font-family: var(--font-display), sans-serif;
+	font-size: clamp(2.3rem, 4.8vw, 5rem);
+	font-weight: 820;
+	letter-spacing: -0.065em;
+	line-height: 0.94;
+	text-wrap: balance;
+}
+
+.company-lede {
+	max-width: 46rem;
+	margin: 1.4rem 0 0;
+	color: rgb(205 214 230 / 0.84);
+	font-size: clamp(1.03rem, 1.25vw, 1.22rem);
+	line-height: 1.75;
+}
+
+.company-icon {
+	display: inline-flex;
+	width: 3.15rem;
+	height: 3.15rem;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 1.6rem;
+	color: rgb(219 234 254 / 0.94);
+}
+
+.company-card-title {
+	margin: 0;
+	color: #fff;
+	font-family: var(--font-display), sans-serif;
+	font-size: clamp(1.35rem, 1.8vw, 2rem);
+	font-weight: 760;
+	letter-spacing: -0.035em;
+	line-height: 1.08;
+}
+
+.company-card-body {
+	margin: 0.9rem 0 0;
+	color: rgb(185 196 216 / 0.82);
+	font-size: 0.98rem;
+	line-height: 1.7;
+}
+
+.company-info-grid,
+.company-contact-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.85rem;
+	margin-top: 1.4rem;
+}
+
+.company-info-item,
+.company-contact-link {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+	padding: 1rem;
+	border-radius: 16px;
+	background: rgb(255 255 255 / 0.045);
+	text-decoration: none !important;
+}
+
+.company-info-item span,
+.company-contact-link span {
+	color: rgb(148 163 184 / 0.88);
+	font-size: 0.78rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.company-info-item strong,
+.company-contact-link strong {
+	color: rgb(242 246 255 / 0.94);
+	font-size: 0.95rem;
+	font-weight: 650;
+	line-height: 1.35;
+	word-break: break-word;
+}
+
+.company-contact-link {
+	transition:
+		background-color 150ms ease,
+		transform 150ms ease !important;
+}
+
+.company-contact-link:hover,
+.company-contact-link:focus-visible {
+	background: rgb(255 255 255 / 0.075);
+	transform: translateY(-1px);
+}
+
+.company-note {
+	margin: 1.2rem 0 0;
+	color: rgb(190 200 218 / 0.76);
+	font-size: 0.95rem;
+	line-height: 1.65;
+}
+
+@media (max-width: 1100px) {
+	.company-product-card,
+	.company-product-card--hero,
+	.company-product-card--wide {
+		grid-column: span 6;
+	}
+}
+
+@media (max-width: 720px) {
+	.company-product-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.company-product-card,
+	.company-product-card--hero,
+	.company-product-card--wide {
+		grid-column: 1;
+		min-height: 0;
+	}
+
+	.company-info-grid,
+	.company-contact-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Final navbar request: text only, no hover underline, no button geometry. */
+.nav-link-fx::after,
+.nav-cta::after,
+.nav-drawer-link::after {
+  content: none !important;
+  display: none !important;
+}
+
+.nav-link-fx:hover,
+.nav-cta:hover,
+.nav-drawer-link:hover {
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }

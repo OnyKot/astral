@@ -93,3 +93,62 @@
 .switchWrapper {
 	margin-top: 0.5rem;
 }
+
+.regionBadge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2.35rem;
+	height: 1.35rem;
+	padding-inline: 0.35rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 16%, var(--background-secondary));
+	color: var(--text-primary);
+	font-size: 0.62rem;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+	.notice {
+		padding: 0.75rem;
+	}
+
+	.noticeText {
+		font-size: 0.8125rem;
+		line-height: 1.35;
+		overflow-wrap: anywhere;
+	}
+
+	.languageOption {
+		min-width: 0;
+		align-items: flex-start;
+		gap: 0.5rem;
+	}
+
+	.languageName {
+		min-width: 0;
+		flex: 1;
+		overflow-wrap: anywhere;
+	}
+
+	.languageDetails {
+		flex: 0 1 44%;
+		min-width: 0;
+		justify-content: flex-end;
+		text-align: right;
+	}
+
+	.languageCode {
+		min-width: 0;
+		font-size: 0.75rem;
+		line-height: 1.15;
+		overflow-wrap: anywhere;
+	}
+
+	.flagImage,
+	.flagEmoji {
+		flex: 0 0 auto;
+	}
+}

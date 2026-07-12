@@ -51,10 +51,13 @@ const AdvancedTab: React.FC = observer(() => {
 	const [storageRefreshing, setStorageRefreshing] = React.useState(false);
 	const [storageClearing, setStorageClearing] = React.useState(false);
 	const [storageFeedback, setStorageFeedback] = React.useState<string | null>(null);
+	const storageOperationRef = React.useRef<'refresh' | 'clear' | null>(null);
 	const nativeAndroid = isNativeAndroidApp();
 	const showPowerTools = DeveloperModeStore.isDeveloper;
 
 	const refreshStorageSnapshot = React.useCallback(async () => {
+		if (storageOperationRef.current) return;
+		storageOperationRef.current = 'refresh';
 		setStorageRefreshing(true);
 		try {
 			setStorageSnapshot(await getStorageMaintenanceSnapshot());
@@ -62,6 +65,7 @@ const AdvancedTab: React.FC = observer(() => {
 		} catch {
 			setStorageFeedback(t`Failed to read storage usage.`);
 		} finally {
+			storageOperationRef.current = null;
 			setStorageRefreshing(false);
 		}
 	}, [t]);
@@ -113,6 +117,8 @@ const AdvancedTab: React.FC = observer(() => {
 	};
 
 	const handleClearSafeCache = async () => {
+		if (storageOperationRef.current) return;
+		storageOperationRef.current = 'clear';
 		setStorageClearing(true);
 		try {
 			const result = await clearSafeApplicationCaches();
@@ -127,6 +133,7 @@ const AdvancedTab: React.FC = observer(() => {
 		} catch {
 			setStorageFeedback(t`Failed to clear cache.`);
 		} finally {
+			storageOperationRef.current = null;
 			setStorageClearing(false);
 		}
 	};
@@ -253,10 +260,22 @@ const AdvancedTab: React.FC = observer(() => {
 				</div>
 
 				<div className={styles.storageActions}>
-					<Button variant="secondary" small={true} onClick={() => void refreshStorageSnapshot()} submitting={storageRefreshing}>
+					<Button
+						variant="secondary"
+						small={true}
+						onClick={() => void refreshStorageSnapshot()}
+						submitting={storageRefreshing}
+						disabled={storageClearing}
+					>
 						<Trans>Refresh usage</Trans>
 					</Button>
-					<Button variant="secondary" small={true} onClick={handleClearSafeCache} submitting={storageClearing}>
+					<Button
+						variant="secondary"
+						small={true}
+						onClick={handleClearSafeCache}
+						submitting={storageClearing}
+						disabled={storageRefreshing}
+					>
 						<Trans>Clear safe cache</Trans>
 					</Button>
 				</div>

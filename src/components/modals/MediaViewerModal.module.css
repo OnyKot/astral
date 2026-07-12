@@ -77,6 +77,7 @@
 .videoPlayer {
 	max-width: 100%;
 	max-height: 100%;
+	border-radius: 1.05rem;
 }
 
 @media (max-width: 768px) {
@@ -101,12 +102,14 @@
 	user-select: none;
 	-webkit-user-select: none;
 	object-fit: contain;
+	border-radius: 1.05rem;
 }
 
 .gifvVideo {
 	max-height: 100%;
 	max-width: 100%;
 	object-fit: contain;
+	border-radius: 1.05rem;
 }
 
 .image {
@@ -115,4 +118,13 @@
 	user-select: none;
 	-webkit-user-select: none;
 	object-fit: contain;
+	border-radius: 1.05rem;
+}
+
+@media (max-width: 768px) {
+	.image,
+	.gifvImage,
+	.gifvVideo {
+		border-radius: 0.78rem;
+	}
 }

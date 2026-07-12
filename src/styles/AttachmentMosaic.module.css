@@ -18,19 +18,30 @@
  */
 
 .oneByTwoGrid {
-	display: flex;
-	flex-direction: row;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 4px;
-	max-height: 280px;
+	max-height: clamp(220px, 34vw, 336px);
+	min-height: clamp(172px, 26vw, 228px);
 }
 
 .oneByTwoGridItem {
-	flex: 1;
+	display: flex;
 	min-width: 0;
+	min-height: 0;
+	aspect-ratio: 4 / 3;
+}
+
+.oneByTwoGridItem .mosaicItem {
+	flex: 1 1 auto;
+}
+
+.oneByTwoGrid > * {
+	min-height: 0;
 }
 
 .oneByTwoLayoutThreeGrid {
-	max-height: 350px;
+	max-height: clamp(246px, 42vw, 390px);
 }
 
 .oneByTwoSoloItem {
@@ -58,7 +69,7 @@
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	grid-template-rows: repeat(2, minmax(0, 1fr));
 	gap: 4px;
-	max-height: 350px;
+	max-height: clamp(250px, 42vw, 396px);
 }
 
 .threeByThreeGrid {
@@ -72,7 +83,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
-	max-height: 350px;
+	max-height: clamp(260px, 44vw, 402px);
 }
 
 .fiveAttachmentContainer .oneByTwoGrid {
@@ -95,7 +106,7 @@
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
-	border-radius: var(--media-border-radius);
+	border-radius: var(--media-border-radius, 14px);
 	cursor: pointer;
 }
 
@@ -140,7 +151,7 @@
 .oneByOneGrid {
 	width: 100%;
 	max-width: 550px;
-	max-height: 400px;
+	max-height: clamp(260px, 52vw, 420px);
 	overflow: visible;
 	position: relative;
 	display: flex;
@@ -170,12 +181,12 @@
 .oneByOneGrid .mosaicItem,
 .oneByOneGrid .clickableWrapper {
 	overflow: hidden;
-	border-radius: var(--media-border-radius);
+	border-radius: var(--media-border-radius, 14px);
 }
 
 .oneByOneGridMosaic {
 	display: flex;
-	height: 280px;
+	height: clamp(214px, 34vw, 300px);
 }
 
 .oneByOneGridMosaic .mosaicItem {
@@ -200,10 +211,11 @@
 
 .mosaicContainerWrapper {
 	position: relative;
-	overflow: visible;
+	overflow: hidden;
 	display: block;
 	width: 100%;
 	max-width: 550px;
+	--media-border-radius: 14px;
 }
 
 .singleMosaicContainerWrapper {
@@ -237,7 +249,6 @@
 	background: color-mix(in srgb, var(--background-secondary) 86%, transparent);
 	color: var(--text-secondary);
 	border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
-	backdrop-filter: blur(6px);
 	font-size: 0.72rem;
 }
 
@@ -313,7 +324,6 @@
 	align-items: center;
 	justify-content: center;
 	background-color: var(--spoiler-overlay-color);
-	backdrop-filter: blur(12px);
 	z-index: 3;
 	padding: 0.5rem;
 	text-align: center;
@@ -373,11 +383,12 @@
 	.oneByTwoGrid,
 	.oneByTwoDuoContainer,
 	.twoByTwoGrid {
-		max-height: 240px;
+		max-height: clamp(196px, 58vw, 268px);
+		min-height: clamp(160px, 47vw, 218px);
 	}
 
 	.oneByOneGrid {
-		max-height: 300px;
+		max-height: clamp(210px, 66vw, 320px);
 		max-width: 100%;
 	}
 
@@ -397,11 +408,12 @@
 	.oneByTwoGrid,
 	.oneByTwoDuoContainer,
 	.twoByTwoGrid {
-		max-height: 210px;
+		max-height: clamp(176px, 64vw, 230px);
+		min-height: clamp(142px, 52vw, 196px);
 	}
 
 	.oneByOneGrid {
-		max-height: 240px;
+		max-height: clamp(188px, 72vw, 252px);
 	}
 
 	.playButton {
@@ -414,6 +426,10 @@
 		left: 6px;
 		padding: 3px 6px;
 		font-size: 0.75rem;
+	}
+
+	.mosaicContainerWrapper {
+		--media-border-radius: 12px;
 	}
 }
 
@@ -438,9 +454,10 @@
 }
 
 .mosaicContainer {
-	height: 100%;
+	height: auto;
 	max-width: 550px;
 	width: 100%;
+	min-height: 0;
 }
 
 .clickableButton {

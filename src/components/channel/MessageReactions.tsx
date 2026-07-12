@@ -32,6 +32,7 @@ import {EmojiInfoBottomSheet} from '~/components/bottomsheets/EmojiInfoBottomShe
 import styles from '~/components/channel/MessageReactions.module.css';
 import {createMessageActionHandlers, useMessagePermissions} from '~/components/channel/messageActionUtils';
 import {LongPressable} from '~/components/LongPressable';
+import {ExpressionPickerSheet} from '~/components/modals/ExpressionPickerSheet';
 import {EmojiPickerPopout} from '~/components/popouts/EmojiPickerPopout';
 import UnicodeEmojis from '~/lib/UnicodeEmojis';
 import {ReactionTooltip} from '~/components/popouts/ReactionTooltip';
@@ -41,6 +42,7 @@ import {useHover} from '~/hooks/useHover';
 import type {MessageReaction, MessageRecord} from '~/records/MessageRecord';
 import KeyboardModeStore from '~/stores/KeyboardModeStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
+import {applyEmojiVisualNormalization} from '~/utils/EmojiUtils';
 import {getEmojiName, getReactionKey, useEmojiURL} from '~/utils/ReactionUtils';
 
 interface EmojiInfoData {
@@ -182,7 +184,18 @@ const MessageReactionItem = observer(
 				>
 					<div className={styles.reactionInner}>
 						{emojiUrl ? (
-							<img src={emojiUrl} alt={emojiName} draggable={false} className={clsx('emoji', styles.emoji)} />
+							<img
+								src={emojiUrl}
+								alt={emojiName}
+								draggable={false}
+								className={clsx('emoji', styles.emoji)}
+								crossOrigin={isUnicodeEmoji ? 'anonymous' : undefined}
+								onLoad={
+									isUnicodeEmoji
+										? (event) => applyEmojiVisualNormalization(event.currentTarget)
+										: undefined
+								}
+							/>
 						) : isUnicodeEmoji ? (
 							<span className={clsx('emoji', styles.emoji)}>{unicodeNativeFallback}</span>
 						) : null}
@@ -194,7 +207,7 @@ const MessageReactionItem = observer(
 									animate="center"
 									exit={reaction.count > prevCount ? 'down' : 'up'}
 									variants={variants}
-									transition={{duration: 0.2}}
+									transition={{type: 'spring', stiffness: 480, damping: 28, mass: 0.8}}
 								>
 									{reaction.count}
 								</motion.div>
@@ -280,6 +293,21 @@ export const MessageReactions = observer(
 		}, [emojiPickerOpen, onPopoutToggle]);
 
 		const hasReactions = message.reactions.length > 0;
+		const isMobileLayout = MobileLayoutStore.enabled;
+		const addReactionButton = (
+			<FocusRing offset={-2}>
+				<button
+					ref={addReactionButtonRef}
+					type="button"
+					className={clsx(styles.addReactionButton, emojiPickerOpen && styles.addReactionButtonActive)}
+					aria-label={t`Add Reaction`}
+					data-action="message-add-reaction-button"
+					onClick={isMobileLayout ? handleEmojiPickerOpen : undefined}
+				>
+					<SmileyIcon size={20} weight="fill" />
+				</button>
+			</FocusRing>
+		);
 
 		return (
 			<div className={styles.reactionsGrid}>
@@ -310,7 +338,23 @@ export const MessageReactions = observer(
 						</motion.div>
 					))}
 				</AnimatePresence>
-				{hasReactions && permissions.canAddReactions && !isPreview && (
+				{hasReactions && permissions.canAddReactions && !isPreview && isMobileLayout && (
+					<>
+						{addReactionButton}
+						<ExpressionPickerSheet
+							isOpen={emojiPickerOpen}
+							onClose={handleEmojiPickerClose}
+							channelId={message.channelId}
+							onEmojiSelect={handlers.handleEmojiSelect}
+							initialSnap={1}
+							snapPoints={[0, 1]}
+							visibleTabs={['emojis']}
+							zIndex={30000}
+							reactionPicker={true}
+						/>
+					</>
+				)}
+				{hasReactions && permissions.canAddReactions && !isPreview && !isMobileLayout && (
 					<Popout
 						render={({onClose}) => (
 							<EmojiPickerPopout
@@ -325,17 +369,7 @@ export const MessageReactions = observer(
 						onOpen={handleEmojiPickerOpen}
 						onClose={handleEmojiPickerClose}
 					>
-						<FocusRing offset={-2}>
-							<button
-								ref={addReactionButtonRef}
-								type="button"
-								className={clsx(styles.addReactionButton, emojiPickerOpen && styles.addReactionButtonActive)}
-								aria-label={t`Add Reaction`}
-								data-action="message-add-reaction-button"
-							>
-								<SmileyIcon size={20} weight="fill" />
-							</button>
-						</FocusRing>
+						{addReactionButton}
 					</Popout>
 				)}
 			</div>

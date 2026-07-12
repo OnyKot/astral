@@ -217,6 +217,8 @@ export const getChannelTypeLabel = (value: unknown, t: (msg: MessageDescriptor) 
 			return t(msg({message: 'Text channel'}));
 		case ChannelTypes.GUILD_VOICE:
 			return t(msg({message: 'Voice channel'}));
+		case ChannelTypes.GUILD_STAGE:
+			return t(msg({message: 'Stage channel'}));
 		case ChannelTypes.GUILD_CATEGORY:
 			return t(msg({message: 'Category'}));
 		case ChannelTypes.GUILD_LINK:

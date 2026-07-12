@@ -22,6 +22,7 @@ import type React from 'react';
 import {useEffect, useState} from 'react';
 import {StatusTypes} from '~/Constants';
 import {Avatar} from '~/components/uikit/Avatar';
+import {isTwitchLiveActivity} from '~/lib/musicActivity';
 import type {UserRecord} from '~/records/UserRecord';
 import PresenceStore from '~/stores/PresenceStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
@@ -41,6 +42,7 @@ interface StatusAwareAvatarProps {
 	guildId?: string | null;
 	status?: string | null;
 	disableMobileStatus?: boolean;
+	statusScale?: number;
 }
 
 export const StatusAwareAvatar: React.FC<StatusAwareAvatarProps> = observer(
@@ -58,17 +60,19 @@ export const StatusAwareAvatar: React.FC<StatusAwareAvatarProps> = observer(
 		hoverAvatarUrl,
 		guildId,
 		status: externalStatus,
-		disableMobileStatus = false,
+		statusScale,
 	}) => {
 		const [internalStatus, setInternalStatus] = useState<string | null>(() =>
 			disablePresence || !user ? null : PresenceStore.getStatus(user.id),
 		);
-		const [isMobile, setIsMobile] = useState<boolean>(() =>
-			disablePresence || !user ? false : PresenceStore.isMobile(user.id),
-		);
 
 		const status = externalStatus ?? internalStatus;
+		const userId = user?.id ?? null;
 		const isUserInAnyVoiceChannel = MediaEngineStore.isUserInAnyVoiceChannel(user?.id ?? '');
+		const hasTwitchLivePresence =
+			!disablePresence && !isTyping && userId != null
+				? isTwitchLiveActivity(PresenceStore.getMusicActivity(userId))
+				: false;
 		const shouldShowVoiceCallStatus =
 			Boolean(user) &&
 			!disablePresence &&
@@ -82,11 +86,9 @@ export const StatusAwareAvatar: React.FC<StatusAwareAvatarProps> = observer(
 			}
 
 			setInternalStatus(PresenceStore.getStatus(user.id));
-			setIsMobile(PresenceStore.isMobile(user.id));
 
-			const unsubscribe = PresenceStore.subscribeToUserStatus(user.id, (_, newStatus, newIsMobile) => {
+			const unsubscribe = PresenceStore.subscribeToUserStatus(user.id, (_, newStatus) => {
 				setInternalStatus(newStatus);
-				setIsMobile(newIsMobile);
 			});
 
 			return () => {
@@ -103,7 +105,8 @@ export const StatusAwareAvatar: React.FC<StatusAwareAvatarProps> = observer(
 				user={user}
 				size={size}
 				status={disablePresence ? null : status}
-				isMobileStatus={disablePresence || disableMobileStatus ? false : isMobile}
+				isMobileStatus={false}
+				isStreaming={hasTwitchLivePresence}
 				forceAnimate={forceAnimate}
 				isTyping={isTyping}
 				isInCall={shouldShowVoiceCallStatus}
@@ -114,6 +117,7 @@ export const StatusAwareAvatar: React.FC<StatusAwareAvatarProps> = observer(
 				avatarUrl={avatarUrl}
 				hoverAvatarUrl={hoverAvatarUrl}
 				guildId={guildId}
+				statusScale={statusScale}
 			/>
 		);
 	},

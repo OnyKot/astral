@@ -18,6 +18,7 @@
  */
 
 import {useLingui} from '@lingui/react/macro';
+import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
 import {useForm} from 'react-hook-form';
@@ -27,6 +28,7 @@ import * as ToastActionCreators from '~/actions/ToastActionCreators';
 import * as UnsavedChangesActionCreators from '~/actions/UnsavedChangesActionCreators';
 import * as UserActionCreators from '~/actions/UserActionCreators';
 import * as UserProfileActionCreators from '~/actions/UserProfileActionCreators';
+import * as PremiumModalActionCreators from '~/actions/PremiumModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import {GuildMemberProfileFlags, UserPremiumTypes} from '~/Constants';
 import {Form} from '~/components/form/Form';
@@ -53,9 +55,12 @@ import LocalProfileEffectsStore from '~/stores/LocalProfileEffectsStore';
 import UnsavedChangesStore from '~/stores/UnsavedChangesStore';
 import UserStore from '~/stores/UserStore';
 import {
+	DEFAULT_CHANNEL_LIST_NAME_EFFECT_PRESET,
 	DEFAULT_PROFILE_ACCENT_EFFECT_PRESET,
+	type ChannelListNameEffectPreset,
 	type ProfileAccentEffectPreset,
 } from '~/utils/ProfileAccentEffectUtils';
+import {getChannelListNameEffectPreset, getProfileAccentEffectPreset} from '~/utils/ProfileEffectResolver';
 import {applyMarkdownSegments, convertMarkdownToSegments} from '~/utils/MarkdownToSegmentUtils';
 import {UnclaimedAccountAlert} from '../components/UnclaimedAccountAlert';
 import {AccentColorPicker} from './MyProfileTab/AccentColorPicker';
@@ -67,6 +72,8 @@ import {PremiumBadgeSettings} from './MyProfileTab/PremiumBadgeSettings';
 import {ProfileTypeSelector} from './MyProfileTab/ProfileTypeSelector';
 import {UsernameSection} from './MyProfileTab/UsernameSection';
 import styles from './MyProfileTab.module.css';
+
+const profileTabStyles = styles as unknown as Record<string, string>;
 
 interface FormInputs {
 	avatar?: string | null;
@@ -84,6 +91,13 @@ interface FormInputs {
 
 const MY_PROFILE_TAB_ID = 'my_profile';
 const AUTOCOMPLETE_Z_INDEX = 10001;
+
+const CHANNEL_LIST_NAME_EFFECT_OPTIONS: ReadonlyArray<ChannelListNameEffectPreset> = [
+	'none',
+	'rainbow',
+	'gold',
+	'neon',
+];
 
 const convertNumberToHexColor = (color: number | string | null | undefined): string | null => {
 	if (color === null || color === undefined) return null;
@@ -113,7 +127,13 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 
 	const isPerGuildProfile = selectedGuildId !== null;
 
-	const {segmentManagerRef, previousValueRef, displayToActual, insertSegment, handleTextChange} = useTextareaSegments();
+	const {
+		segmentManagerRef,
+		previousValueRef,
+		displayToActual,
+		replaceWithSegment,
+		handleTextChange,
+	} = useTextareaSegments();
 
 	const [bioValue, setBioValue] = React.useState('');
 	const [isBioInitialized, setIsBioInitialized] = React.useState(false);
@@ -129,11 +149,16 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 	);
 	const [initialProfileAccentEffectPreset, setInitialProfileAccentEffectPreset] =
 		React.useState<ProfileAccentEffectPreset>(DEFAULT_PROFILE_ACCENT_EFFECT_PRESET);
+	const [channelListNameEffectPreset, setChannelListNameEffectPreset] = React.useState<ChannelListNameEffectPreset>(
+		DEFAULT_CHANNEL_LIST_NAME_EFFECT_PRESET,
+	);
+	const [initialChannelListNameEffectPreset, setInitialChannelListNameEffectPreset] =
+		React.useState<ChannelListNameEffectPreset>(DEFAULT_CHANNEL_LIST_NAME_EFFECT_PRESET);
 
 	const {handleEmojiSelect} = useTextareaEmojiPicker({
 		setValue: setBioValue,
 		textareaRef: bioTextareaRef,
-		insertSegment,
+		replaceWithSegment,
 		previousValueRef,
 	});
 
@@ -262,7 +287,8 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 			setIsBioInitialized(true);
 		} else if (!isPerGuildProfile && user) {
 			const markdownBio = user.bio || null;
-			const savedAccentPreset = LocalProfileEffectsStore.getUserPreset(user.id);
+			const savedAccentPreset = getProfileAccentEffectPreset(user);
+			const savedChannelListNameEffect = getChannelListNameEffectPreset(user);
 
 			form.reset({
 				bio: markdownBio,
@@ -284,6 +310,8 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 			setInitialBannerMode('inherit');
 			setProfileAccentEffectPreset(savedAccentPreset);
 			setInitialProfileAccentEffectPreset(savedAccentPreset);
+			setChannelListNameEffectPreset(savedChannelListNameEffect);
+			setInitialChannelListNameEffectPreset(savedChannelListNameEffect);
 
 			setIsBioInitialized(false);
 			updateBioFromMarkdown(markdownBio || '');
@@ -291,6 +319,8 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 		} else if (isPerGuildProfile) {
 			setProfileAccentEffectPreset(DEFAULT_PROFILE_ACCENT_EFFECT_PRESET);
 			setInitialProfileAccentEffectPreset(DEFAULT_PROFILE_ACCENT_EFFECT_PRESET);
+			setChannelListNameEffectPreset(DEFAULT_CHANNEL_LIST_NAME_EFFECT_PRESET);
+			setInitialChannelListNameEffectPreset(DEFAULT_CHANNEL_LIST_NAME_EFFECT_PRESET);
 		}
 
 		setHasClearedAvatar(false);
@@ -303,6 +333,8 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 	const hasModeChanges = isPerGuildProfile && (avatarMode !== initialAvatarMode || bannerMode !== initialBannerMode);
 	const hasProfileEffectChanges =
 		!isPerGuildProfile && profileAccentEffectPreset !== initialProfileAccentEffectPreset;
+	const hasChannelListNameEffectChanges =
+		!isPerGuildProfile && channelListNameEffectPreset !== initialChannelListNameEffectPreset;
 	const hasUnsavedChanges = Boolean(
 		isFormDirty ||
 			previewAvatarUrl ||
@@ -310,7 +342,8 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 			previewBannerUrl ||
 			hasClearedBanner ||
 			hasModeChanges ||
-			hasProfileEffectChanges,
+			hasProfileEffectChanges ||
+			hasChannelListNameEffectChanges,
 	);
 
 	const hasPremium = React.useMemo(() => user?.isPremium() ?? false, [user]);
@@ -341,6 +374,8 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 
 	const onSubmit = React.useCallback(
 		async (data: FormInputs) => {
+			if (!user) return;
+
 			if (isPerGuildProfile && selectedGuildId && user) {
 				const globalAccentColor = typeof user.accentColor === 'number' ? user.accentColor : null;
 
@@ -393,50 +428,68 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 					setProfileData(updatedProfile);
 				}
 			} else {
-				const updateData: Record<string, unknown> = {
-					avatar: data.avatar,
-					banner: data.banner,
-					bio: data.bio,
-					global_name: data.global_name,
-					pronouns: data.pronouns,
-					accent_color: data.accent_color,
-				};
+				const hasRemoteProfileChanges = Boolean(
+					isFormDirty ||
+						previewAvatarUrl ||
+						hasClearedAvatar ||
+						previewBannerUrl ||
+						hasClearedBanner ||
+						hasProfileEffectChanges ||
+						hasChannelListNameEffectChanges,
+				);
 
-				if (data.premium_badge_hidden !== undefined) {
-					updateData.premium_badge_hidden = data.premium_badge_hidden;
-				}
-				if (data.premium_badge_timestamp_hidden !== undefined) {
-					updateData.premium_badge_timestamp_hidden = data.premium_badge_timestamp_hidden;
-				}
-				if (data.premium_badge_masked !== undefined) {
-					updateData.premium_badge_masked = data.premium_badge_masked;
-					if (data.premium_badge_masked) {
-						updateData.premium_badge_sequence_hidden = true;
+				if (hasRemoteProfileChanges) {
+					const updateData: Record<string, unknown> = {
+						avatar: data.avatar,
+						banner: data.banner,
+						bio: data.bio,
+						global_name: data.global_name,
+						pronouns: data.pronouns,
+						accent_color: data.accent_color,
+						profile_accent_effect: profileAccentEffectPreset,
+						channel_list_name_effect: channelListNameEffectPreset,
+					};
+
+					if (data.premium_badge_hidden !== undefined) {
+						updateData.premium_badge_hidden = data.premium_badge_hidden;
 					}
+					if (data.premium_badge_timestamp_hidden !== undefined) {
+						updateData.premium_badge_timestamp_hidden = data.premium_badge_timestamp_hidden;
+					}
+					if (data.premium_badge_masked !== undefined) {
+						updateData.premium_badge_masked = data.premium_badge_masked;
+						if (data.premium_badge_masked) {
+							updateData.premium_badge_sequence_hidden = true;
+						}
+					}
+					if (data.premium_badge_sequence_hidden !== undefined && !data.premium_badge_masked) {
+						updateData.premium_badge_sequence_hidden = data.premium_badge_sequence_hidden;
+					}
+
+					const newUser = await UserActionCreators.update(updateData);
+					UserStore.handleUserUpdate(newUser);
+
+					UserProfileActionCreators.clearCurrentUserProfiles();
+
+					const savedBio = newUser.bio || null;
+					updateBioFromMarkdown(savedBio || '');
+
+					form.reset({
+						bio: savedBio,
+						global_name: newUser.global_name || null,
+						pronouns: newUser.pronouns || null,
+						accent_color: typeof newUser.accent_color === 'number' ? newUser.accent_color : null,
+						premium_badge_hidden: newUser.premium_badge_hidden ?? false,
+						premium_badge_timestamp_hidden: newUser.premium_badge_timestamp_hidden ?? false,
+						premium_badge_masked: newUser.premium_badge_masked ?? false,
+						premium_badge_sequence_hidden: newUser.premium_badge_sequence_hidden ?? false,
+					});
 				}
-				if (data.premium_badge_sequence_hidden !== undefined && !data.premium_badge_masked) {
-					updateData.premium_badge_sequence_hidden = data.premium_badge_sequence_hidden;
-				}
 
-				const newUser = await UserActionCreators.update(updateData);
-
-				UserProfileActionCreators.clearCurrentUserProfiles();
-
-				const savedBio = newUser.bio || null;
-				updateBioFromMarkdown(savedBio || '');
-
-				form.reset({
-					bio: savedBio,
-					global_name: newUser.global_name || null,
-					pronouns: newUser.pronouns || null,
-					accent_color: typeof newUser.accent_color === 'number' ? newUser.accent_color : null,
-					premium_badge_hidden: newUser.premium_badge_hidden ?? false,
-					premium_badge_timestamp_hidden: newUser.premium_badge_timestamp_hidden ?? false,
-					premium_badge_masked: newUser.premium_badge_masked ?? false,
-					premium_badge_sequence_hidden: newUser.premium_badge_sequence_hidden ?? false,
-				});
-				LocalProfileEffectsStore.setUserPreset(newUser.id, profileAccentEffectPreset);
+				LocalProfileEffectsStore.setUserPreset(user.id, profileAccentEffectPreset);
+				LocalProfileEffectsStore.setUserChannelListNameEffect(user.id, channelListNameEffectPreset);
 				setInitialProfileAccentEffectPreset(profileAccentEffectPreset);
+				setInitialChannelListNameEffectPreset(channelListNameEffectPreset);
 				ToastActionCreators.createToast({type: 'success', children: t`Profile updated`});
 			}
 
@@ -454,6 +507,14 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 			avatarMode,
 			bannerMode,
 			profileAccentEffectPreset,
+			channelListNameEffectPreset,
+			isFormDirty,
+			previewAvatarUrl,
+			hasClearedAvatar,
+			previewBannerUrl,
+			hasClearedBanner,
+			hasProfileEffectChanges,
+			hasChannelListNameEffectChanges,
 		],
 	);
 
@@ -485,7 +546,8 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 			updateBioFromMarkdown(markdownBio || '');
 		} else if (user) {
 			const markdownBio = user.bio || null;
-			const savedAccentPreset = LocalProfileEffectsStore.getUserPreset(user.id);
+			const savedAccentPreset = getProfileAccentEffectPreset(user);
+			const savedChannelListNameEffect = getChannelListNameEffectPreset(user);
 
 			form.reset({
 				bio: markdownBio,
@@ -505,6 +567,8 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 			setBannerMode('inherit');
 			setProfileAccentEffectPreset(savedAccentPreset);
 			setInitialProfileAccentEffectPreset(savedAccentPreset);
+			setChannelListNameEffectPreset(savedChannelListNameEffect);
+			setInitialChannelListNameEffectPreset(savedChannelListNameEffect);
 
 			updateBioFromMarkdown(markdownBio || '');
 		}
@@ -649,6 +713,17 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 		[],
 	);
 
+	const handleChannelListNameEffectChange = React.useCallback(
+		(preset: ChannelListNameEffectPreset) => {
+			if (preset !== 'none' && !hasPremium) {
+				PremiumModalActionCreators.open();
+				return;
+			}
+			setChannelListNameEffectPreset(preset);
+		},
+		[hasPremium],
+	);
+
 	React.useEffect(() => {
 		UnsavedChangesActionCreators.setUnsavedChanges(MY_PROFILE_TAB_ID, hasUnsavedChanges);
 	}, [hasUnsavedChanges]);
@@ -709,6 +784,59 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 		/>
 	);
 
+	const getChannelListNameEffectLabel = (preset: ChannelListNameEffectPreset): string => {
+		switch (preset) {
+			case 'rainbow':
+				return t`Rainbow`;
+			case 'gold':
+				return t`Golden`;
+			case 'neon':
+				return t`Neon`;
+			default:
+				return t`Off`;
+		}
+	};
+
+	const channelListNameEffectContent = !isPerGuildProfile ? (
+		<div className={profileTabStyles.channelListNameEffectShell}>
+			<div className={profileTabStyles.channelListNameEffectHeader}>
+				<span className={profileTabStyles.channelListNameEffectTitleRow}>
+					<span className={profileTabStyles.channelListNameEffectTitle}>{t`Channel list nickname effect`}</span>
+					<span className={profileTabStyles.newUnlockButton}>{t`New`}</span>
+				</span>
+				<span className={profileTabStyles.channelListNameEffectDescription}>
+					{t`Give your nickname a Plutonium shimmer in server voice channel lists.`}
+				</span>
+			</div>
+			<div className={profileTabStyles.channelListNameEffectGrid}>
+				{CHANNEL_LIST_NAME_EFFECT_OPTIONS.map((preset) => {
+					const locked = preset !== 'none' && !hasPremium;
+					return (
+						<button
+							key={preset}
+							type="button"
+							className={clsx(
+								profileTabStyles.channelListNameEffectButton,
+								profileTabStyles[`channelListNameEffect_${preset}`],
+								channelListNameEffectPreset === preset && profileTabStyles.channelListNameEffectButtonActive,
+							)}
+							onClick={() => handleChannelListNameEffectChange(preset)}
+							aria-pressed={channelListNameEffectPreset === preset}
+						>
+							<span className={profileTabStyles.channelListNameEffectPreview}>
+								{preset === 'none' ? t`Nickname` : getChannelListNameEffectLabel(preset)}
+							</span>
+							<span className={profileTabStyles.channelListNameEffectLabel}>
+								{getChannelListNameEffectLabel(preset)}
+								{locked ? <span className={profileTabStyles.channelListNameEffectLock}>{t`Plutonium`}</span> : null}
+							</span>
+						</button>
+					);
+				})}
+			</div>
+		</div>
+	) : null;
+
 	const bioEditorContent = (
 		<BioEditor
 			value={bioValue}
@@ -751,7 +879,7 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 			</output>
 			<SettingsTabContainer>
 				{!isClaimed && <UnclaimedAccountAlert />}
-				<Form form={form} onSubmit={onSubmit} aria-label={t`Profile customization form`}>
+				<Form form={form} onSubmit={handleSave} aria-label={t`Profile customization form`}>
 					<div className={styles.profileTypeShell}>
 						<ProfileTypeSelector
 							selectedGuildId={selectedGuildId}
@@ -778,7 +906,12 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 								<div className={styles.contentLayout}>
 									<div className={styles.formColumn}>
 									{!isPerGuildProfile && (
-										<UsernameSection isClaimed={isClaimed} hasPremium={hasPremium} discriminator={user.discriminator} />
+										<UsernameSection
+											isClaimed={isClaimed}
+											hasPremium={hasPremium}
+											username={user.username}
+											discriminator={user.discriminator}
+										/>
 									)}
 
 									{isPerGuildProfile && (
@@ -810,6 +943,8 @@ const MyProfileTabComponent = observer(function MyProfileTabComponent({
 											/>
 										</div>
 									)}
+
+									{channelListNameEffectContent}
 
 									<div>
 										<Input

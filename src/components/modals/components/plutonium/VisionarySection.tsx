@@ -60,6 +60,11 @@ export const VisionarySection: React.FC<VisionarySectionProps> = observer(
 			purchaseDisabledTooltip != null
 				? () => purchaseDisabledTooltip
 				: t`Claim your account to purchase Astral Plutonium.`;
+		const remainingSlots = visionarySlots?.remaining ?? null;
+		const hasRemainingSlots = remainingSlots != null && remainingSlots > 0;
+		const visionaryCtaText = hasRemainingSlots
+			? t`Visionary - ${formatter.format(remainingSlots)} Left`
+			: t`Visionary - Buy for 29 990`;
 
 		return (
 			<section className={styles.section}>
@@ -106,7 +111,7 @@ export const VisionarySection: React.FC<VisionarySectionProps> = observer(
 					/>
 				</div>
 
-				{!isVisionary && visionarySlots && visionarySlots.remaining > 0 && (
+				{!isVisionary && (
 					<div className={styles.ctaContainer}>
 						{purchaseDisabled ? (
 							<Tooltip text={tooltipText}>
@@ -116,10 +121,10 @@ export const VisionarySection: React.FC<VisionarySectionProps> = observer(
 										onClick={() => handleSelectPlan('visionary')}
 										submitting={loadingCheckout || loadingSlots}
 										className={styles.ctaButton}
-										disabled
+										disabled={purchaseDisabled}
 									>
 										<CrownIcon className={styles.ctaIcon} weight="fill" />
-										<Trans>Upgrade to Visionary — {formatter.format(visionarySlots.remaining)} Left</Trans>
+										{visionaryCtaText}
 									</Button>
 								</div>
 							</Tooltip>
@@ -131,7 +136,7 @@ export const VisionarySection: React.FC<VisionarySectionProps> = observer(
 								className={styles.ctaButton}
 							>
 								<CrownIcon className={styles.ctaIcon} weight="fill" />
-								<Trans>Upgrade to Visionary — {formatter.format(visionarySlots.remaining)} Left</Trans>
+								{visionaryCtaText}
 							</Button>
 						)}
 

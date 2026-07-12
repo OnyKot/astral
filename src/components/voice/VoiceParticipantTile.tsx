@@ -69,6 +69,7 @@ import type {VoiceState} from '~/stores/voice/VoiceStateManager';
 import WindowStore from '~/stores/WindowStore';
 import {isMobileExperienceEnabled} from '~/utils/mobileExperience';
 import * as NicknameUtils from '~/utils/NicknameUtils';
+import {applyRemoteVideoPublicationQuality, getCameraReceiveQuality} from '~/utils/voice/RemoteVideoQuality';
 import {SoundType} from '~/utils/SoundUtils';
 import {getPlaceholderAvatarColor} from './getPlaceholderAvatarColor';
 import voiceCallStyles from './VoiceCallView.module.css';
@@ -173,6 +174,7 @@ interface VoiceParticipantTileProps {
 	isPinned?: boolean;
 	showFocusIndicator?: boolean;
 	allowAutoSubscribe?: boolean;
+	autoWatchScreenShare?: boolean;
 }
 
 interface VoiceParticipantTileInnerProps {
@@ -184,6 +186,7 @@ interface VoiceParticipantTileInnerProps {
 	isPinned?: boolean;
 	showFocusIndicator?: boolean;
 	allowAutoSubscribe: boolean;
+	autoWatchScreenShare: boolean;
 }
 
 type WebKitFullscreenVideoElement = HTMLVideoElement & {
@@ -198,8 +201,11 @@ interface ParsedIdentity {
 }
 
 function parseIdentity(identity: string): ParsedIdentity {
-	const match = identity.match(/^user_(\d+)_(.+)$/);
-	return {userId: match?.[1] ?? '', connectionId: match?.[2] ?? ''};
+	if (!identity.startsWith('user_')) return {userId: '', connectionId: ''};
+	const value = identity.slice(5);
+	const delimiterIndex = value.indexOf('_');
+	if (delimiterIndex === -1) return {userId: value, connectionId: ''};
+	return {userId: value.slice(0, delimiterIndex), connectionId: value.slice(delimiterIndex + 1)};
 }
 
 function getStreamKey(guildId: string | undefined, channelId: string | undefined, connectionId: string) {
@@ -302,8 +308,9 @@ function useAutoVideoSubscription(opts: {
 	videoLocallyDisabled: boolean;
 	isLocalParticipant: boolean;
 	isScreenShare: boolean;
+	isPinned: boolean;
 }) {
-	const {enabled, trackRef, isIntersecting, videoLocallyDisabled, isLocalParticipant, isScreenShare} = opts;
+	const {enabled, trackRef, isIntersecting, videoLocallyDisabled, isLocalParticipant, isScreenShare, isPinned} = opts;
 
 	useEffect(() => {
 		if (!enabled) return;
@@ -318,10 +325,13 @@ function useAutoVideoSubscription(opts: {
 
 		try {
 			pub.setSubscribed(shouldSubscribe);
+			if (shouldSubscribe) {
+				applyRemoteVideoPublicationQuality(pub, getCameraReceiveQuality(isPinned, isIntersecting));
+			}
 		} catch (err) {
 			console.error('[VoiceParticipantTile] setSubscribed failed', err);
 		}
-	}, [enabled, trackRef, isIntersecting, videoLocallyDisabled, isLocalParticipant, isScreenShare]);
+	}, [enabled, trackRef, isIntersecting, videoLocallyDisabled, isLocalParticipant, isScreenShare, isPinned]);
 }
 
 const previewInflight = new Map<string, Promise<string | null>>();
@@ -414,20 +424,42 @@ function useScreenshareWatchSubscription(opts: {
 
 		const pub = trackRef.publication as RemoteTrackPublication | undefined;
 		if (!pub || typeof pub.setSubscribed !== 'function' || typeof pub.setEnabled !== 'function') return;
+		let cancelled = false;
 
 		if (!pub.isSubscribed) {
 			try {
 				pub.setSubscribed(true);
+				applyRemoteVideoPublicationQuality(pub, 'high');
 			} catch (err) {
 				console.error('[Screenshare] setSubscribed(true) failed', err);
 			}
+		} else {
+			try {
+				applyRemoteVideoPublicationQuality(pub, 'high');
+			} catch (err) {
+				console.error('[Screenshare] setVideoQuality failed', err);
+			}
 		}
 
-		try {
-			pub.setEnabled(isWindowFocused);
-		} catch (err) {
-			console.error('[Screenshare] setEnabled failed', err);
-		}
+		const applyEnabledWhenReady = (attempt = 0) => {
+			if (cancelled) return;
+			if (pub.isSubscribed || pub.track) {
+				try {
+					pub.setEnabled(isWindowFocused);
+				} catch (err) {
+					console.error('[Screenshare] setEnabled failed', err);
+				}
+				return;
+			}
+			if (attempt >= 4) return;
+			window.setTimeout(() => applyEnabledWhenReady(attempt + 1), 80 * (attempt + 1));
+		};
+
+		applyEnabledWhenReady();
+
+		return () => {
+			cancelled = true;
+		};
 	}, [isScreenShare, trackRef, userWantsToWatch, videoLocallyDisabled, isWindowFocused]);
 }
 
@@ -486,7 +518,7 @@ function useViewerUsers(isScreenShare: boolean, streamKey: string, ownerUserId: 
  * joins and the grid re-computes its layout.
  */
 export const VoiceParticipantTile = React.memo((props: VoiceParticipantTileProps) => {
-	const {trackRef, guildId, channelId, onClick, isPinned, showFocusIndicator, allowAutoSubscribe = true} = props;
+	const {trackRef, guildId, channelId, onClick, isPinned, showFocusIndicator, allowAutoSubscribe = true, autoWatchScreenShare = false} = props;
 
 	const effectiveTrackRef = useEffectiveTrackRef(trackRef);
 	const {elementProps} = useParticipantTile({
@@ -506,6 +538,7 @@ export const VoiceParticipantTile = React.memo((props: VoiceParticipantTileProps
 			isPinned={isPinned}
 			showFocusIndicator={showFocusIndicator}
 			allowAutoSubscribe={allowAutoSubscribe}
+			autoWatchScreenShare={autoWatchScreenShare}
 		/>
 	);
 });
@@ -519,6 +552,7 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 	isPinned,
 	showFocusIndicator,
 	allowAutoSubscribe,
+	autoWatchScreenShare,
 }: VoiceParticipantTileInnerProps) {
 	const {t} = useLingui();
 	const participant = trackRef.participant;
@@ -583,6 +617,7 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 		videoLocallyDisabled,
 		isLocalParticipant,
 		isScreenShare,
+		isPinned: Boolean(isPinned),
 	});
 
 	const [userWantsToWatch, setUserWantsToWatch] = useState(false);
@@ -618,11 +653,19 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 	}, [isScreenShare, videoLocallyDisabled, streamKey, stopWatching]);
 
 	useEffect(() => {
-		if (!isMobileExperience) return;
+		if (!isMobileExperience && !autoWatchScreenShare) return;
 		if (!isScreenShare || isOwnScreenShare || videoLocallyDisabled || userWantsToWatch) return;
 
 		startWatching();
-	}, [isMobileExperience, isOwnScreenShare, isScreenShare, startWatching, userWantsToWatch, videoLocallyDisabled]);
+	}, [
+		autoWatchScreenShare,
+		isMobileExperience,
+		isOwnScreenShare,
+		isScreenShare,
+		startWatching,
+		userWantsToWatch,
+		videoLocallyDisabled,
+	]);
 
 	const [previewPopoverOpen, setPreviewPopoverOpen] = useState(false);
 	const previewEnabled = isScreenShare && !isSubscribed && !videoLocallyDisabled;
@@ -827,6 +870,13 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 		[identity, startWatching],
 	);
 
+	const handleStopOwnScreenShare = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+		event.stopPropagation();
+		void MediaEngineStore.setScreenShareEnabled(false).catch((error) => {
+			console.error('Failed to stop screen share:', error);
+		});
+	}, []);
+
 	const handleMouseEnter = useCallback(() => {
 		if (!previewEnabled) return;
 		setPreviewPopoverOpen(true);
@@ -956,7 +1006,7 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 								>
 									{t`Watch Stream`}
 								</Button>
-								<div className={styles.liveBadge}>LIVE</div>
+								<div className={styles.liveBadge}>{t`Live`}</div>
 							</div>
 						)}
 
@@ -964,7 +1014,7 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 						<div className={styles.selfStreamOverlay}>
 							{!shouldPauseOwnScreenSharePreview ? (
 								<div className={styles.selfStreamPreviewActive}>
-									<div className={styles.liveBadge}>LIVE</div>
+									<div className={styles.liveBadge}>{t`Live`}</div>
 								</div>
 							) : (
 								<div className={styles.selfStreamPreviewPaused}>
@@ -975,6 +1025,17 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 									<span className={styles.pausedSubtext}>{t`Your stream is still being broadcast`}</span>
 								</div>
 							)}
+							<Button
+								variant="secondary"
+								compact
+								fitContent
+								className={styles.stopSelfStreamButton}
+								leftIcon={<XIcon weight="bold" className={styles.watchStreamButtonIcon} />}
+								onClick={handleStopOwnScreenShare}
+								aria-label={t`Stop sharing`}
+							>
+								{t`Stop sharing`}
+							</Button>
 						</div>
 					)}
 

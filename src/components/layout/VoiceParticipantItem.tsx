@@ -42,10 +42,13 @@ import PermissionStore from '~/stores/PermissionStore';
 import type {VoiceState} from '~/stores/voice/MediaEngineFacade';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import * as NicknameUtils from '~/utils/NicknameUtils';
+import {getChannelListNameEffectPreset} from '~/utils/ProfileEffectResolver';
 import channelItemSurfaceStyles from './ChannelItemSurface.module.css';
 import {DND_TYPES} from './types/dnd';
 import styles from './VoiceParticipantItem.module.css';
 import {VoiceStateIcons} from './VoiceStateIcons';
+
+const participantStyles = styles as unknown as Record<string, string>;
 
 type ScreenSharePublication = LocalTrackPublication | RemoteTrackPublication;
 
@@ -261,12 +264,13 @@ export const VoiceParticipantItem = observer(function VoiceParticipantItem({
 	}, []);
 
 	const DeviceIcon = voiceState?.is_mobile ? DeviceMobileIcon : DesktopIcon;
-	const unknownDeviceFallback = useMemo(() => t`Unknown Device`, []);
+	const unknownDeviceFallback = useMemo(() => t`Unknown Device`, [t]);
 	const displayName = isGroupedItem
 		? voiceState?.connection_id || unknownDeviceFallback
 		: NicknameUtils.getNickname(user, guildId, currentChannelId);
 	const openProfileAriaLabel = !isGroupedItem ? t`Open profile for ${displayName}` : undefined;
 	const previewTitle = NicknameUtils.getNickname(user, guildId, currentChannelId) || user.username;
+	const channelListNameEffect = !isGroupedItem ? getChannelListNameEffectPreset(user) : 'none';
 
 	React.useEffect(() => {
 		if (!shouldShowStreamPreview || !streamerParticipantIdentity || !room) {
@@ -293,26 +297,26 @@ export const VoiceParticipantItem = observer(function VoiceParticipantItem({
 		};
 
 		void (async () => {
-			const lkParticipant = resolveParticipant();
-			if (!lkParticipant) {
+			try {
+				const lkParticipant = resolveParticipant();
+				if (!lkParticipant) return;
+
+				const publication = findScreenSharePublication(lkParticipant);
+				if (!publication) return;
+
+				const frame = await captureFirstFrameFromLiveKitPublication(publication);
+				if (cancelled) return;
+				setStreamPreviewUrl(frame);
+			} catch (error) {
+				console.warn('Failed to capture screen share preview:', error);
+				if (!cancelled) {
+					setStreamPreviewUrl(null);
+				}
+			} finally {
 				if (!cancelled) {
 					setStreamPreviewLoading(false);
 				}
-				return;
 			}
-
-			const publication = findScreenSharePublication(lkParticipant);
-			if (!publication) {
-				if (!cancelled) {
-					setStreamPreviewLoading(false);
-				}
-				return;
-			}
-
-			const frame = await captureFirstFrameFromLiveKitPublication(publication);
-			if (cancelled) return;
-			setStreamPreviewUrl(frame);
-			setStreamPreviewLoading(false);
 		})();
 
 		return () => {
@@ -389,7 +393,13 @@ export const VoiceParticipantItem = observer(function VoiceParticipantItem({
 							<DeviceIcon className={styles.iconContainer} weight="regular" />
 						</div>
 					) : (
-						<AvatarWithPresence user={user} size={24} speaking={isActuallySpeaking} guildId={guildId} />
+						<AvatarWithPresence
+							user={user}
+							size={24}
+							speaking={isActuallySpeaking}
+							guildId={guildId}
+							disablePresence={true}
+						/>
 					)}
 
 					{isGroupedItem ? (
@@ -410,6 +420,7 @@ export const VoiceParticipantItem = observer(function VoiceParticipantItem({
 								styles.participantName,
 								isActuallySpeaking && styles.participantNameSpeaking,
 								isCurrentUser && !isActuallySpeaking && styles.participantNameCurrent,
+								channelListNameEffect !== 'none' && participantStyles[`participantNameEffect_${channelListNameEffect}`],
 							)}
 						>
 							{displayName}

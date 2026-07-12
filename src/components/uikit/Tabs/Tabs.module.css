@@ -43,6 +43,10 @@
 	outline: none;
 	user-select: none;
 	-webkit-user-select: none;
+	transition:
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		border-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .tab.selected {
@@ -50,7 +54,23 @@
 	border-bottom-color: var(--brand-primary-light);
 }
 
+.tab:active {
+	transform: scale(0.97);
+}
+
 :global(.theme-light) .tab.selected {
 	color: var(--brand-primary);
 	border-bottom-color: var(--brand-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tab {
+		transition:
+			color var(--motion-dur-short) var(--motion-ease-snap),
+			border-color var(--motion-dur-short) var(--motion-ease-snap);
+	}
+
+	.tab:active {
+		transform: none;
+	}
 }

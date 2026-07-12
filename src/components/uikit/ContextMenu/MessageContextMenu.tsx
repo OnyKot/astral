@@ -24,9 +24,11 @@ import * as TextCopyActionCreators from '~/actions/TextCopyActionCreators';
 import {Permissions} from '~/Constants';
 import {createMessageActionHandlers, useMessagePermissions} from '~/components/channel/messageActionUtils';
 import type {MessageRecord} from '~/records/MessageRecord';
+import MessageSelectionStore from '~/stores/MessageSelectionStore';
 import PermissionStore from '~/stores/PermissionStore';
 import UserSettingsStore from '~/stores/UserSettingsStore';
 import {openExternalUrl} from '~/utils/NativeUtils';
+import {isStoryForwardPayload} from '~/utils/StoryForwardPayload';
 import {CopyIcon, CopyLinkIcon, OpenLinkIcon} from './ContextMenuIcons';
 import {
 	AddReactionMenuItem,
@@ -43,6 +45,7 @@ import {
 	PinMessageMenuItem,
 	RemoveAllReactionsMenuItem,
 	ReplyMessageMenuItem,
+	SelectMessagesMenuItem,
 	SpeakMessageMenuItem,
 	SuppressEmbedsMenuItem,
 } from './items/MessageMenuItems';
@@ -177,7 +180,11 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = observer(
 		const canManageMessages = !isDM && PermissionStore.can(Permissions.MANAGE_MESSAGES, {channelId: message.channelId});
 
 		const handlers = createMessageActionHandlers(message);
+		const hasCopyableText = Boolean(message.content && !isStoryForwardPayload(message.content));
 		const developerMode = UserSettingsStore.developerMode;
+		const handleSelectMessages = React.useCallback(() => {
+			MessageSelectionStore.startSelection(message.channelId, message.id);
+		}, [message.channelId, message.id]);
 
 		return (
 			<>
@@ -216,9 +223,11 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = observer(
 					{message.isUserMessage() && (
 						<ForwardMessageMenuItem message={message} onForward={handlers.handleForward} onClose={onClose} />
 					)}
+
+					<SelectMessagesMenuItem message={message} onSelectMessages={handleSelectMessages} onClose={onClose} />
 				</MenuGroup>
 
-				{(message.isUserMessage() || message.content) && (
+				{(message.isUserMessage() || hasCopyableText) && (
 					<MenuGroup>
 						{message.isUserMessage() && (
 							<BookmarkMessageMenuItem message={message} onSave={handlers.handleSaveMessage} onClose={onClose} />
@@ -236,16 +245,18 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = observer(
 							/>
 						)}
 
-						{message.content && (
+						{hasCopyableText && (
 							<CopyMessageTextMenuItem message={message} onCopyMessage={handlers.handleCopyMessage} onClose={onClose} />
 						)}
-						<CopyMessageQuoteMenuItem
-							message={message}
-							onCopyMessageAsQuote={handlers.handleCopyMessageAsQuote}
-							onClose={onClose}
-						/>
+						{hasCopyableText && (
+							<CopyMessageQuoteMenuItem
+								message={message}
+								onCopyMessageAsQuote={handlers.handleCopyMessageAsQuote}
+								onClose={onClose}
+							/>
+						)}
 
-						<SpeakMessageMenuItem message={message} onClose={onClose} />
+						{hasCopyableText && <SpeakMessageMenuItem message={message} onClose={onClose} />}
 					</MenuGroup>
 				)}
 

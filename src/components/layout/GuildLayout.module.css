@@ -71,6 +71,69 @@
 	background-color: var(--background-secondary);
 }
 
+.guildMobileSwipeHost {
+	position: relative;
+	isolation: isolate;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	overflow: hidden;
+	background: transparent;
+	touch-action: pan-y;
+}
+
+.guildMobileSwipePreview {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	display: grid;
+	grid-template-columns: var(--layout-guild-list-width) minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr);
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	opacity: var(--guild-layout-swipe-preview-opacity, 0);
+	transform: translate3d(var(--guild-layout-swipe-preview-offset, -16px), 0, 0);
+	transition:
+		opacity 180ms ease,
+		transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+	pointer-events: none;
+	overflow: hidden;
+}
+
+.guildMobileSwipePreview > * {
+	grid-column: 2;
+	grid-row: 1;
+	width: 100%;
+	min-width: 0;
+}
+
+.guildMobileSwipeStage {
+	position: relative;
+	z-index: 2;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	background: var(--background-secondary);
+	transition:
+		transform 250ms cubic-bezier(0.16, 1, 0.3, 1),
+		opacity 200ms ease,
+		box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1);
+	will-change: transform;
+}
+
+.guildMobileSwipeHost[data-edge-swipe-active='0'] .guildMobileSwipePreview {
+	opacity: 0;
+}
+
+.guildMobileSwipeHost[data-edge-swipe-active='1'] .guildMobileSwipeStage {
+	transition: none;
+	border-radius: 1.1rem 0 0 1.1rem;
+	overflow: hidden;
+}
+
 .guildUnavailableContainer {
 	display: flex;
 	flex-direction: column;

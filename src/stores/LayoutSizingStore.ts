@@ -17,7 +17,7 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {makeAutoObservable} from 'mobx';
+import {makeAutoObservable, runInAction} from 'mobx';
 import {makePersistent} from '~/lib/MobXPersistence';
 
 /*
@@ -33,12 +33,12 @@ import {makePersistent} from '~/lib/MobXPersistence';
  * MobileLayoutStore drives the responsive shell separately.
  */
 
-export const SIDEBAR_DEFAULT_PX = 270; // 16.875rem at 16px root
-export const SIDEBAR_MIN_PX = 200;
+export const SIDEBAR_DEFAULT_PX = 290; // 18.125rem at 16px root
+export const SIDEBAR_MIN_PX = 290;
 export const SIDEBAR_MAX_PX = 480;
 
-export const MEMBER_LIST_DEFAULT_PX = 240;
-export const MEMBER_LIST_MIN_PX = 180;
+export const MEMBER_LIST_DEFAULT_PX = 300;
+export const MEMBER_LIST_MIN_PX = 300;
 export const MEMBER_LIST_MAX_PX = 360;
 
 class LayoutSizingStoreClass {
@@ -52,21 +52,45 @@ class LayoutSizingStoreClass {
 
 	private async initPersistence(): Promise<void> {
 		await makePersistent(this, 'LayoutSizingStore', ['sidebarWidthPx', 'memberListWidthPx']);
+		runInAction(() => {
+			this.sidebarWidthPx = this.clamp(this.sidebarWidthPx, SIDEBAR_MIN_PX, SIDEBAR_MAX_PX);
+			this.memberListWidthPx = this.clamp(this.memberListWidthPx, MEMBER_LIST_MIN_PX, MEMBER_LIST_MAX_PX);
+		});
 		this.applyToRoot();
 	}
 
 	private clamp(value: number, min: number, max: number): number {
-		return Math.max(min, Math.min(max, value));
+		return Math.round(Math.max(min, Math.min(max, value)));
 	}
 
 	setSidebarWidth(px: number): void {
-		this.sidebarWidthPx = this.clamp(px, SIDEBAR_MIN_PX, SIDEBAR_MAX_PX);
+		const next = this.clamp(px, SIDEBAR_MIN_PX, SIDEBAR_MAX_PX);
+		if (next === this.sidebarWidthPx) return;
+		this.sidebarWidthPx = next;
 		this.applyToRoot();
 	}
 
 	setMemberListWidth(px: number): void {
-		this.memberListWidthPx = this.clamp(px, MEMBER_LIST_MIN_PX, MEMBER_LIST_MAX_PX);
+		const next = this.clamp(px, MEMBER_LIST_MIN_PX, MEMBER_LIST_MAX_PX);
+		if (next === this.memberListWidthPx) return;
+		this.memberListWidthPx = next;
 		this.applyToRoot();
+	}
+
+	previewSidebarWidth(px: number): void {
+		this.applySidebarWidth(this.clamp(px, SIDEBAR_MIN_PX, SIDEBAR_MAX_PX));
+	}
+
+	previewMemberListWidth(px: number): void {
+		this.applyMemberListWidth(this.clamp(px, MEMBER_LIST_MIN_PX, MEMBER_LIST_MAX_PX));
+	}
+
+	commitSidebarWidth(px: number): void {
+		this.setSidebarWidth(px);
+	}
+
+	commitMemberListWidth(px: number): void {
+		this.setMemberListWidth(px);
 	}
 
 	resetSidebar(): void {
@@ -88,9 +112,18 @@ class LayoutSizingStoreClass {
 	 */
 	applyToRoot(): void {
 		if (typeof document === 'undefined') return;
-		const root = document.documentElement;
-		root.style.setProperty('--layout-sidebar-width', `${this.sidebarWidthPx}px`);
-		root.style.setProperty('--layout-member-list-width', `${this.memberListWidthPx}px`);
+		this.applySidebarWidth(this.sidebarWidthPx);
+		this.applyMemberListWidth(this.memberListWidthPx);
+	}
+
+	private applySidebarWidth(px: number): void {
+		if (typeof document === 'undefined') return;
+		document.documentElement.style.setProperty('--layout-sidebar-width', `${px}px`);
+	}
+
+	private applyMemberListWidth(px: number): void {
+		if (typeof document === 'undefined') return;
+		document.documentElement.style.setProperty('--layout-member-list-width', `${px}px`);
 	}
 }
 

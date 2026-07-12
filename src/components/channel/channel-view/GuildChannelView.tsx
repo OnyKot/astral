@@ -23,7 +23,7 @@ import {useLingui} from '@lingui/react/macro';
 import {WaveformIcon} from '@phosphor-icons/react';
 import {motion, useReducedMotion} from 'framer-motion';
 import * as MessageActionCreators from '~/actions/MessageActionCreators';
-import {ChannelTypes} from '~/Constants';
+import {isGuildRtcChannelType, Permissions} from '~/Constants';
 import {
 	AccountTooNewBarrier,
 	NoPhoneNumberBarrier,
@@ -60,7 +60,9 @@ import GuildNSFWAgreeStore, {NSFWGateReason} from '~/stores/GuildNSFWAgreeStore'
 import GuildStore from '~/stores/GuildStore';
 import GuildVerificationStore from '~/stores/GuildVerificationStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
+import PermissionStore from '~/stores/PermissionStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
+import {isBroadcastVoiceChannel} from '~/utils/channelVoiceMode';
 import styles from '../ChannelIndexPage.module.css';
 import {ChannelSearchResults} from '../ChannelSearchResults';
 import {Messages} from '../Messages';
@@ -146,7 +148,7 @@ export const GuildChannelView = observer(({channelId, guildId, messageId}: Guild
 	}, [isSearchActive, searchState]);
 
 	const channelTitlePart = channel
-		? `${channel.type === ChannelTypes.GUILD_VOICE ? '' : '#'}${channel.name ?? ''}`
+		? `${isGuildRtcChannelType(channel.type) ? '' : '#'}${channel.name ?? ''}`
 		: null;
 	const guildTitlePart = guild ? guild.name : null;
 	useAstralDocumentTitle(channel ? [channelTitlePart, guildTitlePart] : undefined);
@@ -155,8 +157,10 @@ export const GuildChannelView = observer(({channelId, guildId, messageId}: Guild
 		return null;
 	}
 
-	const isVoiceChannel = channel.type === ChannelTypes.GUILD_VOICE;
+	const isVoiceChannel = isGuildRtcChannelType(channel.type);
 	const isConnectedToThisChannel = isVoiceChannel && connectedChannelId === channelId && room;
+	const isBroadcastChannel = isBroadcastVoiceChannel(channel);
+	const canJoinAsSpeaker = PermissionStore.can(Permissions.SPEAK, channel);
 	const voiceEmptyCopy = isRussian
 		? {
 				eyebrow: '\u0413\u043e\u043b\u043e\u0441\u043e\u0432\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e',
@@ -168,7 +172,26 @@ export const GuildChannelView = observer(({channelId, guildId, messageId}: Guild
 				eyebrow: 'Voice space',
 				description: 'This is a voice channel. Connect to start talking!',
 				join: 'Join Voice Channel',
+				joinAsListener: 'Join as Listener',
+				joinAsSpeaker: 'Join as Speaker',
 			};
+
+	const broadcastVoiceEmptyCopy = isRussian
+		? {
+				eyebrow: '\u0413\u043e\u043b\u043e\u0441\u043e\u0432\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e',
+				description:
+					'\u042d\u0442\u043e \u0433\u043e\u043b\u043e\u0441\u043e\u0432\u043e\u0439 \u043a\u0430\u043d\u0430\u043b. \u041f\u043e\u0434\u043a\u043b\u044e\u0447\u0438\u0442\u0435\u0441\u044c, \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u0438\u0441\u043e\u0435\u0434\u0438\u043d\u0438\u0442\u044c\u0441\u044f \u043a \u044d\u0444\u0438\u0440\u0443 \u0438\u043b\u0438 \u043f\u0440\u043e\u0441\u043b\u0443\u0448\u0438\u0432\u0430\u043d\u0438\u044e.',
+				joinAsListener: '\u0412\u043e\u0439\u0442\u0438 \u043a\u0430\u043a \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c',
+				joinAsSpeaker: '\u041f\u043e\u0434\u043a\u043b\u044e\u0447\u0438\u0442\u044c\u0441\u044f \u043a\u0430\u043a \u0432\u0435\u0449\u0430\u0442\u0435\u043b\u044c',
+			}
+		: {
+				eyebrow: 'Voice space',
+				description: 'This voice channel is in stage mode. Join as a listener or broadcaster.',
+				joinAsListener: 'Join as Listener',
+				joinAsSpeaker: 'Join as Broadcaster',
+			};
+
+	const activeVoiceEmptyCopy = isBroadcastChannel ? broadcastVoiceEmptyCopy : voiceEmptyCopy;
 
 	const passesVerification = channel.isPrivate() || GuildVerificationStore.canAccessGuild(channel.guildId || '');
 
@@ -224,21 +247,44 @@ export const GuildChannelView = observer(({channelId, guildId, messageId}: Guild
 								<WaveformIcon weight="fill" className={styles.voiceBadgeIcon} />
 							</div>
 							<div className={styles.centeredText}>
-								<div className={styles.voiceChannelEyebrow}>{voiceEmptyCopy.eyebrow}</div>
+								<div className={styles.voiceChannelEyebrow}>{activeVoiceEmptyCopy.eyebrow}</div>
 								<h2 className={styles.voiceChannelTitle}>{channel.name}</h2>
-								<p className={styles.voiceChannelDescription}>{voiceEmptyCopy.description}</p>
+								<p className={styles.voiceChannelDescription}>{activeVoiceEmptyCopy.description}</p>
 							</div>
 						</motion.div>
-						<motion.div className={styles.buttonContainer} {...getItemMotion(reducedMotion, 0.1)}>
-							<Button
-								type="button"
-								onClick={() => MediaEngineStore.connectToVoiceChannel(channel.guildId!, channel.id)}
-								fitContainer={false}
-								fitContent
-							>
-								{voiceEmptyCopy.join}
-							</Button>
-						</motion.div>
+						{isBroadcastChannel ? (
+							<motion.div className={styles.broadcastButtonContainer} {...getItemMotion(reducedMotion, 0.1)}>
+								<Button
+									type="button"
+									onClick={() => MediaEngineStore.connectToVoiceChannel(channel.guildId!, channel.id, {joinAsListener: true})}
+									fitContainer={false}
+									fitContent
+								>
+									{activeVoiceEmptyCopy.joinAsListener}
+								</Button>
+								<Button
+									type="button"
+									variant="secondary"
+									onClick={() => MediaEngineStore.connectToVoiceChannel(channel.guildId!, channel.id, {joinAsSpeaker: true})}
+									disabled={!canJoinAsSpeaker}
+									fitContainer={false}
+									fitContent
+								>
+									{activeVoiceEmptyCopy.joinAsSpeaker}
+								</Button>
+							</motion.div>
+						) : (
+							<motion.div className={styles.buttonContainer} {...getItemMotion(reducedMotion, 0.1)}>
+								<Button
+									type="button"
+									onClick={() => MediaEngineStore.connectToVoiceChannel(channel.guildId!, channel.id)}
+									fitContainer={false}
+									fitContent
+								>
+									{voiceEmptyCopy.join}
+								</Button>
+							</motion.div>
+						)}
 					</motion.div>
 				</div>
 			</div>

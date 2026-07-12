@@ -49,7 +49,6 @@ import MyProfileTab from '../tabs/MyProfileTab';
 import {NotificationsInlineTab} from '../tabs/NotificationsTab/Inline';
 import PlutoniumTab from '../tabs/PlutoniumTab';
 import {PrivacySafetyInlineTab} from '../tabs/PrivacySafetyTab/Inline';
-import StreamingTab from '../tabs/StreamingTab';
 import {VoiceVideoInlineTab} from '../tabs/VoiceVideoTab/Inline';
 import {getSettingsTabComponent} from '../utils/desktopSettingsTabs';
 import type {SettingsTab, UserSettingsTabType} from '../utils/settingsConstants';
@@ -85,7 +84,6 @@ const INLINE_TAB_COMPONENTS: Partial<Record<UserSettingsTabType, React.Component
 	blocked_users: BlockedUsersTab,
 	devices: DevicesTab,
 	music_connections: MusicConnectionsTab,
-	streaming: StreamingTab,
 	appearance: AppearanceInlineTab,
 	accessibility: AccessibilityInlineTab,
 	chat_settings: ChatSettingsInlineTab,

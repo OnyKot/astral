@@ -21,6 +21,7 @@ import {makeAutoObservable, reaction} from 'mobx';
 import {StickerAnimationOptions} from '~/Constants';
 import {isChatBackgroundId, type ChatBackgroundId} from '~/constants/chatBackgrounds';
 import {makePersistent} from '~/lib/MobXPersistence';
+import AppStorage from '~/lib/AppStorage';
 import {loadTheme, persistTheme} from '~/lib/themePersistence';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import {DEFAULT_OPENROUTER_MODEL} from '~/services/OpenRouterService';
@@ -133,6 +134,8 @@ export interface AccessibilitySettings {
 	embedMediaDimensionSize: MediaDimensionSize;
 	voiceChannelJoinRequiresDoubleClick: boolean;
 	dockPanelAlwaysActive: boolean;
+	useClassicCommunityList: boolean;
+	classicCommunityListCollapsed: boolean;
 	customThemeCss: string | null;
 	themeGradientStyle: ThemeGradientStyle;
 	buttonMotionStyle: ButtonMotionStyle;
@@ -205,6 +208,8 @@ class AccessibilityStore {
 	embedMediaDimensionSize = MediaDimensionSize.SMALL;
 	voiceChannelJoinRequiresDoubleClick = false;
 	dockPanelAlwaysActive = true;
+	useClassicCommunityList = true;
+	classicCommunityListCollapsed = false;
 	systemReducedMotion = false;
 	customThemeCss: string | null = null;
 	themeGradientStyle: ThemeGradientStyle = 'default';
@@ -292,6 +297,8 @@ class AccessibilityStore {
 			'embedMediaDimensionSize',
 			'voiceChannelJoinRequiresDoubleClick',
 			'dockPanelAlwaysActive',
+			'useClassicCommunityList',
+			'classicCommunityListCollapsed',
 			'customThemeCss',
 			'themeGradientStyle',
 			'buttonMotionStyle',
@@ -309,6 +316,17 @@ class AccessibilityStore {
 			'openRouterApiKey',
 			'openRouterModel',
 		]);
+		this.applyClassicCommunityRailDefault();
+	}
+
+	private applyClassicCommunityRailDefault(): void {
+		const migrationKey = 'astral.classicCommunityList.forceDefault.v1';
+		if (AppStorage.getItem(migrationKey)) {
+			return;
+		}
+		AppStorage.setItem(migrationKey, '1');
+		this.useClassicCommunityList = true;
+		this.classicCommunityListCollapsed = false;
 	}
 
 	private initializeMotionDetection() {
@@ -428,6 +446,10 @@ class AccessibilityStore {
 			this.voiceChannelJoinRequiresDoubleClick = validated.voiceChannelJoinRequiresDoubleClick;
 		if (validated.dockPanelAlwaysActive !== undefined)
 			this.dockPanelAlwaysActive = validated.dockPanelAlwaysActive;
+		if (validated.useClassicCommunityList !== undefined)
+			this.useClassicCommunityList = validated.useClassicCommunityList;
+		if (validated.classicCommunityListCollapsed !== undefined)
+			this.classicCommunityListCollapsed = validated.classicCommunityListCollapsed;
 		if (validated.customThemeCss !== undefined) this.customThemeCss = validated.customThemeCss;
 		if (validated.themeGradientStyle !== undefined) this.themeGradientStyle = validated.themeGradientStyle;
 		if (validated.buttonMotionStyle !== undefined) this.buttonMotionStyle = validated.buttonMotionStyle;
@@ -515,6 +537,8 @@ class AccessibilityStore {
 			voiceChannelJoinRequiresDoubleClick:
 				data.voiceChannelJoinRequiresDoubleClick ?? this.voiceChannelJoinRequiresDoubleClick,
 			dockPanelAlwaysActive: data.dockPanelAlwaysActive ?? this.dockPanelAlwaysActive,
+			useClassicCommunityList: data.useClassicCommunityList ?? this.useClassicCommunityList,
+			classicCommunityListCollapsed: data.classicCommunityListCollapsed ?? this.classicCommunityListCollapsed,
 			customThemeCss: data.customThemeCss !== undefined ? data.customThemeCss : this.customThemeCss,
 			themeGradientStyle: isThemeGradientStyle(data.themeGradientStyle)
 				? data.themeGradientStyle

@@ -18,7 +18,9 @@
  */
 
 import {makeAutoObservable, runInAction} from 'mobx';
+import {Endpoints} from '~/Endpoints';
 import {isFirstPartyHost} from '~/utils/FirstPartyHosts';
+import RuntimeConfigStore from '~/stores/RuntimeConfigStore';
 
 interface GeoIPData {
 	countryCode: string;
@@ -62,7 +64,8 @@ class GeoIPStore {
 		}
 
 		try {
-			const response = await fetch('https://ip.astral.workers.dev/');
+			const base = RuntimeConfigStore.apiPublicEndpoint || '';
+			const response = await fetch(`${base}${Endpoints.GEOIP}`);
 			if (!response.ok) {
 				throw new Error(`Failed to fetch geo data: ${response.statusText}`);
 			}

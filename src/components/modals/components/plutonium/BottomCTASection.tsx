@@ -21,7 +21,6 @@ import {Trans, useLingui} from '@lingui/react/macro';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {Button} from '~/components/uikit/Button/Button';
-import {PurchaseDisclaimer} from '../PurchaseDisclaimer';
 import styles from './BottomCTASection.module.css';
 import {PurchaseDisabledWrapper} from './PurchaseDisabledWrapper';
 
@@ -46,7 +45,6 @@ export const BottomCTASection: React.FC<BottomCTASectionProps> = observer(
 		visionaryPrice,
 		loadingCheckout,
 		loadingSlots,
-		isVisionarySoldOut,
 		handleSelectPlan,
 		purchaseDisabled = false,
 		purchaseDisabledTooltip,
@@ -84,15 +82,15 @@ export const BottomCTASection: React.FC<BottomCTASectionProps> = observer(
 									<Trans>Yearly {yearlyPrice}</Trans>
 								</Button>
 							</PurchaseDisabledWrapper>
-							<PurchaseDisabledWrapper disabled={purchaseDisabled || isVisionarySoldOut} tooltipText={tooltipText}>
+							<PurchaseDisabledWrapper disabled={purchaseDisabled} tooltipText={tooltipText}>
 								<Button
 									variant="primary"
 									onClick={() => handleSelectPlan('visionary')}
 									submitting={loadingCheckout || loadingSlots}
-									disabled={purchaseDisabled || isVisionarySoldOut}
+									disabled={purchaseDisabled}
 									className={styles.button}
 								>
-									{isVisionarySoldOut ? <Trans>Visionary Sold Out</Trans> : <Trans>Visionary {visionaryPrice}</Trans>}
+									<Trans>Visionary {visionaryPrice}</Trans>
 								</Button>
 							</PurchaseDisabledWrapper>
 						</>
@@ -120,25 +118,20 @@ export const BottomCTASection: React.FC<BottomCTASectionProps> = observer(
 									<Trans>1 Month {monthlyPrice}</Trans>
 								</Button>
 							</PurchaseDisabledWrapper>
-							<PurchaseDisabledWrapper disabled={purchaseDisabled || isVisionarySoldOut} tooltipText={tooltipText}>
+							<PurchaseDisabledWrapper disabled={purchaseDisabled} tooltipText={tooltipText}>
 								<Button
 									variant="primary"
 									onClick={() => handleSelectPlan('giftVisionary')}
 									submitting={loadingCheckout || loadingSlots}
-									disabled={purchaseDisabled || isVisionarySoldOut}
+									disabled={purchaseDisabled}
 									className={styles.button}
 								>
-									{isVisionarySoldOut ? (
-										<Trans>Visionary Gift Sold Out</Trans>
-									) : (
-										<Trans>Visionary {visionaryPrice}</Trans>
-									)}
+									<Trans>Visionary {visionaryPrice}</Trans>
 								</Button>
 							</PurchaseDisabledWrapper>
 						</>
 					)}
 				</div>
-				<PurchaseDisclaimer />
 			</div>
 		);
 	},

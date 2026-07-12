@@ -128,8 +128,8 @@ const EmbedAudio: FC<EmbedAudioProps> = observer(
 				}
 			: {
 					display: 'grid',
-					width: '400px',
-					maxWidth: '400px',
+					width: isVoiceMessage ? '360px' : '400px',
+					maxWidth: isVoiceMessage ? 'min(100%, 360px)' : '400px',
 				};
 
 		const {showDeleteButton, showDownloadButton} = getMediaButtonVisibility(

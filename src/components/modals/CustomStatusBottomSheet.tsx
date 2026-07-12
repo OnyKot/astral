@@ -23,12 +23,11 @@ import clsx from 'clsx';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
 import * as UserSettingsActionCreators from '~/actions/UserSettingsActionCreators';
-import {Input} from '~/components/form/Input';
 import {ExpressionPickerSheet} from '~/components/modals/ExpressionPickerSheet';
 import {BottomSheet} from '~/components/uikit/BottomSheet/BottomSheet';
 import {Button} from '~/components/uikit/Button/Button';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
-import {type CustomStatus, normalizeCustomStatus} from '~/lib/customStatus';
+import {CUSTOM_STATUS_TEXT_LIMIT, type CustomStatus, normalizeCustomStatus} from '~/lib/customStatus';
 import type {Emoji} from '~/stores/EmojiStore';
 import EmojiStore from '~/stores/EmojiStore';
 import PresenceStore from '~/stores/PresenceStore';
@@ -36,7 +35,7 @@ import UserStore from '~/stores/UserStore';
 import {getEmojiURL, shouldUseNativeEmoji} from '~/utils/EmojiUtils';
 import styles from './CustomStatusBottomSheet.module.css';
 
-const CUSTOM_STATUS_SNAP_POINTS: Array<number> = [0, 1];
+const CUSTOM_STATUS_SNAP_POINTS: Array<number> = [0, 0.52];
 
 const EXPIRY_OPTIONS = [
 	{id: 'never', label: <Trans>Don&apos;t clear</Trans>, minutes: null},
@@ -120,6 +119,18 @@ export const CustomStatusBottomSheet = observer(({isOpen, onClose}: CustomStatus
 		setEmojiName(null);
 	};
 
+	const handleClearStatus = async () => {
+		if (isSaving) return;
+
+		setIsSaving(true);
+		try {
+			await UserSettingsActionCreators.update({customStatus: null});
+			onClose();
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
 	const handleSave = async () => {
 		if (isSaving) return;
 
@@ -159,46 +170,50 @@ export const CustomStatusBottomSheet = observer(({isOpen, onClose}: CustomStatus
 			isOpen={isOpen}
 			onClose={onClose}
 			snapPoints={CUSTOM_STATUS_SNAP_POINTS}
-			initialSnap={CUSTOM_STATUS_SNAP_POINTS.length - 1}
-			title={t`Set Custom Status`}
+			initialSnap={CUSTOM_STATUS_SNAP_POINTS[1]}
+			title={t`Custom status`}
+			surface="primary"
 			zIndex={10001}
 		>
 			<div className={styles.content}>
-				<Input
-					id="custom-status-text"
-					value={statusText}
-					onChange={(event) => setStatusText(event.target.value.slice(0, 128))}
-					maxLength={128}
-					placeholder={t`What's happening?`}
-					leftElement={
+				<p className={styles.description}>
+					<Trans>Show a short note next to your profile.</Trans>
+				</p>
+				<div className={styles.composer} data-sheet-drag-ignore="true">
+					<FocusRing offset={-2} enabled={!isSaving}>
+						<button
+							type="button"
+							className={clsx(styles.emojiTriggerButton, emojiPickerOpen && styles.emojiTriggerButtonActive)}
+							aria-label={emojiPreview ? t`Change emoji` : t`Choose an emoji`}
+							disabled={isSaving}
+							onClick={() => setEmojiPickerOpen(true)}
+						>
+							{emojiPreview ?? <SmileyIcon size={22} weight="fill" aria-hidden="true" />}
+						</button>
+					</FocusRing>
+					<input
+						id="custom-status-text"
+						className={styles.statusInput}
+						value={statusText}
+						onChange={(event) => setStatusText(event.target.value.slice(0, CUSTOM_STATUS_TEXT_LIMIT))}
+						maxLength={CUSTOM_STATUS_TEXT_LIMIT}
+						placeholder={t`What's happening?`}
+						disabled={isSaving}
+					/>
+					{draftStatus && (
 						<FocusRing offset={-2} enabled={!isSaving}>
 							<button
 								type="button"
-								className={clsx(styles.emojiTriggerButton, emojiPickerOpen && styles.emojiTriggerButtonActive)}
-								aria-label={emojiPreview ? t`Change emoji` : t`Choose an emoji`}
+								className={styles.clearButtonIcon}
+								onClick={handleClearDraft}
 								disabled={isSaving}
-								onClick={() => setEmojiPickerOpen(true)}
+								aria-label={t`Clear custom status`}
 							>
-								{emojiPreview ?? <SmileyIcon size={22} weight="fill" aria-hidden="true" />}
+								<XIcon size={16} weight="bold" />
 							</button>
 						</FocusRing>
-					}
-					rightElement={
-						draftStatus ? (
-							<FocusRing offset={-2} enabled={!isSaving}>
-								<button
-									type="button"
-									className={styles.clearButtonIcon}
-									onClick={handleClearDraft}
-									disabled={isSaving}
-									aria-label={t`Clear custom status`}
-								>
-									<XIcon size={16} weight="bold" />
-								</button>
-							</FocusRing>
-						) : null
-					}
-				/>
+					)}
+				</div>
 				<ExpressionPickerSheet
 					isOpen={emojiPickerOpen}
 					onClose={() => setEmojiPickerOpen(false)}
@@ -209,25 +224,31 @@ export const CustomStatusBottomSheet = observer(({isOpen, onClose}: CustomStatus
 					visibleTabs={['emojis']}
 					zIndex={10002}
 				/>
-				<div className={styles.footer}>
-					<div className={styles.expirySelector}>
-						<span className={styles.expirySelectorLabel}>
-							<Trans>Clear after</Trans>
-						</span>
-						<select
-							className={styles.expirySelect}
-							value={selectedExpiry}
-							onChange={(e) => setSelectedExpiry(e.target.value)}
+				<div className={styles.expiryGroup} data-sheet-drag-ignore="true" aria-label={t`Clear after`}>
+					{EXPIRY_OPTIONS.map((option) => (
+						<button
+							key={option.id}
+							type="button"
+							className={clsx(styles.expiryChip, selectedExpiry === option.id && styles.expiryChipActive)}
+							onClick={() => setSelectedExpiry(option.id)}
 							disabled={isSaving}
+							aria-pressed={selectedExpiry === option.id}
 						>
-							{EXPIRY_OPTIONS.map((option) => (
-								<option key={option.id} value={option.id}>
-									{typeof option.label === 'string' ? option.label : option.id}
-								</option>
-							))}
-						</select>
-					</div>
-					<Button variant="primary" onClick={handleSave} submitting={isSaving} className={styles.saveButton}>
+							{option.label}
+						</button>
+					))}
+				</div>
+				<div className={styles.footer}>
+					<Button
+						variant="secondary"
+						onClick={handleClearStatus}
+						submitting={isSaving}
+						disabled={!normalizedExisting}
+						className={styles.actionButton}
+					>
+						<Trans>Clear</Trans>
+					</Button>
+					<Button variant="primary" onClick={handleSave} submitting={isSaving} className={styles.actionButton}>
 						<Trans>Save</Trans>
 					</Button>
 				</div>

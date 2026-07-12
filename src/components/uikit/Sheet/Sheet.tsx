@@ -30,11 +30,12 @@ import {isNativeMobile} from '~/utils/NativeUtils';
 import styles from './Sheet.module.css';
 
 const DRAG_START_REGION_PX = 132;
-const DRAG_DISMISS_DISTANCE_PX = 96;
-const DRAG_DISMISS_VELOCITY_PX_PER_MS = 0.55;
+const DRAG_DISMISS_DISTANCE_PX = 124;
+const DRAG_DISMISS_VELOCITY_PX_PER_MS = 0.72;
 const DRAG_EASE_THRESHOLD_PX = 220;
 
 type Surface = 'primary' | 'secondary' | 'tertiary';
+type AnimationPreset = 'default' | 'keyboard-replacement';
 
 interface RootProps {
 	isOpen: boolean;
@@ -53,6 +54,7 @@ interface RootProps {
 	showBackdrop?: boolean;
 	disableBackdropBlur?: boolean;
 	className?: string;
+	animationPreset?: AnimationPreset;
 }
 
 const surfaceClassMap: Record<Surface, string> = {
@@ -99,6 +101,7 @@ const RootComponent: React.FC<RootProps> = ({
 	showBackdrop = true,
 	disableBackdropBlur = false,
 	className,
+	animationPreset = 'default',
 }) => {
 	const [acquiredZIndex, setAcquiredZIndex] = React.useState<number | null>(null);
 	const [dragOffsetY, setDragOffsetY] = React.useState(0);
@@ -154,6 +157,22 @@ const RootComponent: React.FC<RootProps> = ({
 	}, [isOpen]);
 
 	const zIndex = explicitZIndex ?? acquiredZIndex ?? OverlayStackStore.peek();
+	const isKeyboardReplacement = animationPreset === 'keyboard-replacement';
+	const initialMotion = prefersReducedMotion
+		? {opacity: 0}
+		: {y: isKeyboardReplacement ? 14 : '6%', opacity: isKeyboardReplacement ? 0.94 : 0.98};
+	const enterTransition = prefersReducedMotion
+		? {duration: 0.06}
+		: {
+				duration: isKeyboardReplacement ? 0.22 : 0.28,
+				ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+			};
+	const exitTransition = prefersReducedMotion
+		? {duration: 0.06}
+		: {
+				duration: isKeyboardReplacement ? 0.14 : 0.18,
+				ease: [0.4, 0, 1, 1] as [number, number, number, number],
+			};
 
 	useBottomSheetBackHandler(isOpen && !disableDismiss, onClose, isNativeMobile());
 
@@ -304,8 +323,8 @@ const RootComponent: React.FC<RootProps> = ({
 								className={styles.backdrop}
 								onClick={requestDismiss}
 								initial={{opacity: 0}}
-								animate={{opacity: 1, transition: prefersReducedMotion ? {duration: 0.06} : {duration: 0.16, ease: [0.2, 0, 0, 1]}}}
-								exit={{opacity: 0, transition: prefersReducedMotion ? {duration: 0.06} : {duration: 0.1, ease: [0.4, 0, 1, 1]}}}
+								animate={{opacity: 1, transition: prefersReducedMotion ? {duration: 0.06} : {duration: 0.22, ease: [0.22, 1, 0.36, 1]}}}
+								exit={{opacity: 0, transition: prefersReducedMotion ? {duration: 0.06} : {duration: 0.16, ease: [0.4, 0, 1, 1]}}}
 								style={{
 									position: 'absolute',
 									inset: 0,
@@ -319,19 +338,15 @@ const RootComponent: React.FC<RootProps> = ({
 						<motion.div
 							data-rsbs-overlay=""
 							className={clsx(styles.container, surfaceClassMap[surface])}
-							initial={prefersReducedMotion ? {opacity: 0} : {y: '6%', opacity: 0.98}}
+							initial={initialMotion}
 							animate={{
 								y: 0,
 								opacity: 1,
-								transition: prefersReducedMotion
-									? {duration: 0.06}
-									: {duration: 0.18, ease: [0.22, 1, 0.36, 1]},
+								transition: enterTransition,
 							}}
 							exit={{
-								...(prefersReducedMotion ? {opacity: 0} : {y: '6%', opacity: 0.98}),
-								transition: prefersReducedMotion
-									? {duration: 0.06}
-									: {duration: 0.12, ease: [0.4, 0, 1, 1]},
+								...initialMotion,
+								transition: exitTransition,
 							}}
 							style={{
 								position: 'absolute',
@@ -351,7 +366,7 @@ const RootComponent: React.FC<RootProps> = ({
 											transition:
 												isDragging || dragOffsetY <= 0
 													? undefined
-													: 'transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+													: 'transform 240ms cubic-bezier(0.22, 1, 0.36, 1)',
 										} as React.CSSProperties
 									}
 									onTouchStart={handleTouchStart}

@@ -22,7 +22,13 @@ import {
 	CaretDownIcon,
 	CaretLeftIcon,
 	ChatTeardropIcon,
+	MicrophoneIcon,
+	MicrophoneSlashIcon,
+	MonitorIcon,
 	PhoneIcon,
+	PhoneXIcon,
+	SpeakerHighIcon,
+	SpeakerSlashIcon,
 	XIcon,
 } from '@phosphor-icons/react';
 import {clsx} from 'clsx';
@@ -44,7 +50,6 @@ import {BottomSheet} from '~/components/uikit/BottomSheet/BottomSheet';
 import {Button} from '~/components/uikit/Button/Button';
 import {UserContextMenu} from '~/components/uikit/ContextMenu/UserContextMenu';
 import {CompactVoiceCallView} from '~/components/voice/CompactVoiceCallView';
-import {VoiceControlBar} from '~/components/voice/VoiceControlBar';
 import {useChannelMemberListVisibility} from '~/hooks/useChannelMemberListVisibility';
 import {useChannelSearchVisibility} from '~/hooks/useChannelSearchVisibility';
 import {useAstralDocumentTitle} from '~/hooks/useAstralDocumentTitle';
@@ -56,9 +61,11 @@ import AuthenticationStore from '~/stores/AuthenticationStore';
 import AndroidNotificationSettingsStore from '~/stores/AndroidNotificationSettingsStore';
 import CallStateStore, {type Call} from '~/stores/CallStateStore';
 import ChannelStore from '~/stores/ChannelStore';
+import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import RelationshipStore from '~/stores/RelationshipStore';
 import UserStore from '~/stores/UserStore';
+import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import WindowStore from '~/stores/WindowStore';
 import {isNativeAndroidApp} from '~/utils/AndroidAppInfo';
@@ -70,6 +77,9 @@ import {
 import * as CallUtils from '~/utils/CallUtils';
 import * as ChannelUtils from '~/utils/ChannelUtils';
 import {isMobileExperienceEnabled} from '~/utils/mobileExperience';
+import {executeScreenShareOperation} from '~/utils/ScreenShareUtils';
+import {getScreenShareQualityOptions} from '~/utils/voice/StreamQualityUtils';
+import * as VoiceStateActionCreators from '~/actions/VoiceStateActionCreators';
 import styles from '../ChannelIndexPage.module.css';
 import {ChannelSearchResults} from '../ChannelSearchResults';
 import {Messages} from '../Messages';
@@ -109,6 +119,8 @@ interface CallParticipant {
 interface CallParticipantsRowProps {
 	call: Call;
 	channel: ChannelRecord;
+	compact?: boolean;
+	stage?: boolean;
 }
 
 const getCallAvatarSize = (count: number, windowWidth: number): number => {
@@ -123,7 +135,7 @@ const getCallAvatarSize = (count: number, windowWidth: number): number => {
 	return CALL_AVATAR_PIXEL_SIZES[CALL_AVATAR_PIXEL_SIZES.length - 1];
 };
 
-const CallParticipantsRow = observer(({call, channel}: CallParticipantsRowProps) => {
+const CallParticipantsRow = observer(({call, channel, compact = false, stage = false}: CallParticipantsRowProps) => {
 	const {t} = useLingui();
 	const windowWidth = WindowStore.windowSize.width;
 	const isMobile = MobileLayoutStore.isMobileLayout();
@@ -196,20 +208,28 @@ const CallParticipantsRow = observer(({call, channel}: CallParticipantsRowProps)
 
 	if (participants.length === 0) return null;
 
-	const baseAvatarSize = getCallAvatarSize(participants.length, windowWidth);
-	const avatarSize = isMobile
-		? participants.length <= 1
-			? 108
-			: participants.length === 2
-				? 84
-				: participants.length === 3
-					? 72
-					: participants.length === 4
-						? 62
-						: participants.length <= 6
-							? 54
-							: 48
-		: baseAvatarSize;
+	const baseAvatarSize = compact ? 44 : stage ? 72 : getCallAvatarSize(participants.length, windowWidth);
+	const avatarSize = compact
+		? isMobile
+			? 52
+			: 44
+		: stage
+			? isMobile
+				? 92
+				: 72
+		: isMobile
+			? participants.length <= 1
+				? 108
+				: participants.length === 2
+					? 84
+					: participants.length === 3
+						? 72
+						: participants.length === 4
+							? 62
+							: participants.length <= 6
+								? 54
+								: 48
+			: baseAvatarSize;
 
 	return (
 		<div className={dmStyles.callParticipantsRow} role="group" aria-label={t`Call participants`}>
@@ -340,6 +360,33 @@ export const DMChannelView = observer(({channelId}: DMChannelViewProps) => {
 	const handleIgnoreIncomingCall = React.useCallback(() => {
 		if (currentChannelId) {
 			CallActionCreators.ignoreCall(currentChannelId);
+		}
+	}, [currentChannelId]);
+	const handleToggleMute = React.useCallback(() => {
+		void VoiceStateActionCreators.toggleSelfMute(null);
+	}, []);
+	const handleToggleDeafen = React.useCallback(() => {
+		void VoiceStateActionCreators.toggleSelfDeaf(null);
+	}, []);
+	const handleToggleScreenShare = React.useCallback(() => {
+		void executeScreenShareOperation(async () => {
+			if (LocalVoiceStateStore.selfStream) {
+				await MediaEngineStore.setScreenShareEnabled(false);
+				return;
+			}
+
+			const {captureOptions, publishOptions} = getScreenShareQualityOptions(
+				VoiceSettingsStore.screenshareResolution,
+				VoiceSettingsStore.videoFrameRate,
+			);
+			await MediaEngineStore.setScreenShareEnabled(true, captureOptions, publishOptions);
+		}).catch((error) => {
+			console.error('Failed to toggle DM screen share:', error);
+		});
+	}, []);
+	const handleLeaveDmCall = React.useCallback(() => {
+		if (currentChannelId) {
+			void CallActionCreators.leaveCall(currentChannelId);
 		}
 	}, [currentChannelId]);
 	const handleOpenAndroidNotificationSettings = React.useCallback(() => {
@@ -532,6 +579,69 @@ export const DMChannelView = observer(({channelId}: DMChannelViewProps) => {
 	const headerCallControls = React.useMemo(() => renderCallControls(), [renderCallControls]);
 	const sheetCallControls = renderCallControls();
 	const isInCallSheet = controlsVariant === 'inCall';
+	const isSelfMuted = LocalVoiceStateStore.selfMute;
+	const isSelfDeafened = LocalVoiceStateStore.selfDeaf;
+	const isSelfScreenSharing = LocalVoiceStateStore.selfStream;
+	const dmCallControls = React.useMemo(
+		() => (
+			<div className={dmStyles.dmCallControls} role="group" aria-label={t`Call controls`}>
+				<button
+					type="button"
+					className={clsx(dmStyles.dmCallControlButton, isSelfMuted && dmStyles.dmCallControlButtonActive)}
+					onClick={handleToggleMute}
+					aria-label={isSelfMuted ? t`Unmute` : t`Mute`}
+					title={isSelfMuted ? t`Unmute` : t`Mute`}
+				>
+					{isSelfMuted ? (
+						<MicrophoneSlashIcon weight="fill" className={dmStyles.dmCallControlIcon} />
+					) : (
+						<MicrophoneIcon weight="fill" className={dmStyles.dmCallControlIcon} />
+					)}
+				</button>
+				<button
+					type="button"
+					className={clsx(dmStyles.dmCallControlButton, isSelfDeafened && dmStyles.dmCallControlButtonActive)}
+					onClick={handleToggleDeafen}
+					aria-label={isSelfDeafened ? t`Undeafen` : t`Deafen`}
+					title={isSelfDeafened ? t`Undeafen` : t`Deafen`}
+				>
+					{isSelfDeafened ? (
+						<SpeakerSlashIcon weight="fill" className={dmStyles.dmCallControlIcon} />
+					) : (
+						<SpeakerHighIcon weight="fill" className={dmStyles.dmCallControlIcon} />
+					)}
+				</button>
+				<button
+					type="button"
+					className={clsx(dmStyles.dmCallControlButton, isSelfScreenSharing && dmStyles.dmCallControlButtonActive)}
+					onClick={handleToggleScreenShare}
+					aria-label={isSelfScreenSharing ? t`Stop sharing` : t`Share screen`}
+					title={isSelfScreenSharing ? t`Stop sharing` : t`Share screen`}
+				>
+					<MonitorIcon weight="fill" className={dmStyles.dmCallControlIcon} />
+				</button>
+				<button
+					type="button"
+					className={clsx(dmStyles.dmCallControlButton, dmStyles.dmCallControlButtonDanger)}
+					onClick={handleLeaveDmCall}
+					aria-label={t`Leave call`}
+					title={t`Leave call`}
+				>
+					<PhoneXIcon weight="fill" className={dmStyles.dmCallControlIcon} />
+				</button>
+			</div>
+		),
+		[
+			handleLeaveDmCall,
+			handleToggleDeafen,
+			handleToggleMute,
+			handleToggleScreenShare,
+			isSelfDeafened,
+			isSelfMuted,
+			isSelfScreenSharing,
+			t,
+		],
+	);
 	const hasActiveScreenShare = React.useMemo(
 		() => Object.values(MediaEngineStore.participants).some((participant) => participant.isScreenShareEnabled),
 		[MediaEngineStore.participants],
@@ -594,7 +704,7 @@ export const DMChannelView = observer(({channelId}: DMChannelViewProps) => {
 										<div className={dmStyles.callBannerHeader}>
 											<div className={dmStyles.callBannerEyebrow}>{normalizedCallStatusLabel}</div>
 										</div>
-										<CallParticipantsRow call={call} channel={channel} />
+										<CallParticipantsRow call={call} channel={channel} compact={true} />
 										{controlsVariant === 'inCall' && (
 											<motion.div className={dmStyles.callBannerPreview} {...getPanelMotion(reducedMotion, 0.04)}>
 												<CompactVoiceCallView
@@ -634,17 +744,48 @@ export const DMChannelView = observer(({channelId}: DMChannelViewProps) => {
 										)}
 									</motion.div>
 								) : controlsVariant === 'inCall' ? (
-									<motion.div className={dmStyles.callBanner} {...getPanelMotion(reducedMotion, 0.02)}>
-										<CallParticipantsRow call={call} channel={channel} />
-										<CompactVoiceCallView channel={channel} className={dmStyles.compactVoiceCallView} hideHeader={true} />
+									<motion.div
+										className={clsx(dmStyles.callBanner, dmStyles.callBannerInCall)}
+										{...getPanelMotion(reducedMotion, 0.02)}
+									>
+										<div className={dmStyles.callBannerTop}>
+											<div className={dmStyles.callBannerHeader}>
+												<div className={dmStyles.callBannerEyebrow}>{normalizedCallStatusLabel}</div>
+											</div>
+											<div className={dmStyles.dmCallCornerInfo}>
+												<div className={dmStyles.callBannerMeta}>{callSummaryLabel}</div>
+												<div className={dmStyles.dmCallDuration}>{formattedInCallDuration ?? normalizedCallStatusLabel}</div>
+											</div>
+										</div>
+										<div className={dmStyles.dmCallStageCenter}>
+											<CallParticipantsRow call={call} channel={channel} stage={true} />
+											{dmCallControls}
+										</div>
+										{hasActiveLiveMedia && (
+											<CompactVoiceCallView
+												channel={channel}
+												className={dmStyles.compactVoiceCallView}
+												hideHeader={true}
+												hideControlBar={true}
+											/>
+										)}
 									</motion.div>
 								) : (
-									<motion.div className={dmStyles.callBanner} {...getPanelMotion(reducedMotion, 0.02)}>
-										<div className={dmStyles.callBannerHeader}>
-											<div className={dmStyles.callBannerEyebrow}>{normalizedCallStatusLabel}</div>
-											<div className={dmStyles.callBannerMeta}>{callSummaryLabel}</div>
+									<motion.div
+										className={clsx(dmStyles.callBanner, dmStyles.callBannerInvite)}
+										{...getPanelMotion(reducedMotion, 0.02)}
+									>
+										<div className={dmStyles.callBannerTop}>
+											<div className={dmStyles.callBannerHeader}>
+												<div className={dmStyles.callBannerEyebrow}>{normalizedCallStatusLabel}</div>
+											</div>
+											<div className={dmStyles.dmCallCornerInfo}>
+												<div className={dmStyles.callBannerMeta}>{callSummaryLabel}</div>
+											</div>
 										</div>
-										<CallParticipantsRow call={call} channel={channel} />
+										<div className={dmStyles.dmCallStageCenter}>
+											<CallParticipantsRow call={call} channel={channel} stage={true} />
+										</div>
 										{headerCallControls && <div className={dmStyles.callControls}>{headerCallControls}</div>}
 									</motion.div>
 								))}
@@ -722,10 +863,8 @@ export const DMChannelView = observer(({channelId}: DMChannelViewProps) => {
 										/>
 									</div>
 								)}
-								{!hasActiveLiveMedia && <CallParticipantsRow call={call} channel={channel} />}
-								<div className={dmStyles.mobileCallControlsMirror}>
-									<VoiceControlBar />
-								</div>
+								{!hasActiveLiveMedia && <CallParticipantsRow call={call} channel={channel} stage={true} />}
+								<div className={dmStyles.mobileCallControlsMirror}>{dmCallControls}</div>
 								<button
 									type="button"
 									className={dmStyles.mobileCallMinimizeButton}
@@ -740,7 +879,7 @@ export const DMChannelView = observer(({channelId}: DMChannelViewProps) => {
 								<div className={dmStyles.callSheetHeader}>
 									<div className={dmStyles.callBannerEyebrow}>{normalizedCallStatusLabel}</div>
 								</div>
-								<CallParticipantsRow call={call} channel={channel} />
+								<CallParticipantsRow call={call} channel={channel} compact={true} />
 								{sheetCallControls && <div className={dmStyles.callSheetControls}>{sheetCallControls}</div>}
 							</>
 						)}

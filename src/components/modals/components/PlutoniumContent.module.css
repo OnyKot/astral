@@ -297,3 +297,45 @@
 		transform: rotate(-34deg) translateX(112px);
 	}
 }
+
+@media (max-width: 560px) {
+	.giftModeContainer,
+	.mainContainer {
+		gap: 1rem;
+		padding-bottom: 1rem;
+		overflow-x: hidden;
+	}
+
+	.header {
+		padding: 0.9rem 0.7rem;
+		border-radius: 0.85rem;
+	}
+
+	.iconContainer {
+		margin-bottom: 0.55rem;
+	}
+
+	.titlePlanet {
+		width: 3.25rem;
+		height: 3.25rem;
+	}
+
+	.title {
+		font-size: 1.35rem;
+		line-height: 1.15;
+		overflow-wrap: anywhere;
+	}
+
+	.description {
+		font-size: 0.875rem;
+		line-height: 1.45;
+		overflow-wrap: anywhere;
+	}
+
+	.perksSection,
+	.comparisonTableContainer {
+		padding: 0.65rem;
+		border-radius: 0.8rem;
+		overflow-x: auto;
+	}
+}

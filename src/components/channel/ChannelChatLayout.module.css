@@ -39,15 +39,9 @@
 	position: relative;
 	overflow: hidden;
 	contain: strict;
-	padding: 0 12px;
+	padding: 0 10px;
 	isolation: isolate;
-	background:
-		linear-gradient(
-			180deg,
-			color-mix(in srgb, var(--background-primary) 14%, transparent) 0%,
-			transparent 18%,
-			color-mix(in srgb, var(--background-secondary) 18%, transparent) 100%
-		);
+	background: color-mix(in srgb, var(--background-primary) 98%, var(--background-secondary) 2%);
 }
 
 .messagesArea::before,
@@ -62,20 +56,19 @@
 	z-index: 0;
 	background-image: var(--chat-background-pattern-image, none);
 	background-repeat: repeat;
-	background-position: center top;
+	background-position: 0 0;
 	background-size:
 		calc(var(--chat-background-pattern-size, 360px) * var(--chat-background-pattern-scale, 1))
-		calc(var(--chat-background-pattern-size, 360px) * var(--chat-background-pattern-scale, 1));
+		auto;
 	opacity: var(--chat-background-pattern-opacity, 0);
+	filter: var(--chat-background-pattern-filter, none);
 }
 
 .messagesArea::after {
 	z-index: 0;
-	background:
-		linear-gradient(180deg, rgb(255 255 255 / 0.03) 0%, transparent 20%, rgb(0 0 0 / 0.08) 100%),
-		var(--theme-preset-overlay-background, transparent);
-	opacity: calc(0.2 + (var(--theme-preset-overlay-opacity, 0) * 0.45));
-	mix-blend-mode: screen;
+	background: var(--chat-gradient-overlay-background, transparent);
+	opacity: calc(var(--chat-gradient-overlay-opacity, 0) * 0.32);
+	mix-blend-mode: normal;
 }
 
 .messagesArea > * {
@@ -108,7 +101,8 @@
 	justify-content: space-between;
 	align-items: center;
 	gap: 0.35rem;
-	transition: bottom 220ms cubic-bezier(0.22, 1, 0.36, 1);
+	transition: bottom 180ms cubic-bezier(0.22, 1, 0.36, 1);
+	will-change: bottom;
 }
 
 .typingAreaWithTopBar .typingContent {
@@ -142,7 +136,8 @@
 		calc(var(--desktop-dock-composer-gap, 10px) + var(--desktop-dock-composer-lift, 0px));
 	overflow: visible;
 	background-color: transparent;
-	transition: padding-bottom 220ms cubic-bezier(0.22, 1, 0.36, 1);
+	transition: padding-bottom 180ms cubic-bezier(0.22, 1, 0.36, 1);
+	will-change: padding-bottom;
 	z-index: 3;
 }
 
@@ -163,8 +158,13 @@
 }
 
 @media (max-width: 767px) {
+	.container {
+		--mobile-composer-lift: var(--mobile-keyboard-inset, 0px);
+		--mobile-composer-system-clearance: max(var(--safe-area-bottom, 0px), 0.72rem);
+	}
+
 	.containerWithRaisedComposer {
-		--mobile-composer-lift: calc(min(58dvh, 468px) + max(var(--safe-area-bottom, 0px), 12px));
+		--mobile-composer-lift: var(--mobile-expression-picker-height, clamp(280px, 42dvh, 380px));
 	}
 
 	.messagesArea {
@@ -172,7 +172,9 @@
 	}
 
 	.textareaArea {
-		padding: 0.25rem 0.5rem calc(0.5rem + var(--safe-area-bottom) + var(--mobile-composer-lift));
+		padding:
+			0.25rem 0.5rem
+			calc(0.15rem + var(--mobile-composer-system-clearance) + var(--mobile-composer-lift));
 	}
 
 	.typingContent {
@@ -185,5 +187,18 @@
 	.typingContent {
 		left: max(0.6875rem, var(--safe-area-left, 0px));
 		right: max(0.6875rem, var(--safe-area-right, 0px));
+	}
+}
+
+@media (max-width: 380px) {
+	.textareaArea {
+		padding-right: 0.3rem;
+		padding-left: 0.3rem;
+	}
+
+	.typingContent {
+		left: max(0.5rem, var(--safe-area-left, 0px));
+		right: max(0.5rem, var(--safe-area-right, 0px));
+		font-size: 11px;
 	}
 }

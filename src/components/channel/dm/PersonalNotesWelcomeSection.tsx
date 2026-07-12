@@ -21,6 +21,7 @@ import {Trans, useLingui} from '@lingui/react/macro';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {StatusAwareAvatar} from '~/components/uikit/StatusAwareAvatar';
+import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import UserStore from '~/stores/UserStore';
 import styles from './PersonalNotesWelcomeSection.module.css';
 
@@ -31,6 +32,7 @@ interface PersonalNotesWelcomeSectionProps {
 export const PersonalNotesWelcomeSection: React.FC<PersonalNotesWelcomeSectionProps> = observer(({userId}) => {
 	const {t} = useLingui();
 	const user = UserStore.getUser(userId);
+	const isMobileLayout = MobileLayoutStore.isMobileLayout();
 
 	if (!user) {
 		return null;
@@ -40,7 +42,7 @@ export const PersonalNotesWelcomeSection: React.FC<PersonalNotesWelcomeSectionPr
 		<div className={styles.welcomeSection}>
 			<div className={styles.avatarContainer}>
 				<div className={styles.avatarBackground} />
-				<StatusAwareAvatar user={user} size={80} disablePresence={true} className={styles.avatar} />
+				<StatusAwareAvatar user={user} size={isMobileLayout ? 56 : 80} disablePresence={true} className={styles.avatar} />
 			</div>
 
 			<h1 className={styles.title}>

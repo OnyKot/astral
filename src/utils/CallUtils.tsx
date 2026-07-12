@@ -21,6 +21,7 @@ import * as CallActionCreators from '~/actions/CallActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import {CallNotRingableModal} from '~/components/alerts/CallNotRingableModal';
+import UserProfileMobileStore from '~/stores/UserProfileMobileStore';
 
 export async function checkAndStartCall(channelId: string, silent = false): Promise<boolean> {
 	try {
@@ -30,6 +31,8 @@ export async function checkAndStartCall(channelId: string, silent = false): Prom
 			return false;
 		}
 		CallActionCreators.startCall(channelId, silent);
+		UserProfileMobileStore.close();
+		ModalActionCreators.popAll();
 		return true;
 	} catch (error) {
 		console.error('Failed to check call eligibility:', error);

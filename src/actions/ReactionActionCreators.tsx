@@ -33,11 +33,19 @@ import AuthenticationStore from '~/stores/AuthenticationStore';
 import ConnectionStore from '~/stores/ConnectionStore';
 import MessageReactionsStore from '~/stores/MessageReactionsStore';
 import MessageStore from '~/stores/MessageStore';
-import type {ReactionEmoji} from '~/utils/ReactionUtils';
+import {getReactionKey, type ReactionEmoji} from '~/utils/ReactionUtils';
 
 const logger = new Logger('MessageReactions');
 
 const MAX_RETRIES = 3;
+const pendingReactionActions = new Set<string>();
+
+const getPendingReactionActionKey = (
+	action: 'MESSAGE_REACTION_ADD' | 'MESSAGE_REACTION_REMOVE',
+	messageId: string,
+	emoji: ReactionEmoji,
+	userId: string,
+): string => `${action}:${getReactionKey(messageId, emoji)}:${userId}`;
 
 const checkReactionResponse = (i18n: I18n, error: any, retry: () => void): boolean => {
 	if (error.status === 403) {
@@ -58,9 +66,12 @@ const checkReactionResponse = (i18n: I18n, error: any, retry: () => void): boole
 	}
 
 	if (error.status === 429) {
-		const retryAfter = error.body?.retry_after || 1000;
-		logger.debug(`Rate limited, retrying after ${retryAfter}ms`);
-		setTimeout(retry, retryAfter);
+		// retry_after arrives in seconds (per the API's RateLimitError body),
+		// but setTimeout expects milliseconds.
+		const retryAfterSeconds = error.body?.retry_after || 1;
+		const retryAfterMs = retryAfterSeconds * 1000;
+		logger.debug(`Rate limited, retrying after ${retryAfterSeconds}s`);
+		setTimeout(retry, retryAfterMs);
 		return false;
 	}
 
@@ -171,24 +182,52 @@ const performReactionAction = (
 	emoji: ReactionEmoji,
 	userId?: string,
 ): void => {
+	const actualUserId = userId ?? AuthenticationStore.currentUserId;
+	if (!actualUserId) {
+		logger.warn('Skipping reaction action because user ID is unavailable');
+		return;
+	}
+
+	const message = MessageStore.peekMessage(channelId, messageId);
+	const existingReaction = message?.getReaction(emoji);
+	if (type === 'MESSAGE_REACTION_ADD' && existingReaction?.me) {
+		logger.debug(`Skipping duplicate reaction add for message ${messageId}`);
+		return;
+	}
+	if (type === 'MESSAGE_REACTION_REMOVE' && userId == null && !existingReaction?.me) {
+		logger.debug(`Skipping duplicate reaction remove for message ${messageId}`);
+		return;
+	}
+
+	const pendingKey = getPendingReactionActionKey(type, messageId, emoji, actualUserId);
+	if (pendingReactionActions.has(pendingKey)) {
+		logger.debug(`Skipping duplicate in-flight reaction action for message ${messageId}`);
+		return;
+	}
+	pendingReactionActions.add(pendingKey);
+
 	optimisticUpdate(type, channelId, messageId, emoji, userId);
 
-	retryWithExponentialBackoff(apiFunc).catch((error) => {
-		if (
-			checkReactionResponse(i18n, error, () =>
-				performReactionAction(i18n, type, apiFunc, channelId, messageId, emoji, userId),
-			)
-		) {
-			logger.debug(`Reverting optimistic update for reaction in message ${messageId}`);
-			optimisticUpdate(
-				type === 'MESSAGE_REACTION_ADD' ? 'MESSAGE_REACTION_REMOVE' : 'MESSAGE_REACTION_ADD',
-				channelId,
-				messageId,
-				emoji,
-				userId,
-			);
-		}
-	});
+	retryWithExponentialBackoff(apiFunc)
+		.catch((error) => {
+			if (
+				checkReactionResponse(i18n, error, () =>
+					performReactionAction(i18n, type, apiFunc, channelId, messageId, emoji, userId),
+				)
+			) {
+				logger.debug(`Reverting optimistic update for reaction in message ${messageId}`);
+				optimisticUpdate(
+					type === 'MESSAGE_REACTION_ADD' ? 'MESSAGE_REACTION_REMOVE' : 'MESSAGE_REACTION_ADD',
+					channelId,
+					messageId,
+					emoji,
+					userId,
+				);
+			}
+		})
+		.finally(() => {
+			pendingReactionActions.delete(pendingKey);
+		});
 };
 
 export const getReactions = async (

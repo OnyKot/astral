@@ -120,6 +120,7 @@ const LanguageTab = observer(() => {
 	const renderLanguageContent = (option: RadioOption<string>, checked: boolean) => {
 		const localeInfo = availableLocales.find((locale) => locale.code === option.value)!;
 		const isEnGB = localeInfo.code === 'en-GB';
+		const isLatinAmerica = localeInfo.code === 'es-419';
 
 		const isLightTheme = document.documentElement.classList.contains('theme-light');
 		const highlightClass = checked && !isLightTheme ? styles.languageNameHighlighted : undefined;
@@ -149,7 +150,13 @@ const LanguageTab = observer(() => {
 			);
 		};
 
-		const flagContent = <FlagIcon emoji={localeInfo.flag} label={`${localeInfo.name} flag`} />;
+		const flagContent = isLatinAmerica ? (
+			<span className={styles.regionBadge} aria-label="Latin America">
+				LATAM
+			</span>
+		) : (
+			<FlagIcon emoji={localeInfo.flag} label={`${localeInfo.name} flag`} />
+		);
 
 		return (
 			<div className={styles.languageOption}>

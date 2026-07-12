@@ -25,7 +25,22 @@ export const DEFAULT_PROFILE_ACCENT_EFFECT_PRESET: ProfileAccentEffectPreset = '
 
 const PROFILE_ACCENT_EFFECT_SET = new Set<string>(PROFILE_ACCENT_EFFECT_PRESETS);
 
+export const CHANNEL_LIST_NAME_EFFECT_PRESETS = ['none', 'rainbow', 'gold', 'neon'] as const;
+
+export type ChannelListNameEffectPreset = (typeof CHANNEL_LIST_NAME_EFFECT_PRESETS)[number];
+
+export const DEFAULT_CHANNEL_LIST_NAME_EFFECT_PRESET: ChannelListNameEffectPreset = 'none';
+
+const CHANNEL_LIST_NAME_EFFECT_SET = new Set<string>(CHANNEL_LIST_NAME_EFFECT_PRESETS);
+
 export const normalizeProfileAccentEffectPreset = (value: unknown): ProfileAccentEffectPreset => {
 	if (typeof value !== 'string') return DEFAULT_PROFILE_ACCENT_EFFECT_PRESET;
 	return PROFILE_ACCENT_EFFECT_SET.has(value) ? (value as ProfileAccentEffectPreset) : DEFAULT_PROFILE_ACCENT_EFFECT_PRESET;
+};
+
+export const normalizeChannelListNameEffectPreset = (value: unknown): ChannelListNameEffectPreset => {
+	if (typeof value !== 'string') return DEFAULT_CHANNEL_LIST_NAME_EFFECT_PRESET;
+	return CHANNEL_LIST_NAME_EFFECT_SET.has(value)
+		? (value as ChannelListNameEffectPreset)
+		: DEFAULT_CHANNEL_LIST_NAME_EFFECT_PRESET;
 };

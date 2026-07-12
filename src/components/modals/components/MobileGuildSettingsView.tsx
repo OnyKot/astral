@@ -37,6 +37,8 @@ import mobileSettingsStyles from './MobileSettingsView.module.css';
 import userSettingsStyles from '../UserSettingsModal.module.css';
 import type {GuildSettingsTab, GuildSettingsTabType} from '../utils/guildSettingsConstants';
 import styles from './MobileGuildSettingsView.module.css';
+import AccessibilityStore from '~/stores/AccessibilityStore';
+import {getPageContentVariants, getPageHeaderVariants, getPageTransition} from '~/utils/motion/MotionPresets';
 
 interface MobileGuildSettingsViewProps {
 	guild: GuildRecord;
@@ -47,33 +49,10 @@ interface MobileGuildSettingsViewProps {
 	onTabSelect: (tabType: string, title: string) => void;
 }
 
-const contentFadeVariants = {
-	enter: {
-		opacity: 0,
-	},
-	center: {
-		opacity: 1,
-	},
-	exit: {
-		opacity: 0,
-	},
-};
-
-const headerFadeVariants = {
-	enter: {
-		opacity: 0,
-	},
-	center: {
-		opacity: 1,
-	},
-	exit: {
-		opacity: 0,
-	},
-};
-
 export const MobileGuildSettingsView: React.FC<MobileGuildSettingsViewProps> = observer(
 	({guild, groupedSettingsTabs, currentTab, mobileNav, onBack, onTabSelect}) => {
 		const {t} = useLingui();
+		const prefersReducedMotion = AccessibilityStore.useReducedMotion;
 		const unsavedChangesStore = UnsavedChangesStore;
 
 		const currentTabId = mobileNav.currentView?.tab || '';
@@ -116,6 +95,15 @@ export const MobileGuildSettingsView: React.FC<MobileGuildSettingsViewProps> = o
 
 		const showMobileList = mobileNav.isRootView;
 		const showMobileContent = !mobileNav.isRootView;
+		const motionTransition = getPageTransition(prefersReducedMotion);
+		const headerVariants = React.useMemo(
+			() => getPageHeaderVariants(prefersReducedMotion),
+			[prefersReducedMotion],
+		);
+		const contentVariants = React.useMemo(
+			() => getPageContentVariants(prefersReducedMotion),
+			[prefersReducedMotion],
+		);
 
 		const dangerAction = (
 			<MobileSettingsDangerItem icon={TrashIcon} label={t`Delete Community`} onClick={handleDeleteGuild} />
@@ -124,18 +112,16 @@ export const MobileGuildSettingsView: React.FC<MobileGuildSettingsViewProps> = o
 		return (
 			<div className={userSettingsStyles.mobileWrapper}>
 				<div className={userSettingsStyles.mobileHeaderContainer}>
-					<AnimatePresence mode="wait" custom={mobileNav.direction}>
+					<AnimatePresence mode="sync" initial={false} custom={mobileNav.direction}>
 						{showMobileList && (
 							<motion.div
 								key="mobile-list-header"
-								variants={headerFadeVariants}
-								initial="center"
+								custom={mobileNav.direction}
+								variants={headerVariants}
+								initial={mobileNav.direction === 'backward' ? 'enter' : 'center'}
 								animate="center"
 								exit="exit"
-								transition={{
-									duration: 0.08,
-									ease: 'easeInOut',
-								}}
+								transition={motionTransition}
 								className={userSettingsStyles.mobileHeaderContent}
 							>
 								<MobileHeader title={guild.name} onBack={handleBack} />
@@ -145,14 +131,12 @@ export const MobileGuildSettingsView: React.FC<MobileGuildSettingsViewProps> = o
 						{showMobileContent && currentTab && (
 							<motion.div
 								key={`mobile-content-header-${mobileNav.currentView?.tab}`}
-								variants={headerFadeVariants}
-								initial="enter"
+								custom={mobileNav.direction}
+								variants={headerVariants}
+								initial={mobileNav.direction === 'forward' ? 'enter' : 'center'}
 								animate="center"
 								exit="exit"
-								transition={{
-									duration: 0.08,
-									ease: 'easeInOut',
-								}}
+								transition={motionTransition}
 								className={userSettingsStyles.mobileHeaderContent}
 							>
 								<MobileHeader title={mobileNav.currentView?.title || currentTab.label} onBack={handleBack} />
@@ -162,21 +146,18 @@ export const MobileGuildSettingsView: React.FC<MobileGuildSettingsViewProps> = o
 				</div>
 
 				<div className={userSettingsStyles.mobileContentContainer}>
-					<AnimatePresence mode="wait" custom={mobileNav.direction}>
+					<AnimatePresence mode="sync" initial={false} custom={mobileNav.direction}>
 						{showMobileList && (
 							<motion.div
 								key="mobile-list-content"
 								custom={mobileNav.direction}
-								variants={contentFadeVariants}
-								initial="center"
+								variants={contentVariants}
+								initial={mobileNav.direction === 'backward' ? 'enter' : 'center'}
 								animate="center"
 								exit="exit"
-								transition={{
-									duration: 0.15,
-									ease: 'easeInOut',
-								}}
+								transition={motionTransition}
 								className={userSettingsStyles.mobileContentPane}
-								style={{willChange: 'transform'}}
+								style={{willChange: 'transform, opacity'}}
 							>
 								<MobileSettingsList
 									groupedTabs={groupedSettingsTabs}
@@ -192,16 +173,13 @@ export const MobileGuildSettingsView: React.FC<MobileGuildSettingsViewProps> = o
 							<motion.div
 								key={`mobile-content-${mobileNav.currentView?.tab}`}
 								custom={mobileNav.direction}
-								variants={contentFadeVariants}
-								initial="enter"
+								variants={contentVariants}
+								initial={mobileNav.direction === 'forward' ? 'enter' : 'center'}
 								animate="center"
 								exit="exit"
-								transition={{
-									duration: 0.15,
-									ease: 'easeInOut',
-								}}
+								transition={motionTransition}
 								className={userSettingsStyles.mobileContentPane}
-								style={{willChange: 'transform'}}
+								style={{willChange: 'transform, opacity'}}
 							>
 								<Scroller className={styles.scrollerFlex} key="mobile-guild-settings-content-scroller">
 									<div

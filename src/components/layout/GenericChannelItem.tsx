@@ -120,6 +120,7 @@ export const GenericChannelItem = React.forwardRef<HTMLDivElement, GenericChanne
 						tabIndex={tabIndex}
 						onLongPress={onLongPress}
 						aria-label={ariaLabel}
+						data-channel-item={isCategory ? 'category' : 'channel'}
 						data-dnd-name={dataDndName}
 						data-scroll-indicator={dataScrollIndicator}
 						data-scroll-id={dataScrollId}
@@ -129,21 +130,23 @@ export const GenericChannelItem = React.forwardRef<HTMLDivElement, GenericChanne
 						) : (
 							<>
 								{isCategory ? (
-									<div style={{display: 'flex', alignItems: 'center', flex: 1, minWidth: 0}}>
-										<span style={{flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
-											{name}
-										</span>
-										<CaretDownIcon weight="bold" style={{transform: `rotate(${isCollapsed ? -90 : 0}deg)`}} />
+									<div className={channelItemStyles.categoryContent}>
+										<span className={channelItemStyles.categoryName}>{name}</span>
+										<CaretDownIcon
+											weight="bold"
+											className={clsx(
+												channelItemStyles.categoryIcon,
+												isCollapsed && channelItemStyles.categoryIconCollapsed,
+											)}
+										/>
 									</div>
 								) : (
 									<>
-										{icon && <div style={{marginRight: 8, display: 'flex', alignItems: 'center'}}>{icon}</div>}
-										<span style={{flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
-											{name}
-										</span>
+										{icon && <div className={channelItemStyles.channelItemIconWrap}>{icon}</div>}
+										<span className={channelItemStyles.channelName}>{name}</span>
 									</>
 								)}
-								<div style={{display: 'flex', alignItems: 'center', marginLeft: 8}}>
+								<div className={channelItemStyles.channelItemActions}>
 									{actions}
 									{badges}
 								</div>

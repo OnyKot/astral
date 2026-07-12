@@ -1,0 +1,77 @@
+.previewCard {
+	display: grid;
+	grid-template-columns: 4.2rem minmax(0, 1fr);
+	gap: var(--spacing-3);
+	margin: 0 var(--spacing-4) var(--spacing-3);
+	padding: var(--spacing-3);
+	border: 1px solid var(--border-subtle);
+	border-radius: var(--radius-lg);
+	background:
+		linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 12%, transparent), transparent),
+		var(--background-secondary);
+}
+
+.previewMedia {
+	display: grid;
+	place-items: center;
+	width: 4.2rem;
+	height: 4.2rem;
+	border-radius: 1rem;
+	overflow: hidden;
+	background:
+		radial-gradient(circle at 30% 24%, color-mix(in srgb, #ffffff 18%, transparent), transparent 34%),
+		linear-gradient(145deg, color-mix(in srgb, var(--brand-primary) 48%, #111827), #111827);
+	color: white;
+	font-size: 1.45rem;
+	font-weight: 900;
+}
+
+.previewMedia img,
+.previewMedia video {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.previewInfo {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	justify-content: center;
+	gap: 0.28rem;
+}
+
+.previewLabel {
+	color: var(--text-secondary);
+	font-size: 0.72rem;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.previewTitle {
+	overflow: hidden;
+	color: var(--text-primary);
+	font-size: 0.95rem;
+	font-weight: 850;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.previewText {
+	display: -webkit-box;
+	overflow: hidden;
+	color: var(--text-secondary);
+	font-size: 0.8rem;
+	line-height: 1.3;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+
+.commentInput {
+	margin: 0 var(--spacing-4) var(--spacing-3);
+}
+
+.sendButton {
+	min-width: 5rem;
+}

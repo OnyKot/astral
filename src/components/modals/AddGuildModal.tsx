@@ -61,10 +61,26 @@ interface ModalFooterContextValue {
 
 const ModalFooterContext = React.createContext<ModalFooterContextValue | null>(null);
 
-const ActionButton = ({onClick, icon, label}: {onClick: () => void; icon: React.ReactNode; label: string}) => (
+const ActionButton = ({
+	onClick,
+	icon,
+	label,
+	description,
+	step,
+}: {
+	onClick: () => void;
+	icon: React.ReactNode;
+	label: string;
+	description: string;
+	step: string;
+}) => (
 	<button type="button" onClick={onClick} className={styles.actionButton}>
+		<span className={styles.actionStep}>{step}</span>
 		<span className={styles.actionIcon}>{icon}</span>
-		<span className={styles.actionLabel}>{label}</span>
+		<span className={styles.actionText}>
+			<span className={styles.actionLabel}>{label}</span>
+			<span className={styles.actionDescription}>{description}</span>
+		</span>
 	</button>
 );
 
@@ -113,20 +129,29 @@ const LandingView = observer(({onViewChange}: {onViewChange: (view: AddGuildModa
 
 	return (
 		<div className={styles.landingContainer}>
-			<p>
-				<Trans>Create a new community or join an existing one.</Trans>
-			</p>
+			<div className={styles.landingIntro}>
+				<span className={styles.landingEyebrow}>
+					<Trans>Start in seconds</Trans>
+				</span>
+				<p>
+					<Trans>Choose how you want to begin: create your own space, paste an invite, or browse public communities.</Trans>
+				</p>
+			</div>
 
 			<div className={styles.actionButtons}>
 				<ActionButton
 					onClick={() => onViewChange('create_guild')}
 					icon={<HouseIcon size={24} />}
 					label={t`Create Community`}
+					description={t`Set a name, optional icon, and open the first room right away.`}
+					step={t`1`}
 				/>
 				<ActionButton
 					onClick={() => onViewChange('join_guild')}
 					icon={<LinkIcon size={24} weight="regular" />}
 					label={t`Join Community`}
+					description={t`Paste an invite link or code and Astral will take you there.`}
+					step={t`2`}
 				/>
 				<ActionButton
 					onClick={() => {
@@ -135,6 +160,8 @@ const LandingView = observer(({onViewChange}: {onViewChange: (view: AddGuildModa
 					}}
 					icon={<CompassIcon size={24} weight="regular" />}
 					label={t`Explore Communities`}
+					description={t`See public spaces, activity, and join options before entering.`}
+					step={t`3`}
 				/>
 			</div>
 		</div>
@@ -309,7 +336,7 @@ const GuildCreateForm = observer(() => {
 
 	return (
 		<div className={styles.formContainer}>
-			<p>
+			<p className={styles.formLead}>
 				<Trans>Create a community for you and your friends to chat.</Trans>
 			</p>
 
@@ -425,9 +452,17 @@ const GuildJoinForm = observer(() => {
 
 	return (
 		<div className={styles.formContainer}>
-			<p>
-				<Trans>Enter the invite link to join a community.</Trans>
-			</p>
+			<div className={styles.joinHint}>
+				<LinkIcon size={20} weight="bold" />
+				<div>
+					<strong>
+						<Trans>Invite link or code</Trans>
+					</strong>
+					<p>
+						<Trans>Paste the full invite URL or only the short code. Both formats work.</Trans>
+					</p>
+				</div>
+			</div>
 
 			<Form form={form} onSubmit={handleSubmit} id={formId} aria-label={t`Join community form`}>
 				<div className={styles.iconSection}>

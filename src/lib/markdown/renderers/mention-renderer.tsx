@@ -24,7 +24,7 @@ import type React from 'react';
 import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
-import {ChannelTypes, Permissions} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType, Permissions} from '~/Constants';
 import {GenericErrorModal} from '~/components/alerts/GenericErrorModal';
 import {PreloadableUserPopout} from '~/components/channel/PreloadableUserPopout';
 import {ChannelContextMenu} from '~/components/uikit/ContextMenu/ChannelContextMenu';
@@ -173,7 +173,7 @@ export const MentionRenderer = observer(function MentionRenderer({
 
 			if (
 				channel.type !== ChannelTypes.GUILD_TEXT &&
-				channel.type !== ChannelTypes.GUILD_VOICE &&
+				!isGuildRtcChannelType(channel.type) &&
 				channel.type !== ChannelTypes.GUILD_LINK
 			) {
 				return unknownMention;
@@ -185,7 +185,7 @@ export const MentionRenderer = observer(function MentionRenderer({
 						className={clsx(markupStyles.mention, markupStyles.interactive)}
 						onClick={(e) => {
 							e.stopPropagation();
-							if (channel.type === ChannelTypes.GUILD_VOICE) {
+							if (isGuildRtcChannelType(channel.type)) {
 								const canConnect = PermissionStore.can(Permissions.CONNECT, channel);
 								if (!canConnect) {
 									ModalActionCreators.push(

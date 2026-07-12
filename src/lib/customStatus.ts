@@ -34,6 +34,8 @@ export interface GatewayCustomStatusPayload {
 }
 
 export const CUSTOM_STATUS_TEXT_LIMIT = 128;
+export const GIFT_SHOWCASE_STATUS_TEXT = 'Gift showcase';
+export const GIFT_SHOWCASE_STATUS_EMOJI = '🎁';
 
 export const isCustomStatusExpired = (status: CustomStatus | null, referenceTime = Date.now()): boolean => {
 	if (!status?.expiresAt) {
@@ -133,4 +135,21 @@ export const customStatusToKey = (status: CustomStatus | null | undefined): stri
 export const getCustomStatusText = (status: CustomStatus | null | undefined): string | null => {
 	const normalized = status?.text ? status.text.trim() : null;
 	return normalized || null;
+};
+
+export const createGiftShowcaseCustomStatus = (expiresAt: string | null): CustomStatus =>
+	normalizeCustomStatus({
+		text: GIFT_SHOWCASE_STATUS_TEXT,
+		expiresAt,
+		emojiId: null,
+		emojiName: GIFT_SHOWCASE_STATUS_EMOJI,
+	})!;
+
+export const isGiftShowcaseCustomStatus = (status: CustomStatus | null | undefined): boolean => {
+	const normalized = normalizeCustomStatus(status);
+	return (
+		normalized?.text === GIFT_SHOWCASE_STATUS_TEXT &&
+		!normalized.emojiId &&
+		normalized.emojiName === GIFT_SHOWCASE_STATUS_EMOJI
+	);
 };

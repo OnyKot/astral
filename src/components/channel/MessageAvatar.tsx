@@ -18,11 +18,14 @@
  */
 
 import {observer} from 'mobx-react-lite';
+import {clsx} from 'clsx';
 import {PreloadableUserPopout} from '~/components/channel/PreloadableUserPopout';
 import {Avatar} from '~/components/uikit/Avatar';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
 import type {MessageRecord} from '~/records/MessageRecord';
 import type {UserRecord} from '~/records/UserRecord';
+import StoryStore from '~/stores/StoryStore';
+import css from '~/styles/Message.module.css';
 
 export const MessageAvatar = observer(
 	({
@@ -39,8 +42,11 @@ export const MessageAvatar = observer(
 		size: 16 | 24 | 32 | 40 | 48 | 80 | 120;
 		className: string;
 		isHovering: boolean;
-		isPreview: boolean;
-	}) => {
+			isPreview: boolean;
+		}) => {
+		const hasStory = message.webhookId == null && StoryStore.hasActiveStory(user.id);
+		const hasFreshStory = message.webhookId == null && StoryStore.hasFreshStory(user.id);
+
 		return (
 			<PreloadableUserPopout
 				user={user}
@@ -53,11 +59,16 @@ export const MessageAvatar = observer(
 					<Avatar
 						user={user}
 						size={size}
-						className={className}
+						className={clsx(
+							className,
+							hasStory && css.messageAvatarStoryRing,
+							hasFreshStory ? css.messageAvatarStoryFresh : hasStory && css.messageAvatarStorySeen,
+						)}
 						forceAnimate={isHovering}
 						guildId={guildId}
 						data-user-id={user.id}
 						data-guild-id={guildId}
+						data-message-swipe-ignore="true"
 					/>
 				</FocusRing>
 			</PreloadableUserPopout>

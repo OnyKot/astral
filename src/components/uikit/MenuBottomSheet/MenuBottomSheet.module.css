@@ -25,7 +25,9 @@
 	min-height: 3.5rem;
 	padding: 1.05rem 1rem;
 	text-align: left;
-	transition: background-color 0.15s;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 	appearance: none;
 	-webkit-tap-highlight-color: transparent;
 }
@@ -33,6 +35,7 @@
 @media (hover: hover) and (pointer: fine) {
 	.menuItem:hover {
 		background-color: var(--background-modifier-hover);
+		transform: translateX(2px);
 	}
 
 	.menuItem:not(.disabled):not(.danger):active {
@@ -238,5 +241,44 @@
 		gap: 0.95rem;
 		min-height: 4.6rem;
 		padding: 1.15rem 1rem;
+	}
+}
+
+@media (max-width: 380px) {
+	.menuItem {
+		gap: 0.7rem;
+		padding-inline: 0.72rem;
+	}
+
+	.labelColumn,
+	.label {
+		min-width: 0;
+	}
+
+	.label,
+	.sliderLabel {
+		font-size: 0.84rem;
+		line-height: 1.18rem;
+		overflow-wrap: anywhere;
+	}
+
+	.subtext {
+		font-size: 0.7rem;
+		line-height: 0.95rem;
+		overflow-wrap: anywhere;
+	}
+
+	.sliderContainer {
+		padding-inline: 0.72rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.menuItem {
+		transition: background-color var(--motion-dur-short) var(--motion-ease-snap);
+	}
+
+	.menuItem:hover {
+		transform: none;
 	}
 }

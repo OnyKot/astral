@@ -69,7 +69,8 @@ import SavedMessagesStore from '~/stores/SavedMessagesStore';
 import UserSettingsStore from '~/stores/UserSettingsStore';
 import messageStyles from '~/styles/Message.module.css';
 import * as AvatarUtils from '~/utils/AvatarUtils';
-import {shouldUseNativeEmoji} from '~/utils/EmojiUtils';
+import {applyEmojiVisualNormalization, shouldUseNativeEmoji} from '~/utils/EmojiUtils';
+import {isStoryForwardPayload} from '~/utils/StoryForwardPayload';
 
 const shiftKeyManager = (() => {
 	let isShiftPressed = false;
@@ -267,7 +268,17 @@ const QuickReactionButton = React.forwardRef<HTMLButtonElement, QuickReactionBut
 					{useNativeRendering ? (
 						<span className={styles.emojiImage}>{emoji.surrogates}</span>
 					) : (
-						<img src={emojiSrc} alt={emoji.name} className={styles.emojiImage} />
+						<img
+							src={emojiSrc}
+							alt={emoji.name}
+							className={styles.emojiImage}
+							crossOrigin={isUnicodeEmoji ? 'anonymous' : undefined}
+							onLoad={
+								isUnicodeEmoji
+									? (event) => applyEmojiVisualNormalization(event.currentTarget)
+									: undefined
+							}
+						/>
 					)}
 				</button>
 			</FocusRing>
@@ -326,6 +337,7 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 		} = permissions;
 
 		const handlers = createMessageActionHandlers(message);
+		const hasCopyableText = Boolean(message.content && !isStoryForwardPayload(message.content));
 
 		const quickReactionEmojis = useSyncExternalStore(
 			quickReactionManager.subscribe,
@@ -495,7 +507,7 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 							)}
 						</MenuGroup>
 
-						{(message.isUserMessage() || shouldRenderSuppressEmbeds || message.content) && (
+						{(message.isUserMessage() || shouldRenderSuppressEmbeds || hasCopyableText) && (
 							<MenuGroup>
 								{message.isUserMessage() && canPinMessage && (
 									<MenuItem
@@ -547,7 +559,7 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 									</MenuItem>
 								)}
 
-								{message.content && (
+								{hasCopyableText && (
 									<MenuItem
 										icon={<CopyTextIcon />}
 										onClick={() => {
@@ -684,7 +696,7 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 											onClick={handlers.handleCopyMessageLink}
 										/>
 
-										{message.content && (
+										{hasCopyableText && (
 											<MessageActionBarButton
 												icon={<CopyTextIcon size={20} />}
 												label={t`Copy Text`}

@@ -31,7 +31,7 @@ import {useMergeRefs} from '~/hooks/useMergeRefs';
 import {useReactionTooltip} from '~/hooks/useReactionTooltip';
 import EmojiStore, {type Emoji} from '~/stores/EmojiStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
-import {shouldUseNativeEmoji} from '~/utils/EmojiUtils';
+import {applyEmojiVisualNormalization, shouldUseNativeEmoji} from '~/utils/EmojiUtils';
 import {EmojiKind} from '../parser/types/enums';
 import type {EmojiNode} from '../parser/types/nodes';
 import {getEmojiRenderData} from '../utils/emoji-detector';
@@ -120,6 +120,7 @@ const EmojiRendererInner = observer(function EmojiRendererInner({
 		isOpen: false,
 		emoji: null,
 	});
+	const [imageFailed, setImageFailed] = React.useState(false);
 
 	const className = clsx('emoji', shouldJumboEmojis && 'jumboable');
 
@@ -133,6 +134,10 @@ const EmojiRendererInner = observer(function EmojiRendererInner({
 		isCustomEmoji && emojiData.id ? (EmojiStore.getEmojiById(emojiData.id) ?? null) : null;
 	const fallbackGuildId = emojiRecord?.guildId;
 	const fallbackAnimated = emojiRecord?.animated ?? emojiData.isAnimated;
+
+	React.useEffect(() => {
+		setImageFailed(false);
+	}, [emojiData.id, emojiData.url]);
 
 	const handleOpenBottomSheet = React.useCallback(() => {
 		if (!isMobile) return;
@@ -191,34 +196,25 @@ const EmojiRendererInner = observer(function EmojiRendererInner({
 	}, [emojiData, node.kind, buildEmojiForSubtext, tooltipQualitySuffix]);
 
 	const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+		if (!isCustomEmoji && node.kind.kind === EmojiKind.Standard) {
+			setImageFailed(true);
+			return;
+		}
 		const target = e.target as HTMLImageElement;
 		target.style.opacity = '0.5';
 		target.alt = `${emojiData.name} ${i18n._(msg`(failed to load)`)}`;
 	};
 
-	if (shouldUseNativeEmoji && node.kind.kind === EmojiKind.Standard) {
-		if (isMobile) {
-			return (
-				<>
-					<span
-						className={className}
-						data-message-id={messageId}
-						onClick={handleOpenBottomSheet}
-						onKeyDown={handleKeyDown}
-						role="button"
-						tabIndex={0}
-					>
-						{node.kind.raw}
-					</span>
-					<EmojiInfoBottomSheet
-						isOpen={bottomSheetState.isOpen}
-						onClose={handleCloseBottomSheet}
-						emoji={bottomSheetState.emoji}
-					/>
-				</>
-			);
-		}
+	const handleImageLoad = React.useCallback(
+		(event: React.SyntheticEvent<HTMLImageElement>) => {
+			if (!isCustomEmoji) {
+				applyEmojiVisualNormalization(event.currentTarget);
+			}
+		},
+		[isCustomEmoji],
+	);
 
+	if ((shouldUseNativeEmoji || imageFailed) && node.kind.kind === EmojiKind.Standard) {
 		const tooltipData = getTooltipData();
 		return (
 			<EmojiWithTooltip
@@ -247,6 +243,9 @@ const EmojiRendererInner = observer(function EmojiRendererInner({
 						data-message-id={messageId}
 						data-emoji-id={emojiData.id}
 						data-animated={emojiData.isAnimated}
+						data-emoji-standard={!isCustomEmoji || undefined}
+						crossOrigin={!isCustomEmoji ? 'anonymous' : undefined}
+						onLoad={handleImageLoad}
 						onError={handleImageError}
 						loading="lazy"
 					/>
@@ -277,6 +276,9 @@ const EmojiRendererInner = observer(function EmojiRendererInner({
 				data-message-id={messageId}
 				data-emoji-id={emojiData.id}
 				data-animated={emojiData.isAnimated}
+				data-emoji-standard={!isCustomEmoji || undefined}
+				crossOrigin={!isCustomEmoji ? 'anonymous' : undefined}
+				onLoad={handleImageLoad}
 				onError={handleImageError}
 				loading="lazy"
 			/>

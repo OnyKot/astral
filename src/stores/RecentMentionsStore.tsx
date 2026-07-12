@@ -86,7 +86,8 @@ class RecentMentionsStore {
 				return channel.recipientIds.length > 0;
 
 			case ChannelTypes.GUILD_TEXT:
-			case ChannelTypes.GUILD_VOICE: {
+			case ChannelTypes.GUILD_VOICE:
+			case ChannelTypes.GUILD_STAGE: {
 				if (!channel.guildId) return false;
 				const guild = GuildStore.getGuild(channel.guildId);
 				return guild != null;

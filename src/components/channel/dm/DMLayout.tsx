@@ -63,14 +63,31 @@ export const DMLayout = observer(({children}: {children?: React.ReactNode}) => {
 		RouterUtils.transitionTo(Routes.ME);
 	}, [mobileLayout.enabled, location.pathname]);
 
-	const {gestureProps, stageStyle, isActive: isEdgeSwipeActive} = useEdgeSwipeBack({
+	const {
+		gestureProps,
+		containerRef: edgeSwipeContainerRef,
+		stageStyle,
+		isActive: isEdgeSwipeActive,
+		progress: edgeSwipeProgress,
+	} = useEdgeSwipeBack({
 		enabled: isMobileContentView && location.pathname !== Routes.ME,
 		onBack: handleSwipeBack,
-		edgeZonePx: 28,
-		activationPx: 10,
-		triggerPx: 82,
-		maxOffsetPx: 170,
+		edgeZonePx: 42,
+		activationPx: 12,
+		triggerPx: 84,
+		maxOffsetPx: 240,
+		maxVerticalDriftPx: 52,
+		triggerVelocityPxPerSecond: 840,
+		commitDurationMs: 190,
 	});
+	const mobileSwipePreviewStyle = React.useMemo(
+		() =>
+			({
+				'--dm-swipe-preview-opacity': Math.min(1, edgeSwipeProgress * 1.05),
+				'--dm-swipe-preview-offset': `${-10 + edgeSwipeProgress * 10}px`,
+			}) as React.CSSProperties,
+		[edgeSwipeProgress],
+	);
 
 	const renderContent = () => {
 		if (location.pathname === Routes.BOOKMARKS) {
@@ -92,7 +109,7 @@ export const DMLayout = observer(({children}: {children?: React.ReactNode}) => {
 	};
 
 	if (mobileLayout.enabled) {
-		if (!channelId && !children) {
+		if (!isMobileContentView) {
 			return (
 				<div className={styles.dmListColumn}>
 					<DMList />
@@ -100,7 +117,19 @@ export const DMLayout = observer(({children}: {children?: React.ReactNode}) => {
 			);
 		}
 		return (
-			<div className={styles.contentColumn} data-edge-swipe-active={isEdgeSwipeActive ? '1' : '0'} {...gestureProps}>
+			<div
+				ref={edgeSwipeContainerRef}
+				className={styles.contentColumn}
+				data-edge-swipe-active={isEdgeSwipeActive ? '1' : '0'}
+				data-chat-edge-swipe-host="true"
+				style={mobileSwipePreviewStyle}
+				{...gestureProps}
+			>
+				{isEdgeSwipeActive && (
+					<div className={styles.mobileSwipePreview} aria-hidden={!isEdgeSwipeActive}>
+						<DMList />
+					</div>
+				)}
 				<div className={styles.contentInner} style={stageStyle}>
 					{renderContent()}
 				</div>

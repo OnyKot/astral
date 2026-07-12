@@ -227,6 +227,7 @@ const MobileMemberListItem = observer(
 						isTyping={isTyping}
 						showOffline={member.user.id === AuthenticationStore.currentUserId || isTyping}
 						guildId={guild.id}
+						statusScale={1.18}
 					/>
 					<div className={styles.memberContent}>
 						<div className={styles.memberNameRow}>
@@ -487,6 +488,8 @@ export const ChannelDetailsBottomSheet: React.FC<ChannelDetailsBottomSheetProps>
 					return t`Text Channel`;
 				case ChannelTypes.GUILD_VOICE:
 					return t`Voice Channel`;
+				case ChannelTypes.GUILD_STAGE:
+					return t`Stage Channel`;
 				case ChannelTypes.DM:
 					return t`Direct Message`;
 				case ChannelTypes.DM_PERSONAL_NOTES:
@@ -673,7 +676,12 @@ export const ChannelDetailsBottomSheet: React.FC<ChannelDetailsBottomSheetProps>
 
 		const handleDeleteChannel = React.useCallback(() => {
 			onClose();
-			const channelType = channel.type === ChannelTypes.GUILD_VOICE ? t`Voice Channel` : t`Text Channel`;
+			const channelType =
+				channel.type === ChannelTypes.GUILD_STAGE
+					? t`Stage Channel`
+					: channel.type === ChannelTypes.GUILD_VOICE
+						? t`Voice Channel`
+						: t`Text Channel`;
 			ModalActionCreators.push(
 				modal(() => (
 					<ConfirmModal
@@ -766,6 +774,20 @@ export const ChannelDetailsBottomSheet: React.FC<ChannelDetailsBottomSheetProps>
 			const users = memberIds.map((id) => UserStore.getUser(id)).filter((u): u is UserRecord => u !== null);
 			return MemberListUtils.getGroupDMMemberGroups(users);
 		})();
+		const visibleDmMemberCount = dmMemberGroups.reduce((total, group) => total + group.count, 0);
+		const expectedDmMemberCount = (() => {
+			if (isPersonalNotes) {
+				return currentUser ? 1 : 0;
+			}
+			if (isDM) {
+				return recipient || channel.recipientIds.length > 0 ? 2 : 0;
+			}
+			if (isGroupDM) {
+				return channel.recipientIds.length + 1;
+			}
+			return 0;
+		})();
+		const dmMemberCount = Math.max(visibleDmMemberCount, channel.memberCount ?? 0, expectedDmMemberCount);
 
 		return (
 			<>
@@ -801,7 +823,7 @@ export const ChannelDetailsBottomSheet: React.FC<ChannelDetailsBottomSheetProps>
 											<>
 												<h2 className={styles.channelInfoTitle}>{ChannelUtils.getDMDisplayName(channel)}</h2>
 												<p className={styles.channelInfoSubtitle}>
-													{t`Group DM · ${channel.recipientIds.length + 1} members`}
+													{t`Group DM · ${dmMemberCount} members`}
 												</p>
 											</>
 										) : isPersonalNotes ? (
@@ -861,8 +883,10 @@ export const ChannelDetailsBottomSheet: React.FC<ChannelDetailsBottomSheetProps>
 											</div>
 											<button
 												type="button"
-												onClick={() => setIsTopicExpanded(!isTopicExpanded)}
+												onClick={() => setIsTopicExpanded((expanded) => !expanded)}
 												className={styles.topicExpandButton}
+												aria-expanded={isTopicExpanded}
+												aria-label={isTopicExpanded ? t`Collapse channel description` : t`Expand channel description`}
 											>
 												{isTopicExpanded ? (
 													<CaretUpIcon className={styles.iconSmall} weight="bold" />
@@ -942,7 +966,7 @@ export const ChannelDetailsBottomSheet: React.FC<ChannelDetailsBottomSheetProps>
 												)}
 
 												<div className={styles.membersHeader}>
-													<Trans>Members</Trans> — {dmMemberGroups.reduce((total, group) => total + group.count, 0)}
+													<Trans>Members</Trans> — {dmMemberCount}
 												</div>
 												<div className={styles.membersListContainer}>
 													{dmMemberGroups.map((group) => (

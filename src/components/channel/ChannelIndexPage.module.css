@@ -79,11 +79,13 @@
 	border-left: none;
 	background: transparent;
 	position: relative;
-	/*
-	 * Align side-panel motion with members panel behavior so right-rail
-	 * surfaces (search results / members) feel consistent when toggled.
-	 */
-	animation: sidePanelSlideIn var(--motion-dur-medium) var(--motion-ease-snap);
+}
+
+.sidePanelMotion {
+	display: flex;
+	height: 100%;
+	min-height: 0;
+	min-width: 0;
 }
 
 .searchPanel::before {
@@ -253,6 +255,27 @@
 	inset: auto;
 	width: 8rem;
 	height: 3rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+	filter: blur(24px);
+	pointer-events: none;
+}
+
+.broadcastButtonContainer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0.75rem;
+	position: relative;
+}
+
+.broadcastButtonContainer::before {
+	content: '';
+	position: absolute;
+	inset: auto;
+	width: 11rem;
+	height: 3.2rem;
 	border-radius: 999px;
 	background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
 	filter: blur(24px);

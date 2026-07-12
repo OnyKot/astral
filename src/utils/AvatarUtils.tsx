@@ -23,18 +23,47 @@ import {buildMediaProxyURL} from '~/utils/MediaProxyUtils';
 import {mediaUrl} from '~/utils/UrlUtils';
 
 const DEFAULT_AVATAR_PRIMARY_COLORS = [0x4641d9, 0xf0b100, 0x00bba7, 0x2b7fff, 0xad46ff, 0x6a7282];
+const DEFAULT_AVATAR_PALETTE = [
+	{background: '#4641d9', accent: '#7772ff'},
+	{background: '#b77905', accent: '#f0b100'},
+	{background: '#008c80', accent: '#00bba7'},
+	{background: '#1f66d8', accent: '#2b7fff'},
+	{background: '#8737d9', accent: '#ad46ff'},
+	{background: '#4f5968', accent: '#7c8797'},
+] as const;
 const DEFAULT_AVATAR_COUNT = DEFAULT_AVATAR_PRIMARY_COLORS.length;
 
-// Use DiceBear (free/open-source) for deterministic default avatars, independent of CDN seed files.
-export const getDefaultAvatarURLByIndex = (index: number): string => {
-	const seed = encodeURIComponent(`astral-default-${index}`);
-	return `https://api.dicebear.com/9.x/miniavs/svg?seed=${seed}&backgroundType=solid&radius=50`;
+const escapeSvgText = (value: string): string =>
+	value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+const getDefaultAvatarInitial = (user?: Partial<Pick<UserRecord, 'username' | 'globalName'>>): string => {
+	const label = user?.globalName || user?.username || '';
+	const firstCodePoint = Array.from(label.trim())[0];
+	return firstCodePoint ? firstCodePoint.toLocaleUpperCase() : '?';
 };
-const getDefaultAvatarIndex = (id: string) => Number(BigInt(id) % BigInt(DEFAULT_AVATAR_COUNT));
+
+// Local deterministic default avatar: no network request, just a clean first-letter mark.
+export const getDefaultAvatarURLByIndex = (index: number, initial?: string): string => {
+	const palette =
+		DEFAULT_AVATAR_PALETTE[
+			((index % DEFAULT_AVATAR_PALETTE.length) + DEFAULT_AVATAR_PALETTE.length) %
+				DEFAULT_AVATAR_PALETTE.length
+		];
+	const label = escapeSvgText((initial || String.fromCharCode(65 + (index % 26))).slice(0, 2));
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><rect width="160" height="160" rx="80" fill="${palette.background}"/><circle cx="44" cy="34" r="54" fill="${palette.accent}" opacity=".45"/><circle cx="126" cy="128" r="62" fill="#000" opacity=".12"/><text x="80" y="92" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="70" font-weight="760" fill="#fff">${label}</text></svg>`;
+	return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+};
+const getDefaultAvatarIndex = (id: string) => {
+	try {
+		return Number(BigInt(id) % BigInt(DEFAULT_AVATAR_COUNT));
+	} catch {
+		return Array.from(id).reduce((acc, char) => acc + char.charCodeAt(0), 0) % DEFAULT_AVATAR_COUNT;
+	}
+};
 
 export const getDefaultAvatarPrimaryColor = (id: string) => DEFAULT_AVATAR_PRIMARY_COLORS[getDefaultAvatarIndex(id)];
 
-type AvatarOptions = Pick<UserRecord, 'id' | 'avatar'>;
+type AvatarOptions = Pick<UserRecord, 'id' | 'avatar'> & Partial<Pick<UserRecord, 'username' | 'globalName'>>;
 type BannerOptions = Pick<UserRecord, 'id' | 'banner'>;
 
 interface IconOptions {
@@ -95,9 +124,10 @@ const parseAvatar = (avatar: string) => {
 	};
 };
 
-export const getUserAvatarURL = ({id, avatar}: AvatarOptions, animated = false) => {
+export const getUserAvatarURL = (user: AvatarOptions, animated = false) => {
+	const {id, avatar} = user;
 	if (!avatar) {
-		return getDefaultAvatarURLByIndex(getDefaultAvatarIndex(id));
+		return getDefaultAvatarURLByIndex(getDefaultAvatarIndex(id), getDefaultAvatarInitial(user));
 	}
 
 	const parsedAvatar = parseAvatar(avatar);
@@ -113,12 +143,13 @@ export const getUserAvatarURL = ({id, avatar}: AvatarOptions, animated = false) 
 };
 
 export const getUserAvatarURLWithProxy = (
-	{id, avatar}: AvatarOptions,
+	user: AvatarOptions,
 	mediaProxyEndpoint: string,
 	animated = false,
 ) => {
+	const {id, avatar} = user;
 	if (!avatar) {
-		return getDefaultAvatarURLByIndex(getDefaultAvatarIndex(id));
+		return getDefaultAvatarURLByIndex(getDefaultAvatarIndex(id), getDefaultAvatarInitial(user));
 	}
 
 	if (DeveloperOptionsStore.forceRenderPlaceholders) {

@@ -666,8 +666,8 @@
 }
 
 :global(html.auth-lite-effects) .scrollerWrapper::before {
-	filter: blur(18px);
-	opacity: 0.66;
+	filter: none;
+	opacity: 0.36;
 	animation: none;
 }
 
@@ -704,6 +704,10 @@
 	background: rgb(16 16 21 / 0.64);
 }
 
+:global(html.auth-lite-effects) .mobileContainer {
+	background: linear-gradient(180deg, rgb(7 10 20) 0%, rgb(8 12 22) 46%, var(--background-secondary) 100%);
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.scrollerWrapper::before,
 	.characterBackground::before,
@@ -715,6 +719,27 @@
 	.logoSide::after,
 	.wordmarkText {
 		animation: none;
+	}
+}
+
+.card {
+	transition:
+		box-shadow var(--motion-dur-short) var(--motion-ease-smooth),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.card:hover {
+		transform: translateY(-2px);
+		box-shadow:
+			0 24px 42px -18px rgb(0 0 0 / 0.5),
+			0 0 0 1px rgb(255 255 255 / 0.08);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.card:hover {
+		transform: none;
 	}
 }
 

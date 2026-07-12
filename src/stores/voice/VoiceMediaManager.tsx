@@ -31,6 +31,7 @@ import ChannelStore from '~/stores/ChannelStore';
 import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
 import MediaPermissionStore from '~/stores/MediaPermissionStore';
 import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
+import VoiceActivityManager from '~/stores/voice/VoiceActivityManager';
 import VoiceDevicePermissionStore from '~/stores/voice/VoiceDevicePermissionStore';
 import {ensureNativePermission, isNativePermissionDenied} from '~/utils/NativePermissions';
 import {isDesktop, isNativeMobile} from '~/utils/NativeUtils';
@@ -47,6 +48,7 @@ import {
 	handlePushToTalkModeChange as handlePushToTalkModeChangeFn,
 } from './VoiceAudioManager';
 import {playEntranceSound} from './VoiceEntranceSoundManager';
+import VoiceConnectionManager from './VoiceConnectionManager';
 import VoiceScreenShareManager from './VoiceScreenShareManager';
 import type {VoiceState} from './VoiceStateManager';
 
@@ -118,6 +120,7 @@ class VoiceMediaManager {
 			MediaPermissionStore.updateMicrophonePermissionGranted();
 
 			this.syncVoiceState({self_mute: selfMute});
+			VoiceActivityManager.refresh();
 		} catch (e: unknown) {
 			if (e instanceof Error && (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError')) {
 				MediaPermissionStore.markMicrophoneExplicitlyDenied();
@@ -211,6 +214,8 @@ class VoiceMediaManager {
 			}
 		} catch (e) {
 			logger.error('[disableMicrophone] Failed', e);
+		} finally {
+			VoiceActivityManager.stop();
 		}
 	}
 
@@ -384,13 +389,19 @@ class VoiceMediaManager {
 			availableInputDevices.some((device) => device.deviceId === requestedInputDeviceId);
 		const inputDeviceId = hasRequestedInputDevice ? requestedInputDeviceId : 'default';
 
+		const channelId = VoiceConnectionManager.channelId;
+		const channel = channelId ? ChannelStore.getChannel(channelId) : null;
+		const audioBitrate = channel?.bitrate ? channel.bitrate * 1000 : undefined;
+
 		try {
 			await room.localParticipant.setMicrophoneEnabled(true, {
 				deviceId: inputDeviceId,
 				echoCancellation: VoiceSettingsStore.getEchoCancellation(),
 				noiseSuppression: VoiceSettingsStore.getNoiseSuppression(),
 				autoGainControl: VoiceSettingsStore.getAutoGainControl(),
+				...(audioBitrate && {audioBitrate}),
 			});
+			VoiceActivityManager.refreshSettings();
 		} catch (error) {
 			logger.error('[applyLiveMicrophoneSettings] Failed to apply microphone settings', error);
 		}

@@ -31,7 +31,7 @@ pub fn render_trigger(ctx: Context) -> Element(a) {
     [
       attribute.id("pwa-install-button"),
       attribute.class(
-        "inline-flex items-center gap-2 rounded-xl px-5 py-3 transition-colors bg-white/10 hover:bg-white/20 text-white font-medium text-sm",
+        "astral-button astral-button-secondary inline-flex items-center gap-2 px-5 py-3 text-white font-medium text-sm",
       ),
     ],
     [

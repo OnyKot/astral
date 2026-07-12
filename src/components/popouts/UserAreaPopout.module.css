@@ -133,6 +133,41 @@
 	margin-top: 0.15rem;
 }
 
+.steamNowPlayingRow {
+	margin-top: 0.32rem;
+}
+
+.profileHeaderMetaRow {
+	position: absolute;
+	top: 115px;
+	left: 107px;
+	right: 10px;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	pointer-events: none;
+}
+
+.profileHeaderIntegrations {
+	display: flex;
+	flex: 1 1 auto;
+	align-items: center;
+	min-width: 0;
+	overflow: hidden;
+	pointer-events: auto;
+}
+
+.profileHeaderBadges {
+	flex-shrink: 0;
+	pointer-events: auto;
+}
+
+.profileAddonBlock {
+	margin-top: 0.45rem;
+}
+
 .customStatusPlaceholder {
 	display: inline-flex;
 	align-items: center;
@@ -177,6 +212,10 @@
 		background-color 0.15s ease;
 	position: relative;
 	z-index: 1;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .copyUsernameButton:hover {
@@ -223,6 +262,10 @@
 		transform 150ms ease,
 		filter 150ms ease,
 		background-color 150ms ease !important;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .editProfileButton:hover {
@@ -249,6 +292,10 @@
 	transition:
 		background-color 140ms ease,
 		color 140ms ease;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .actionButton:hover {
@@ -466,12 +513,17 @@
 	line-height: 18px;
 	text-align: left;
 	box-sizing: border-box;
-
+	animation: contextMenuIn var(--motion-dur-short) var(--motion-ease-smooth) both;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .statusMenuItem:hover {
 	background-color: var(--background-modifier-hover);
 	color: var(--text-primary);
+	transform: translateX(2px);
 }
 
 .statusMenuIcon {
@@ -530,6 +582,36 @@
 .expiryItem:hover {
 	background-color: var(--background-modifier-hover);
 	color: var(--text-primary);
+}
+
+@keyframes contextMenuIn {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.statusMenuItem {
+		animation: none;
+	}
+
+	.copyUsernameButton,
+	.editProfileButton,
+	.actionButton,
+	.statusMenuItem {
+		transition:
+			background-color var(--motion-dur-short) var(--motion-ease-snap),
+			color var(--motion-dur-short) var(--motion-ease-snap);
+	}
+
+	.statusMenuItem:hover {
+		transform: none;
+	}
 }
 
 .expiryLabel {

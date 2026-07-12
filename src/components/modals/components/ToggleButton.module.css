@@ -18,12 +18,13 @@
  */
 
 .button {
-	border-radius: 999px;
-	padding: 0.54rem 1.4rem;
+	border-radius: 0;
+	padding: 0.54rem 1.1rem;
 	font-weight: 650;
 	font-size: 0.84rem;
 	line-height: 1.25rem;
-	border: 1px solid transparent;
+	border: none;
+	border-bottom: 2px solid transparent;
 	outline: none;
 	transition:
 		background-color 170ms ease,
@@ -40,34 +41,28 @@
 }
 
 .active {
-	background:
-		linear-gradient(145deg, rgb(155 120 255 / 0.95), rgb(110 67 223 / 0.96)),
-		rgb(122 79 233);
-	border-color: rgb(199 177 255 / 0.62);
-	color: white;
-	box-shadow:
-		0 10px 22px rgb(98 63 191 / 0.46),
-		inset 0 1px 0 rgb(255 255 255 / 0.24);
+	background: transparent;
+	border-bottom-color: color-mix(in srgb, var(--brand-primary) 78%, var(--text-primary));
+	color: var(--text-primary);
+	box-shadow: none;
 }
 
 .inactive {
-	background: rgb(21 18 41 / 0.7);
-	border-color: rgb(133 99 221 / 0.3);
-	color: rgb(202 193 234);
+	background: transparent;
+	border-bottom-color: transparent;
+	color: var(--text-primary-muted);
 }
 
 @media (hover: hover) and (pointer: fine) {
 	.inactive:hover {
-		transform: translateY(-1px);
-		background: rgb(26 22 50 / 0.8);
-		border-color: rgb(152 117 240 / 0.5);
-		color: rgb(228 222 248);
+		transform: none;
+		background: transparent;
+		border-bottom-color: color-mix(in srgb, var(--text-primary) 18%, transparent);
+		color: var(--text-primary);
 	}
 
 	.active:hover {
-		transform: translateY(-1px);
-		box-shadow:
-			0 14px 26px rgb(98 63 191 / 0.56),
-			inset 0 1px 0 rgb(255 255 255 / 0.26);
+		transform: none;
+		box-shadow: none;
 	}
 }

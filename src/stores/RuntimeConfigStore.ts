@@ -35,14 +35,12 @@ export interface InstanceFeatures {
 }
 
 export interface InstanceEndpoints {
-	api: string;
 	api_client?: string;
 	api_public?: string;
 	gateway: string;
 	media: string;
 	cdn: string;
 	marketing: string;
-	admin: string;
 	invite: string;
 	gift: string;
 	webapp: string;
@@ -309,7 +307,7 @@ class RuntimeConfigStore {
 	private updateFromInstance(instance: InstanceDiscoveryResponse): void {
 		this.assertCodeVersion(instance.api_code_version);
 
-		const instanceApiEndpoint = instance.endpoints.api_client ?? instance.endpoints.api;
+		const instanceApiEndpoint = instance.endpoints.api_client ?? instance.endpoints.api_public ?? '';
 		const instanceApiPublicEndpoint = instance.endpoints.api_public ?? instanceApiEndpoint;
 		const {apiEndpoint, apiPublicEndpoint} = this.resolveBrowserApiEndpoints(
 			instanceApiEndpoint,
@@ -329,10 +327,13 @@ class RuntimeConfigStore {
 			this.mediaEndpoint = mediaEndpoint;
 			this.cdnEndpoint = cdnEndpoint;
 			this.marketingEndpoint = this.rewriteLoopbackEndpointForBrowser(instance.endpoints.marketing);
-			this.adminEndpoint = this.rewriteLoopbackEndpointForBrowser(instance.endpoints.admin);
 			this.inviteEndpoint = this.rewriteLoopbackEndpointForBrowser(instance.endpoints.invite);
 			this.giftEndpoint = this.rewriteLoopbackEndpointForBrowser(instance.endpoints.gift);
 			this.webAppEndpoint = this.rewriteLoopbackEndpointForBrowser(instance.endpoints.webapp);
+			// The admin panel URL is no longer broadcast in the public /instance
+			// response. Derive it from the webapp base (same host, /admin path).
+			// Access to the panel itself is staff-gated server-side.
+			this.adminEndpoint = this.webAppEndpoint ? `${this.webAppEndpoint.replace(/\/+$/, '')}/admin` : '';
 
 			this.captchaProvider = instance.captcha.provider;
 			this.hcaptchaSiteKey = instance.captcha.hcaptcha_site_key;

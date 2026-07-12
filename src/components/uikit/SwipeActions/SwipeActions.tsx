@@ -20,6 +20,7 @@
 import {clsx} from 'clsx';
 import React from 'react';
 import {useSwipeAction} from '~/hooks/useSwipeAction';
+import {SWIPE_RELEASE_EASE} from '~/utils/motion/swipeGestures';
 import styles from './SwipeActions.module.css';
 
 interface SwipeActionSpec {
@@ -44,7 +45,7 @@ export const SwipeActions: React.FC<SwipeActionsProps> = ({
 	children,
 	className,
 }) => {
-	const {gestureProps, offset, progress, armed, isActive} = useSwipeAction({
+	const {gestureProps, offset, progress, armed, isDragging} = useSwipeAction({
 		enabled,
 		direction,
 		onAction: action.onAction,
@@ -72,15 +73,15 @@ export const SwipeActions: React.FC<SwipeActionsProps> = ({
 			>
 				<div
 					className={clsx(styles.actionBody, !action.label && styles.actionBodyIconOnly)}
-					style={{opacity: Math.min(1, progress * 1.8)}}
+					style={{opacity: 0.38 + Math.min(1, progress) * 0.62}}
 				>
 					<div
 						className={styles.actionIcon}
-						style={{transform: `scale(${0.72 + progress * 0.36})`}}
+						style={{transform: `scale(${0.84 + progress * 0.22})`}}
 					>
 						{action.icon}
 					</div>
-					{progress > 0.3 && action.label && (
+					{progress > 0.24 && action.label && (
 						<span className={styles.actionLabel}>{action.label}</span>
 					)}
 				</div>
@@ -88,8 +89,8 @@ export const SwipeActions: React.FC<SwipeActionsProps> = ({
 			<div
 				className={styles.content}
 				style={{
-					transform: isActive ? `translateX(${translateX}px)` : undefined,
-					transition: !isActive ? 'transform 0.24s ease' : undefined,
+					transform: `translate3d(${translateX}px, 0, 0)`,
+					transition: isDragging ? 'none' : `transform 0.34s ${SWIPE_RELEASE_EASE}`,
 				}}
 			>
 				{children}

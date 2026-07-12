@@ -65,8 +65,6 @@ export const AutocompleteCommand = observer(
 					return t`Search for and send a GIF.`;
 				case '/tenor':
 					return t`Search for and send a GIF from Tenor.`;
-				case '/ai':
-					return t`Generate a message with your OpenRouter model.`;
 				default:
 					return undefined;
 			}

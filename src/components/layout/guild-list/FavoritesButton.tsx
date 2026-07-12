@@ -76,7 +76,7 @@ export const FavoritesButton = observer(({className}: FavoritesButtonProps = {})
 	const indicatorHeight = isSelected ? 40 : isHovering ? 20 : 8;
 	const isActive = isHovering || isSelected;
 
-	if (!AccessibilityStore.showFavorites) {
+	if (!AccessibilityStore.showFavorites || MobileLayoutStore.isMobileLayout()) {
 		return null;
 	}
 

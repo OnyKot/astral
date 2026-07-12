@@ -1,0 +1,74 @@
+.root {
+	display: grid;
+	grid-template-columns: 2.2rem minmax(0, 1fr);
+	gap: 0.62rem;
+	align-items: center;
+	width: 100%;
+	min-width: 0;
+	padding: 0.62rem 0.68rem;
+	border-radius: 0.88rem;
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 24%, transparent);
+	background:
+		linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 12%, transparent), transparent 64%),
+		color-mix(in srgb, var(--background-secondary) 86%, var(--background-primary) 14%);
+	text-decoration: none;
+	color: inherit;
+}
+
+.compact {
+	grid-template-columns: 1.95rem minmax(0, 1fr);
+	gap: 0.54rem;
+	padding: 0.56rem 0.6rem;
+	border-radius: 0.8rem;
+}
+
+.iconWrap {
+	width: 2.2rem;
+	height: 2.2rem;
+	border-radius: 0.68rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+	color: color-mix(in srgb, var(--brand-primary) 86%, var(--text-primary));
+}
+
+.compact .iconWrap {
+	width: 1.95rem;
+	height: 1.95rem;
+	border-radius: 0.58rem;
+}
+
+.labels {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	gap: 0.08rem;
+}
+
+.kicker {
+	font-size: 0.64rem;
+	font-weight: 800;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--text-secondary);
+}
+
+.gameName {
+	font-size: 0.86rem;
+	font-weight: 700;
+	line-height: 1.22;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.subtitle {
+	font-size: 0.74rem;
+	line-height: 1.18;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}

@@ -131,9 +131,10 @@ export const clearCurrentUserProfiles = (): void => {
 export const openUserProfile = (userId: string, guildId?: string, autoFocusNote?: boolean): void => {
 	if (MobileLayoutStore.enabled) {
 		UserProfileMobileStore.open(userId, guildId, autoFocusNote);
-	} else {
-		ModalActionCreators.push(
-			modal(() => <UserProfileModal userId={userId} guildId={guildId} autoFocusNote={autoFocusNote} />),
-		);
+		return;
 	}
+
+	ModalActionCreators.push(
+		modal(() => <UserProfileModal userId={userId} guildId={guildId} autoFocusNote={autoFocusNote} />),
+	);
 };

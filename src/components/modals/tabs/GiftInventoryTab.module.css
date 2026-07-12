@@ -20,29 +20,37 @@
 .container {
 	display: flex;
 	flex-direction: column;
-	gap: 2rem;
+	gap: 1.35rem;
 }
 
 .sectionHeader {
-	margin-bottom: 0.5rem;
-	font-size: 1.25rem;
-	font-weight: 600;
+	margin: 0 0 0.35rem;
+	font-size: 1rem;
+	font-weight: 700;
+	line-height: 1.25;
 }
 
 .sectionDescription {
-	margin-bottom: 1rem;
+	margin: 0 0 0.85rem;
 	font-size: 0.875rem;
+	line-height: 1.35;
 	color: var(--text-primary-muted);
 }
 
 .sectionDescriptionNoMargin {
 	font-size: 0.875rem;
+	line-height: 1.35;
 	color: var(--text-primary-muted);
 }
 
 .redeemForm {
 	display: flex;
-	gap: 0.5rem;
+	align-items: flex-start;
+	gap: 0.65rem;
+	padding: 0.85rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	border-radius: 0.75rem;
+	background: color-mix(in srgb, var(--background-secondary) 78%, var(--background-primary) 22%);
 }
 
 .redeemInput {
@@ -108,9 +116,10 @@
 
 .giftCard {
 	overflow: hidden;
-	border-radius: 0.5rem;
-	border: 1px solid var(--background-header-secondary);
-	background-color: var(--background-secondary);
+	border-radius: 0.75rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background-color: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%);
+	box-shadow: 0 1px 0 color-mix(in srgb, var(--text-primary) 4%, transparent);
 }
 
 .giftCardHeader {
@@ -118,7 +127,7 @@
 	width: 100%;
 	align-items: center;
 	gap: 0.75rem;
-	padding: 1rem;
+	padding: 0.85rem 0.95rem;
 	text-align: left;
 	transition: background-color 0.15s;
 	cursor: pointer;
@@ -132,8 +141,8 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	height: 2.5rem;
-	width: 2.5rem;
+	height: 2.35rem;
+	width: 2.35rem;
 	flex-shrink: 0;
 	border-radius: 9999px;
 }
@@ -143,7 +152,7 @@
 }
 
 .giftIconActive {
-	background: linear-gradient(to bottom right, #a855f7, #ec4899);
+	background: linear-gradient(135deg, #5b8def, #18a999);
 }
 
 .giftIconImage {
@@ -188,8 +197,8 @@
 }
 
 .giftCardContent {
-	padding: 1rem;
-	border-top: 1px solid var(--background-header-secondary);
+	padding: 0.95rem;
+	border-top: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 
 .giftCardActions {
@@ -224,6 +233,30 @@
 .redeemButtonContainer > * {
 	flex: 1;
 	min-width: fit-content;
+}
+
+@media (max-width: 640px) {
+	.container {
+		gap: 1rem;
+	}
+
+	.redeemForm {
+		flex-direction: column;
+		padding: 0.75rem;
+	}
+
+	.redeemInput,
+	.redeemButton {
+		width: 100%;
+	}
+
+	.giftCardHeader {
+		padding: 0.78rem;
+	}
+
+	.giftCardContent {
+		padding: 0.8rem;
+	}
 }
 
 .iconMedium {

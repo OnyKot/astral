@@ -39,7 +39,6 @@ import {
 	PaletteIcon,
 	PersonSimpleCircleIcon,
 	ProhibitIcon,
-	ProjectorScreenIcon,
 	PlanetIcon,
 	RobotIcon,
 	ShieldIcon,
@@ -63,7 +62,6 @@ export type UserSettingsTabType =
 	| 'blocked_users'
 	| 'devices'
 	| 'music_connections'
-	| 'streaming'
 	| 'appearance'
 	| 'accessibility'
 	| 'chat_settings'
@@ -81,7 +79,7 @@ export type UserSettingsTabType =
 
 export type AppearanceTabType = 'theme' | 'messages' | 'interface' | 'favorites';
 export type AccessibilityTabType = 'visual' | 'keyboard' | 'animation' | 'motion';
-export type ChatTab = 'display' | 'media' | 'input' | 'interaction' | 'ai';
+export type ChatTab = 'display' | 'media' | 'input' | 'interaction';
 export type VoiceVideoTabType = 'voice' | 'video';
 export type PrivacySafetyTabType = 'connections' | 'communication' | 'data-export' | 'data-deletion';
 export type AccountSecurityTabType = 'account' | 'security' | 'danger_zone';
@@ -191,12 +189,6 @@ const ALL_TABS_DESCRIPTORS: Array<SettingsTabDescriptor> = [
 		category: 'app_settings',
 		label: msg`Music & Listening`,
 		icon: MusicNotesIcon,
-	},
-	{
-		type: 'streaming',
-		category: 'app_settings',
-		label: msg`Streaming & Twitch`,
-		icon: ProjectorScreenIcon,
 	},
 	{
 		type: 'advanced',
@@ -336,7 +328,6 @@ const SETTINGS_SUBTABS_DESCRIPTORS: Array<SettingsSubtabDescriptor> = [
 	{type: 'media', parentTab: 'chat_settings', label: msg`Media`},
 	{type: 'input', parentTab: 'chat_settings', label: msg`Input`},
 	{type: 'interaction', parentTab: 'chat_settings', label: msg`Interaction`},
-	{type: 'ai', parentTab: 'chat_settings', label: msg`AI Assistant`},
 
 	{type: 'voice', parentTab: 'voice_video', label: msg`Audio`},
 	{type: 'video', parentTab: 'voice_video', label: msg`Video`},
@@ -408,7 +399,6 @@ const SETTINGS_SECTIONS_MAP_DESCRIPTORS: Partial<Record<UserSettingsTabType, Arr
 			{id: 'media', label: msg`Media`, isAdvanced: false},
 			{id: 'input', label: msg`Input`, isAdvanced: false},
 			{id: 'interaction', label: msg`Interaction`, isAdvanced: true},
-			{id: 'ai', label: msg`AI Assistant`, isAdvanced: false},
 		],
 		account_integrations: [{id: 'integrations', label: msg`Integrations`, isAdvanced: false}],
 		voice_video: [

@@ -19,42 +19,43 @@
 
 import {Trans, useLingui} from '@lingui/react/macro';
 import {
+	ArrowClockwiseIcon,
+	ArrowSquareOutIcon,
+	GearSixIcon,
 	GithubLogoIcon,
 	LinkSimpleIcon,
 	SteamLogoIcon,
 	TelegramLogoIcon,
 	TiktokLogoIcon,
 	TwitchLogoIcon,
+	WarningCircleIcon,
+	XIcon,
 	XLogoIcon,
 	YoutubeLogoIcon,
 } from '@phosphor-icons/react';
+import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
+import * as ModalActionCreators from '~/actions/ModalActionCreators';
+import {modal} from '~/actions/ModalActionCreators';
 import {SettingsSection} from '~/components/modals/shared/SettingsSection';
 import {SettingsTabContainer, SettingsTabContent, SettingsTabHeader} from '~/components/modals/shared/SettingsTabLayout';
+import {TwitchIntegrationSettingsModal} from '~/components/modals/tabs/TwitchIntegrationSettingsModal';
+import {SteamIntegrationSettingsModal} from '~/components/modals/tabs/SteamIntegrationSettingsModal';
+import {TelegramIntegrationSettingsModal} from '~/components/modals/tabs/TelegramIntegrationSettingsModal';
 import {Button} from '~/components/uikit/Button/Button';
+import TwitchIntegrationStore from '~/stores/TwitchIntegrationStore';
+import SteamIntegrationStore from '~/stores/SteamIntegrationStore';
+import TelegramIntegrationStore, {type TelegramLoginPayload} from '~/stores/TelegramIntegrationStore';
 import styles from './AccountIntegrationsTab.module.css';
 
-type IntegrationId =
-	| 'twitch'
-	| 'youtube'
-	| 'x'
-	| 'riot'
-	| 'steam'
-	| 'github'
-	| 'tiktok'
-	| 'telegram'
-	| 'xbox'
-	| 'epic_games';
+type IntegrationId = 'youtube' | 'x' | 'riot' | 'steam' | 'github' | 'tiktok' | 'telegram' | 'xbox' | 'epic_games';
 
 interface IntegrationConfig {
 	id: IntegrationId;
 	name: string;
 	logo: React.ComponentType<{className?: string}>;
-	available: boolean;
 }
-
-const TWITCH_LINKED_STORAGE_KEY = 'astral:settings:integrations:twitch-linked';
 
 const RiotGamesLogo: React.FC<{className?: string}> = ({className}) => (
 	<svg viewBox="0 0 24 24" className={className} aria-hidden={true}>
@@ -83,40 +84,76 @@ const XboxLogo: React.FC<{className?: string}> = ({className}) => (
 	</svg>
 );
 
-const INTEGRATIONS: Array<IntegrationConfig> = [
-	{id: 'twitch', name: 'Twitch', logo: TwitchLogoIcon, available: true},
-	{id: 'youtube', name: 'YouTube', logo: YoutubeLogoIcon, available: false},
-	{id: 'x', name: 'X', logo: XLogoIcon, available: false},
-	{id: 'riot', name: 'Riot', logo: RiotGamesLogo, available: false},
-	{id: 'steam', name: 'Steam', logo: SteamLogoIcon, available: false},
-	{id: 'github', name: 'GitHub', logo: GithubLogoIcon, available: false},
-	{id: 'tiktok', name: 'TikTok', logo: TiktokLogoIcon, available: false},
-	{id: 'telegram', name: 'Telegram', logo: TelegramLogoIcon, available: false},
-	{id: 'xbox', name: 'Xbox', logo: XboxLogo, available: false},
-	{id: 'epic_games', name: 'Epic Games', logo: EpicGamesLogo, available: false},
+const UPCOMING_INTEGRATIONS: Array<IntegrationConfig> = [
+	{id: 'riot', name: 'Riot Games', logo: RiotGamesLogo},
+	{id: 'youtube', name: 'YouTube', logo: YoutubeLogoIcon},
+	{id: 'x', name: 'X', logo: XLogoIcon},
+	{id: 'github', name: 'GitHub', logo: GithubLogoIcon},
+	{id: 'tiktok', name: 'TikTok', logo: TiktokLogoIcon},
+	{id: 'xbox', name: 'Xbox', logo: XboxLogo},
+	{id: 'epic_games', name: 'Epic Games', logo: EpicGamesLogo},
 ];
 
 const AccountIntegrationsTab: React.FC = observer(() => {
 	const {t} = useLingui();
-	const [isTwitchLinked, setIsTwitchLinked] = React.useState(false);
 
 	React.useEffect(() => {
-		try {
-			setIsTwitchLinked(window.localStorage.getItem(TWITCH_LINKED_STORAGE_KEY) === '1');
-		} catch {
-			setIsTwitchLinked(false);
-		}
+		void TwitchIntegrationStore.ensureBootstrapped();
+		void SteamIntegrationStore.ensureBootstrapped();
+		void TelegramIntegrationStore.ensureBootstrapped();
 	}, []);
 
-	const setTwitchLinked = React.useCallback((nextValue: boolean) => {
-		setIsTwitchLinked(nextValue);
-		try {
-			window.localStorage.setItem(TWITCH_LINKED_STORAGE_KEY, nextValue ? '1' : '0');
-		} catch {
-			// Local storage can be blocked in privacy modes, so we keep the state in memory.
-		}
+	const openTwitchSettings = React.useCallback(() => {
+		ModalActionCreators.push(modal(() => <TwitchIntegrationSettingsModal />));
 	}, []);
 
+	const openSteamSettings = React.useCallback(() => {
+		ModalActionCreators.push(modal(() => <SteamIntegrationSettingsModal />));
+	}, []);
+
+	const openTelegramSettings = React.useCallback(() => {
+		ModalActionCreators.push(modal(() => <TelegramIntegrationSettingsModal />));
+	}, []);
+
+	// Telegram Login Widget calls a global function with the signed payload.
+	// We expose `window.onAstralTelegramAuth(user)` and pass it straight through
+	// to the backend verifier; the widget itself is rendered below as a script tag.
+	React.useEffect(() => {
+		const w = window as Window & {onAstralTelegramAuth?: (u: TelegramLoginPayload) => void};
+		w.onAstralTelegramAuth = (user: TelegramLoginPayload) => {
+			void TelegramIntegrationStore.verifyAndConnect(user);
+		};
+		return () => {
+			delete w.onAstralTelegramAuth;
+		};
+	}, []);
+
+	const configured = TwitchIntegrationStore.configured;
+	const connected = TwitchIntegrationStore.isConnected;
+	const loading = TwitchIntegrationStore.status === 'loading';
+	const connection = TwitchIntegrationStore.connection;
+	const statusLabel = !configured ? t`Server setup required` : connected ? t`Connected` : t`Ready to connect`;
+	const statusCopy = !configured
+		? t`Add TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET to the backend environment.`
+		: connected
+			? t`Astral can now use this Twitch channel for stream-aware features.`
+			: t`Connect a Twitch account to prepare live detection and stream announcements.`;
+	const twitchDescription = connection?.login ? `@${connection.login}` : statusCopy;
+	const steamConnection = SteamIntegrationStore.connection;
+	const steamDescription = steamConnection?.personaName
+		? steamConnection.presenceVisible && steamConnection.currentGameName
+			? t`Now playing: ${steamConnection.currentGameName}`
+			: steamConnection.personaName
+		: !SteamIntegrationStore.configured
+			? t`Server setup required (set STEAM_API_KEY).`
+			: t`Connect a Steam account to show it on your profile.`;
+	const telegramDescription = TelegramIntegrationStore.connection?.username
+		? `@${TelegramIntegrationStore.connection.username}`
+		: TelegramIntegrationStore.connection?.firstName
+			? TelegramIntegrationStore.connection.firstName
+			: !TelegramIntegrationStore.configured
+				? t`Server setup required (set TELEGRAM_BOT_TOKEN).`
+				: t`Login with Telegram to receive notifications about DMs, mentions and calls.`;
 	return (
 		<SettingsTabContainer>
 			<SettingsTabHeader
@@ -131,16 +168,255 @@ const AccountIntegrationsTab: React.FC = observer(() => {
 					description={t`Link accounts to prepare profile verification and richer activity cards.`}
 				>
 					<div className={styles.integrationGrid}>
-						{INTEGRATIONS.map((integration) => {
-							const isAvailable = integration.available;
-							const isLinked = integration.id === 'twitch' && isTwitchLinked;
-							const LogoComponent = integration.logo;
+						<div className={styles.integrationCard}>
+							<div className={styles.cardHeader}>
+								<div className={styles.integrationIdentity}>
+									<div className={styles.integrationMark}>
+										<TwitchLogoIcon className={styles.integrationLogo} />
+									</div>
+									<div className={styles.integrationText}>
+										<div className={styles.integrationNameRow}>
+											<div className={styles.integrationName}>
+												<Trans>Twitch</Trans>
+											</div>
+										</div>
+										<div
+											className={clsx(
+												styles.integrationDescription,
+												connection?.login && styles.integrationDescriptionRevealOnHover,
+											)}
+										>
+											{twitchDescription}
+										</div>
+									</div>
+								</div>
+								<div className={clsx(styles.statusAvailable, connected && styles.statusConnected)}>
+									{statusLabel}
+								</div>
+							</div>
 
-							return (
-								<div
-									key={integration.id}
-									className={isAvailable ? styles.integrationCard : `${styles.integrationCard} ${styles.integrationCardMuted}`}
+							<div className={styles.cardFooter}>
+								{connected ? (
+									<Button
+										small={true}
+										variant="danger-secondary"
+										onClick={() => void TwitchIntegrationStore.disconnect()}
+										submitting={loading}
+									>
+										<XIcon size={14} weight="bold" />
+										<Trans>Disconnect</Trans>
+									</Button>
+								) : (
+									<Button small={true} onClick={() => void TwitchIntegrationStore.startOAuth()} submitting={loading}>
+										<ArrowSquareOutIcon size={14} weight="bold" />
+										<Trans>Connect Twitch</Trans>
+									</Button>
+								)}
+								<Button
+									small={true}
+									variant="secondary"
+									onClick={() => void TwitchIntegrationStore.refresh()}
+									disabled={loading}
 								>
+									<ArrowClockwiseIcon size={14} weight="bold" />
+									<Trans>Refresh</Trans>
+								</Button>
+								<Button small={true} variant="secondary" onClick={openTwitchSettings}>
+									<GearSixIcon size={14} weight="bold" />
+									<Trans>Settings</Trans>
+								</Button>
+								{connected && (
+									<div className={styles.connectedState}>
+										<LinkSimpleIcon size={14} weight="bold" />
+										<Trans>Linked</Trans>
+									</div>
+								)}
+							</div>
+
+							{TwitchIntegrationStore.error && (
+								<div className={styles.errorBanner} role="status">
+									<WarningCircleIcon size={15} weight="fill" />
+									<span>{TwitchIntegrationStore.error}</span>
+								</div>
+							)}
+						</div>
+
+						{/* ─── Steam ─── */}
+						<div className={styles.integrationCard}>
+							<div className={styles.cardHeader}>
+								<div className={styles.integrationIdentity}>
+									<div className={styles.integrationMark}>
+										<SteamLogoIcon className={styles.integrationLogo} />
+									</div>
+									<div className={styles.integrationText}>
+										<div className={styles.integrationNameRow}>
+											<div className={styles.integrationName}>
+												<Trans>Steam</Trans>
+											</div>
+										</div>
+										<div
+											className={clsx(
+												styles.integrationDescription,
+												steamConnection?.personaName && styles.integrationDescriptionRevealOnHover,
+											)}
+										>
+											{steamDescription}
+										</div>
+									</div>
+								</div>
+								<div
+									className={clsx(
+										styles.statusAvailable,
+										SteamIntegrationStore.isConnected && styles.statusConnected,
+									)}
+								>
+									{!SteamIntegrationStore.configured
+										? t`Server setup required`
+										: SteamIntegrationStore.isConnected
+											? t`Connected`
+											: t`Ready to connect`}
+								</div>
+							</div>
+							<div className={styles.cardFooter}>
+								{SteamIntegrationStore.isConnected ? (
+									<Button
+										small={true}
+										variant="danger-secondary"
+										onClick={() => void SteamIntegrationStore.disconnect()}
+										submitting={SteamIntegrationStore.status === 'loading'}
+									>
+										<XIcon size={14} weight="bold" />
+										<Trans>Disconnect</Trans>
+									</Button>
+								) : (
+									<Button
+										small={true}
+										onClick={() => void SteamIntegrationStore.startConnect()}
+										submitting={SteamIntegrationStore.status === 'loading'}
+										disabled={!SteamIntegrationStore.configured}
+									>
+										<ArrowSquareOutIcon size={14} weight="bold" />
+										<Trans>Connect Steam</Trans>
+									</Button>
+								)}
+								<Button
+									small={true}
+									variant="secondary"
+									onClick={() => void SteamIntegrationStore.refresh()}
+									disabled={SteamIntegrationStore.status === 'loading'}
+								>
+									<ArrowClockwiseIcon size={14} weight="bold" />
+									<Trans>Refresh</Trans>
+								</Button>
+								{SteamIntegrationStore.isConnected && (
+									<Button small={true} variant="secondary" onClick={openSteamSettings}>
+										<GearSixIcon size={14} weight="bold" />
+										<Trans>Settings</Trans>
+									</Button>
+								)}
+								{SteamIntegrationStore.isConnected && (
+									<div className={styles.connectedState}>
+										<LinkSimpleIcon size={14} weight="bold" />
+										<Trans>Linked</Trans>
+									</div>
+								)}
+							</div>
+							{SteamIntegrationStore.error && (
+								<div className={styles.errorBanner} role="status">
+									<WarningCircleIcon size={15} weight="fill" />
+									<span>{SteamIntegrationStore.error}</span>
+								</div>
+							)}
+						</div>
+
+						{/* ─── Telegram ─── */}
+						<div className={styles.integrationCard}>
+							<div className={styles.cardHeader}>
+								<div className={styles.integrationIdentity}>
+									<div className={styles.integrationMark}>
+										<TelegramLogoIcon className={styles.integrationLogo} />
+									</div>
+									<div className={styles.integrationText}>
+										<div className={styles.integrationNameRow}>
+											<div className={styles.integrationName}>
+												<Trans>Telegram</Trans>
+											</div>
+										</div>
+										<div
+											className={clsx(
+												styles.integrationDescription,
+												(TelegramIntegrationStore.connection?.username ||
+													TelegramIntegrationStore.connection?.firstName) &&
+													styles.integrationDescriptionRevealOnHover,
+											)}
+										>
+											{telegramDescription}
+										</div>
+									</div>
+								</div>
+								<div
+									className={clsx(
+										styles.statusAvailable,
+										TelegramIntegrationStore.isConnected && styles.statusConnected,
+									)}
+								>
+									{!TelegramIntegrationStore.configured
+										? t`Server setup required`
+										: TelegramIntegrationStore.isConnected
+											? t`Connected`
+											: t`Ready to connect`}
+								</div>
+							</div>
+							<div className={styles.cardFooter}>
+								{TelegramIntegrationStore.isConnected ? (
+									<>
+										<Button
+											small={true}
+											variant="danger-secondary"
+											onClick={() => void TelegramIntegrationStore.disconnect()}
+											submitting={TelegramIntegrationStore.status === 'loading'}
+										>
+											<XIcon size={14} weight="bold" />
+											<Trans>Disconnect</Trans>
+										</Button>
+										<Button small={true} variant="secondary" onClick={openTelegramSettings}>
+											<GearSixIcon size={14} weight="bold" />
+											<Trans>Settings</Trans>
+										</Button>
+									</>
+								) : (
+									TelegramIntegrationStore.configured && TelegramIntegrationStore.botUsername && (
+										<TelegramLoginButton botUsername={TelegramIntegrationStore.botUsername} />
+									)
+								)}
+								<Button
+									small={true}
+									variant="secondary"
+									onClick={() => void TelegramIntegrationStore.refresh()}
+									disabled={TelegramIntegrationStore.status === 'loading'}
+								>
+									<ArrowClockwiseIcon size={14} weight="bold" />
+									<Trans>Refresh</Trans>
+								</Button>
+								{TelegramIntegrationStore.isConnected && (
+									<div className={styles.connectedState}>
+										<LinkSimpleIcon size={14} weight="bold" />
+										<Trans>Linked</Trans>
+									</div>
+								)}
+							</div>
+							{TelegramIntegrationStore.error && (
+								<div className={styles.errorBanner} role="status">
+									<WarningCircleIcon size={15} weight="fill" />
+									<span>{TelegramIntegrationStore.error}</span>
+								</div>
+							)}
+						</div>
+
+						{UPCOMING_INTEGRATIONS.map((integration) => {
+							const LogoComponent = integration.logo;
+							return (
+								<div key={integration.id} className={`${styles.integrationCard} ${styles.integrationCardMuted}`}>
 									<div className={styles.cardHeader}>
 										<div className={styles.integrationIdentity}>
 											<div className={styles.integrationMark}>
@@ -149,39 +425,19 @@ const AccountIntegrationsTab: React.FC = observer(() => {
 											<div className={styles.integrationText}>
 												<div className={styles.integrationName}>{integration.name}</div>
 												<div className={styles.integrationDescription}>
-													{isAvailable ? (
-														<Trans>Ready to connect in beta.</Trans>
-													) : (
-														<Trans>This integration is planned and will arrive soon.</Trans>
-													)}
+													<Trans>This integration is planned and will arrive soon.</Trans>
 												</div>
 											</div>
 										</div>
-										<div className={isAvailable ? styles.statusAvailable : styles.statusSoon}>
-											{isAvailable ? t`Beta` : t`Soon`}
+										<div className={styles.statusSoon}>
+											<Trans>Soon</Trans>
 										</div>
 									</div>
 
 									<div className={styles.cardFooter}>
-										{integration.id === 'twitch' ? (
-											<Button
-												small={true}
-												variant={isLinked ? 'secondary' : 'primary'}
-												onClick={() => setTwitchLinked(!isLinked)}
-											>
-												{isLinked ? t`Disconnect` : t`Connect`}
-											</Button>
-										) : (
-											<Button small={true} variant="secondary" disabled={true}>
-												<Trans>Coming soon</Trans>
-											</Button>
-										)}
-										{isLinked && (
-											<div className={styles.connectedState}>
-												<LinkSimpleIcon size={14} weight="bold" />
-												<Trans>Linked</Trans>
-											</div>
-										)}
+										<Button small={true} variant="secondary" disabled={true}>
+											<Trans>Coming soon</Trans>
+										</Button>
 									</div>
 								</div>
 							);
@@ -194,3 +450,35 @@ const AccountIntegrationsTab: React.FC = observer(() => {
 });
 
 export default AccountIntegrationsTab;
+
+/**
+ * Telegram Login Widget — embedded as the official telegram-widget.js script
+ * with `data-onauth="onAstralTelegramAuth(user)"`. The widget renders an iframe
+ * button styled by Telegram and, on success, calls our globally-registered
+ * onAstralTelegramAuth handler set up above (which forwards the signed payload
+ * to the backend verifier).
+ *
+ * Telegram strictly enforces the bot's domain (set with /setdomain in BotFather),
+ * so this only works on astraof.com or any domain explicitly whitelisted there.
+ */
+const TelegramLoginButton: React.FC<{botUsername: string}> = React.memo(({botUsername}) => {
+	const containerRef = React.useRef<HTMLDivElement | null>(null);
+	React.useEffect(() => {
+		const container = containerRef.current;
+		if (!container) return;
+		container.innerHTML = '';
+		const script = document.createElement('script');
+		script.async = true;
+		script.src = 'https://telegram.org/js/telegram-widget.js?22';
+		script.setAttribute('data-telegram-login', botUsername);
+		script.setAttribute('data-size', 'medium');
+		script.setAttribute('data-radius', '10');
+		script.setAttribute('data-onauth', 'onAstralTelegramAuth(user)');
+		script.setAttribute('data-request-access', 'write');
+		container.appendChild(script);
+		return () => {
+			container.innerHTML = '';
+		};
+	}, [botUsername]);
+	return <div ref={containerRef} />;
+});

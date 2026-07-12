@@ -1,0 +1,160 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.card {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 0.6rem 0.75rem;
+	padding: 0.72rem 0.78rem;
+	border-radius: 0.5rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: color-mix(in srgb, var(--background-secondary) 68%, transparent);
+	box-shadow: none;
+}
+
+.compact {
+	padding: 0.62rem 0.68rem;
+}
+
+.header {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	min-width: 0;
+}
+
+.iconShell {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	border-radius: 0.4rem;
+	flex-shrink: 0;
+	color: white;
+	background: color-mix(in srgb, var(--brand-primary) 82%, var(--background-primary) 18%);
+	box-shadow: none;
+}
+
+.titleWrap {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+
+.title {
+	margin: 0;
+	font-size: 0.86rem;
+	font-weight: 800;
+	color: var(--text-primary);
+}
+
+.subtitle {
+	margin: 0;
+	font-size: 0.75rem;
+	line-height: 1.25;
+	color: var(--text-tertiary);
+}
+
+.linkBox {
+	display: flex;
+	align-items: center;
+	min-height: 34px;
+	padding: 7px 9px;
+	grid-column: 1 / -1;
+	border-radius: 0.4rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
+	background: color-mix(in srgb, var(--background-primary) 58%, transparent);
+	min-width: 0;
+}
+
+.linkText {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: color-mix(in srgb, var(--brand-primary) 78%, var(--text-primary) 22%);
+	font-size: 0.76rem;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.linkText:hover {
+	text-decoration: underline;
+}
+
+.loadingText,
+.errorText {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	color: var(--text-tertiary);
+	font-size: 0.76rem;
+}
+
+.errorText {
+	color: var(--text-danger, #f87171);
+}
+
+.actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+	flex-wrap: wrap;
+	grid-column: 2;
+	grid-row: 1;
+}
+
+@media (max-width: 767px) {
+	.card,
+	.compact {
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 0.4rem 0.5rem;
+		padding: 0.5rem;
+		border-radius: 0.5rem;
+	}
+
+	.iconShell {
+		width: 26px;
+		height: 26px;
+	}
+
+	.title {
+		font-size: 0.78rem;
+	}
+
+	.subtitle {
+		display: none;
+	}
+
+	.linkBox {
+		min-height: 30px;
+		padding: 5px 7px;
+	}
+
+	.actions {
+		justify-content: flex-end;
+	}
+
+	.actions > * {
+		flex: 0 0 auto;
+	}
+}

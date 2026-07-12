@@ -19,14 +19,16 @@
 
 .dmListContainer,
 .mobileContainer {
+	--dm-mobile-edge: clamp(0.72rem, 3.6vw, 0.95rem);
+	--dm-mobile-content-edge: calc(var(--dm-mobile-edge) + 0.1rem);
 	--dm-shell-top: color-mix(in srgb, var(--background-secondary) 94%, var(--background-primary) 6%);
 	--dm-shell-bottom: color-mix(in srgb, var(--background-secondary) 94%, var(--background-primary) 6%);
 	--dm-card-top: color-mix(in srgb, var(--background-floating) 78%, var(--background-primary) 22%);
 	--dm-card-bottom: color-mix(in srgb, var(--background-floating) 78%, var(--background-primary) 22%);
 	--dm-card-hover-top: color-mix(in srgb, var(--background-floating) 88%, var(--background-primary) 12%);
 	--dm-card-hover-bottom: color-mix(in srgb, var(--background-floating) 88%, var(--background-primary) 12%);
-	--dm-border: color-mix(in srgb, var(--text-primary) 10%, transparent);
-	--dm-border-strong: color-mix(in srgb, var(--text-primary) 16%, transparent);
+	--dm-border: color-mix(in srgb, var(--text-primary) 6%, transparent);
+	--dm-border-strong: color-mix(in srgb, var(--text-primary) 10%, transparent);
 	--dm-shadow: rgb(15 23 42 / 0.12);
 	--dm-highlight: color-mix(in srgb, var(--text-primary) 8%, transparent);
 	--dm-icon-top: color-mix(in srgb, var(--background-floating) 82%, var(--background-primary) 18%);
@@ -57,10 +59,16 @@
 	user-select: none;
 	-webkit-user-select: none;
 	overflow: hidden;
-	background: var(--dm-shell-top);
-	border-right: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-primary) 94%, var(--background-secondary) 6%),
+			var(--dm-shell-top) 14rem
+		);
+	border-right: none;
 	padding-bottom: 0;
 	isolation: isolate;
+	contain: layout paint;
 	transition: height var(--motion-dur-medium) var(--motion-ease-smooth);
 }
 
@@ -90,26 +98,27 @@
 	width: 100%;
 	height: 2.75rem;
 	padding: 0 4.5rem 0 0.9375rem;
-	border: 1px solid transparent;
-	border-radius: 1.125rem;
-	background: color-mix(in srgb, var(--background-floating) 10%, transparent);
+	border: none;
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	border-radius: 0;
+	background: transparent;
 	color: color-mix(in srgb, var(--text-primary-muted) 78%, var(--text-primary));
 	font-size: 0.875rem;
 	font-weight: 600;
 	box-shadow: none;
-	backdrop-filter: blur(18px);
+	backdrop-filter: none;
 	transition:
 		var(--button-motion-transition),
-		transform 180ms ease;
+		transform 120ms ease;
 }
 
 .dmListHeader:hover {
-	transform: translateY(-1px);
+	transform: none;
 }
 
 .dmListHeader:hover .dmListHeaderButton {
 	color: var(--text-primary);
-	border-color: transparent;
+	border-bottom-color: color-mix(in srgb, var(--brand-primary) 32%, transparent);
 	box-shadow: none;
 }
 
@@ -158,13 +167,14 @@
 .mobileContainer {
 	position: relative;
 	display: grid;
-	grid-template-rows: auto 1fr;
+	grid-template-rows: auto auto minmax(0, 1fr);
 	height: 100%;
 	min-height: 0;
 	width: 100%;
+	max-width: 100%;
 	min-width: 0;
 	contain: layout paint;
-	overflow-x: clip;
+	overflow-x: hidden;
 	background: var(--background-primary);
 }
 
@@ -174,29 +184,132 @@
 }
 
 .mobileHeader {
-	display: flex;
+	display: block;
 	height: auto;
-	min-height: 3.5rem;
+	min-height: 4.25rem;
 	flex-shrink: 0;
-	align-items: center;
 	border-bottom: none;
-	padding: calc(0.92rem + (var(--safe-area-top, 0px) * 0.12)) 1rem 0.88rem;
+	padding: calc(0.82rem + (var(--safe-area-top, 0px) * 0.12)) var(--dm-mobile-content-edge) 0.68rem;
 	min-width: 0;
 	box-sizing: border-box;
 	width: 100%;
-	overflow-x: clip;
+	max-width: 100%;
+	overflow-x: hidden;
 }
 
 .mobileHeaderInner {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	align-items: center;
-	width: min(100%, 28rem);
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	width: 100%;
+	max-width: 100%;
 	min-width: 0;
 	gap: 0;
-	margin-left: auto;
-	margin-right: auto;
-	padding: 0.125rem 0;
+	margin-left: 0;
+	margin-right: 0;
+	padding: 0;
+}
+
+.mobileWelcomeRow {
+	display: grid;
+	grid-template-columns: 2.5rem minmax(0, 1fr) 2.35rem;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0;
+}
+
+.mobileMenuButton {
+	width: 2.5rem;
+	height: 2.5rem;
+	background: transparent;
+}
+
+.mobileWelcomeProfile {
+	display: flex;
+	align-items: center;
+	flex: 1 1 auto;
+	min-width: 0;
+	width: 100%;
+	overflow: hidden;
+	gap: 0.72rem;
+}
+
+.mobileWelcomeProfile > :first-child {
+	flex: 0 0 auto;
+}
+
+.mobileWelcomeAvatarFallback {
+	height: 3rem;
+	width: 3rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	flex-shrink: 0;
+}
+
+.mobileWelcomeCopy {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.mobileWelcomeEyebrow {
+	display: block;
+	font-size: 0.86rem;
+	line-height: 1.1rem;
+	color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-primary));
+}
+
+.mobileWelcomeName {
+	display: block;
+	font-size: 1.34rem;
+	line-height: 1.5rem;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	color: var(--text-primary);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mobileBellButton {
+	position: relative;
+	display: flex;
+	height: 2.35rem;
+	width: 2.35rem;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	border-radius: 0.95rem;
+	background: color-mix(in srgb, var(--background-secondary) 72%, var(--background-primary) 28%);
+	color: color-mix(in srgb, var(--text-primary) 88%, var(--text-secondary));
+	cursor: pointer;
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+	transition:
+		background-color 180ms ease,
+		color 180ms ease,
+		transform 180ms ease;
+}
+
+.mobileBellButtonSelected {
+	background: color-mix(in srgb, var(--brand-primary) 24%, var(--background-secondary) 76%);
+	color: var(--text-primary);
+}
+
+.mobileBellDot {
+	position: absolute;
+	top: 0.45rem;
+	right: 0.46rem;
+	height: 0.44rem;
+	width: 0.44rem;
+	border-radius: 999px;
+	background: var(--status-danger);
+	box-shadow: 0 0 0 0.12rem color-mix(in srgb, var(--background-primary) 80%, transparent);
 }
 
 .mobileHeaderTitle {
@@ -323,8 +436,14 @@
 	max-width: 100%;
 	min-width: 0;
 	box-sizing: border-box;
-	overflow: visible;
-	border-radius: 1rem;
+	overflow: hidden;
+	border-radius: 0.95rem;
+	padding-left: 0.6rem;
+	padding-right: 0.6rem;
+	margin-bottom: 0.08rem;
+	content-visibility: auto;
+	contain-intrinsic-size: 76px;
+	contain: layout paint style;
 }
 
 .mobileAddFriendButton:hover {
@@ -363,8 +482,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 0;
-	padding: 0.45rem max(0px, var(--safe-area-right, 0px)) var(--mobile-bottom-nav-height)
-		max(0px, var(--safe-area-left, 0px));
+	padding: 0.24rem 0 max(0.5rem, var(--safe-area-bottom, 0px));
 	max-width: 100%;
 	margin-left: 0;
 	margin-right: 0;
@@ -372,8 +490,7 @@
 	min-height: 100%;
 	min-width: 0;
 	box-sizing: border-box;
-	transform: translateZ(0);
-	overflow-x: clip;
+	overflow-x: hidden;
 }
 
 .mobileQuickSection {
@@ -387,7 +504,7 @@
 	display: flex;
 	flex-direction: column;
 	flex: 1 1 auto;
-	gap: 0;
+	gap: 0.42rem;
 	margin-top: 0;
 	padding: 0;
 	border: none;
@@ -404,35 +521,41 @@
 	max-width: 100%;
 	overflow-x: auto;
 	padding: 0.12rem 0.78rem 0.42rem 0.78rem;
-	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+	border-bottom: none;
 	scrollbar-width: none;
 }
 
 .mobileTopQuickShell {
-	width: min(100%, 28rem);
-	max-width: 28rem;
-	margin: 0 auto;
-	padding-top: 0.1rem;
-	position: sticky;
-	top: 0;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	margin: 0;
+	padding-top: 0.04rem;
+	position: relative;
+	top: auto;
 	z-index: 5;
-	background: color-mix(in srgb, var(--background-primary) 95%, transparent);
-	backdrop-filter: blur(14px);
-	-webkit-backdrop-filter: blur(14px);
-	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: var(--background-primary);
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	border-bottom: none;
+	margin-bottom: -1px;
+	overflow-x: hidden;
+}
+
+.mobileTopQuickShell::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: -1px;
+	height: 2px;
+	background: var(--background-primary);
+	pointer-events: none;
 }
 
 .mobileTopQuickItem {
 	flex: 0 0 auto;
-	animation: dmQuickTabReveal 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.mobileTopQuickItem:nth-child(2) {
-	animation-delay: 55ms;
-}
-
-.mobileTopQuickItem:nth-child(3) {
-	animation-delay: 110ms;
+	animation: none;
 }
 
 .mobileTopQuickRow::-webkit-scrollbar {
@@ -441,40 +564,203 @@
 
 .mobileSearchWrapper {
 	width: 100%;
-	padding: 0.52rem 0.78rem 0.6rem;
-	animation: dmMobileSearchReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	max-width: 100%;
+	min-width: 0;
+	padding: 0.42rem var(--dm-mobile-content-edge) 0.6rem;
+	animation: none;
+	overflow: hidden;
 }
 
-.mobileSearchWrapper input {
-	min-height: 3.1rem;
-	border-radius: 1.25rem;
-	border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
-	background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-floating) 10%);
-	box-shadow:
-		0 12px 28px color-mix(in srgb, var(--background-primary) 28%, transparent),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+.mobileSearchWrapper > * {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.mobileSearchButton {
+	display: flex;
+	align-items: center;
+	gap: 0.58rem;
+	width: 100%;
+	min-height: 2.62rem;
+	padding: 0 0.78rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	border-radius: 0.9rem;
+	background: color-mix(in srgb, var(--background-secondary) 72%, transparent);
+	box-shadow: none;
+	color: var(--text-secondary);
+	cursor: pointer;
+	font-size: 0.84rem;
+	font-weight: 650;
+	text-align: left;
+	transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.mobileSearchButton:focus-visible,
+.mobileSearchButton:hover {
+	border-color: color-mix(in srgb, var(--brand-primary) 22%, transparent);
+	background: color-mix(in srgb, var(--background-secondary) 82%, var(--brand-primary) 6%);
 	color: var(--text-primary);
-	font-weight: 600;
-	transition:
-		border-color 0.2s ease,
-		box-shadow 0.2s ease,
-		transform 0.2s ease;
 }
 
-.mobileSearchWrapper input:focus,
-.mobileSearchWrapper input:focus-within {
-	border-color: color-mix(in srgb, var(--brand-primary) 20%, transparent);
-	transform: translateY(-1px);
-}
-
-.mobileSearchWrapper input::placeholder {
-	color: color-mix(in srgb, var(--text-primary-muted) 92%, var(--text-secondary));
+.mobileSearchButton span {
+	min-width: 0;
+	flex: 1 1 auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .mobileSearchIcon {
 	height: 1.25rem;
 	width: 1.25rem;
 	color: color-mix(in srgb, var(--brand-primary) 42%, var(--text-primary));
+}
+
+.mobileGuildStrip {
+	display: flex;
+	align-items: center;
+	gap: 0.52rem;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	padding: 0 var(--dm-mobile-content-edge) 0.58rem;
+	animation: none;
+	overflow: hidden;
+}
+
+.mobileGuildAddButton {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	width: 2.65rem;
+	height: 2.65rem;
+	border: none;
+	border-radius: 0.95rem;
+	background: transparent;
+	color: var(--text-primary);
+	box-shadow: none;
+}
+
+.mobileGuildStripViewport {
+	display: flex;
+	align-items: stretch;
+	gap: 0.5rem;
+	flex: 1 1 auto;
+	width: auto;
+	max-width: 100%;
+	min-width: 0;
+	overflow-x: scroll;
+	overflow-y: hidden;
+	padding: 0.02rem 0 0.08rem;
+	scrollbar-width: none;
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior-x: contain;
+	overscroll-behavior-inline: contain;
+	touch-action: pan-x;
+	cursor: grab;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.mobileGuildStripViewport::-webkit-scrollbar {
+	display: none;
+}
+
+.mobileGuildStripItem {
+	position: relative;
+	display: flex;
+	flex: 0 0 auto;
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 0.52rem;
+	width: auto;
+	min-width: 8.4rem;
+	max-width: 11.2rem;
+	min-height: 2.86rem;
+	padding: 0.28rem 0.62rem 0.32rem 0.42rem;
+	border: none;
+	border-bottom: 2px solid transparent;
+	border-radius: 0;
+	background: transparent;
+	color: color-mix(in srgb, var(--text-secondary) 82%, var(--text-primary));
+	touch-action: pan-x;
+	scroll-snap-align: start;
+	transition:
+		background-color 180ms ease,
+		color 180ms ease,
+		transform 180ms ease;
+}
+
+.mobileGuildStripItemSelected {
+	background: transparent;
+	color: var(--text-primary);
+	border-bottom-color: color-mix(in srgb, var(--brand-primary) 78%, var(--text-primary));
+}
+
+.mobileGuildStripAvatar {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 1.82rem;
+	width: 1.82rem;
+	flex-shrink: 0;
+	border-radius: 999px;
+	background-color: color-mix(in srgb, var(--background-tertiary) 84%, var(--background-primary) 16%);
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: cover;
+	color: var(--text-primary);
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.015em;
+}
+
+.mobileGuildStripAvatarFallback {
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.mobileGuildStripInitials {
+	display: block;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mobileGuildStripName {
+	display: block;
+	min-width: 0;
+	width: auto;
+	max-width: 8.1rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: left;
+	font-size: 0.78rem;
+	line-height: 0.96rem;
+	font-weight: 600;
+}
+
+.mobileGuildStripBadge {
+	position: absolute;
+	top: -0.04rem;
+	right: -0.04rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1rem;
+	height: 1rem;
+	padding: 0 0.2rem;
+	border-radius: 999px;
+	background: var(--status-danger);
+	color: white;
+	font-size: 0.66rem;
+	line-height: 0.8rem;
+	font-weight: 700;
 }
 
 .mobileQuickSection,
@@ -563,29 +849,49 @@
 	width: 100%;
 	min-width: 0;
 	max-width: 100%;
-	overflow-x: clip;
+	overflow-x: hidden;
+}
+
+.mobilePullArea {
+	min-width: 0;
+	max-width: 100%;
+	overflow-x: hidden;
 }
 
 .mobileFAB {
 	position: fixed;
-	right: 1rem;
-	bottom: calc(60px + var(--safe-area-bottom, 0px) + 1rem);
+	right: max(0.9rem, var(--safe-area-right, 0px));
+	bottom: calc(max(0.9rem, var(--safe-area-bottom, 0px)) + 0.2rem);
 	z-index: 50;
-	display: flex;
+	display: inline-flex;
 	height: 3.5rem;
 	width: 3.5rem;
+	padding: 0;
 	align-items: center;
 	justify-content: center;
-	border-radius: 1.25rem;
-	background:
-		linear-gradient(135deg, var(--dm-fab-top), var(--dm-fab-bottom)),
-		var(--brand-primary);
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 88%, var(--background-floating) 12%);
 	color: var(--dm-on-accent);
-	box-shadow:
-		0 22px 44px color-mix(in srgb, var(--brand-primary) 34%, transparent),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
-	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	box-shadow: 0 12px 30px color-mix(in srgb, var(--background-primary) 34%, transparent);
+	border: 0;
 	cursor: pointer;
+	transition:
+		transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+		opacity 140ms ease;
+	will-change: transform, opacity;
+}
+
+.mobileFABHidden {
+	opacity: 0;
+	transform: translate3d(0, calc(100% + 1.4rem), 0);
+	pointer-events: none;
+}
+
+@media (max-width: 380px) {
+	.mobileFAB {
+		height: 3.25rem;
+		width: 3.25rem;
+	}
 }
 
 .scrollerContent {
@@ -600,16 +906,20 @@
 
 .clickableItem {
 	display: flex;
-	height: 3rem;
+	height: 3.08rem;
 	width: 100%;
 	cursor: pointer;
 	align-items: center;
-	border-radius: 1.125rem;
+	border-radius: 0;
 	border: 1px solid transparent;
+	border-left: none;
+	border-right: none;
+	border-top: none;
+	border-bottom-color: transparent;
 	padding-left: 0.75rem;
 	padding-right: 0.75rem;
 	text-align: left;
-	background: color-mix(in srgb, var(--background-floating) 8%, transparent);
+	background: transparent;
 	color: var(--text-primary-muted);
 	box-shadow: none;
 	transition:
@@ -689,8 +999,8 @@
 	width: 2.125rem;
 	align-items: center;
 	justify-content: center;
-	border-radius: 0.875rem;
-	background: color-mix(in srgb, var(--background-floating) 12%, transparent);
+	border-radius: 999px;
+	background: transparent;
 	color: var(--text-primary);
 	transition:
 		background-color var(--transition-fast),
@@ -702,7 +1012,7 @@
 
 @media (hover: hover) and (pointer: fine) {
 	.clickableItem:hover:not(.clickableItemSelected) .clickableItemIcon {
-		background-color: var(--dm-card-hover-top);
+		background-color: color-mix(in srgb, var(--text-primary) 6%, transparent);
 		transform: scale(1.03);
 	}
 }
@@ -719,10 +1029,10 @@
 
 @media (hover: hover) and (pointer: fine) {
 	.clickableItem:hover:not(.clickableItemSelected) {
-		background: linear-gradient(180deg, var(--dm-card-hover-top), var(--dm-card-hover-bottom));
+		background: color-mix(in srgb, var(--text-primary) 4%, transparent);
 		color: var(--text-primary);
-		border-color: color-mix(in srgb, var(--brand-primary) 12%, transparent);
-		transform: translateY(-1px);
+		border-bottom-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
+		transform: none;
 	}
 }
 
@@ -754,17 +1064,15 @@
 }
 
 .clickableItemPressed:not(.clickableItemSelected) {
-	background: linear-gradient(180deg, var(--dm-card-hover-top), var(--dm-card-hover-bottom));
+	background: color-mix(in srgb, var(--text-primary) 4%, transparent);
 	color: var(--text-primary);
 }
 
 .clickableItemSelected {
 	composes: clickableItem;
-	background:
-		linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, var(--dm-card-top)), var(--dm-card-bottom)),
-		color-mix(in srgb, var(--surface-interactive-selected-bg) 35%, transparent);
+	background: transparent;
 	color: var(--surface-interactive-selected-color);
-	border-color: transparent;
+	border-bottom-color: color-mix(in srgb, var(--brand-primary) 70%, transparent);
 	box-shadow: none;
 }
 
@@ -788,8 +1096,8 @@
 }
 
 .sendIcon {
-	height: 1.5rem;
-	width: 1.5rem;
+	height: 1.35rem;
+	width: 1.35rem;
 	color: currentColor;
 }
 
@@ -857,10 +1165,11 @@
 	align-items: center;
 	gap: 0.7rem;
 	width: 100%;
-	margin: 0.45rem 0 0.2rem;
-	padding: 0.52rem 0.62rem;
-	border-radius: 0.95rem;
-	border: 1px solid transparent;
+	margin: 0.35rem 0 0.15rem;
+	padding: 0.52rem 0.32rem;
+	border-radius: 0;
+	border: none;
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
 	background: color-mix(in srgb, var(--background-floating) 8%, transparent);
 	color: var(--text-primary-muted);
 	cursor: pointer;
@@ -870,14 +1179,14 @@
 
 .dmFriendsButton:hover {
 	color: var(--text-primary);
-	background: color-mix(in srgb, var(--background-floating) 14%, transparent);
-	border-color: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+	background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+	border-bottom-color: color-mix(in srgb, var(--brand-primary) 20%, transparent);
 }
 
 .dmFriendsButtonSelected {
-	background: color-mix(in srgb, var(--brand-primary) 16%, var(--background-floating) 84%);
+	background: transparent;
 	color: var(--text-primary);
-	border-color: color-mix(in srgb, var(--brand-primary) 24%, transparent);
+	border-bottom-color: color-mix(in srgb, var(--brand-primary) 70%, transparent);
 }
 
 .dmFriendsButtonIcon {
@@ -886,16 +1195,16 @@
 	justify-content: center;
 	height: 1.9rem;
 	width: 1.9rem;
-	border-radius: 0.75rem;
-	background: color-mix(in srgb, var(--background-primary) 86%, var(--background-secondary) 14%);
-	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	border-radius: 999px;
+	background: transparent;
+	border: none;
 	color: var(--text-primary);
 	flex-shrink: 0;
 }
 
 .dmFriendsButtonSelected .dmFriendsButtonIcon {
-	background: color-mix(in srgb, var(--brand-primary) 24%, var(--background-primary) 76%);
-	border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 10%, transparent);
+	border-color: transparent;
 }
 
 .dmFriendsButtonText {
@@ -918,10 +1227,26 @@
 	text-overflow: ellipsis;
 }
 
+.dmQuickItemCompact {
+	margin-top: 0;
+}
+
+.dmQuickItemCompact + .dmQuickItemCompact {
+	margin-top: 5px;
+}
+
+.dmQuickItemCompact .dmFriendsButton {
+	margin: 0;
+}
+
+.dmQuickAfterNotesSpacer {
+	height: 1px;
+}
+
 .dmChannelList {
 	display: flex;
 	flex-direction: column;
-	gap: 0.5rem;
+	gap: 0.12rem;
 	contain: layout paint;
 }
 
@@ -936,15 +1261,13 @@
 	align-items: center;
 	justify-content: space-between;
 	border-radius: 0;
-	padding-left: 0.95rem;
-	padding-right: 0.95rem;
+	padding-left: var(--dm-mobile-content-edge);
+	padding-right: var(--dm-mobile-content-edge);
 	text-align: left;
-	min-height: 4.35rem;
+	min-height: 4.72rem;
 	height: auto;
-	background: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%);
-	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
-	border-left: none;
-	border-right: none;
+	background: transparent;
+	border: none;
 	color: var(--text-primary-muted);
 	overflow: hidden;
 	box-shadow: none;
@@ -954,19 +1277,16 @@
 	content-visibility: auto;
 	contain-intrinsic-size: 70px;
 	transition:
-		background var(--motion-dur-short) var(--motion-ease-snap),
-		border-color var(--motion-dur-short) var(--motion-ease-snap),
-		box-shadow var(--motion-dur-short) var(--motion-ease-smooth),
+		background-color 100ms var(--motion-ease-snap),
 		color var(--motion-dur-short) var(--motion-ease-snap),
-		transform var(--motion-dur-short) var(--motion-ease-smooth),
-		opacity var(--motion-dur-short) var(--motion-ease-smooth);
+		opacity 100ms linear;
 }
 
 .dmItemMobileSelected {
 	composes: dmItemMobile;
-	background: color-mix(in srgb, var(--brand-primary) 14%, var(--background-secondary) 86%);
+	background: transparent;
 	color: var(--text-primary);
-	border-color: color-mix(in srgb, var(--brand-primary) 26%, transparent);
+	border-color: transparent;
 	box-shadow: none;
 }
 
@@ -977,8 +1297,8 @@
 }
 
 .dmItemMobileMuted {
-	opacity: 0.5;
-	color: var(--text-tertiary-muted);
+	opacity: 0.72;
+	color: color-mix(in srgb, var(--text-primary-muted) 88%, var(--text-secondary));
 }
 
 .dmItem {
@@ -988,13 +1308,14 @@
 	cursor: pointer;
 	align-items: center;
 	justify-content: space-between;
-	border-radius: 1.25rem;
-	border: 1px solid transparent;
+	border-radius: 0;
+	border: none;
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
 	padding-left: 0.75rem;
 	padding-right: 0.75rem;
 	text-align: left;
-	height: 3.5rem;
-	background: color-mix(in srgb, var(--background-floating) 8%, transparent);
+	height: 3.25rem;
+	background: transparent;
 	color: var(--text-primary-muted);
 	box-shadow: none;
 	content-visibility: auto;
@@ -1008,6 +1329,7 @@
 	composes: dmItem;
 	background-color: transparent;
 	color: var(--text-primary);
+	border-bottom-color: color-mix(in srgb, var(--brand-primary) 16%, transparent);
 }
 
 .dmItemMuted {
@@ -1046,6 +1368,7 @@
 	border-radius: 999px;
 	background-color: var(--dm-unread-dot);
 	box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--brand-primary) 16%, transparent);
+	animation: dmUnreadDotIn var(--motion-dur-short) var(--motion-ease-smooth) both;
 }
 
 .dmItemContent {
@@ -1056,13 +1379,72 @@
 	min-width: 0;
 	box-sizing: border-box;
 	align-items: center;
-	gap: 0.75rem;
+	gap: 0.9rem;
 	overflow: hidden;
 }
 
 .dmItemAvatarWrapper {
 	position: relative;
-	filter: drop-shadow(0 12px 20px rgb(15 23 42 / 0.08));
+	filter: none;
+}
+
+.dmAvatarButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	margin: 0;
+	background: transparent;
+	border: none;
+	border-radius: 999px;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.dmAvatarButtonDesktop {
+	cursor: pointer;
+}
+
+.dmStoryAvatarButton {
+	position: relative;
+	padding: 0.16rem;
+	background:
+		linear-gradient(var(--background-primary), var(--background-primary)) padding-box,
+		linear-gradient(135deg, color-mix(in srgb, var(--text-primary) 18%, transparent), transparent) border-box;
+	border: 2px solid transparent;
+	box-shadow: 0 8px 18px color-mix(in srgb, var(--brand-primary) 11%, transparent);
+	transition:
+		transform 150ms ease,
+		filter 150ms ease,
+		box-shadow 150ms ease;
+}
+
+.dmStoryAvatarButton:active {
+	transform: scale(0.96);
+}
+
+.dmStoryAvatarButton > * {
+	display: block;
+}
+
+.dmStoryAvatarFresh {
+	background:
+		linear-gradient(var(--background-primary), var(--background-primary)) padding-box,
+		conic-gradient(from 210deg, #8a7dff, #ff7b9c, #ffd870, #67e8f9, #8a7dff) border-box;
+	box-shadow:
+		0 0 0 0.12rem color-mix(in srgb, var(--brand-primary) 8%, transparent),
+		0 10px 24px color-mix(in srgb, var(--brand-primary) 22%, transparent);
+}
+
+.dmStoryAvatarSeen {
+	background:
+		linear-gradient(var(--background-primary), var(--background-primary)) padding-box,
+		linear-gradient(135deg, color-mix(in srgb, var(--text-secondary) 32%, transparent), color-mix(in srgb, var(--text-primary) 10%, transparent)) border-box;
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+.mobileWelcomeStoryButton {
+	flex: 0 0 auto;
 }
 
 .dmItemInfo {
@@ -1071,7 +1453,7 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
-	gap: 0.16rem;
+	gap: 0.24rem;
 	overflow: hidden;
 }
 
@@ -1081,7 +1463,7 @@
 	gap: 0.15rem;
 	min-width: 0;
 	font-weight: 600;
-	font-size: 0.9375rem;
+	font-size: 1rem;
 	line-height: 20px;
 	overflow: hidden;
 }
@@ -1113,11 +1495,11 @@
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	color: color-mix(in srgb, var(--text-primary-muted) 88%, var(--text-primary));
-	font-size: 0.74rem;
-	line-height: 1.08rem;
-	font-weight: 500;
+	font-size: 0.88rem;
+	line-height: 1.16rem;
+	font-weight: 400;
 	margin-top: 0.0625rem;
-	opacity: 0.82;
+	opacity: 0.9;
 }
 
 .dmItemMobile .dmItemSubtext,
@@ -1168,24 +1550,51 @@
 }
 
 .dmItemTimestamp {
-	color: color-mix(in srgb, var(--text-primary-muted) 82%, var(--text-primary));
-	font-size: 0.6875rem;
+	color: color-mix(in srgb, var(--text-secondary) 84%, var(--text-primary));
+	font-size: 0.76rem;
 	line-height: 1rem;
-	padding: 0.25rem 0.45rem;
-	border-radius: 999px;
-	background: color-mix(in srgb, var(--background-floating) 12%, transparent);
-	border: 1px solid transparent;
+	padding: 0;
+	border-radius: 0;
+	background: transparent;
+	border: none;
 	flex-shrink: 0;
+	font-weight: 500;
+	min-width: 2rem;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+.dmItemMeta {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	justify-content: center;
+	gap: 0.12rem;
+	flex-shrink: 0;
+}
+
+.dmItemDeliveryStatus {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-primary));
+}
+
+.dmItemDeliveryStatusRead {
+	color: color-mix(in srgb, var(--brand-primary) 72%, var(--text-primary));
+}
+
+.dmItemDeliveryIcon {
+	height: 0.82rem;
+	width: 0.82rem;
 }
 
 .dmItemSelected {
 	composes: dmItem;
-	background:
-		linear-gradient(135deg, var(--dm-selected-top), var(--dm-selected-bottom)),
-		color-mix(in srgb, var(--surface-interactive-selected-bg) 35%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 11%, transparent);
 	color: var(--surface-interactive-selected-color);
-	border-color: transparent;
-	box-shadow: none;
+	border-color: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 4%, transparent);
 }
 
 .dmItemSelected .dmItemSubtext,
@@ -1207,7 +1616,7 @@
 	flex-shrink: 0;
 	align-items: center;
 	justify-content: center;
-	border-radius: 0.875rem;
+	border-radius: 50%;
 	background:
 		linear-gradient(
 			135deg,
@@ -1229,7 +1638,7 @@
 	cursor: pointer;
 	align-items: center;
 	justify-content: center;
-	border-radius: 0.875rem;
+	border-radius: 50%;
 	background: color-mix(in srgb, var(--background-floating) 12%, transparent);
 	border: 1px solid transparent;
 	box-shadow: none;
@@ -1559,6 +1968,17 @@
 	}
 }
 
+@keyframes dmUnreadDotIn {
+	from {
+		opacity: 0;
+		transform: scale(0.65);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
 @keyframes dmChatsRefreshSheen {
 	0% {
 		background-position: -120% 50%, 0 0;
@@ -1573,18 +1993,152 @@
 .mobileChatsSectionRefreshing .dmItemMobileSelected,
 .mobileChatsSectionRefreshing .mobileSpecialButton,
 .mobileChatsSectionRefreshing .mobileSpecialButtonSelected {
-	opacity: 0.86;
+	opacity: 1;
 	animation: none;
+}
+
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemAvatarWrapper,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemAvatarWrapper,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemAvatarWrapper {
+	position: relative;
+	display: flex;
+	width: 3rem;
+	height: 3rem;
+	flex: 0 0 3rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	overflow: hidden;
+	background-image:
+		linear-gradient(
+			110deg,
+			transparent 0%,
+			color-mix(in srgb, var(--text-primary) 5%, transparent) 38%,
+			color-mix(in srgb, var(--text-primary) 15%, transparent) 50%,
+			color-mix(in srgb, var(--text-primary) 5%, transparent) 62%,
+			transparent 100%
+		),
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%),
+			color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%)
+		);
+	background-repeat: no-repeat;
+	background-size: 220% 100%, 100% 100%;
+	background-position: -140% 50%, 0 0;
+	animation: none;
+}
+
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemAvatarWrapper > *,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemAvatarWrapper > *,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemAvatarWrapper > * {
+	opacity: 0;
+}
+
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemNameText,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemNameText,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemNameText,
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemSubtext,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemSubtext,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemSubtext,
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemCustomStatus,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemCustomStatus,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemCustomStatus {
+	color: transparent !important;
+	border-radius: 999px;
+	background-image:
+		linear-gradient(
+			110deg,
+			transparent 0%,
+			color-mix(in srgb, var(--text-primary) 5%, transparent) 38%,
+			color-mix(in srgb, var(--text-primary) 15%, transparent) 50%,
+			color-mix(in srgb, var(--text-primary) 5%, transparent) 62%,
+			transparent 100%
+		),
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%),
+			color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%)
+		);
+	background-repeat: no-repeat;
+	background-size: 220% 100%, 100% 100%;
+	background-position: -140% 50%, 0 0;
+	animation: none;
+}
+
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemNameText,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemNameText,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemNameText {
+	min-height: 0.92rem;
+	width: min(11rem, 68%);
+}
+
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemSubtext,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemSubtext,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemSubtext,
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemCustomStatus,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemCustomStatus,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemCustomStatus {
+	min-height: 0.72rem;
+	width: min(13rem, 92%);
+}
+
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemTimestamp,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemTimestamp,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemTimestamp,
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemDeliveryStatus,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemDeliveryStatus,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemDeliveryStatus {
+	color: transparent !important;
+	border-radius: 999px;
+	background-image:
+		linear-gradient(
+			110deg,
+			transparent 0%,
+			color-mix(in srgb, var(--text-primary) 5%, transparent) 38%,
+			color-mix(in srgb, var(--text-primary) 15%, transparent) 50%,
+			color-mix(in srgb, var(--text-primary) 5%, transparent) 62%,
+			transparent 100%
+		),
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%),
+			color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%)
+		);
+	background-repeat: no-repeat;
+	background-size: 220% 100%, 100% 100%;
+	background-position: -140% 50%, 0 0;
+	animation: none;
+}
+
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemTimestamp,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemTimestamp,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemTimestamp {
+	min-height: 0.66rem;
+	min-width: 2.2rem;
+}
+
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemDeliveryStatus,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemDeliveryStatus,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemDeliveryStatus {
+	min-height: 0.8rem;
+	min-width: 0.95rem;
+}
+
+.mobileChatsSectionRefreshing .dmItemMobile .dmItemDeliveryStatus .dmItemDeliveryIcon,
+.mobileChatsSectionRefreshing .dmItemMobileUnread .dmItemDeliveryStatus .dmItemDeliveryIcon,
+.mobileChatsSectionRefreshing .dmItemMobileSelected .dmItemDeliveryStatus .dmItemDeliveryIcon {
+	opacity: 0;
 }
 
 @media (max-width: 767px) {
 	.mobileHeader {
-		padding: calc(0.82rem + (var(--safe-area-top, 0px) * 0.1)) max(0.875rem, var(--safe-area-right, 0px)) 0.56rem
-			max(0.875rem, var(--safe-area-left, 0px));
+		padding: calc(0.82rem + (var(--safe-area-top, 0px) * 0.1)) var(--dm-mobile-content-edge) 0.56rem;
 	}
 
 	.mobileHeaderInner {
-		width: min(100%, 28rem);
+		width: 100%;
+		max-width: 100%;
 	}
 
 	.mobileHeaderButton,
@@ -1600,49 +2154,13 @@
 		border-color: transparent;
 	}
 
-	.mobileQuickSection > :nth-child(-n + 4) {
-		animation: dmMobileItemReveal 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
-	}
-
-	.mobileQuickSection > :nth-child(2) {
-		animation-delay: 20ms;
-	}
-
-	.mobileQuickSection > :nth-child(3) {
-		animation-delay: 36ms;
-	}
-
-	.mobileQuickSection > :nth-child(4) {
-		animation-delay: 52ms;
-	}
-
+	.mobileQuickSection > :nth-child(-n + 4),
 	.mobileChatsSection > :nth-child(-n + 6) {
-		animation: dmMobileItemReveal 210ms cubic-bezier(0.22, 1, 0.36, 1) both;
+		animation: none;
 	}
 
-	.mobileChatsSection > :nth-child(2) {
-		animation-delay: 68ms;
-	}
-
-	.mobileChatsSection > :nth-child(3) {
-		animation-delay: 84ms;
-	}
-
-	.mobileChatsSection > :nth-child(4) {
-		animation-delay: 100ms;
-	}
-
-	.mobileChatsSection > :nth-child(5) {
-		animation-delay: 116ms;
-	}
-
-	.mobileChatsSection > :nth-child(6) {
-		animation-delay: 132ms;
-	}
-
-.mobileScrollerContent {
-		padding: 0.42rem max(0px, var(--safe-area-right, 0px))
-			calc(var(--mobile-bottom-nav-height) + 0.5rem) max(0px, var(--safe-area-left, 0px));
+	.mobileScrollerContent {
+		padding: 0.28rem 0 calc(max(0.5rem, var(--safe-area-bottom, 0px)) + 0.5rem);
 		gap: 0;
 		max-width: 100%;
 	}
@@ -1655,20 +2173,20 @@
 	.mobileChatsSection {
 		margin-top: 0;
 		padding: 0;
+		gap: 0.36rem;
 	}
 
 	.dmItemMobile,
 	.mobileSpecialButton {
-		min-height: 4.2rem;
+		min-height: 4.48rem;
 		border-radius: 0;
 	}
 
 	.dmItemContent,
 	.mobileSpecialButtonContent {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr) auto;
+		display: flex;
 		align-items: center;
-		gap: 0.625rem;
+		gap: 0.78rem;
 	}
 
 	.dmItemTimestamp {
@@ -1676,6 +2194,7 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		min-width: 1.8rem;
 	}
 
 	.mobileSpecialButtonIcon {
@@ -1701,7 +2220,7 @@
 	}
 
 	.mobileHeaderInner {
-		gap: 0.5rem;
+		gap: 0.38rem;
 	}
 
 	.mobileHeaderTitle {
@@ -1719,6 +2238,15 @@
 		border-radius: 0.82rem;
 	}
 
+	.mobileWelcomeName {
+		font-size: 1.22rem;
+		line-height: 1.36rem;
+	}
+
+	.mobileWelcomeEyebrow {
+		font-size: 0.8rem;
+	}
+
 	.mobileHeaderButton .iconSize5,
 	.mobileAddFriendButton .iconSize4 {
 		width: 1.08rem;
@@ -1733,7 +2261,8 @@
 	}
 
 	.dmItemTimestamp {
-		display: none;
+		font-size: 0.69rem;
+		min-width: 1.7rem;
 	}
 }
 
@@ -1751,9 +2280,13 @@
 		animation: none !important;
 	}
 
+	.dmItemUnreadIndicator {
+		animation: none;
+	}
+
 	.mobileTopQuickButton,
 	.mobileTopQuickButtonSelected::after,
-	.mobileSearchWrapper input {
+	.mobileSearchButton {
 		transition: none;
 	}
 }
@@ -1765,7 +2298,7 @@
 	}
 
 	.mobileHeaderInner {
-		gap: 0.44rem;
+		gap: 0.34rem;
 	}
 
 	.mobileHeaderTitle {
@@ -1798,26 +2331,25 @@
 		padding-bottom: 0.05rem;
 	}
 
-	.mobileTopQuickRow {
-		gap: 0.8rem;
-		padding-left: 0.7rem;
-		padding-right: 0.7rem;
-	}
-
-	.mobileTopQuickTabLabel {
-		font-size: 0.84rem;
-		line-height: 1.08rem;
-	}
-
 	.mobileSearchWrapper {
-		padding-left: 0.7rem;
-		padding-right: 0.7rem;
+		padding-left: var(--dm-mobile-content-edge);
+		padding-right: var(--dm-mobile-content-edge);
+		padding-bottom: 0.6rem;
+	}
+
+	.mobileWelcomeRow {
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	.mobileGuildStrip {
+		padding-left: var(--dm-mobile-content-edge);
+		padding-right: var(--dm-mobile-content-edge);
 		padding-bottom: 0.54rem;
 	}
 
-	.mobileSearchWrapper input {
-		min-height: 2.95rem;
-		border-radius: 1.18rem;
+	.mobileSearchButton {
+		min-height: 2.62rem;
 	}
 
 	.mobileChatsSection {
@@ -1827,22 +2359,23 @@
 
 	.dmItemMobile,
 	.mobileSpecialButton {
-		min-height: 4rem;
-		padding-left: 0.6875rem;
-		padding-right: 0.6875rem;
+		min-height: 4.34rem;
+		padding-left: var(--dm-mobile-content-edge);
+		padding-right: var(--dm-mobile-content-edge);
 	}
 
 	.dmItemTimestamp {
-		font-size: 0.625rem;
-		padding: 0.1875rem 0.35rem;
+		font-size: 0.71rem;
+		padding: 0;
+		min-width: 1.65rem;
 	}
 
 	.dmItemName {
-		font-size: 0.875rem;
+		font-size: 0.94rem;
 	}
 
 	.dmItemSubtext {
-		font-size: 0.6875rem;
+		font-size: 0.82rem;
 	}
 
 	.mobileFAB {
@@ -1855,15 +2388,10 @@
 @media (max-width: 420px) {
 	.mobileHeader {
 		height: auto;
-		min-height: 2.45rem;
-		padding-top: 0.4rem;
-		padding-bottom: 0.24rem;
+		min-height: 2.8rem;
+		padding-top: 0.42rem;
+		padding-bottom: 0.32rem;
 		gap: 0.35rem;
-	}
-
-	.mobileHeaderTitle {
-		font-size: 1.08rem;
-		line-height: 1.28rem;
 	}
 
 	.mobileHeaderActions {
@@ -1902,38 +2430,75 @@
 
 	.mobileScrollerContent {
 		padding-top: 0.22rem;
-		padding-right: max(0px, var(--safe-area-right, 0px));
-		padding-left: max(0px, var(--safe-area-left, 0px));
+		padding-right: 0;
+		padding-left: 0;
 	}
 
 	.mobileSpecialButtonLabel {
 		font-size: 0.8125rem;
 	}
 
+	.mobileSearchWrapper {
+		padding-top: 0.36rem;
+		padding-bottom: 0.5rem;
+	}
+
+	.mobileSearchButton {
+		min-height: 2.56rem;
+	}
+
+	.mobileGuildStripItem {
+		width: auto;
+		min-width: 7.8rem;
+		max-width: 10.2rem;
+		min-height: 2.72rem;
+		padding: 0.26rem 0.52rem 0.26rem 0.38rem;
+		gap: 0.45rem;
+		border-radius: 1.08rem;
+	}
+
+	.mobileGuildAddButton {
+		width: 2.48rem;
+		height: 2.48rem;
+		border-radius: 0.9rem;
+	}
+
+	.mobileGuildStripAvatar {
+		height: 1.6rem;
+		width: 1.6rem;
+	}
+
+	.mobileGuildStripName {
+		max-width: 6.8rem;
+		font-size: 0.74rem;
+		line-height: 0.92rem;
+	}
+
 	.dmItemTimestamp {
-		display: none;
+		font-size: 0.66rem;
+		min-width: 1.55rem;
 	}
 
 	.dmItemName {
-		font-size: 0.84rem;
+		font-size: 0.91rem;
 	}
 
 	.dmItemSubtext {
-		font-size: 0.66rem;
+		font-size: 0.78rem;
 	}
 }
 
 @media (max-width: 360px) {
 	.mobileScrollerContent {
-		padding-right: max(0px, var(--safe-area-right, 0px));
-		padding-left: max(0px, var(--safe-area-left, 0px));
+		padding-right: 0;
+		padding-left: 0;
 	}
 
 	.dmItemMobile,
 	.mobileSpecialButton {
-		height: 2.85rem;
-		padding-left: 0.625rem;
-		padding-right: 0.625rem;
+		height: 4.05rem;
+		padding-left: var(--dm-mobile-content-edge);
+		padding-right: var(--dm-mobile-content-edge);
 	}
 
 	.dmItemContent,
@@ -1957,12 +2522,22 @@
 	}
 
 	.mobileSearchWrapper {
-		padding-left: 0.62rem;
-		padding-right: 0.62rem;
+		padding-left: var(--dm-mobile-content-edge);
+		padding-right: var(--dm-mobile-content-edge);
 	}
 
-	.mobileSearchWrapper input {
-		min-height: 2.82rem;
+	.mobileWelcomeRow {
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	.mobileGuildStrip {
+		padding-left: var(--dm-mobile-content-edge);
+		padding-right: var(--dm-mobile-content-edge);
+	}
+
+	.mobileSearchButton {
+		min-height: 2.58rem;
 	}
 
 	.dmItemName {
@@ -1986,21 +2561,8 @@
 
 	.mobileQuickSection > *,
 	.mobileChatsSection > *,
-	.mobileRefreshDot,
-	.mobileChatsSectionRefreshing .dmItemMobile,
-	.mobileChatsSectionRefreshing .dmItemMobileUnread,
-	.mobileChatsSectionRefreshing .dmItemMobileSelected,
-	.mobileChatsSectionRefreshing .mobileSpecialButton,
-	.mobileChatsSectionRefreshing .mobileSpecialButtonSelected {
+	.mobileRefreshDot {
 		animation: none !important;
-	}
-
-	.mobileChatsSectionRefreshing .dmItemMobile,
-	.mobileChatsSectionRefreshing .dmItemMobileUnread,
-	.mobileChatsSectionRefreshing .dmItemMobileSelected,
-	.mobileChatsSectionRefreshing .mobileSpecialButton,
-	.mobileChatsSectionRefreshing .mobileSpecialButtonSelected {
-		background-size: 100% 100%, 100% 100%;
 	}
 
 	.dmItemMobile,

@@ -19,20 +19,22 @@
 
 .modalBackdrop {
 	/*
-	 * Slight tint + backdrop blur so content behind the modal fades into a
-	 * softened glass surface instead of an abrupt hard black. Opacity is
-	 * still controlled by framer-motion on the .modalBackdrop element, so
-	 * the fade-in/out timing is untouched — only the visual material gets
-	 * more premium-feeling. backdrop-filter is supported on all modern
-	 * Chromium, Safari and Firefox; old browsers silently fall back to
-	 * just the dark background.
+	 * Keep the modal veil cheap to paint. Opacity is still animated by
+	 * framer-motion, but we avoid backdrop blur on low-power mobile GPUs.
 	 */
-	background: hsl(0deg 0% 0%);
+	background: rgb(3 6 12 / 0.76);
 	inset: 0;
 	pointer-events: none;
 	position: fixed;
-	backdrop-filter: blur(10px) saturate(120%);
-	-webkit-backdrop-filter: blur(10px) saturate(120%);
+	backdrop-filter: blur(8px) saturate(102%);
+	-webkit-backdrop-filter: blur(8px) saturate(102%);
+}
+
+:global(html.platform-native-mobile) .modalBackdrop,
+:global(html.platform-mobile-browser) .modalBackdrop {
+	background: rgb(3 6 12 / 0.82);
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -99,6 +101,7 @@
 .layer.layerFullscreenMobile .focusLock,
 .layer.layerFullscreenMobile .surface {
 	contain: layout style paint;
+	touch-action: pan-y;
 }
 
 :global(html.platform-native-desktop) .layer.layerFullscreen {
@@ -146,7 +149,7 @@
 }
 
 .layer.layerFullscreenMobile .surface {
-	will-change: transform;
+	will-change: auto;
 }
 
 .layer.layerCentered {
@@ -168,12 +171,12 @@
 	max-height: calc(100svh - 48px);
 	display: flex;
 	flex-direction: column;
-	background-color: var(--background-secondary);
-	border: 1px solid var(--background-header-secondary);
-	border-radius: 8px;
+	background: color-mix(in srgb, var(--background-secondary) 92%, var(--background-floating) 8%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
+	border-radius: 0.85rem;
 	box-shadow:
-		0 0 0 1px hsla(223, 7%, 20%, 0.08),
-		0 16px 40px hsla(0, 0%, 0%, 0.16);
+		0 24px 64px rgb(0 0 0 / 0.34),
+		0 8px 24px rgb(0 0 0 / 0.18);
 	overflow: hidden;
 	pointer-events: all;
 	will-change: transform, opacity;
@@ -212,14 +215,13 @@
 	max-height: var(--fullscreen-available-height);
 	width: 100%;
 	max-width: clamp(960px, 96vw, 1400px);
-	border: 1px solid var(--background-header-secondary);
-	border-radius: clamp(8px, 1vw, 12px);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
+	border-radius: clamp(10px, 1vw, 14px);
 	box-sizing: border-box;
 	padding: 0;
-	background: var(--background-secondary);
+	background: color-mix(in srgb, var(--background-secondary) 94%, var(--background-floating) 6%);
 	box-shadow:
-		0 0 0 1px hsla(223, 7%, 20%, 0.08),
-		0 16px 40px hsla(0, 0%, 0%, 0.16);
+		0 28px 72px rgb(0 0 0 / 0.34);
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
@@ -229,8 +231,11 @@
 	border-radius: 0 !important;
 	border: none !important;
 	box-shadow: none !important;
-	max-height: 100%;
+	height: 100dvh;
+	max-height: 100dvh;
 	isolation: isolate;
+	contain: layout style paint;
+	touch-action: pan-y;
 }
 
 @keyframes slideInFromRight {
@@ -252,11 +257,11 @@
 }
 
 .mobileSlideIn {
-	animation: slideInFromRight 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+	animation: slideInFromRight 0.14s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .mobileSlideOut {
-	animation: slideOutToRight 0.2s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+	animation: slideOutToRight 0.12s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @media screen and (min-width: 768px) {
@@ -341,7 +346,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: 14px;
-	background-color: var(--background-secondary);
+	background: color-mix(in srgb, var(--background-floating) 18%, var(--background-secondary) 82%);
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 
 .mobileSwipeHandle {
@@ -395,11 +401,11 @@
 }
 
 .layout.header.light {
-	background-color: var(--background-secondary);
+	background: color-mix(in srgb, var(--background-floating) 18%, var(--background-secondary) 82%);
 }
 
 .layout.header.dark {
-	background-color: var(--background-secondary);
+	background: color-mix(in srgb, var(--background-floating) 18%, var(--background-secondary) 82%);
 }
 
 .layout.footer {
@@ -407,7 +413,8 @@
 	flex-wrap: wrap;
 	align-items: stretch;
 	gap: 8px;
-	background-color: var(--background-secondary);
+	background: color-mix(in srgb, var(--background-primary) 28%, var(--background-secondary) 72%);
+	border-top: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 
 .layout.footer > * {
@@ -452,7 +459,7 @@
 	transition: opacity 0.2s ease-in-out;
 	border: none;
 	padding: 4px;
-	border-radius: 4px;
+	border-radius: 0.6rem;
 	-webkit-tap-highlight-color: transparent;
 	-webkit-app-region: no-drag;
 }
@@ -460,6 +467,7 @@
 .headerInner button:hover {
 	color: var(--text-primary);
 	opacity: 1;
+	background: var(--background-modifier-hover);
 }
 
 .headerInner button:active {
@@ -469,10 +477,13 @@
 .content {
 	flex: 1 1 auto;
 	height: 100%;
+	min-height: 0;
 	padding: 0 16px 16px;
+	overflow-x: hidden;
 	overflow-y: auto;
 	-webkit-overflow-scrolling: touch;
 	overscroll-behavior: contain;
+	touch-action: pan-y;
 }
 
 .layerFullscreenMobile .content {
@@ -524,25 +535,23 @@
 	justify-content: center;
 	width: 44px;
 	height: 44px;
-	border-radius: 9999px;
-	border: 1px solid color-mix(in srgb, var(--background-modifier-accent) 70%, transparent);
-	background: color-mix(in srgb, var(--background-secondary) 55%, transparent);
-	backdrop-filter: blur(10px);
+	border-radius: 0.7rem;
+	border: none;
+	background: color-mix(in srgb, var(--background-secondary) 82%, var(--background-primary) 18%);
+	backdrop-filter: none;
 	color: var(--text-primary);
 	cursor: pointer;
-	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+	box-shadow: none;
 	transition:
-		transform 0.12s ease,
-		opacity 0.12s ease,
-		background-color 0.12s ease,
-		border-color 0.12s ease;
+		transform var(--motion-dur-short) var(--motion-ease-smooth),
+		opacity var(--motion-dur-short) var(--motion-ease-smooth),
+		background-color var(--motion-dur-short) var(--motion-ease-snap);
 	-webkit-tap-highlight-color: transparent;
 	-webkit-app-region: no-drag;
 }
 
 .insetCloseButton:hover {
-	background: color-mix(in srgb, var(--background-secondary) 75%, transparent);
-	border-color: color-mix(in srgb, var(--background-modifier-accent) 95%, transparent);
+	background: color-mix(in srgb, var(--background-secondary) 72%, var(--brand-primary) 28%);
 }
 
 .insetCloseButton:active {
@@ -552,4 +561,65 @@
 .insetCloseButton:disabled {
 	opacity: 0.55;
 	cursor: default;
+}
+
+@media (max-width: 380px) {
+	.layer.layerCentered {
+		padding: calc(16px + var(--safe-area-top, 0px)) calc(8px + var(--safe-area-right, 0px))
+			calc(16px + var(--safe-area-bottom, 0px)) calc(8px + var(--safe-area-left, 0px));
+	}
+
+	.root.centeredOnMobile {
+		max-width: min(400px, calc(100vw - 16px));
+		border-radius: 12px;
+	}
+
+	.layout {
+		padding: 12px;
+	}
+
+	.layout.header {
+		gap: 10px;
+	}
+
+	.layerFullscreenMobile .layout.header {
+		padding-right: calc(10px + var(--safe-area-right, 0px));
+		padding-left: calc(10px + var(--safe-area-left, 0px));
+		min-height: calc(60px + max(var(--safe-area-top, 0px), 10px));
+	}
+
+	.headerInner,
+	.headerText {
+		min-width: 0;
+	}
+
+	.headerText h3 {
+		min-width: 0;
+		font-size: 16px;
+		line-height: 19px;
+		overflow-wrap: anywhere;
+	}
+
+	.content {
+		padding: 0 10px 10px;
+	}
+
+	.layerFullscreenMobile .content {
+		padding-right: calc(10px + var(--safe-area-right, 0px));
+		padding-bottom: calc(10px + var(--safe-area-bottom, 0px));
+		padding-left: calc(10px + var(--safe-area-left, 0px));
+	}
+
+	.layerFullscreenMobile .content.contentNoPadding {
+		padding: 0;
+	}
+
+	.layout.footer > * {
+		min-width: 0;
+	}
+
+	.insetCloseButton {
+		width: 40px;
+		height: 40px;
+	}
 }

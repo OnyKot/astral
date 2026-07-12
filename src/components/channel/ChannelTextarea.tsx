@@ -85,6 +85,7 @@ import AccessibilityStore from '~/stores/AccessibilityStore';
 import ChannelStickerStore from '~/stores/ChannelStickerStore';
 import DeveloperOptionsStore from '~/stores/DeveloperOptionsStore';
 import DraftStore from '~/stores/DraftStore';
+import ExpressionPickerStore from '~/stores/ExpressionPickerStore';
 import FeatureFlagStore from '~/stores/FeatureFlagStore';
 import KeyboardModeStore from '~/stores/KeyboardModeStore';
 import MessageEditMobileStore from '~/stores/MessageEditMobileStore';
@@ -226,6 +227,10 @@ const ChannelTextareaContent = observer(
 		const editingMessage = editingMobileMessageId ? MessageStore.getMessage(channel.id, editingMobileMessageId) : null;
 		const currentUser = UserStore.getCurrentUser();
 		const maxMessageLength = currentUser?.maxMessageLength ?? MAX_MESSAGE_LENGTH_NON_PREMIUM;
+		const hasPendingOutgoingMessages = React.useMemo(() => {
+			const messages = MessageStore.getMessages(channel.id);
+			return messages.findNewest((message) => message.isCurrentUserAuthor() && message.isSending) != null;
+		}, [channel.id, MessageStore.version]);
 
 		const uploadAttachments = useTextareaAttachments(channel.id);
 		const {isSlowmodeActive} = useSlowmode(channel);
@@ -234,13 +239,14 @@ const ChannelTextareaContent = observer(
 			previousValueRef,
 			displayToActual,
 			insertSegment,
+			replaceWithSegment,
 			handleTextChange,
 			clearSegments,
 		} = useTextareaSegments();
 		const {handleEmojiSelect} = useTextareaEmojiPicker({
 			setValue,
 			textareaRef,
-			insertSegment,
+			replaceWithSegment,
 			previousValueRef,
 			channelId: channel.id,
 			allowUnicodeEmojiSelection: true,
@@ -280,10 +286,12 @@ const ChannelTextareaContent = observer(
 		const voiceMimeTypeRef = React.useRef('audio/webm');
 		const voiceAudioContextRef = React.useRef<AudioContext | null>(null);
 		const voiceAnalyserRef = React.useRef<AnalyserNode | null>(null);
-		const voiceAnalyserDataRef = React.useRef<Uint8Array | null>(null);
+		const voiceAnalyserDataRef = React.useRef<Uint8Array<ArrayBuffer> | null>(null);
+		const voiceAnalyserFrequencyDataRef = React.useRef<Uint8Array<ArrayBuffer> | null>(null);
 		const voiceAnalyserFrameRef = React.useRef<number | null>(null);
+		const voiceAnalyserLastUpdateRef = React.useRef(0);
 		const [voiceInputLevel, setVoiceInputLevel] = React.useState(0);
-		const [voiceInputSpectrum, setVoiceInputSpectrum] = React.useState<Array<number>>(() => Array.from({length: 20}, () => 0));
+		const [voiceInputSpectrum, setVoiceInputSpectrum] = React.useState<Array<number>>(() => Array.from({length: 12}, () => 0));
 		const [, setIsVoiceRecordingActive] = React.useState(false);
 
 		React.useEffect(() => {
@@ -306,8 +314,10 @@ const ChannelTextareaContent = observer(
 			}
 			voiceAnalyserRef.current = null;
 			voiceAnalyserDataRef.current = null;
+			voiceAnalyserFrequencyDataRef.current = null;
+			voiceAnalyserLastUpdateRef.current = 0;
 			setVoiceInputLevel(0);
-			setVoiceInputSpectrum(Array.from({length: 20}, () => 0));
+			setVoiceInputSpectrum(Array.from({length: 12}, () => 0));
 
 			const audioContext = voiceAudioContextRef.current;
 			voiceAudioContextRef.current = null;
@@ -351,6 +361,7 @@ const ChannelTextareaContent = observer(
 				const sourceNode = audioContext.createMediaStreamSource(stream);
 				sourceNode.connect(analyser);
 				const analyserData = new Uint8Array(new ArrayBuffer(analyser.frequencyBinCount));
+				const frequencyData = new Uint8Array(new ArrayBuffer(analyser.frequencyBinCount));
 
 				voiceStreamRef.current = stream;
 				voiceChunksRef.current = [];
@@ -358,6 +369,8 @@ const ChannelTextareaContent = observer(
 				voiceAudioContextRef.current = audioContext;
 				voiceAnalyserRef.current = analyser;
 				voiceAnalyserDataRef.current = analyserData;
+				voiceAnalyserFrequencyDataRef.current = frequencyData;
+				voiceAnalyserLastUpdateRef.current = 0;
 				mediaRecorderRef.current = recorder;
 
 				recorder.ondataavailable = (event) => {
@@ -366,12 +379,18 @@ const ChannelTextareaContent = observer(
 					}
 				};
 
-				const updateVoiceLevel = () => {
+				const updateVoiceLevel = (timestamp: number) => {
 					const activeAnalyser = voiceAnalyserRef.current;
 					const activeData = voiceAnalyserDataRef.current;
-					if (!activeAnalyser || !activeData) {
+					const activeFrequencyData = voiceAnalyserFrequencyDataRef.current;
+					if (!activeAnalyser || !activeData || !activeFrequencyData) {
 						return;
 					}
+					if (timestamp - voiceAnalyserLastUpdateRef.current < 32) {
+						voiceAnalyserFrameRef.current = window.requestAnimationFrame(updateVoiceLevel);
+						return;
+					}
+					voiceAnalyserLastUpdateRef.current = timestamp;
 
 					(activeAnalyser as any).getByteTimeDomainData(activeData);
 					let sumSquares = 0;
@@ -383,16 +402,15 @@ const ChannelTextareaContent = observer(
 					const level = Math.min(1, rms * 4.6);
 					setVoiceInputLevel((previous) => previous * 0.45 + level * 0.55);
 
-					const frequencyData = new Uint8Array(activeAnalyser.frequencyBinCount);
-					activeAnalyser.getByteFrequencyData(frequencyData);
-					const bucketCount = 20;
-					const usableBins = Math.max(bucketCount, Math.floor(frequencyData.length * 0.74));
+					activeAnalyser.getByteFrequencyData(activeFrequencyData);
+					const bucketCount = 12;
+					const usableBins = Math.max(bucketCount, Math.floor(activeFrequencyData.length * 0.74));
 					const nextSpectrum = Array.from({length: bucketCount}, (_, bucketIndex) => {
 						const start = Math.floor((bucketIndex / bucketCount) * usableBins);
 						const end = Math.max(start + 1, Math.floor(((bucketIndex + 1) / bucketCount) * usableBins));
 						let sum = 0;
 						for (let i = start; i < end; i += 1) {
-							sum += frequencyData[i] ?? 0;
+							sum += activeFrequencyData[i] ?? 0;
 						}
 						const average = sum / (end - start);
 						const normalized = average / 255;
@@ -724,6 +742,38 @@ const ChannelTextareaContent = observer(
 			sendOptimisticMessage,
 		});
 
+		const shouldRestoreFocusAfterPickerCloseRef = React.useRef(false);
+		const pickerCaretRef = React.useRef<{start: number; end: number} | null>(null);
+		const expressionPickerKeyboardCoverTimeoutRef = React.useRef<number | null>(null);
+
+		const requestTypingFocusAfterPickerClose = React.useCallback(() => {
+			shouldRestoreFocusAfterPickerCloseRef.current = true;
+			const textarea = textareaRef.current;
+			if (textarea) {
+				pickerCaretRef.current = {
+					start: textarea.selectionStart ?? textarea.value.length,
+					end: textarea.selectionEnd ?? textarea.value.length,
+				};
+			}
+		}, [textareaRef]);
+
+		const clearMobileKeyboardInsetForPicker = React.useCallback(() => {
+			if (!mobileLayout.enabled) return;
+			const root = document.documentElement;
+			delete root.dataset.keyboardInsetBridge;
+			root.style.setProperty('--mobile-keyboard-inset', '0px');
+			root.style.setProperty('--android-virtual-frame-bottom', '0px');
+		}, [mobileLayout.enabled]);
+
+		React.useEffect(
+			() => () => {
+				if (expressionPickerKeyboardCoverTimeoutRef.current != null) {
+					window.clearTimeout(expressionPickerKeyboardCoverTimeoutRef.current);
+				}
+			},
+			[],
+		);
+
 		const {expressionPickerOpen, setExpressionPickerOpen, handleExpressionPickerTabToggle, selectedTab} =
 			useTextareaExpressionPicker({
 				channelId: channel.id,
@@ -731,24 +781,55 @@ const ChannelTextareaContent = observer(
 				expressionPickerTriggerRef,
 				invisibleExpressionPickerTriggerRef,
 				textareaRef,
+				requestTypingFocusAfterPickerClose,
 			});
-		const shouldRestoreFocusAfterPickerCloseRef = React.useRef(false);
-		const shouldPlaceCursorAtEndAfterPickerCloseRef = React.useRef(false);
 
-		const requestTypingFocusAfterPickerClose = React.useCallback(() => {
-			shouldRestoreFocusAfterPickerCloseRef.current = true;
-			shouldPlaceCursorAtEndAfterPickerCloseRef.current = true;
-		}, []);
+		const focusTextareaAfterPickerCover = React.useCallback(() => {
+			const textarea = textareaRef.current;
+			if (!textarea) {
+				return;
+			}
 
-		const closeExpressionPickerForTyping = React.useCallback(() => {
+			safeFocus(textarea, true);
+			const savedCaret = pickerCaretRef.current;
+			if (!savedCaret) {
+				return;
+			}
+
+			const fallback = textarea.value.length;
+			const start = Math.max(0, Math.min(fallback, savedCaret.start ?? fallback));
+			const end = Math.max(start, Math.min(fallback, savedCaret.end ?? start));
+			textarea.setSelectionRange(start, end);
+		}, [textareaRef]);
+
+		const hideExpressionPickerUnderKeyboard = React.useCallback(() => {
 			if (!mobileLayout.enabled || !expressionPickerOpen) {
 				return false;
 			}
 
 			requestTypingFocusAfterPickerClose();
-			setExpressionPickerOpen(false);
+			window.requestAnimationFrame(focusTextareaAfterPickerCover);
+
+			if (expressionPickerKeyboardCoverTimeoutRef.current != null) {
+				window.clearTimeout(expressionPickerKeyboardCoverTimeoutRef.current);
+			}
+			expressionPickerKeyboardCoverTimeoutRef.current = window.setTimeout(() => {
+				expressionPickerKeyboardCoverTimeoutRef.current = null;
+				setExpressionPickerOpen(false);
+			}, 180);
+
 			return true;
-		}, [expressionPickerOpen, mobileLayout.enabled, requestTypingFocusAfterPickerClose, setExpressionPickerOpen]);
+		}, [
+			expressionPickerOpen,
+			focusTextareaAfterPickerCover,
+			mobileLayout.enabled,
+			requestTypingFocusAfterPickerClose,
+			setExpressionPickerOpen,
+		]);
+
+		const closeExpressionPickerForTyping = React.useCallback(() => {
+			return hideExpressionPickerUnderKeyboard();
+		}, [hideExpressionPickerUnderKeyboard]);
 
 		React.useEffect(() => {
 			if (!mobileLayout.enabled || expressionPickerOpen || !shouldRestoreFocusAfterPickerCloseRef.current) {
@@ -756,8 +837,8 @@ const ChannelTextareaContent = observer(
 			}
 
 			shouldRestoreFocusAfterPickerCloseRef.current = false;
-			const shouldPlaceCursorAtEnd = shouldPlaceCursorAtEndAfterPickerCloseRef.current;
-			shouldPlaceCursorAtEndAfterPickerCloseRef.current = false;
+			const savedCaret = pickerCaretRef.current;
+			pickerCaretRef.current = null;
 
 			let caretTimeoutId: number | null = null;
 
@@ -768,22 +849,20 @@ const ChannelTextareaContent = observer(
 				}
 
 				safeFocus(textarea, true);
-				if (!shouldPlaceCursorAtEnd) {
-					return;
-				}
-
-				const placeCursorAtEnd = () => {
+				const restoreCaret = () => {
 					const node = textareaRef.current;
 					if (!node) {
 						return;
 					}
 
-					const endPosition = node.value.length;
-					node.setSelectionRange(endPosition, endPosition);
+					const fallback = node.value.length;
+					const start = Math.max(0, Math.min(fallback, savedCaret?.start ?? fallback));
+					const end = Math.max(start, Math.min(fallback, savedCaret?.end ?? start));
+					node.setSelectionRange(start, end);
 				};
 
-				placeCursorAtEnd();
-				caretTimeoutId = window.setTimeout(placeCursorAtEnd, 0);
+				restoreCaret();
+				caretTimeoutId = window.setTimeout(restoreCaret, 0);
 			});
 
 			return () => {
@@ -795,11 +874,17 @@ const ChannelTextareaContent = observer(
 		}, [expressionPickerOpen, mobileLayout.enabled, textareaRef]);
 
 		const handleExpressionPickerSheetClose = React.useCallback(() => {
-			if (mobileLayout.enabled) {
-				requestTypingFocusAfterPickerClose();
+			if (hideExpressionPickerUnderKeyboard()) {
+				return;
 			}
+
 			setExpressionPickerOpen(false);
-		}, [mobileLayout.enabled, requestTypingFocusAfterPickerClose, setExpressionPickerOpen]);
+		}, [hideExpressionPickerUnderKeyboard, setExpressionPickerOpen]);
+
+		React.useEffect(() => {
+			if (!mobileLayout.enabled || !expressionPickerOpen) return;
+			clearMobileKeyboardInsetForPicker();
+		}, [clearMobileKeyboardInsetForPicker, expressionPickerOpen, mobileLayout.enabled]);
 
 		useTextareaEditing({
 			channelId: channel.id,
@@ -997,7 +1082,16 @@ const ChannelTextareaContent = observer(
 				return;
 			}
 			onSubmit();
-		}, [isOverCharacterLimit, onSubmit, isEditingScheduledMessage]);
+			if (mobileLayout.enabled) {
+				window.requestAnimationFrame(() => {
+					const textarea = textareaRef.current;
+					if (!textarea || disabled) {
+						return;
+					}
+					safeFocus(textarea, true);
+				});
+			}
+		}, [disabled, isOverCharacterLimit, mobileLayout.enabled, onSubmit, isEditingScheduledMessage]);
 
 		useTextareaDraftAndTyping({
 			channelId: channel.id,
@@ -1306,6 +1400,7 @@ const ChannelTextareaContent = observer(
 									isOverLimit={isOverCharacterLimit}
 									hasContent={!!value.trim()}
 									hasAttachments={uploadAttachments.length > 0}
+									isMessageSending={mobileLayout.enabled && hasPendingOutgoingMessages}
 									expressionPickerTriggerRef={expressionPickerTriggerRef}
 									invisibleExpressionPickerTriggerRef={invisibleExpressionPickerTriggerRef}
 									onExpressionPickerToggle={handleExpressionPickerTabToggle}
@@ -1314,7 +1409,6 @@ const ChannelTextareaContent = observer(
 									onVoiceRecordStart={handleVoiceRecordStart}
 									onVoiceRecordStop={handleVoiceRecordStop}
 									onVoiceRecordCancel={handleVoiceRecordCancel}
-									voiceInputLevel={voiceInputLevel}
 									onVoiceInteractionChange={setIsVoiceInteractionActive}
 									onContextMenu={handleMessageInputButtonContextMenu}
 								/>
@@ -1364,8 +1458,9 @@ const ChannelTextareaContent = observer(
 						channelId={channel.id}
 						onEmojiSelect={handleEmojiSelect}
 						closeOnEmojiSelect={false}
-						initialSnap={1 / 2}
-						snapPoints={[0, 1 / 2, 1]}
+						initialSnap={1}
+						snapPoints={[0, 1]}
+						keyboardReplacement={true}
 					/>
 				)}
 			</>

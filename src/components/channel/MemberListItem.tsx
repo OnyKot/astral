@@ -40,7 +40,10 @@ import AuthenticationStore from '~/stores/AuthenticationStore';
 import ContextMenuStore from '~/stores/ContextMenuStore';
 import TypingStore from '~/stores/TypingStore';
 import * as NicknameUtils from '~/utils/NicknameUtils';
+import {getChannelListNameEffectPreset} from '~/utils/ProfileEffectResolver';
 import styles from './MemberListItem.module.css';
+
+const memberListItemStyles = styles as unknown as Record<string, string>;
 
 interface MemberListItemProps {
 	user: UserRecord;
@@ -108,6 +111,8 @@ export const MemberListItem: React.FC<MemberListItemProps> = observer((props) =>
 
 	const ownerTitle = guildId ? t`Community Owner` : t`Group Owner`;
 	const nickname = displayName || NicknameUtils.getNickname(user, guildId, channelId);
+	const channelListNameEffect = getChannelListNameEffectPreset(user);
+	const hasNameEffect = channelListNameEffect !== 'none';
 
 	const content = (
 		<FocusRingWrapper focusRingClassName={styles.memberFocusRing}>
@@ -130,11 +135,15 @@ export const MemberListItem: React.FC<MemberListItemProps> = observer((props) =>
 								showOffline={isCurrentUser || isTyping}
 								guildId={guildId}
 								status={guildId ? status : undefined}
+								statusScale={1.24}
 							/>
 						</div>
 						<div className={styles.userInfoContainer}>
 							<div className={styles.nameContainer}>
-								<span className={styles.name} style={roleColor ? {color: roleColor} : undefined}>
+								<span
+									className={clsx(styles.name, hasNameEffect && memberListItemStyles[`nameEffect_${channelListNameEffect}`])}
+									style={roleColor && !hasNameEffect ? {color: roleColor} : undefined}
+								>
 									{nickname}
 								</span>
 								{isOwner && (

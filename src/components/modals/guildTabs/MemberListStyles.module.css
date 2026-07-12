@@ -94,7 +94,9 @@
 	background-color: var(--background-secondary-alt);
 	margin-bottom: 0.5rem;
 	cursor: pointer;
-	transition: background-color 0.15s;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 	-webkit-tap-highlight-color: transparent;
 	border: none;
 	text-align: left;
@@ -107,10 +109,21 @@
 @media (hover: hover) and (pointer: fine) {
 	.memberRow:hover {
 		background-color: var(--background-modifier-hover);
+		transform: translateX(2px);
 	}
 
 	.memberRow:active {
 		background-color: var(--background-modifier-active);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.memberRow {
+		transition: background-color var(--motion-dur-short) var(--motion-ease-snap);
+	}
+
+	.memberRow:hover {
+		transform: none;
 	}
 }
 

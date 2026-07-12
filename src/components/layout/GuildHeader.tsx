@@ -20,9 +20,8 @@
 import {useLingui} from '@lingui/react/macro';
 import {CaretRightIcon, GearIcon, SealCheckIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
-import {motion} from 'framer-motion';
+import {motion, type MotionValue} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
-import type {MotionValue} from 'motion';
 import React from 'react';
 import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
@@ -36,6 +35,8 @@ import {NativeDragRegion} from '~/components/layout/NativeDragRegion';
 import {GuildHeaderPopout} from '~/components/popouts/GuildHeaderPopout';
 import {GuildContextMenu} from '~/components/uikit/ContextMenu/GuildContextMenu';
 import {Tooltip} from '~/components/uikit/Tooltip/Tooltip';
+import {useAnimatedNumber} from '~/hooks/useAnimatedNumber';
+import {useGuildPresenceCounts} from '~/hooks/useGuildPresenceCounts';
 import type {GuildRecord} from '~/records/GuildRecord';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import ChannelListLayoutStore from '~/stores/ChannelListLayoutStore';
@@ -48,7 +49,7 @@ import styles from './GuildHeader.module.css';
 const HEADER_MIN_HEIGHT = 56;
 const DEFAULT_BANNER_ASPECT_RATIO = 16 / 9;
 const MAX_VIEWPORT_HEIGHT_FRACTION = 0.3;
-const MAX_VIEWPORT_HEIGHT_FRACTION_MOBILE = 0.155;
+const MAX_VIEWPORT_HEIGHT_FRACTION_MOBILE = 0.22;
 const BANNER_COLLAPSE_DISTANCE_DESKTOP = 112;
 const BANNER_COLLAPSE_DISTANCE_MOBILE = 80;
 
@@ -65,9 +66,17 @@ export const GuildHeader = observer(({guild, scrollY}: GuildHeaderProps) => {
 	const bannerURL = AvatarUtils.getGuildBannerURL({id: guild.id, banner: guild.banner}, true);
 	const isDetachedBanner = guild.features.has(GuildFeatures.DETACHED_BANNER);
 	const showIntegratedBanner = isMobile && Boolean(bannerURL && !isDetachedBanner);
-	const presenceCount = PresenceStore.getPresenceCount(guild.id);
+	const {data: liveCounts} = useGuildPresenceCounts(guild.id, {intervalMs: 10000});
+	const presenceCount = Math.max(PresenceStore.getPresenceCount(guild.id), liveCounts?.presenceCount ?? 0);
 	const cachedMemberCount = GuildMemberStore.getMemberCount(guild.id);
-	const memberCount = Math.max(cachedMemberCount, guild.memberCount ?? 0);
+	const memberCount = Math.max(guild.memberCount ?? 0, liveCounts?.memberCount ?? 0, cachedMemberCount);
+	const animatedMemberCount = useAnimatedNumber(memberCount, {durationMs: 700});
+	const animatedPresenceCount = useAnimatedNumber(presenceCount, {durationMs: 560});
+	const countFormatter = React.useMemo(() => new Intl.NumberFormat(), []);
+	const memberCountLabel = `${countFormatter.format(animatedMemberCount)} ${
+		animatedMemberCount === 1 ? t`Member` : t`Members`
+	}`;
+	const presenceCountLabel = `${countFormatter.format(animatedPresenceCount)} ${t`Online`}`;
 	const canManageGuild = PermissionStore.can(Permissions.MANAGE_GUILD, {guildId: guild.id});
 	const canManageRoles = PermissionStore.can(Permissions.MANAGE_ROLES, {guildId: guild.id});
 	const canViewAuditLog = PermissionStore.can(Permissions.VIEW_AUDIT_LOG, {guildId: guild.id});
@@ -102,6 +111,8 @@ export const GuildHeader = observer(({guild, scrollY}: GuildHeaderProps) => {
 
 	const [{height: bannerMaxHeight, centerCrop}, setBannerLayout] = React.useState(() => calculateBannerLayout());
 	const [scrollTop, setScrollTop] = React.useState(() => scrollY?.get() ?? 0);
+	const scrollAnimationFrameRef = React.useRef<number | null>(null);
+	const pendingScrollTopRef = React.useRef(0);
 
 	React.useLayoutEffect(() => {
 		const updateLayout = () => setBannerLayout(calculateBannerLayout());
@@ -112,15 +123,34 @@ export const GuildHeader = observer(({guild, scrollY}: GuildHeaderProps) => {
 
 	React.useEffect(() => {
 		if (!scrollY) {
+			pendingScrollTopRef.current = 0;
 			setScrollTop(0);
 			return;
 		}
 
-		setScrollTop(scrollY.get());
+		const current = scrollY.get();
+		pendingScrollTopRef.current = current;
+		setScrollTop(current);
+
 		const unsubscribe = scrollY.on('change', (latest) => {
-			setScrollTop(latest);
+			pendingScrollTopRef.current = latest;
+			if (scrollAnimationFrameRef.current != null) {
+				return;
+			}
+
+			scrollAnimationFrameRef.current = window.requestAnimationFrame(() => {
+				scrollAnimationFrameRef.current = null;
+				const next = pendingScrollTopRef.current;
+				setScrollTop((previous) => (Math.abs(next - previous) < 1 ? previous : next));
+			});
 		});
-		return () => unsubscribe();
+		return () => {
+			unsubscribe();
+			if (scrollAnimationFrameRef.current != null) {
+				window.cancelAnimationFrame(scrollAnimationFrameRef.current);
+				scrollAnimationFrameRef.current = null;
+			}
+		};
 	}, [scrollY]);
 
 	const collapseDistance = isMobile ? BANNER_COLLAPSE_DISTANCE_MOBILE : BANNER_COLLAPSE_DISTANCE_DESKTOP;
@@ -212,10 +242,8 @@ export const GuildHeader = observer(({guild, scrollY}: GuildHeaderProps) => {
 									</span>
 								</div>
 								<div className={styles.mobileHeaderStats}>
-									<span className={styles.mobileHeaderStat}>
-										{memberCount === 1 ? t`${memberCount} Member` : t`${memberCount} Members`}
-									</span>
-									<span className={styles.mobileHeaderStat}>{t`${presenceCount} Online`}</span>
+									<span className={styles.mobileHeaderStat}>{memberCountLabel}</span>
+									<span className={styles.mobileHeaderStat}>{presenceCountLabel}</span>
 								</div>
 							</div>
 						</div>

@@ -28,14 +28,15 @@
 .contentLayout {
 	display: flex;
 	flex-direction: column;
-	gap: 1.5rem;
+	gap: 1.2rem;
+	min-width: 0;
 }
 
 @media (min-width: 1024px) {
 	.contentLayout {
 		flex-direction: row;
 		align-items: start;
-		gap: clamp(2rem, 3vw, 3.5rem);
+		gap: clamp(1.35rem, 2.2vw, 2.5rem);
 	}
 }
 
@@ -43,26 +44,208 @@
 	display: flex;
 	flex: 2;
 	flex-direction: column;
-	gap: 1.5rem;
+	gap: 1rem;
+	min-width: 0;
 }
 
 .profileTypeShell {
-	border-radius: 1rem;
-	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
-	background:
-		linear-gradient(
-			170deg,
-			color-mix(in srgb, var(--background-floating) 14%, var(--background-secondary) 86%),
-			color-mix(in srgb, var(--background-primary) 90%, var(--background-secondary) 10%)
-		);
-	padding: 0.9rem;
-	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+	border-radius: 0;
+	border: none;
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: transparent;
+	padding: 0.6rem 0 0.75rem;
+	box-shadow: none;
+	contain: layout paint;
 }
 
 .inputFooter {
 	color: var(--text-primary-muted);
 	font-size: 0.875rem;
 	line-height: 1.45;
+}
+
+.channelListNameEffectShell {
+	display: grid;
+	gap: 0.72rem;
+	border-radius: 0;
+	border: none;
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: transparent;
+	padding: 0.6rem 0 0.8rem;
+}
+
+.channelListNameEffectHeader {
+	display: grid;
+	gap: 0.18rem;
+}
+
+.channelListNameEffectTitleRow {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-width: 0;
+}
+
+.channelListNameEffectTitle {
+	color: var(--text-primary);
+	font-size: 0.92rem;
+	font-weight: 700;
+	line-height: 1.25;
+}
+
+.newUnlockButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	padding: 0.16rem 0.46rem;
+	border-radius: 9999px;
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 42%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 24%, transparent);
+	color: color-mix(in srgb, var(--text-primary) 92%, white 8%);
+	font-size: 0.64rem;
+	font-weight: 700;
+	letter-spacing: 0.03em;
+	line-height: 1;
+	text-transform: uppercase;
+	cursor: default;
+}
+
+.channelListNameEffectDescription {
+	color: var(--text-primary-muted);
+	font-size: 0.82rem;
+	line-height: 1.35;
+}
+
+.channelListNameEffectGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.5rem;
+}
+
+.channelListNameEffectButton {
+	display: grid;
+	gap: 0.28rem;
+	min-width: 0;
+	border-radius: 0;
+	border: none;
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: transparent;
+	padding: 0.62rem;
+	text-align: left;
+	cursor: pointer;
+	transition:
+		transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+		border-color 150ms ease,
+		background-color 150ms ease,
+		box-shadow 150ms ease;
+}
+
+.channelListNameEffectButton:hover,
+.channelListNameEffectButton:focus-visible {
+	transform: none;
+	border-bottom-color: color-mix(in srgb, var(--brand-primary) 34%, transparent);
+	box-shadow: none;
+}
+
+.channelListNameEffectButton:focus-visible {
+	outline: none;
+}
+
+.channelListNameEffectButtonActive {
+	border-bottom-color: color-mix(in srgb, var(--brand-primary) 58%, white 8%);
+	background: transparent;
+}
+
+.channelListNameEffectPreview,
+.channelListNameEffectLabel {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.channelListNameEffectPreview {
+	font-size: 0.98rem;
+	font-weight: 850;
+	line-height: 1.2;
+}
+
+.channelListNameEffectLabel {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	color: var(--text-primary-muted);
+	font-size: 0.74rem;
+	font-weight: 700;
+}
+
+.channelListNameEffectLock {
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+	color: color-mix(in srgb, var(--brand-primary) 78%, var(--text-primary));
+	padding: 0.08rem 0.32rem;
+	font-size: 0.66rem;
+}
+
+.channelListNameEffect_none {
+	color: inherit;
+}
+
+.channelListNameEffect_rainbow .channelListNameEffectPreview,
+.channelListNameEffect_gold .channelListNameEffectPreview,
+.channelListNameEffect_neon .channelListNameEffectPreview {
+	background-size: 200% 100%;
+	background-clip: text;
+	-webkit-background-clip: text;
+	color: transparent;
+	animation: channelListNameEffectFlow 2.8s linear infinite;
+}
+
+.channelListNameEffect_rainbow .channelListNameEffectPreview {
+	background-image: linear-gradient(
+		90deg,
+		#ff4d8d 0%,
+		#ffd166 12.5%,
+		#5eead4 25%,
+		#7c72ff 37.5%,
+		#ff4d8d 50%,
+		#ffd166 62.5%,
+		#5eead4 75%,
+		#7c72ff 87.5%,
+		#ff4d8d 100%
+	);
+}
+
+.channelListNameEffect_gold .channelListNameEffectPreview {
+	background-image: linear-gradient(
+		90deg,
+		#8f5f13 0%,
+		#f7c948 12.5%,
+		#fff3a6 25%,
+		#d99a22 37.5%,
+		#8f5f13 50%,
+		#f7c948 62.5%,
+		#fff3a6 75%,
+		#d99a22 87.5%,
+		#8f5f13 100%
+	);
+}
+
+.channelListNameEffect_neon .channelListNameEffectPreview {
+	background-image: linear-gradient(
+		90deg,
+		#67e8f9 0%,
+		#a78bfa 12.5%,
+		#f0abfc 25%,
+		#22d3ee 37.5%,
+		#67e8f9 50%,
+		#a78bfa 62.5%,
+		#f0abfc 75%,
+		#22d3ee 87.5%,
+		#67e8f9 100%
+	);
+	text-shadow: 0 0 12px color-mix(in srgb, #67e8f9 38%, transparent);
 }
 
 .opacityHalf {
@@ -90,12 +273,24 @@
 	display: flex;
 	flex: 1;
 	justify-content: center;
+	width: 100%;
+	min-width: 0;
+}
+
+.previewColumn > * {
+	width: 100%;
+	max-width: min(100%, 22rem);
 }
 
 @media (min-width: 1024px) {
 	.previewColumn {
+		position: sticky;
+		top: 1rem;
+		align-self: flex-start;
 		justify-content: flex-end;
-		flex: 1;
+		flex: 0 1 min(22rem, 34vw);
+		max-width: 22rem;
+		min-width: min(18rem, 36vw);
 	}
 
 	.formColumn {
@@ -105,8 +300,8 @@
 	.profileEnhancementsRow {
 		grid-template-columns: minmax(0, 1.22fr) minmax(0, 1.08fr);
 		align-items: stretch;
-		gap: 1.08rem;
-		margin-top: 1.18rem;
+		gap: 1rem;
+		margin-top: 1rem;
 	}
 }
 
@@ -121,7 +316,7 @@
 	}
 
 	.previewColumn {
-		flex: 1;
+		flex: 0 1 min(22rem, 30vw);
 	}
 }
 
@@ -139,53 +334,21 @@
 
 @media (max-width: 1023px) {
 	.contentLayout {
-		gap: 1.1rem;
-	}
-
-	.formColumn {
 		gap: 0.95rem;
 	}
 
+	.formColumn {
+		gap: 0.72rem;
+	}
+
 	.formColumn > div {
-		border-radius: 1rem;
+		border-radius: 8px;
 		border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
-		background:
-			linear-gradient(
-				170deg,
-				color-mix(in srgb, var(--background-floating) 11%, var(--background-secondary) 89%),
-				color-mix(in srgb, var(--background-primary) 93%, var(--background-secondary) 7%)
-			);
+		background: color-mix(in srgb, var(--background-secondary) 78%, var(--background-primary) 22%);
 		padding: 0.84rem 0.86rem;
-		box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
-		animation: profileCardReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
-	}
-
-	.formColumn > div:nth-child(2) {
-		animation-delay: 24ms;
-	}
-
-	.formColumn > div:nth-child(3) {
-		animation-delay: 44ms;
-	}
-
-	.formColumn > div:nth-child(4) {
-		animation-delay: 64ms;
-	}
-
-	.formColumn > div:nth-child(5) {
-		animation-delay: 84ms;
-	}
-
-	.formColumn > div:nth-child(6) {
-		animation-delay: 104ms;
-	}
-
-	.formColumn > div:nth-child(7) {
-		animation-delay: 124ms;
-	}
-
-	.formColumn > div:nth-child(8) {
-		animation-delay: 144ms;
+		box-shadow: none;
+		animation: none;
+		contain: layout paint;
 	}
 
 	.previewColumn {
@@ -218,8 +381,23 @@
 	}
 }
 
+@keyframes channelListNameEffectFlow {
+	from {
+		background-position: 0% 50%;
+	}
+	to {
+		background-position: 200% 50%;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.formColumn > div {
+		animation: none;
+	}
+
+	.channelListNameEffect_rainbow .channelListNameEffectPreview,
+	.channelListNameEffect_gold .channelListNameEffectPreview,
+	.channelListNameEffect_neon .channelListNameEffectPreview {
 		animation: none;
 	}
 }

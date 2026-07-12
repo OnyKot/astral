@@ -42,6 +42,34 @@ export const useTextareaDraftAndTyping = ({
 	enabled,
 }: UseTextareaDraftAndTypingOptions) => {
 	const isRestoringDraftRef = React.useRef(false);
+	const draftFlushTimeoutRef = React.useRef<number | null>(null);
+	const pendingDraftRef = React.useRef<string | null>(null);
+	const typingTimeoutRef = React.useRef<number | null>(null);
+	const lastPersistedDraftRef = React.useRef<string | null>(draft ?? null);
+
+	const clearDraftFlush = React.useCallback(() => {
+		if (draftFlushTimeoutRef.current != null) {
+			window.clearTimeout(draftFlushTimeoutRef.current);
+			draftFlushTimeoutRef.current = null;
+		}
+	}, []);
+
+	const flushDraft = React.useCallback(() => {
+		clearDraftFlush();
+		const nextDraft = pendingDraftRef.current;
+		pendingDraftRef.current = null;
+
+		if (nextDraft === lastPersistedDraftRef.current) {
+			return;
+		}
+
+		if (nextDraft) {
+			DraftActionCreators.createDraft(channelId, nextDraft);
+		} else {
+			DraftActionCreators.deleteDraft(channelId);
+		}
+		lastPersistedDraftRef.current = nextDraft;
+	}, [channelId, clearDraftFlush]);
 
 	React.useEffect(() => {
 		if (!enabled) {
@@ -56,6 +84,7 @@ export const useTextareaDraftAndTyping = ({
 			if (previousValueRef.current !== null) {
 				previousValueRef.current = draft;
 			}
+			lastPersistedDraftRef.current = draft;
 			setTimeout(() => {
 				isRestoringDraftRef.current = false;
 			}, 0);
@@ -63,18 +92,36 @@ export const useTextareaDraftAndTyping = ({
 	}, [draft, previousValueRef, setValue]);
 
 	React.useEffect(() => {
-		if (value) {
-			DraftActionCreators.createDraft(channelId, value);
-		} else {
-			DraftActionCreators.deleteDraft(channelId);
+		if (isRestoringDraftRef.current) {
+			return;
 		}
-	}, [channelId, value]);
+
+		pendingDraftRef.current = value || null;
+		clearDraftFlush();
+
+		if (!value) {
+			flushDraft();
+			return;
+		}
+
+		draftFlushTimeoutRef.current = window.setTimeout(flushDraft, 220);
+
+		return clearDraftFlush;
+	}, [clearDraftFlush, flushDraft, value]);
+
+	React.useEffect(() => flushDraft, [flushDraft]);
 
 	React.useEffect(() => {
+		if (typingTimeoutRef.current != null) {
+			window.clearTimeout(typingTimeoutRef.current);
+			typingTimeoutRef.current = null;
+		}
+
 		if (isRestoringDraftRef.current) {
 			return;
 		}
 		if (!enabled) {
+			TypingUtils.clear(channelId);
 			return;
 		}
 
@@ -82,9 +129,19 @@ export const useTextareaDraftAndTyping = ({
 		const isInReplaceMode = ReplaceCommandUtils.isReplaceCommand(content);
 		const isSlashCommand = content.startsWith('/');
 		if (content && !isAutocompleteAttached && !isInReplaceMode && !isSlashCommand) {
-			TypingUtils.typing(channelId);
+			typingTimeoutRef.current = window.setTimeout(() => {
+				typingTimeoutRef.current = null;
+				TypingUtils.typing(channelId);
+			}, 120);
 		} else {
 			TypingUtils.clear(channelId);
 		}
-	}, [channelId, value, isAutocompleteAttached]);
+
+		return () => {
+			if (typingTimeoutRef.current != null) {
+				window.clearTimeout(typingTimeoutRef.current);
+				typingTimeoutRef.current = null;
+			}
+		};
+	}, [channelId, enabled, value, isAutocompleteAttached]);
 };

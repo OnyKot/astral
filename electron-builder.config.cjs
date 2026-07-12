@@ -135,7 +135,12 @@ const config = (() => {
 
 		win: {
 			icon: `${iconsDir}/icon.ico`,
-			target: [{target: 'nsis', arch: ['x64']}],
+			// squirrelWindows enables autoUpdater (Squirrel protocol)
+			// nsis is kept as fallback for first-time install
+			target: [
+				{target: 'squirrel', arch: ['x64']},
+				{target: 'nsis', arch: ['x64']},
+			],
 		},
 
 		nsis: {

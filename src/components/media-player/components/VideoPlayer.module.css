@@ -110,7 +110,10 @@
 	left: 0;
 	right: 0;
 	padding: 0 0 4px 0;
-	background-color: var(--background-primary);
+	background:
+		linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.54) 24%, rgba(0, 0, 0, 0.82) 100%);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
 	display: flex;
 	flex-direction: column;
 	gap: 0;
@@ -124,8 +127,8 @@
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	height: 28px;
-	padding: 0 8px;
+	min-height: 34px;
+	padding: 2px 8px 0;
 }
 
 .controlsLeft {
@@ -239,10 +242,22 @@
 @media (max-width: 320px) {
 	.controlsRow {
 		gap: 2px;
+		padding-inline: 6px;
 	}
 
 	.timeDisplay {
 		display: none;
+	}
+}
+
+@media (pointer: coarse) {
+	.controlsOverlay {
+		padding-bottom: max(6px, var(--safe-area-bottom, 0px));
+	}
+
+	.controlsRow {
+		min-height: 40px;
+		gap: 6px;
 	}
 }
 

@@ -23,9 +23,8 @@ import * as SoundActionCreators from '~/actions/SoundActionCreators';
 import {Logger} from '~/lib/Logger';
 import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
 import ParticipantVolumeStore from '~/stores/ParticipantVolumeStore';
-import UserStore from '~/stores/UserStore';
 import {SoundType} from '~/utils/SoundUtils';
-import {sendVoiceStateDisconnect} from './VoiceChannelConnector';
+import {clampMediaVolumePercent} from '~/utils/voice/audioVolume';
 import VoiceConnectionManager from './VoiceConnectionManager';
 import VoiceMediaManager from './VoiceMediaManager';
 import VoiceParticipantManager from './VoiceParticipantManager';
@@ -37,16 +36,25 @@ const isRemoteAudioTrack = (track: unknown): track is {setVolume: (v: number) =>
 	track != null && typeof track === 'object' && 'kind' in track && (track as {kind: string}).kind === Track.Kind.Audio;
 
 const extractUserId = (identity: string): string | null => {
-	const match = identity.match(/^user_(\d+)(?:_(.+))?$/);
-	return match ? match[1] : null;
+	if (!identity.startsWith('user_')) return null;
+	const value = identity.slice(5);
+	const delimiterIndex = value.indexOf('_');
+	return delimiterIndex === -1 ? value : value.slice(0, delimiterIndex);
 };
-const duplicateDisconnectCooldown = new Map<string, number>();
 
 export interface RoomEventCallbacks {
 	onConnected: () => Promise<void>;
 	onDisconnected: () => void;
+	onUnexpectedDisconnect: () => void;
 	onReconnecting: () => void;
 	onReconnected: () => void;
+}
+
+async function runPostConnectMediaSetup(room: Room, guildId: string | null, channelId: string): Promise<void> {
+	await VoiceMediaManager.ensureMicrophone(room, channelId);
+	if (guildId && channelId) {
+		VoicePermissionManager.syncWithPermissionStore(guildId, channelId, room);
+	}
 }
 
 function abortRoomAfterSetupError(room: Room, callbacks: RoomEventCallbacks, error: unknown): void {
@@ -80,24 +88,6 @@ export function bindRoomEvents(
 	const guard = VoiceConnectionManager.createGuardedHandler.bind(VoiceConnectionManager);
 	const upsertAndEnforceSingleConnection = (p: Participant) => {
 		VoiceParticipantManager.upsertParticipant(p);
-
-		const currentUser = UserStore.getCurrentUser();
-		const currentConnectionId = VoiceConnectionManager.connectionId;
-		const currentChannelId = VoiceConnectionManager.channelId;
-		if (!currentUser || !currentConnectionId || !currentChannelId) return;
-
-		const now = Date.now();
-		for (const snapshot of Object.values(VoiceParticipantManager.participants)) {
-			if (snapshot.userId !== currentUser.id) continue;
-			if (!snapshot.connectionId || snapshot.connectionId === currentConnectionId) continue;
-
-			const cooldownKey = `${guildId ?? 'dm'}:${snapshot.connectionId}`;
-			const lastSentAt = duplicateDisconnectCooldown.get(cooldownKey) ?? 0;
-			if (now - lastSentAt < 5000) continue;
-
-			duplicateDisconnectCooldown.set(cooldownKey, now);
-			sendVoiceStateDisconnect(guildId, snapshot.connectionId);
-		}
 	};
 
 	room.on(
@@ -110,10 +100,7 @@ export function bindRoomEvents(
 					VoiceConnectionManager.markConnected();
 					await callbacks.onConnected();
 					await VoiceMediaManager.playEntranceSound();
-					await VoiceMediaManager.ensureMicrophone(room, channelId);
-					if (guildId && channelId) {
-						VoicePermissionManager.syncWithPermissionStore(guildId, channelId, room);
-					}
+					await runPostConnectMediaSetup(room, guildId, channelId);
 				} catch (error) {
 					abortRoomAfterSetupError(room, callbacks, error);
 				}
@@ -124,12 +111,10 @@ export function bindRoomEvents(
 	room.on(
 		RoomEvent.Disconnected,
 		guard(attemptId, () => {
-			LocalVoiceStateStore.updateSelfVideo(false);
-			LocalVoiceStateStore.updateSelfStream(false);
-			VoiceMediaManager.resetStreamTracking();
-			callbacks.onDisconnected();
-			VoiceParticipantManager.clear();
-			VoiceConnectionManager.markDisconnected('error');
+			if (VoiceConnectionManager.disconnecting) {
+				return;
+			}
+			callbacks.onUnexpectedDisconnect();
 		}),
 	);
 
@@ -144,10 +129,17 @@ export function bindRoomEvents(
 	room.on(
 		RoomEvent.Reconnected,
 		guard(attemptId, () => {
-			VoiceParticipantManager.hydrateFromRoom(room);
-			VoicePermissionManager.applyDeafen(room, LocalVoiceStateStore.getSelfDeaf());
-			VoiceConnectionManager.markReconnected();
-			callbacks.onReconnected();
+			void (async () => {
+				try {
+					VoiceParticipantManager.hydrateFromRoom(room);
+					VoicePermissionManager.applyDeafen(room, LocalVoiceStateStore.getSelfDeaf());
+					VoiceConnectionManager.markReconnected();
+					callbacks.onReconnected();
+					await runPostConnectMediaSetup(room, guildId, channelId);
+				} catch (error) {
+					abortRoomAfterSetupError(room, callbacks, error);
+				}
+			})();
 		}),
 	);
 
@@ -184,7 +176,9 @@ export function bindRoomEvents(
 				if (pub.kind === Track.Kind.Audio && isRemoteAudioTrack(track)) {
 					const userId = extractUserId(participant.identity);
 					if (userId) {
-						const volume = ParticipantVolumeStore.getVolumeForAudioSource(userId, pub.source) / 100;
+						const volume = clampMediaVolumePercent(
+							ParticipantVolumeStore.getVolumeForAudioSource(userId, pub.source),
+						);
 						track.setVolume(volume);
 						const locallyMuted = ParticipantVolumeStore.isLocalMuted(userId);
 						const selfDeaf = LocalVoiceStateStore.getSelfDeaf();

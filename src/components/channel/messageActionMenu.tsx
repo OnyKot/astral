@@ -46,6 +46,7 @@ import ChannelStore from '~/stores/ChannelStore';
 import EmojiPickerStore from '~/stores/EmojiPickerStore';
 import type {Emoji} from '~/stores/EmojiStore';
 import EmojiStore from '~/stores/EmojiStore';
+import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import SavedMessagesStore from '~/stores/SavedMessagesStore';
 
 interface MessageActionMenuOptions {
@@ -84,6 +85,7 @@ export const useMessageActionMenuData = (
 	const handlers = createMessageActionHandlers(message, {onClose});
 	const isSaved = React.useMemo(() => SavedMessagesStore.isSaved(message.id), [message.id]);
 	const channel = React.useMemo(() => ChannelStore.getChannel(message.channelId) ?? null, [message.channelId]);
+	const isMobile = MobileLayoutStore.isMobileLayout();
 	const allEmojis = React.useMemo(() => EmojiStore.search(channel, ''), [channel]);
 	const quickReactionEmojis = React.useMemo(
 		() => EmojiPickerStore.getQuickReactionEmojis(allEmojis, quickReactionCount),
@@ -137,7 +139,7 @@ export const useMessageActionMenuData = (
 				});
 			}
 
-			if (message.isUserMessage() && permissions.canPinMessage) {
+			if (!isMobile && message.isUserMessage() && permissions.canPinMessage) {
 				managementActions.push({
 					icon: <PinIcon size={20} />,
 					label: message.pinned ? t`Unpin Message` : t`Pin Message`,
@@ -145,7 +147,7 @@ export const useMessageActionMenuData = (
 				});
 			}
 
-			if (message.isUserMessage()) {
+			if (!isMobile && message.isUserMessage()) {
 				managementActions.push({
 					icon: <BookmarkIcon size={20} filled={isSaved} />,
 					label: isSaved ? t`Remove Bookmark` : t`Bookmark Message`,
@@ -227,7 +229,7 @@ export const useMessageActionMenuData = (
 		if (utilityActions.length > 0) groups.push({items: utilityActions});
 
 		return groups;
-	}, [message, handlers, isSaved, onClose, onDelete, onOpenEmojiPicker, permissions]);
+	}, [message, handlers, isMobile, isSaved, onClose, onDelete, onOpenEmojiPicker, permissions]);
 
 	const quickReactionRowVisible =
 		permissions.canAddReactions && message.state === MessageStates.SENT && quickReactionEmojis.length > 0;

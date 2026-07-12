@@ -17,20 +17,13 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React from 'react';
 import * as GiftActionCreators from '~/actions/GiftActionCreators';
 import * as InviteActionCreators from '~/actions/InviteActionCreators';
-import * as ModalActionCreators from '~/actions/ModalActionCreators';
-import {modal} from '~/actions/ModalActionCreators';
-import * as UserProfileActionCreators from '~/actions/UserProfileActionCreators';
 import {ME} from '~/Constants';
-import {UserProfileModal} from '~/components/modals/UserProfileModal';
 import {Endpoints} from '~/Endpoints';
 import {Routes} from '~/Routes';
 import AuthenticationStore from '~/stores/AuthenticationStore';
-import ChannelStore from '~/stores/ChannelStore';
 import RuntimeConfigStore from '~/stores/RuntimeConfigStore';
-import UserStore from '~/stores/UserStore';
 import http from '~/lib/HttpClient';
 import {Logger} from '~/lib/Logger';
 import * as RouterUtils from '~/utils/RouterUtils';
@@ -146,7 +139,9 @@ const buildUserProfileLinkFromPath = (path: string): string => {
 };
 
 export const buildUserProfileLink = (userId: string, channelId?: string): string => {
-	return buildUserProfileLinkFromPath(channelId ? `/channel/${channelId}/user/${userId}` : `/users/${userId}`);
+	return buildUserProfileLinkFromPath(
+		channelId ? Routes.channelUserProfile(channelId, userId) : Routes.userProfile(userId),
+	);
 };
 
 export const createUserModalLink = async (userId: string, options: UserModalLinkOptions = {}): Promise<string> => {
@@ -186,14 +181,17 @@ const navigateForTarget = (target: DeepLinkTarget) => {
 	if (isAuthenticated) {
 		if (target.type === 'invite') {
 			void InviteActionCreators.openAcceptModal(target.code);
+			RouterUtils.transitionTo(Routes.ME);
 		} else {
 			if (target.type === 'gift') {
 				void GiftActionCreators.openAcceptModal(target.code);
+				RouterUtils.transitionTo(Routes.ME);
 			} else if (target.type === 'user') {
-				void openUserProfile(target.userId, undefined, target.channelId);
+				RouterUtils.transitionTo(
+					target.channelId ? Routes.channelUserProfile(target.channelId, target.userId) : Routes.userProfile(target.userId),
+				);
 			}
 		}
-		RouterUtils.transitionTo(Routes.ME);
 		return;
 	}
 
@@ -364,24 +362,3 @@ export function parseMessageJumpLink(url: string): MessageJumpLink | null {
 		messageId,
 	};
 }
-
-const openUserProfile = async (userId: string, guildId?: string, channelId?: string) => {
-	const derivedGuildId = guildId ?? (channelId ? (ChannelStore.getChannel(channelId)?.guildId ?? undefined) : undefined);
-	try {
-		await UserProfileActionCreators.fetch(userId, derivedGuildId);
-	} catch (error) {
-		console.error('[DeepLink] Failed to fetch user profile', userId, error);
-	}
-
-	const user = UserStore.getUser(userId);
-	ModalActionCreators.pushWithKey(
-		modal(() =>
-			React.createElement(UserProfileModal, {
-				userId,
-				guildId: derivedGuildId,
-				previewUser: user ?? undefined,
-			}),
-		),
-		`user-profile-${userId}-${derivedGuildId ?? 'global'}`,
-	);
-};

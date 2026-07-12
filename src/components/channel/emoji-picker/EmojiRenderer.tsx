@@ -26,7 +26,7 @@ import * as EmojiPickerActionCreators from '~/actions/EmojiPickerActionCreators'
 import * as PremiumModalActionCreators from '~/actions/PremiumModalActionCreators';
 import * as TextCopyActionCreators from '~/actions/TextCopyActionCreators';
 import styles from '~/components/channel/EmojiPicker.module.css';
-import {EMOJI_SPRITE_SIZE, getSpriteSheetBackground} from '~/components/channel/emoji-picker/EmojiPickerConstants';
+import {EMOJI_SPRITE_SIZE, getEmojiImageUrl, getSpriteSheetBackground} from '~/components/channel/emoji-picker/EmojiPickerConstants';
 import {MenuGroup} from '~/components/uikit/ContextMenu/MenuGroup';
 import {MenuItem} from '~/components/uikit/ContextMenu/MenuItem';
 import {Tooltip} from '~/components/uikit/Tooltip/Tooltip';
@@ -68,8 +68,13 @@ export const EmojiRenderer = React.forwardRef<HTMLButtonElement, EmojiRendererPr
 		const emojiRef = React.useRef<HTMLButtonElement | null>(null);
 		const {t, i18n} = useLingui();
 		const isFavorite = EmojiPickerStore.isFavorite(emoji);
+		const [unicodeImageFailed, setUnicodeImageFailed] = React.useState(false);
 
 		React.useImperativeHandle(forwardedRef, () => emojiRef.current!);
+
+		React.useEffect(() => {
+			setUnicodeImageFailed(false);
+		}, [emoji.id, emoji.name, emoji.surrogates, skinTone]);
 
 		React.useEffect(() => {
 			if (shouldScrollIntoView && emojiRef.current) {
@@ -166,9 +171,10 @@ export const EmojiRenderer = React.forwardRef<HTMLButtonElement, EmojiRendererPr
 		};
 
 		if (emoji.guildId || emoji.id) {
+			const emojiUrl = getEmojiImageUrl(emoji, skinTone);
 			const content = (
 				<img
-					src={emoji.url ?? ''}
+					src={emojiUrl ?? ''}
 					alt={emoji.name}
 					className={clsx(styles.emojiImage, isLocked && styles.emojiLocked)}
 					loading="eager"
@@ -202,20 +208,22 @@ export const EmojiRenderer = React.forwardRef<HTMLButtonElement, EmojiRendererPr
 			 * symptom in reactions. Individual Twemoji SVGs are tiny and
 			 * CDN-cached, so the per-cell network cost is negligible.
 			 */
-			if (EmojiUtils.shouldUseNativeEmoji) {
+			if (EmojiUtils.shouldUseNativeEmoji || unicodeImageFailed) {
 				return renderButton(<span className={styles.nativeEmoji}>{displayEmoji}</span>);
 			}
 
-			const twemojiUrl = EmojiUtils.getEmojiURL(displayEmoji);
+			const twemojiUrl = getEmojiImageUrl(emoji, skinTone);
 			if (twemojiUrl) {
 				return renderButton(
 					<img
 						src={twemojiUrl}
 						alt={emoji.name}
 						className={styles.emojiImage}
+						crossOrigin="anonymous"
 						loading="eager"
 						decoding="async"
-						onError={handleEmojiImageError}
+						onLoad={(event) => EmojiUtils.applyEmojiVisualNormalization(event.currentTarget)}
+						onError={() => setUnicodeImageFailed(true)}
 					/>,
 				);
 			}
@@ -230,9 +238,10 @@ export const EmojiRenderer = React.forwardRef<HTMLButtonElement, EmojiRendererPr
 		 * later — avoiding it for unicode is the explicit fix.
 		 */
 		if (!emoji.useSpriteSheet) {
+			const emojiUrl = getEmojiImageUrl(emoji, skinTone);
 			return renderButton(
 				<img
-					src={emoji.url ?? ''}
+					src={emojiUrl ?? ''}
 					alt={emoji.name}
 					className={styles.emojiImage}
 					loading="eager"
@@ -246,9 +255,10 @@ export const EmojiRenderer = React.forwardRef<HTMLButtonElement, EmojiRendererPr
 		const index = hasDiversity ? emoji.diversityIndex : emoji.index;
 
 		if (index === undefined) {
+			const emojiUrl = getEmojiImageUrl(emoji, skinTone);
 			return renderButton(
 				<img
-					src={emoji.url ?? ''}
+					src={emojiUrl ?? ''}
 					alt={emoji.name}
 					className={styles.emojiImage}
 					loading="eager"

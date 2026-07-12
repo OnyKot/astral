@@ -121,9 +121,9 @@ describe('CommandUtils', () => {
 			expect(result).toEqual({type: 'unknown'});
 		});
 
-		test('should parse /ai command', () => {
+		test('should return unknown for /ai command', () => {
 			const result = parseCommand('/ai improve this message');
-			expect(result).toEqual({type: 'ai', prompt: 'improve this message'});
+			expect(result).toEqual({type: 'unknown'});
 		});
 
 		test('should return unknown for empty /ai command', () => {
@@ -140,7 +140,6 @@ describe('CommandUtils', () => {
 			expect(isCommand('/msg <@123456789> hello')).toBe(true);
 			expect(isCommand('/me does something')).toBe(true);
 			expect(isCommand('/spoiler secret message')).toBe(true);
-			expect(isCommand('/ai summarize channel updates')).toBe(true);
 			expect(isCommand('_action_')).toBe(true);
 		});
 

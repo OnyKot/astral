@@ -23,11 +23,13 @@ import {observer} from 'mobx-react-lite';
 import {type FC, useCallback} from 'react';
 import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators';
 import * as MediaViewerActionCreators from '~/actions/MediaViewerActionCreators';
+import {MessageAttachmentFlags} from '~/Constants';
 import {deriveDefaultNameFromMessage} from '~/components/channel/embeds/EmbedUtils';
 import {getMediaButtonVisibility} from '~/components/channel/embeds/media/MediaButtonUtils';
 import {MediaContainer} from '~/components/channel/embeds/media/MediaContainer';
 import type {BaseMediaProps} from '~/components/channel/embeds/media/MediaTypes';
 import {NSFWBlurOverlay} from '~/components/channel/embeds/NSFWBlurOverlay';
+import {isAudioAttachment, isGifType, isVideoAttachment} from '~/components/channel/messageAttachmentUtils';
 import {MediaContextMenu} from '~/components/uikit/ContextMenu/MediaContextMenu';
 import {useDeleteAttachment} from '~/hooks/useDeleteAttachment';
 import {useMediaFavorite} from '~/hooks/useMediaFavorite';
@@ -46,6 +48,22 @@ const imageCalculator = createCalculator({
 	maxWidth: IMAGE_CONFIG.MAX_WIDTH,
 	responsive: true,
 });
+
+const getMediaViewerType = (attachment: MessageAttachment): 'image' | 'gif' | 'gifv' | 'video' | 'audio' => {
+	if (isAudioAttachment(attachment)) return 'audio';
+	if (isVideoAttachment(attachment)) return 'video';
+	if ((attachment.flags & MessageAttachmentFlags.IS_ANIMATED) !== 0 || isGifType(attachment.content_type)) return 'gif';
+	return 'image';
+};
+
+const getMediaViewerDimensions = (attachment: MessageAttachment): {naturalWidth: number; naturalHeight: number} => {
+	if (typeof attachment.width === 'number' && typeof attachment.height === 'number') {
+		return {naturalWidth: attachment.width, naturalHeight: attachment.height};
+	}
+	return isVideoAttachment(attachment)
+		? {naturalWidth: 640, naturalHeight: 360}
+		: {naturalWidth: 0, naturalHeight: 0};
+};
 
 interface ImagePreviewHandlerProps {
 	src: string;
@@ -123,19 +141,25 @@ const ImagePreviewHandler: FC<ImagePreviewHandlerProps> = observer(
 				if (mediaAttachments.length > 0) {
 					const currentIndex = mediaAttachments.findIndex((a) => a.id === attachmentId);
 
-					const items = mediaAttachments.map((att) => ({
-						src: att.proxy_url ?? att.url ?? '',
-						originalSrc: att.url ?? '',
-						naturalWidth: att.width!,
-						naturalHeight: att.height!,
-						type: 'image' as const,
-						contentHash: att.content_hash,
-						attachmentId: att.id,
-						expiresAt: att.expires_at ?? null,
-						expired: att.expired ?? false,
-					}));
+					const items = mediaAttachments.map((att) => {
+						const {naturalWidth: attWidth, naturalHeight: attHeight} = getMediaViewerDimensions(att);
+						return {
+							src: att.proxy_url ?? att.url ?? '',
+							originalSrc: att.url ?? '',
+							naturalWidth: attWidth,
+							naturalHeight: attHeight,
+							type: getMediaViewerType(att),
+							contentHash: att.content_hash,
+							attachmentId: att.id,
+							filename: att.filename,
+							fileSize: att.size,
+							duration: att.duration,
+							expiresAt: att.expires_at ?? null,
+							expired: att.expired ?? false,
+						};
+					});
 
-					MediaViewerActionCreators.openMediaViewer(items, currentIndex, {
+					MediaViewerActionCreators.openMediaViewer(items, Math.max(0, currentIndex), {
 						channelId,
 						messageId,
 						message,

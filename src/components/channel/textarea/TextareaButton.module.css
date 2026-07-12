@@ -26,7 +26,7 @@
 	height: var(--textarea-button-height);
 	padding: 0;
 	color: var(--text-primary-muted);
-	border-radius: 0.65rem;
+	border-radius: 0.62rem;
 	transition:
 		color var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease),
 		background-color var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease),
@@ -40,7 +40,7 @@
 
 .button:hover:not(:disabled) {
 	color: var(--text-primary);
-	background: color-mix(in srgb, var(--background-modifier-hover) 90%, transparent);
+	background: color-mix(in srgb, var(--background-modifier-hover) 78%, transparent);
 }
 
 .button:disabled {
@@ -50,7 +50,7 @@
 
 .button.selected {
 	color: var(--text-primary);
-	background: color-mix(in srgb, var(--background-modifier-selected) 82%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 14%, var(--background-modifier-selected) 86%);
 }
 
 .button:active:not(:disabled) {

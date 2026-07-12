@@ -26,7 +26,7 @@ import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators'
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import * as VoiceStateActionCreators from '~/actions/VoiceStateActionCreators';
-import {getStatusTypeLabel} from '~/Constants';
+import {getStatusTypeLabel, Permissions} from '~/Constants';
 import {CustomStatusDisplay} from '~/components/common/CustomStatusDisplay/CustomStatusDisplay';
 import styles from '~/components/layout/UserArea.module.css';
 import {UserSettingsModal} from '~/components/modals/UserSettingsModal';
@@ -43,10 +43,12 @@ import {VoiceInputSettingsMenu, VoiceOutputSettingsMenu} from '~/components/voic
 import {useMediaDevices} from '~/hooks/useMediaDevices';
 import {usePopout} from '~/hooks/usePopout';
 import type {UserRecord} from '~/records/UserRecord';
+import ChannelStore from '~/stores/ChannelStore';
 import DeveloperOptionsStore from '~/stores/DeveloperOptionsStore';
 import KeybindStore from '~/stores/KeybindStore';
 import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
+import PermissionStore from '~/stores/PermissionStore';
 import PresenceStore from '~/stores/PresenceStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import {formatKeyCombo} from '~/utils/KeybindUtils';
@@ -85,6 +87,11 @@ const UserAreaWithRoom = observer(function UserAreaWithRoom({
 	const isGuildMuted = voiceState?.mute ?? false;
 	const isGuildDeafened = voiceState?.deaf ?? false;
 	const muteReason = MediaEngineStore.getMuteReason(voiceState);
+	const connectedChannel = ChannelStore.getChannel(MediaEngineStore.channelId ?? '');
+	const canSpeakInChannel = connectedChannel ? (!connectedChannel.guildId || PermissionStore.can(Permissions.SPEAK, connectedChannel)) : true;
+	const isBroadcastMode = connectedChannel ? MediaEngineStore.isVoiceChannelStageLike(connectedChannel.id) : false;
+	const isSuppressedListener = isBroadcastMode && MediaEngineStore.isCurrentUserInBroadcastListenerMode();
+	const isStageListenerLocked = isBroadcastMode && (isSuppressedListener || !canSpeakInChannel);
 
 	return (
 		<UserAreaInner
@@ -101,6 +108,7 @@ const UserAreaWithRoom = observer(function UserAreaWithRoom({
 			isGuildMuted={isGuildMuted}
 			isGuildDeafened={isGuildDeafened}
 			muteReason={muteReason}
+			isStageListenerLocked={isStageListenerLocked}
 		/>
 	);
 });
@@ -118,8 +126,9 @@ const UserAreaInner = observer(
 			isMuted,
 			isDeafened,
 			isGuildMuted = false,
-		isGuildDeafened = false,
-		muteReason = null,
+			isGuildDeafened = false,
+			muteReason = null,
+			isStageListenerLocked = false,
 		}: {
 			user: UserRecord;
 			collapseToAvatar?: boolean;
@@ -132,9 +141,10 @@ const UserAreaInner = observer(
 			isMuted: boolean;
 			isDeafened: boolean;
 			isGuildMuted?: boolean;
-		isGuildDeafened?: boolean;
-		muteReason?: 'guild' | 'push_to_talk' | 'self' | null;
-	}) => {
+			isGuildDeafened?: boolean;
+			muteReason?: 'guild' | 'push_to_talk' | 'self' | null;
+			isStageListenerLocked?: boolean;
+		}) => {
 		const {t, i18n} = useLingui();
 		const {isOpen, openProps} = usePopout('user-area');
 		const status = PresenceStore.getStatus(user.id);
@@ -210,6 +220,7 @@ const UserAreaInner = observer(
 		const pushToTalkCombo = KeybindStore.getByAction('push_to_talk').combo;
 		const pushToTalkHint = formatKeyCombo(pushToTalkCombo);
 		const effectiveMuted = muteReason !== null || isMuted;
+		const muteControlDisabled = isGuildMuted || isStageListenerLocked;
 
 		return (
 			<div className={wrapperClassName}>
@@ -325,7 +336,9 @@ const UserAreaInner = observer(
 							text={() => (
 								<TooltipWithKeybind
 									label={
-										isGuildMuted
+										isStageListenerLocked
+											? t`Listener mode: join stage to speak`
+											: isGuildMuted
 											? t`Community Muted`
 											: muteReason === 'push_to_talk'
 												? t`Push-to-talk enabled — hold ${pushToTalkHint} to speak`
@@ -333,23 +346,31 @@ const UserAreaInner = observer(
 													? t`Unmute`
 													: t`Mute`
 									}
-									action={isGuildMuted ? undefined : 'toggle_mute'}
+									action={muteControlDisabled ? undefined : 'toggle_mute'}
 								/>
 							)}
 						>
-							<FocusRing offset={-2} enabled={!isGuildMuted}>
+							<FocusRing offset={-2} enabled={!muteControlDisabled}>
 								<div>
 									<button
 										type="button"
-										aria-label={isGuildMuted ? t`Community Muted` : effectiveMuted ? t`Unmute` : t`Mute`}
+										aria-label={
+											isStageListenerLocked
+												? t`Listener mode: join stage to speak`
+												: isGuildMuted
+													? t`Community Muted`
+													: effectiveMuted
+														? t`Unmute`
+														: t`Mute`
+										}
 										className={clsx(
 											styles.controlButton,
 											(effectiveMuted || isGuildMuted) && styles.active,
-											isGuildMuted && styles.disabled,
+											muteControlDisabled && styles.disabled,
 										)}
-										onClick={isGuildMuted ? undefined : () => VoiceStateActionCreators.toggleSelfMute(null)}
+										onClick={muteControlDisabled ? undefined : () => VoiceStateActionCreators.toggleSelfMute(null)}
 										onContextMenu={handleMicContextMenu}
-										disabled={isGuildMuted}
+										disabled={muteControlDisabled}
 									>
 										{effectiveMuted || isGuildMuted ? (
 											<MicrophoneSlashIcon weight="fill" className={styles.controlIcon} />

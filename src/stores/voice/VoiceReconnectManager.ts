@@ -70,9 +70,9 @@ export class VoiceReconnectManager {
 		return this.reconnectState.reconnectAttempts;
 	}
 
-	get lastConnectedChannel(): {guildId: string; channelId: string} | null {
+	get lastConnectedChannel(): {guildId: string | null; channelId: string} | null {
 		const r = this.reconnectState;
-		if (r.lastConnectedGuildId && r.lastConnectedChannelId) {
+		if (r.lastConnectedChannelId) {
 			return {
 				guildId: r.lastConnectedGuildId,
 				channelId: r.lastConnectedChannelId,
@@ -152,12 +152,8 @@ export class VoiceReconnectManager {
 	}
 
 	markAttempted(): void {
-		runInAction(() => {
-			this.reconnectState = {
-				...this.reconnectState,
-				shouldReconnect: false,
-			};
-		});
+		// Legacy hook for one-shot external reconnect handlers. Backoff retries stay enabled.
+		logger.debug('External reconnect handler ran');
 	}
 
 	reset(): void {

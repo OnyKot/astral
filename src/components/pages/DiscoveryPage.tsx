@@ -18,7 +18,7 @@
  */
 
 import {Trans, useLingui} from '@lingui/react/macro';
-import {CompassIcon, GridFourIcon, ListIcon, MagnifyingGlassIcon, UsersIcon} from '@phosphor-icons/react';
+import {GridFourIcon, ListIcon, MagnifyingGlassIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
@@ -30,9 +30,14 @@ import * as RouterUtils from '~/utils/RouterUtils';
 import styles from './DiscoveryPage.module.css';
 
 const PAGE_SIZE = 24;
-const FEATURE_LIMIT = 2;
+const TAG_LIMIT = 3;
 
-const formatCount = (value: number): string => new Intl.NumberFormat().format(value);
+const safeNumber = (value: unknown, fallback = 0): number => {
+	const numeric = typeof value === 'number' ? value : Number(value);
+	return Number.isFinite(numeric) ? numeric : fallback;
+};
+
+const formatCount = (value: unknown): string => new Intl.NumberFormat().format(safeNumber(value));
 
 /*
  * Persist filter / view-mode preferences across reloads. The Discovery
@@ -237,6 +242,7 @@ export const DiscoveryPage = observer(() => {
 	const hasMore = guilds.length < total;
 	const normalizedQuery = debouncedSearch;
 	const isSearching = normalizedQuery.length > 0;
+	const isSearchPending = searchInput.trim() !== debouncedSearch;
 	const activeTaxonomy = React.useMemo(
 		() => (taxonomy.length > 0 ? taxonomy : [{id: 'all', label: t`All`, description: '', count: total}]),
 		[t, taxonomy, total],
@@ -246,35 +252,6 @@ export const DiscoveryPage = observer(() => {
 		[activeCategory, activeTaxonomy],
 	);
 	const requestedGuildIdSet = React.useMemo(() => new Set(requestedGuildIds), [requestedGuildIds]);
-	const visibleOnline = React.useMemo(() => guilds.reduce((sum, guild) => sum + guild.presence_count, 0), [guilds]);
-	const joinableCount = React.useMemo(
-		() => guilds.filter((guild) => guild.is_member || !guild.features.includes('INVITES_DISABLED')).length,
-		[guilds],
-	);
-	const memberGuildCount = React.useMemo(() => guilds.filter((guild) => guild.is_member).length, [guilds]);
-	const formatFeatureLabel = React.useCallback(
-		(feature: string): string => {
-			switch (feature) {
-				case 'INVITES_DISABLED':
-					return t`Request required`;
-				case 'DISCOVERABLE_DISABLED':
-					return t`Hidden listing`;
-				case 'COMMUNITY':
-					return t`Community`;
-				case 'VERIFIED':
-					return t`Verified`;
-				case 'PARTNERED':
-					return t`Partnered`;
-				default:
-					return feature
-						.split('_')
-						.filter(Boolean)
-						.map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-						.join(' ');
-			}
-		},
-		[t],
-	);
 
 	const formatTagLabel = React.useCallback(
 		(tag: string): string => {
@@ -364,149 +341,76 @@ export const DiscoveryPage = observer(() => {
 
 	const renderGuildCard = React.useCallback(
 		(guild: GuildDiscoveryActionCreators.GuildDiscoveryItem) => {
-			const bannerUrl =
-				AvatarUtils.getGuildBannerURL({id: guild.id, banner: guild.banner}) ??
-				AvatarUtils.getGuildSplashURL({id: guild.id, splash: guild.splash}, 1024);
 			const iconUrl = AvatarUtils.getGuildIconURL({id: guild.id, icon: guild.icon});
-			const requiresJoinRequest = guild.features.includes('INVITES_DISABLED');
+			const guildFeatures = Array.isArray(guild.features) ? guild.features : [];
+			const guildTags = Array.isArray(guild.tags) ? guild.tags : [];
+			const guildName = guild.name?.trim() || t`Unknown community`;
+			const requiresJoinRequest = guildFeatures.includes('INVITES_DISABLED');
 			const requestPending = requestedGuildIdSet.has(guild.id);
 			const actionLabel = guild.is_member
-				? t`Open community`
+				? t`Open`
 				: requestPending
-					? t`Request sent`
+					? t`Pending`
 					: requiresJoinRequest
-						? t`Request access`
-						: t`Join community`;
+						? t`Request`
+						: t`Join`;
 			const statusLabel = guild.is_member
-				? t`Already joined`
+				? t`Joined`
 				: requestPending
-					? t`Request pending`
+					? t`Pending`
 					: requiresJoinRequest
-						? t`Review required`
-						: t`Open to join`;
-			const tagLabels = (guild.tags ?? []).slice(0, 6);
-			const featureLabels = guild.features.slice(0, FEATURE_LIMIT).map(formatFeatureLabel);
+						? t`By request`
+						: null;
+			const tagLine = guildTags
+				.slice(0, TAG_LIMIT)
+				.map((tag) => formatTagLabel(tag))
+				.join(' · ');
 
 			return (
-				<article
-					className={styles.card}
-					key={guild.id}
-				>
-					<div className={styles.cardBanner} style={bannerUrl ? {backgroundImage: `url(${bannerUrl})`} : undefined}>
-						<div className={styles.cardOverlay} />
-						<div className={styles.cardMetaRow}>
-							<span className={styles.cardStatusPill}>{statusLabel}</span>
+				<article className={styles.card} key={guild.id}>
+					<div className={styles.cardMain}>
+						<div className={styles.cardIcon}>
+							{iconUrl ? <img src={iconUrl} alt="" /> : <span>{guildName.slice(0, 1).toUpperCase()}</span>}
+						</div>
+						<div className={styles.cardBody}>
+							<div className={styles.cardTitleRow}>
+								<h3 className={styles.cardTitle}>{guildName}</h3>
+								{statusLabel ? <span className={styles.cardStatus}>{statusLabel}</span> : null}
+							</div>
+							<p className={styles.cardMeta}>
+								{t`${formatCount(guild.member_count)} members`} · {t`${formatCount(guild.presence_count)} online`}
+							</p>
+							{tagLine ? <p className={styles.cardTags}>{tagLine}</p> : null}
 						</div>
 					</div>
-
-					<div className={styles.cardContent}>
-						<div className={styles.cardTitleRow}>
-							<div className={styles.cardIcon}>
-								{iconUrl ? <img src={iconUrl} alt="" /> : <span>{guild.name.slice(0, 1).toUpperCase()}</span>}
-							</div>
-							<div className={styles.cardTitleBlock}>
-								<h3 className={styles.cardTitle}>{guild.name}</h3>
-								<div className={styles.cardStats}>
-									<span>{t`${formatCount(guild.presence_count)} online`}</span>
-									<span>{t`${formatCount(guild.member_count)} members`}</span>
-								</div>
-							</div>
-						</div>
-
-						<div className={styles.cardDescription}>
-							{guild.is_member ? (
-								<Trans>You're already in this community. Jump back in instantly.</Trans>
-							) : requestPending ? (
-								<Trans>Your join request is waiting for review.</Trans>
-							) : requiresJoinRequest ? (
-								<Trans>This community reviews join requests before letting new members enter.</Trans>
-							) : (
-								<Trans>Open community. Join directly from Discovery.</Trans>
-							)}
-						</div>
-
-						{featureLabels.length > 0 && (
-							<div className={styles.featureList}>
-								{featureLabels.map((feature) => (
-									<span key={`${guild.id}:${feature}`} className={styles.featureChip}>
-										{feature}
-									</span>
-								))}
-							</div>
-						)}
-
-						{tagLabels.length > 0 && (
-							<div className={styles.featureList}>
-								{tagLabels.map((tag) => (
-									<span key={`${guild.id}:tag:${tag}`} className={styles.tagChip}>
-										#{formatTagLabel(tag)}
-									</span>
-								))}
-							</div>
-						)}
-
-						<div className={styles.cardFooter}>
-							<div className={styles.cardTrendMetric}>
-								<span className={styles.metricLabel}>{t`Trending`}</span>
-								<span className={styles.metricValue}>{Math.max(0, Math.round(guild.trending_score))}</span>
-							</div>
-							<Button
-								onClick={() => void handleCardAction(guild)}
-								variant={guild.is_member || requiresJoinRequest || requestPending ? 'secondary' : 'primary'}
-								disabled={requestPending || joiningGuildId === guild.id}
-								submitting={joiningGuildId === guild.id}
-							>
-								{actionLabel}
-							</Button>
-						</div>
+					<div className={styles.cardAction}>
+						<Button
+							onClick={() => void handleCardAction(guild)}
+							variant={guild.is_member || requiresJoinRequest || requestPending ? 'secondary' : 'primary'}
+							small
+							disabled={requestPending || joiningGuildId === guild.id}
+							submitting={joiningGuildId === guild.id}
+						>
+							{actionLabel}
+						</Button>
 					</div>
 				</article>
 			);
 		},
-		[formatFeatureLabel, formatTagLabel, handleCardAction, joiningGuildId, requestedGuildIdSet, t],
+		[formatTagLabel, handleCardAction, joiningGuildId, requestedGuildIdSet, t],
 	);
 
 	return (
 		<div className={styles.page}>
-			<section className={styles.hero}>
-				<div className={styles.heroTopRow}>
-					<div className={styles.heroBadge}>
-						<CompassIcon size={16} weight="fill" />
-						<span>
-							<Trans>Community Discovery</Trans>
-						</span>
-					</div>
-				</div>
-
-				<div className={styles.heroMain}>
-					<div className={styles.heroCopy}>
-						<h1 className={styles.heroTitle}>
-							<Trans>Find a community that actually fits your vibe</Trans>
-						</h1>
-						<p className={styles.heroSubtitle}>
-							<Trans>Explore active public spaces, see what is already alive right now, and jump into the right room without blind searching.</Trans>
-						</p>
-					</div>
-
-					<div className={styles.heroStats}>
-						<div className={styles.heroStatCard}>
-							<span className={styles.heroStatLabel}>{t`Listed now`}</span>
-							<strong className={styles.heroStatValue}>{formatCount(total)}</strong>
-						</div>
-						<div className={styles.heroStatCard}>
-							<span className={styles.heroStatLabel}>{t`Online in results`}</span>
-							<strong className={styles.heroStatValue}>{formatCount(visibleOnline)}</strong>
-						</div>
-						<div className={styles.heroStatCard}>
-							<span className={styles.heroStatLabel}>{t`Ready to join`}</span>
-							<strong className={styles.heroStatValue}>{formatCount(joinableCount)}</strong>
-						</div>
-						<div className={styles.heroStatCard}>
-							<span className={styles.heroStatLabel}>{t`Already yours`}</span>
-							<strong className={styles.heroStatValue}>{formatCount(memberGuildCount)}</strong>
-						</div>
-					</div>
-				</div>
+			<div className={styles.shell}>
+				<header className={styles.pageHeader}>
+					<h1 className={styles.pageTitle}>
+						<Trans>Discover</Trans>
+					</h1>
+					<p className={styles.pageSubtitle}>
+						<Trans>Public communities you can browse and join.</Trans>
+					</p>
+				</header>
 
 				<form onSubmit={handleSearchSubmit} className={styles.searchForm} role="search">
 					<MagnifyingGlassIcon className={styles.searchIcon} weight="bold" size={18} aria-hidden="true" />
@@ -515,21 +419,19 @@ export const DiscoveryPage = observer(() => {
 						type="search"
 						value={searchInput}
 						onChange={(event) => setSearchInput(event.target.value)}
-						placeholder={t`Search by community name or invite code`}
+						placeholder={t`Search communities`}
 						aria-label={t`Search communities`}
 						autoComplete="off"
 						spellCheck={false}
 					/>
-					{/*
-					 * The page now searches as you type via debounce, so the
-					 * submit button is mostly a fallback for keyboard users
-					 * hitting Enter. We keep it visible because removing
-					 * affordances confuses muscle memory and screen readers
-					 * benefit from a labeled submit control.
-					 */}
-					<Button type="submit" variant="inverted">
-						<Trans>Search</Trans>
-					</Button>
+					<button
+						type="submit"
+						className={clsx(styles.searchSubmit, isSearchPending && styles.searchSubmitPending)}
+						aria-label={t`Search`}
+						title={t`Search`}
+					>
+						<MagnifyingGlassIcon weight="bold" size={16} aria-hidden="true" />
+					</button>
 				</form>
 
 				<div className={styles.categoryRail}>
@@ -547,120 +449,107 @@ export const DiscoveryPage = observer(() => {
 							</button>
 						))}
 					</div>
+				</div>
 
-					{activeCategoryEntry && (
-						<div className={styles.activeCategoryPanel}>
-							<div>
-								<div className={styles.activeCategoryLabel}>{formatCategoryLabel(activeCategoryEntry)}</div>
-								<div className={styles.activeCategoryDescription}>
-									{activeCategoryEntry.description || t`Curated public communities that fit this slice of Discovery.`}
-								</div>
+				<section className={styles.resultsSection} aria-labelledby="discovery-results-heading">
+					<div className={styles.resultsHeader}>
+						<div className={styles.resultsHeading}>
+							<h2 className={styles.resultsTitle} id="discovery-results-heading">
+								{isSearching ? t`Results` : t`Communities`}
+							</h2>
+							<p className={styles.resultsSubtitle}>
+								{isSearching
+									? t`"${normalizedQuery}"`
+									: activeCategoryEntry
+										? formatCategoryLabel(activeCategoryEntry)
+										: t`All public listings`}
+								{' · '}
+								{t`${formatCount(total)} total`}
+							</p>
+						</div>
+
+						<div className={styles.resultsTools}>
+							<label className={styles.sortLabel}>
+								<Trans>Sort</Trans>
+								<select
+									className={styles.sortSelect}
+									value={sortBy}
+									onChange={(event) =>
+										setSortBy(event.target.value as 'trending' | 'member_count' | 'created_at' | 'relevance')
+									}
+								>
+									<option value="trending">{t`Trending`}</option>
+									<option value="member_count">{t`Members`}</option>
+									<option value="created_at">{t`Newest`}</option>
+									<option value="relevance">{t`Relevance`}</option>
+								</select>
+							</label>
+							<div className={styles.viewModeToggle} role="group" aria-label={t`View mode`}>
+								<button
+									type="button"
+									className={clsx(styles.viewModeButton, viewMode === 'grid' && styles.viewModeButtonActive)}
+									onClick={() => setViewMode('grid')}
+									aria-label={t`Grid view`}
+									aria-pressed={viewMode === 'grid'}
+									title={t`Grid view`}
+								>
+									<GridFourIcon size={16} weight="bold" />
+								</button>
+								<button
+									type="button"
+									className={clsx(styles.viewModeButton, viewMode === 'list' && styles.viewModeButtonActive)}
+									onClick={() => setViewMode('list')}
+									aria-label={t`List view`}
+									aria-pressed={viewMode === 'list'}
+									title={t`List view`}
+								>
+									<ListIcon size={16} weight="bold" />
+								</button>
 							</div>
-							<div className={styles.activeCategoryMeta}>{t`${formatCount(activeCategoryEntry.count)} listed`}</div>
+						</div>
+					</div>
+
+					{loading && <p className={styles.stateText}>{t`Loading...`}</p>}
+					{error && <p className={styles.errorText}>{error}</p>}
+
+					{!loading && !error && guilds.length === 0 && (
+						<div className={styles.emptyState}>
+							<div className={styles.emptyStateTitle}>{t`No communities found`}</div>
+							<p className={styles.emptyStateDescription}>
+								{isSearching || activeCategory !== 'all'
+									? t`Try another search or category.`
+									: t`No public listings yet.`}
+							</p>
+							{(isSearching || activeCategory !== 'all' || sortBy !== 'trending') && (
+								<Button variant="secondary" small onClick={handleResetFilters}>
+									<Trans>Reset</Trans>
+								</Button>
+							)}
 						</div>
 					)}
-				</div>
-			</section>
 
-			<section className={styles.resultsSection}>
-				<div className={styles.resultsHeader}>
-					<div>
-						<h2 className={styles.resultsTitle}>
-							{isSearching ? t`Search results` : t`Recommended communities`}
-						</h2>
-						<div className={styles.resultsSubtitle}>
-							{isSearching
-								? t`Showing results for "${normalizedQuery}"`
-								: activeCategoryEntry
-									? t`Browsing ${formatCategoryLabel(activeCategoryEntry).toLowerCase()} communities`
-									: t`Browse the current public directory`}
-						</div>
-					</div>
-
-					<div className={styles.resultsTools}>
-						<label className={styles.sortLabel}>
-							<Trans>Sort</Trans>
-							<select
-								className={styles.sortSelect}
-								value={sortBy}
-								onChange={(event) =>
-									setSortBy(event.target.value as 'trending' | 'member_count' | 'created_at' | 'relevance')
-								}
-							>
-								<option value="trending">{t`Trending`}</option>
-								<option value="member_count">{t`Most members`}</option>
-								<option value="created_at">{t`Newest`}</option>
-								<option value="relevance">{t`Relevance`}</option>
-							</select>
-						</label>
-						<div className={styles.viewModeToggle} role="group" aria-label={t`View mode`}>
-							<button
-								type="button"
-								className={clsx(styles.viewModeButton, viewMode === 'grid' && styles.viewModeButtonActive)}
-								onClick={() => setViewMode('grid')}
-								aria-label={t`Grid view`}
-								aria-pressed={viewMode === 'grid'}
-								title={t`Grid view`}
-							>
-								<GridFourIcon size={16} weight="bold" />
-							</button>
-							<button
-								type="button"
-								className={clsx(styles.viewModeButton, viewMode === 'list' && styles.viewModeButtonActive)}
-								onClick={() => setViewMode('list')}
-								aria-label={t`List view`}
-								aria-pressed={viewMode === 'list'}
-								title={t`List view`}
-							>
-								<ListIcon size={16} weight="bold" />
-							</button>
-						</div>
-						<span className={styles.resultsCount}>
-							<UsersIcon size={14} weight="fill" />
-							{formatCount(total)}
-						</span>
-					</div>
-				</div>
-
-				{loading && <p className={styles.stateText}>{t`Loading communities...`}</p>}
-				{error && <p className={styles.errorText}>{error}</p>}
-
-				{!loading && !error && guilds.length === 0 && (
-					<div className={styles.emptyStateCard}>
-						<div className={styles.emptyStateTitle}>{t`Nothing matches this pass yet`}</div>
-						<div className={styles.emptyStateDescription}>
-							{isSearching || activeCategory !== 'all'
-								? t`Try a wider search, switch categories, or reset filters to get back to the full public directory.`
-								: t`Public discovery is still warming up. Check back after more communities opt into listings.`}
-						</div>
-						{(isSearching || activeCategory !== 'all' || sortBy !== 'trending') && (
-							<Button variant="secondary" onClick={handleResetFilters}>
-								<Trans>Reset filters</Trans>
-							</Button>
-						)}
-					</div>
-				)}
-
-				{guilds.length > 0 && (
-					<>
-						<div className={viewMode === 'list' ? styles.list : styles.grid}>
-							{guilds.map((guild) => renderGuildCard(guild))}
-						</div>
-
-						{hasMore && (
-							<div className={styles.loadMoreRow}>
-								<Button
-									variant="secondary"
-									onClick={() => void runFetch(guilds.length, true)}
-									submitting={loadingMore}
-								>
-									<Trans>Load more</Trans>
-								</Button>
+					{guilds.length > 0 && (
+						<>
+							<div className={viewMode === 'list' ? styles.list : styles.grid}>
+								{guilds.map((guild) => renderGuildCard(guild))}
 							</div>
-						)}
-					</>
-				)}
-			</section>
+
+							{hasMore && (
+								<div className={styles.loadMoreRow}>
+									<Button
+										variant="secondary"
+										small
+										onClick={() => void runFetch(guilds.length, true)}
+										submitting={loadingMore}
+									>
+										<Trans>Load more</Trans>
+									</Button>
+								</div>
+							)}
+						</>
+					)}
+				</section>
+			</div>
 		</div>
 	);
 });

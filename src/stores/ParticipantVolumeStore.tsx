@@ -22,6 +22,7 @@ import {Track} from 'livekit-client';
 import {makeAutoObservable} from 'mobx';
 import {Logger} from '~/lib/Logger';
 import {makePersistent} from '~/lib/MobXPersistence';
+import {clampMediaVolumePercent} from '~/utils/voice/audioVolume';
 
 const logger = new Logger('ParticipantVolumeStore');
 
@@ -29,8 +30,10 @@ const isRemoteAudioTrack = (track: Track | null | undefined): track is RemoteAud
 	track?.kind === Track.Kind.Audio;
 
 const idUser = (identity: string): string | null => {
-	const m = identity.match(/^user_(\d+)(?:_(.+))?$/);
-	return m ? m[1] : null;
+	if (!identity.startsWith('user_')) return null;
+	const value = identity.slice(5);
+	const delimiterIndex = value.indexOf('_');
+	return delimiterIndex === -1 ? value : value.slice(0, delimiterIndex);
 };
 
 class ParticipantVolumeStore {
@@ -121,11 +124,13 @@ class ParticipantVolumeStore {
 				const volume = this.getVolumeForAudioSource(userId, pub.source);
 				const track = pub.track;
 				if (isRemoteAudioTrack(track)) {
-					track.setVolume(volume / 100);
+					track.setVolume(clampMediaVolumePercent(volume));
 				}
 
 				const shouldDisable = locallyMuted || selfDeaf;
-				pub.setEnabled(!shouldDisable);
+				if (pub.isSubscribed || pub.track) {
+					pub.setEnabled(!shouldDisable);
+				}
 			} catch (error) {
 				logger.warn(`Failed to apply settings to participant ${userId}`, {error});
 			}

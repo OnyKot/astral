@@ -17,7 +17,6 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {useLingui} from '@lingui/react/macro';
 import {CaretDownIcon, ClockIcon, StarIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
@@ -34,8 +33,6 @@ import type {ChannelRecord} from '~/records/ChannelRecord';
 import EmojiPickerStore from '~/stores/EmojiPickerStore';
 import type {Emoji} from '~/stores/EmojiStore';
 import GuildStore from '~/stores/GuildStore';
-import UserStore from '~/stores/UserStore';
-import {checkEmojiAvailability} from '~/utils/ExpressionPermissionUtils';
 
 export type VirtualRow =
 	| {type: 'header'; category: string; name: string; guildId?: string; index: number}
@@ -49,15 +46,52 @@ interface VirtualRowRendererProps {
 	spriteSheetSizes: {nonDiversitySize: string; diversitySize: string};
 	channel: ChannelRecord | null;
 	gridColumns?: number;
-	hoveredEmoji: Emoji | null;
-	selectedRow: number;
+	isSelectedRow: boolean;
 	selectedColumn: number;
 	emojiRowIndex: number;
-	shouldScrollOnSelection?: boolean;
+	shouldScrollSelectedIntoView?: boolean;
 	emojiRefs: React.MutableRefObject<Map<string, HTMLButtonElement>>;
 }
 
 const INITIAL_VISIBLE_ROWS = OVERSCAN_ROWS * 3;
+const visibilityCallbacks = new Map<Element, () => void>();
+let sharedRowObserver: IntersectionObserver | null = null;
+
+function observeVirtualRow(node: Element, onVisible: () => void): () => void {
+	if (typeof IntersectionObserver === 'undefined') {
+		onVisible();
+		return () => {};
+	}
+
+	if (!sharedRowObserver) {
+		sharedRowObserver = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (!entry.isIntersecting) {
+						continue;
+					}
+
+					const callback = visibilityCallbacks.get(entry.target);
+					visibilityCallbacks.delete(entry.target);
+					sharedRowObserver?.unobserve(entry.target);
+					callback?.();
+				}
+			},
+			{
+				rootMargin: `${OVERSCAN_ROWS * EMOJI_ROW_HEIGHT}px 0px`,
+				threshold: 0,
+			},
+		);
+	}
+
+	visibilityCallbacks.set(node, onVisible);
+	sharedRowObserver.observe(node);
+
+	return () => {
+		visibilityCallbacks.delete(node);
+		sharedRowObserver?.unobserve(node);
+	};
+}
 
 const VirtualRowRenderer: React.FC<VirtualRowRendererProps> = React.memo(
 	({
@@ -68,26 +102,12 @@ const VirtualRowRenderer: React.FC<VirtualRowRendererProps> = React.memo(
 		spriteSheetSizes,
 		channel,
 		gridColumns = 9,
-		selectedRow,
+		isSelectedRow,
 		selectedColumn,
 		emojiRowIndex,
-		shouldScrollOnSelection = false,
+		shouldScrollSelectedIntoView = false,
 		emojiRefs,
 	}) => {
-		const {i18n} = useLingui();
-		const user = UserStore.getCurrentUser();
-		const hasPremium = user?.isPremium() ?? false;
-
-		const isRowLockedByPremium =
-			row.type === 'emoji-row' &&
-			row.emojis.length > 0 &&
-			row.emojis.every((emoji) => {
-				const availability = checkEmojiAvailability(i18n, emoji, channel);
-				return availability.isLockedByPremium;
-			});
-
-		const isDisabled = !hasPremium && isRowLockedByPremium;
-
 		if (row.type === 'header') {
 			const isCollapsed = EmojiPickerStore.isCategoryCollapsed(row.category);
 
@@ -171,13 +191,10 @@ const VirtualRowRenderer: React.FC<VirtualRowRendererProps> = React.memo(
 					className={styles.emojiGrid}
 					style={{
 						gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
-						filter: isDisabled ? 'grayscale(100%)' : undefined,
-						opacity: isDisabled ? 0.5 : 1,
-						pointerEvents: isDisabled ? 'none' : undefined,
 					}}
 				>
 					{row.emojis.map((emoji, colIndex) => {
-						const isSelected = emojiRowIndex === selectedRow && colIndex === selectedColumn;
+						const isSelected = isSelectedRow && colIndex === selectedColumn;
 						const shouldHighlight = isSelected;
 						const emojiKey = emoji.id
 							? `custom-${emoji.guildId ?? 'global'}-${emoji.id}`
@@ -193,7 +210,7 @@ const VirtualRowRenderer: React.FC<VirtualRowRendererProps> = React.memo(
 								spriteSheetSizes={spriteSheetSizes}
 								channel={channel}
 								isHighlighted={shouldHighlight}
-								shouldScrollIntoView={isSelected && shouldScrollOnSelection}
+								shouldScrollIntoView={isSelected && shouldScrollSelectedIntoView}
 								ref={(node) => {
 									const key = `${emojiRowIndex}-${colIndex}`;
 									if (node) {
@@ -219,11 +236,10 @@ interface VirtualizedRowProps {
 	spriteSheetSizes: {nonDiversitySize: string; diversitySize: string};
 	channel: ChannelRecord | null;
 	gridColumns?: number;
-	hoveredEmoji: Emoji | null;
-	selectedRow: number;
+	isSelectedRow?: boolean;
 	selectedColumn: number;
 	emojiRowIndex: number;
-	shouldScrollOnSelection?: boolean;
+	shouldScrollSelectedIntoView?: boolean;
 	emojiRefs: React.MutableRefObject<Map<string, HTMLButtonElement>>;
 }
 
@@ -236,11 +252,10 @@ export const VirtualizedRow: React.FC<VirtualizedRowProps> = observer(
 		spriteSheetSizes,
 		channel,
 		gridColumns,
-		hoveredEmoji,
-		selectedRow,
+		isSelectedRow = false,
 		selectedColumn,
 		emojiRowIndex,
-		shouldScrollOnSelection = false,
+		shouldScrollSelectedIntoView = false,
 		emojiRefs,
 	}) => {
 		const shouldRenderImmediately = row.index < INITIAL_VISIBLE_ROWS;
@@ -255,33 +270,7 @@ export const VirtualizedRow: React.FC<VirtualizedRowProps> = observer(
 			const placeholder = placeholderRef.current;
 			if (!placeholder) return;
 
-			const observer = new IntersectionObserver(
-				(entries) => {
-					entries.forEach((entry) => {
-						if (entry.isIntersecting) {
-							setIsVisible(true);
-						} else {
-							const rect = entry.boundingClientRect;
-							const viewportHeight = window.innerHeight;
-							const overscanDistance = OVERSCAN_ROWS * EMOJI_ROW_HEIGHT;
-
-							if (rect.bottom < -overscanDistance || rect.top > viewportHeight + overscanDistance) {
-								setIsVisible(false);
-							}
-						}
-					});
-				},
-				{
-					rootMargin: `${OVERSCAN_ROWS * EMOJI_ROW_HEIGHT}px 0px`,
-					threshold: 0,
-				},
-			);
-
-			observer.observe(placeholder);
-
-			return () => {
-				observer.disconnect();
-			};
+			return observeVirtualRow(placeholder, () => setIsVisible(true));
 		}, [shouldRenderImmediately]);
 
 		const height = row.type === 'header' ? CATEGORY_HEADER_HEIGHT : EMOJI_ROW_HEIGHT;
@@ -300,11 +289,10 @@ export const VirtualizedRow: React.FC<VirtualizedRowProps> = observer(
 					spriteSheetSizes={spriteSheetSizes}
 					channel={channel}
 					gridColumns={gridColumns}
-					hoveredEmoji={hoveredEmoji}
-					selectedRow={selectedRow}
+					isSelectedRow={isSelectedRow}
 					selectedColumn={selectedColumn}
 					emojiRowIndex={emojiRowIndex}
-					shouldScrollOnSelection={shouldScrollOnSelection}
+					shouldScrollSelectedIntoView={shouldScrollSelectedIntoView}
 					emojiRefs={emojiRefs}
 				/>
 			</div>

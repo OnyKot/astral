@@ -23,6 +23,7 @@ import {
 	CheckCircleIcon,
 	ClockCounterClockwiseIcon,
 	DotsThreeIcon,
+	GiftIcon,
 	NotePencilIcon,
 	PencilIcon,
 	PhoneIcon,
@@ -42,17 +43,21 @@ import {DEFAULT_ACCENT_COLOR, ME, Permissions, RelationshipTypes} from '~/Consta
 import {EmojiInfoBottomSheet} from '~/components/bottomsheets/EmojiInfoBottomSheet';
 import {CustomStatusDisplay, type EmojiPressData} from '~/components/common/CustomStatusDisplay/CustomStatusDisplay';
 import {MusicActivityDisplay} from '~/components/common/MusicActivityDisplay/MusicActivityDisplay';
+import {SteamNowPlayingBlock} from '~/components/common/SteamNowPlayingBlock/SteamNowPlayingBlock';
 import {ConfirmModal} from '~/components/modals/ConfirmModal';
 import {NoteEditSheet} from '~/components/modals/NoteEditSheet';
 import {UserProfileActionsSheet} from '~/components/modals/UserProfileActionsSheet';
 import {UserSettingsModal} from '~/components/modals/UserSettingsModal';
 import {UserProfileBadges} from '~/components/popouts/UserProfileBadges';
 import {UserProfileBio, UserProfileMembershipInfo, UserProfileRoles} from '~/components/popouts/UserProfileShared';
+import {ProfileIntegrationsBlock} from '~/components/profile/ProfileCard/ProfileIntegrationsBlock';
+import {ProfileStreamingStatusCard} from '~/components/profile/ProfileCard/ProfileStreamingStatusCard';
 import {BottomSheet} from '~/components/uikit/BottomSheet/BottomSheet';
 import {Scroller} from '~/components/uikit/Scroller';
 import {Spinner} from '~/components/uikit/Spinner';
 import {StatusAwareAvatar} from '~/components/uikit/StatusAwareAvatar';
 import {useAutoplayExpandedProfileAnimations} from '~/hooks/useAutoplayExpandedProfileAnimations';
+import {isGiftShowcaseCustomStatus} from '~/lib/customStatus';
 import type {ProfileRecord} from '~/records/ProfileRecord';
 import {UserRecord} from '~/records/UserRecord';
 import AuthenticationStore from '~/stores/AuthenticationStore';
@@ -61,6 +66,7 @@ import GuildMemberStore from '~/stores/GuildMemberStore';
 import LocalProfileEffectsStore from '~/stores/LocalProfileEffectsStore';
 import MemberPresenceSubscriptionStore from '~/stores/MemberPresenceSubscriptionStore';
 import PermissionStore from '~/stores/PermissionStore';
+import PresenceStore from '~/stores/PresenceStore';
 import RelationshipStore from '~/stores/RelationshipStore';
 import SelectedChannelStore from '~/stores/SelectedChannelStore';
 import UserNoteStore from '~/stores/UserNoteStore';
@@ -108,7 +114,9 @@ export const UserProfileMobileSheet: React.FC = observer(function UserProfileMob
 		() => (userId ? UserProfileStore.getProfile(userId, guildId) : null),
 		[userId, guildId],
 	);
-	const [profile, setProfile] = React.useState<ProfileRecord | null>(initialProfile);
+	const [storedProfile, setProfile] = React.useState<ProfileRecord | null>(initialProfile);
+	const profile =
+		storedProfile?.userId === userId && storedProfile.guildId === (guildId ?? null) ? storedProfile : initialProfile;
 	const [isProfileLoading, setIsProfileLoading] = React.useState(() => !initialProfile);
 
 	React.useEffect(() => {
@@ -220,6 +228,8 @@ const UserProfileMobileSheetContent: React.FC<UserProfileMobileSheetContentProps
 		const relationship = RelationshipStore.getRelationship(user.id);
 		const relationshipType = relationship?.type;
 		const currentUserUnclaimed = !(UserStore.currentUser?.isClaimed() ?? true);
+		const customStatus = PresenceStore.getCustomStatus(user.id);
+		const showGiftShowcase = isGiftShowcaseCustomStatus(customStatus);
 
 		const guildMember = GuildMemberStore.getMember(profile?.guildId ?? guildId ?? '', user.id);
 		const memberRoles = profile?.guildId && guildMember ? guildMember.getSortedRoles() : [];
@@ -407,7 +417,11 @@ const UserProfileMobileSheetContent: React.FC<UserProfileMobileSheetContentProps
 					initialSnap={1}
 					disablePadding={true}
 					disableDefaultHeader={true}
+					showCloseButton={false}
+					showHandle={false}
 					containerClassName={styles.sheetContainer}
+					surface="primary"
+					backdropOpacity={0.64}
 				>
 					<div className={styles.container}>
 						{isLoading ? (
@@ -423,6 +437,7 @@ const UserProfileMobileSheetContent: React.FC<UserProfileMobileSheetContentProps
 										) : (
 											<div className={styles.bannerColor} style={{backgroundColor: bannerColor}} />
 										)}
+										<div className={styles.bannerShade} />
 									</div>
 
 									<div className={styles.profileContent}>
@@ -478,6 +493,7 @@ const UserProfileMobileSheetContent: React.FC<UserProfileMobileSheetContentProps
 													/>
 												</div>
 												<MusicActivityDisplay userId={user.id} className={styles.musicActivityRow} />
+												<SteamNowPlayingBlock userId={user.id} className={styles.steamNowPlayingRow} />
 											</div>
 
 											{isCurrentUser ? (
@@ -522,6 +538,22 @@ const UserProfileMobileSheetContent: React.FC<UserProfileMobileSheetContentProps
 												</div>
 											)}
 
+											{showGiftShowcase && (
+												<div className={styles.giftShowcaseCard}>
+													<div className={styles.giftShowcaseIcon}>
+														<GiftIcon weight="fill" />
+													</div>
+													<div className={styles.giftShowcaseText}>
+														<div className={styles.giftShowcaseTitle}>
+															<Trans>Gift showcase</Trans>
+														</div>
+														<p className={styles.giftShowcaseDescription}>
+															<Trans>This profile is highlighting gifts. Open the profile link or send a gift to keep the showcase glowing.</Trans>
+														</p>
+													</div>
+												</div>
+											)}
+
 											{profile && (effectiveProfile?.bio || profile) && (
 												<div className={styles.infoCard}>
 													{effectiveProfile?.bio && (
@@ -541,6 +573,12 @@ const UserProfileMobileSheetContent: React.FC<UserProfileMobileSheetContentProps
 															canManageRoles={canManageRoles}
 															forceMobile={true}
 														/>
+													</div>
+													<div className={styles.integrationsSection}>
+														<ProfileIntegrationsBlock userId={user.id} compact={true} />
+													</div>
+													<div className={styles.integrationsSection}>
+														<ProfileStreamingStatusCard userId={user.id} compact={true} />
 													</div>
 												</div>
 											)}

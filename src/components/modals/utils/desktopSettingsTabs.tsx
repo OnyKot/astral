@@ -41,7 +41,6 @@ import MyProfileTab from '../tabs/MyProfileTab';
 import NotificationsTab from '../tabs/NotificationsTab';
 import PlutoniumTab from '../tabs/PlutoniumTab';
 import PrivacySafetyTab from '../tabs/PrivacySafetyTab';
-import StreamingTab from '../tabs/StreamingTab';
 import VoiceVideoTab from '../tabs/VoiceVideoTab';
 import type {UserSettingsTabType} from './settingsConstants';
 
@@ -56,7 +55,6 @@ const DESKTOP_TAB_COMPONENTS: Partial<Record<UserSettingsTabType, React.Componen
 	blocked_users: BlockedUsersTab,
 	devices: DevicesTab,
 	music_connections: MusicConnectionsTab,
-	streaming: StreamingTab,
 	appearance: AppearanceTab,
 	accessibility: AccessibilityTab,
 	chat_settings: ChatSettingsTab,

@@ -24,8 +24,6 @@ import * as PrivateChannelActionCreators from '~/actions/PrivateChannelActionCre
 import {ASTRALBOT_ID, MessageStates, MessageTypes} from '~/Constants';
 import {MessageRecord} from '~/records/MessageRecord';
 import {UserRecord} from '~/records/UserRecord';
-import {requestOpenRouterCompletion} from '~/services/OpenRouterService';
-import AccessibilityStore from '~/stores/AccessibilityStore';
 import AuthenticationStore from '~/stores/AuthenticationStore';
 import GuildMemberStore from '~/stores/GuildMemberStore';
 import UserStore from '~/stores/UserStore';
@@ -41,10 +39,7 @@ type ParsedCommand =
 	| {type: 'me'; content: string}
 	| {type: 'spoiler'; content: string}
 	| {type: 'tts'; content: string}
-	| {type: 'ai'; prompt: string}
 	| {type: 'unknown'};
-
-const MAX_AI_MESSAGE_LENGTH = 1800;
 
 export function parseCommand(content: string): ParsedCommand {
 	const trimmed = content.trim();
@@ -130,14 +125,6 @@ export function parseCommand(content: string): ParsedCommand {
 		return {type: 'tts', content};
 	}
 
-	if (trimmed.startsWith('/ai ')) {
-		const prompt = trimmed.slice(4).trim();
-		if (!prompt) {
-			return {type: 'unknown'};
-		}
-		return {type: 'ai', prompt};
-	}
-
 	return {type: 'unknown'};
 }
 
@@ -171,7 +158,6 @@ export function isCommand(content: string): boolean {
 		trimmed.startsWith('/me ') ||
 		trimmed.startsWith('/spoiler ') ||
 		trimmed.startsWith('/tts ') ||
-		trimmed.startsWith('/ai ') ||
 		(trimmed.startsWith('_') && trimmed.endsWith('_') && trimmed.length > 2)
 	);
 }
@@ -286,32 +272,6 @@ export async function executeCommand(command: ParsedCommand, channelId: string, 
 		}
 
 		case 'spoiler': {
-			break;
-		}
-
-		case 'ai': {
-			const apiKey = AccessibilityStore.openRouterApiKey.trim();
-			if (!apiKey) {
-				throw new Error('Set your OpenRouter API key in Settings -> Messages & Media -> AI Assistant.');
-			}
-
-			const model = AccessibilityStore.openRouterModel.trim();
-			const completion = await requestOpenRouterCompletion({
-				apiKey,
-				model,
-				prompt: command.prompt,
-			});
-			const content = completion.trim();
-			if (!content) {
-				throw new Error('AI returned an empty response.');
-			}
-
-			await MessageActionCreators.send(channelId, {
-				content: content.slice(0, MAX_AI_MESSAGE_LENGTH),
-				nonce: SnowflakeUtils.fromTimestamp(Date.now()),
-				hasAttachments: false,
-				flags: 0,
-			});
 			break;
 		}
 

@@ -50,6 +50,7 @@ export const GuildNotificationSettingsModal = observer(({guildId}: {guildId: str
 	const settings = UserGuildSettingsStore.getSettings(guildId);
 
 	if (!guild || !settings) return null;
+	const communityNotificationLevel = settings.message_notifications ?? MessageNotifications.ONLY_MENTIONS;
 
 	const channels = ChannelStore.getGuildChannels(guildId);
 	const categories = channels.filter((c) => c.type === ChannelTypes.GUILD_CATEGORY);
@@ -175,7 +176,7 @@ export const GuildNotificationSettingsModal = observer(({guildId}: {guildId: str
 						<h3 className={styles.sectionTitle}>{t`Community Notification Settings`}</h3>
 						<RadioGroup
 							options={notificationOptions}
-							value={settings.message_notifications}
+							value={communityNotificationLevel}
 							onChange={(value) =>
 								UserGuildSettingsActionCreators.updateGuildSettings(guildId, {message_notifications: value})
 							}
@@ -235,7 +236,7 @@ export const GuildNotificationSettingsModal = observer(({guildId}: {guildId: str
 									const isNothing = notifLevel === MessageNotifications.NO_MESSAGES;
 									const isInherit = notifLevel === MessageNotifications.INHERIT;
 
-									const resolvedLevel = isInherit ? settings.message_notifications : notifLevel;
+									const resolvedLevel = isInherit ? communityNotificationLevel : notifLevel;
 
 									return (
 										<div key={channelId} className={styles.overrideItem}>
@@ -269,27 +270,25 @@ export const GuildNotificationSettingsModal = observer(({guildId}: {guildId: str
 											</div>
 
 											<div className={styles.mobileOverrideOptions}>
-												<Switch
-													label={t`All Messages`}
-													value={isAll || (isInherit && resolvedLevel === MessageNotifications.ALL_MESSAGES)}
-													onChange={() =>
-														handleOverrideNotificationChange(channelId, MessageNotifications.ALL_MESSAGES)
-													}
-													compact
-												/>
-												<Switch
-													label={t`Only @mentions`}
-													value={isMentions || (isInherit && resolvedLevel === MessageNotifications.ONLY_MENTIONS)}
-													onChange={() =>
-														handleOverrideNotificationChange(channelId, MessageNotifications.ONLY_MENTIONS)
-													}
-													compact
-												/>
-												<Switch
-													label={t`Nothing`}
-													value={isNothing || (isInherit && resolvedLevel === MessageNotifications.NO_MESSAGES)}
-													onChange={() => handleOverrideNotificationChange(channelId, MessageNotifications.NO_MESSAGES)}
-													compact
+												<RadioGroup
+													value={notifLevel}
+													onChange={(value) => handleOverrideNotificationChange(channelId, value)}
+													aria-label={t`Notification level for ${channel.name ?? ''}`}
+													options={[
+														{
+															value: MessageNotifications.INHERIT,
+															name: t`Community Default`,
+															desc:
+																resolvedLevel === MessageNotifications.ALL_MESSAGES
+																	? t`All Messages`
+																	: resolvedLevel === MessageNotifications.NO_MESSAGES
+																		? t`Nothing`
+																		: t`Only @mentions`,
+														},
+														{value: MessageNotifications.ALL_MESSAGES, name: t`All Messages`},
+														{value: MessageNotifications.ONLY_MENTIONS, name: t`Only @mentions`},
+														{value: MessageNotifications.NO_MESSAGES, name: t`Nothing`},
+													]}
 												/>
 												<Switch
 													label={t`Mute Channel`}

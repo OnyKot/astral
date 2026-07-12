@@ -1,0 +1,293 @@
+.root {
+	position: fixed;
+	inset: 0;
+	z-index: 950;
+	pointer-events: none;
+	visibility: visible;
+}
+
+.backdrop {
+	position: fixed;
+	inset: 0;
+	border: 0;
+	background: transparent;
+	pointer-events: none;
+	transition: opacity 180ms ease;
+}
+
+.rootActive .backdrop {
+	pointer-events: auto;
+}
+
+.drawer {
+	position: fixed;
+	inset: 0 auto 0 0;
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	width: min(21rem, 88vw);
+	padding:
+		calc(1rem + var(--safe-area-top, 0px))
+		max(0.9rem, var(--safe-area-right, 0px))
+		calc(0.9rem + var(--safe-area-bottom, 0px))
+		max(0.9rem, var(--safe-area-left, 0px));
+	border-right: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: var(--background-primary);
+	box-shadow: 18px 0 48px rgb(0 0 0 / 0.24);
+	pointer-events: auto;
+	transition: transform 210ms cubic-bezier(0.22, 1, 0.36, 1);
+	will-change: transform;
+	touch-action: pan-y;
+}
+
+.drawerDragging {
+	transition: none;
+}
+
+.drawerHeader {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	align-items: start;
+	gap: 0.46rem;
+	padding: 0.35rem 0.2rem 1rem;
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.profileButton {
+	display: flex;
+	align-items: center;
+	gap: 0.85rem;
+	min-width: 0;
+	border: 0;
+	background: transparent;
+	text-align: left;
+}
+
+.customStatusButton {
+	grid-column: 1 / -1;
+	display: inline-flex;
+	align-items: center;
+	align-self: start;
+	max-width: 100%;
+	min-width: 0;
+	margin-left: calc(64px + 0.85rem);
+	padding: 0.22rem 0.46rem;
+	border: 0;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--background-secondary) 54%, transparent);
+	color: var(--text-secondary);
+	text-align: left;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.customStatusButton:active {
+	transform: scale(0.97);
+}
+
+.customStatusText,
+.customStatusPlaceholder {
+	min-width: 0;
+	overflow: hidden;
+	color: currentcolor;
+	font-size: 0.84rem;
+	font-weight: 680;
+	line-height: 1.25;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.customStatusText {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.32rem;
+	max-width: 100%;
+}
+
+.customStatusEmoji {
+	width: 1.22rem;
+	height: 1.22rem;
+	margin-inline-end: 0;
+	vertical-align: -0.2em;
+}
+
+.customStatusPlaceholder {
+	color: currentcolor;
+}
+
+.profileCopy {
+	display: flex;
+	flex-direction: column;
+	gap: 0.18rem;
+	min-width: 0;
+}
+
+.profileName {
+	overflow: hidden;
+	color: var(--text-primary);
+	font-size: 1.2rem;
+	font-weight: 800;
+	line-height: 1.3;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.profileTag {
+	overflow: hidden;
+	color: var(--text-secondary);
+	font-size: 0.84rem;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.closeButton,
+.menuButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 0;
+	background: color-mix(in srgb, var(--background-secondary) 78%, var(--background-primary) 22%);
+	color: var(--text-primary);
+}
+
+.closeButton {
+	width: 2.35rem;
+	height: 2.35rem;
+	border-radius: 0.82rem;
+}
+
+.closeButton svg,
+.menuButton svg {
+	width: 1.25rem;
+	height: 1.25rem;
+}
+
+.menuButton {
+	box-sizing: border-box;
+	width: 2.5rem;
+	height: 2.5rem;
+	flex: 0 0 auto;
+	margin: 0;
+	padding: 0;
+	border-radius: 0.86rem;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.menuButton:active,
+.closeButton:active,
+.navigationItem:active,
+.profileButton:active {
+	transform: scale(0.96);
+}
+
+.navigation {
+	display: flex;
+	flex-direction: column;
+	gap: 0.24rem;
+	min-height: 0;
+	padding: 1rem 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.navigationItem {
+	display: flex;
+	align-items: center;
+	gap: 0.9rem;
+	width: 100%;
+	min-height: 3.15rem;
+	padding: 0.7rem 0.8rem;
+	border: 0;
+	border-radius: 0.82rem;
+	background: transparent;
+	color: var(--text-secondary);
+	text-align: left;
+	font-size: 0.96rem;
+	font-weight: 650;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
+	-webkit-tap-highlight-color: transparent;
+}
+
+.navigationItem span:not(.navigationBadge) {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.navigationItemActive {
+	background: color-mix(in srgb, var(--brand-primary) 14%, var(--background-secondary));
+	color: var(--text-primary);
+}
+
+.navigationIcon {
+	width: 1.35rem;
+	height: 1.35rem;
+	flex: 0 0 auto;
+	color: currentcolor;
+}
+
+.navigationBadge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.35rem;
+	height: 1.35rem;
+	margin-left: auto;
+	padding: 0 0.38rem;
+	border-radius: 999px;
+	background: var(--brand-primary);
+	color: var(--brand-primary-fill);
+	font-size: 0.72rem;
+	font-weight: 800;
+	line-height: 1;
+}
+
+.drawerFooter {
+	display: flex;
+	flex-direction: column;
+	gap: 0.24rem;
+	padding-top: 0.75rem;
+	border-top: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.drawer,
+	.backdrop,
+	.navigationItem {
+		transition: none;
+	}
+}
+
+.backdrop {
+	transition: opacity var(--motion-dur-short) var(--motion-ease-snap);
+}
+
+@media (max-width: 380px) {
+	.drawer {
+		width: min(19rem, 86vw);
+		padding:
+			calc(0.75rem + var(--safe-area-top, 0px))
+			max(0.7rem, var(--safe-area-right, 0px))
+			calc(0.7rem + var(--safe-area-bottom, 0px))
+			max(0.7rem, var(--safe-area-left, 0px));
+	}
+
+	.menuButton {
+		width: 2.25rem;
+		height: 2.25rem;
+		border-radius: 0.76rem;
+	}
+
+	.navigationItem {
+		min-height: 2.85rem;
+		padding: 0.58rem 0.68rem;
+		font-size: 0.9rem;
+	}
+
+	.profileName {
+		font-size: 1.05rem;
+	}
+}

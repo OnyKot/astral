@@ -33,10 +33,10 @@
 	flex-direction: column;
 	gap: 4px;
 	overflow: hidden;
-	border-radius: var(--profile-card-radius, 0.75rem);
-	border-width: var(--profile-card-border-width, 2px);
+	border-radius: var(--profile-card-radius, 0.5rem);
+	border-width: var(--profile-card-border-width, 1px);
 	background: var(--profile-card-background, var(--background-primary));
-	padding-bottom: var(--profile-card-padding-bottom, 0.75rem);
+	padding-bottom: var(--profile-card-padding-bottom, 0.6rem);
 	box-shadow: var(--profile-card-shadow, none);
 	isolation: isolate;
 	transform: translateZ(0);

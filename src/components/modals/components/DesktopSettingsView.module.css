@@ -40,7 +40,7 @@
 	color: var(--text-tertiary);
 	border-radius: 0.875rem;
 	background: color-mix(in srgb, var(--background-floating) 16%, var(--background-primary) 84%);
-	border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
+	border: none;
 }
 
 .tabLabel {
@@ -54,17 +54,49 @@
 	margin-left: auto;
 }
 
-.betaBadge {
+.newBadge {
+	position: relative;
 	margin-left: auto;
-	font-size: 0.6rem;
+	overflow: hidden;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	font-size: 0.52rem;
 	line-height: 1;
-	font-weight: 700;
-	letter-spacing: 0.05em;
+	font-weight: 800;
+	letter-spacing: 0.07em;
 	text-transform: uppercase;
-	padding: 0.24rem 0.42rem;
+	padding: 0.18rem 0.38rem;
 	border-radius: 999px;
-	background: color-mix(in srgb, var(--brand-primary) 20%, transparent);
-	color: color-mix(in srgb, var(--brand-primary) 74%, var(--text-primary));
+	white-space: nowrap;
+	color: color-mix(in srgb, var(--brand-primary) 82%, white);
+	background: linear-gradient(
+		120deg,
+		color-mix(in srgb, var(--brand-primary) 18%, transparent) 0%,
+		color-mix(in srgb, var(--brand-primary) 32%, transparent) 50%,
+		color-mix(in srgb, var(--brand-primary) 18%, transparent) 100%
+	);
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 20%, transparent);
+	pointer-events: none;
+	opacity: 1;
+}
+
+.newBadge::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	transform: translateX(-130%);
+	background: linear-gradient(95deg, transparent 15%, rgb(255 255 255 / 46%) 50%, transparent 85%);
+	animation: settings-new-shimmer 2.2s linear infinite;
+	opacity: 0.72;
+	pointer-events: none;
+}
+
+@keyframes settings-new-shimmer {
+	100% {
+		transform: translateX(130%);
+	}
 }
 
 .footerActions {
@@ -87,7 +119,7 @@
 	width: 100%;
 	border-radius: 0.875rem;
 	background: color-mix(in srgb, var(--background-floating) 14%, var(--background-primary) 86%);
-	border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
+	border: none;
 	box-shadow: none;
 }
 
@@ -106,13 +138,49 @@
 	height: 10px;
 }
 
+.footerActionButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 0.5rem;
+	width: 100%;
+	min-height: 2rem;
+	padding: 0.48rem 0.58rem;
+	border: 0;
+	border-radius: 0.55rem;
+	background: transparent;
+	color: var(--text-tertiary);
+	font: inherit;
+	font-size: 0.75rem;
+	font-weight: 650;
+	line-height: 1;
+	text-align: left;
+	cursor: pointer;
+	transition:
+		background-color 0.14s ease,
+		color 0.14s ease;
+}
+
+.footerActionButton:hover,
+.footerActionButton:focus-visible {
+	background: color-mix(in srgb, var(--background-modifier-hover) 78%, transparent);
+	color: var(--text-secondary);
+	outline: none;
+}
+
+.footerActionIcon {
+	width: 1rem;
+	height: 1rem;
+	flex-shrink: 0;
+	color: currentColor;
+}
+
 .logoutIcon {
 	height: 1rem;
 	width: 1rem;
 }
 
 .previewDivider {
-	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
 	padding-bottom: 1.25rem;
 }
 

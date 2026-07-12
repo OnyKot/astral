@@ -20,6 +20,7 @@
 import type {MessageDescriptor} from '@lingui/core';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
+import {FilmSlateIcon, GifIcon, KeyboardIcon, MagnifyingGlassIcon, SmileyIcon, StickerIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
 import * as ExpressionPickerActionCreators from '~/actions/ExpressionPickerActionCreators';
@@ -39,6 +40,8 @@ import ExpressionPickerStore from '~/stores/ExpressionPickerStore';
 interface ExpressionPickerCategoryDescriptor {
 	type: ExpressionPickerTabType;
 	label: MessageDescriptor;
+	shortLabel: MessageDescriptor;
+	icon: React.ComponentType<{className?: string; weight?: 'regular' | 'bold' | 'fill'}>;
 	renderComponent: (props: {
 		channelId?: string;
 		onSelect: (emoji: Emoji, shiftKey?: boolean) => void;
@@ -46,6 +49,9 @@ interface ExpressionPickerCategoryDescriptor {
 		searchTerm?: string;
 		setSearchTerm?: (term: string) => void;
 		setHoveredEmoji?: (emoji: Emoji | null) => void;
+		searchActive?: boolean;
+		onSearchActiveChange?: (active: boolean) => void;
+		searchAutoFocusKey?: number;
 	}) => React.ReactNode;
 }
 
@@ -53,6 +59,8 @@ const EXPRESSION_PICKER_CATEGORY_DESCRIPTORS: Array<ExpressionPickerCategoryDesc
 	{
 		type: 'gifs' as const,
 		label: msg`GIFs`,
+		shortLabel: msg`GIF`,
+		icon: GifIcon,
 		renderComponent: ({onClose}) => (
 			<div className={styles.pickerContent}>
 				<GifPicker onClose={onClose} />
@@ -62,6 +70,8 @@ const EXPRESSION_PICKER_CATEGORY_DESCRIPTORS: Array<ExpressionPickerCategoryDesc
 	{
 		type: 'memes' as const,
 		label: msg`Media`,
+		shortLabel: msg`Media`,
+		icon: FilmSlateIcon,
 		renderComponent: ({onClose}) => (
 			<div className={styles.pickerContent}>
 				<MobileMemesPicker onClose={onClose} />
@@ -71,6 +81,8 @@ const EXPRESSION_PICKER_CATEGORY_DESCRIPTORS: Array<ExpressionPickerCategoryDesc
 	{
 		type: 'stickers' as const,
 		label: msg`Stickers`,
+		shortLabel: msg`Stickers`,
+		icon: StickerIcon,
 		renderComponent: ({channelId, onClose}) => {
 			const handleStickerSelect = (sticker: GuildStickerRecord, shiftKey?: boolean) => {
 				if (channelId) {
@@ -91,18 +103,38 @@ const EXPRESSION_PICKER_CATEGORY_DESCRIPTORS: Array<ExpressionPickerCategoryDesc
 	{
 		type: 'emojis' as const,
 		label: msg`Emojis`,
-		renderComponent: ({channelId, onSelect, searchTerm, setSearchTerm}) => (
+		shortLabel: msg`Emoji`,
+		icon: SmileyIcon,
+		renderComponent: ({channelId, onSelect, searchTerm, setSearchTerm, searchActive, onSearchActiveChange, searchAutoFocusKey}) => (
 			<div className={styles.pickerContent}>
 				<MobileEmojiPicker
 					channelId={channelId}
 					handleSelect={onSelect}
 					externalSearchTerm={searchTerm}
 					externalSetSearchTerm={setSearchTerm}
+					searchActive={searchActive}
+					onSearchActiveChange={onSearchActiveChange}
+					searchAutoFocusKey={searchAutoFocusKey}
 				/>
 			</div>
 		),
 	},
 ];
+
+const blurActiveEditableElement = () => {
+	const activeElement = document.activeElement;
+	if (!(activeElement instanceof HTMLElement)) {
+		return;
+	}
+
+	if (
+		activeElement instanceof HTMLInputElement ||
+		activeElement instanceof HTMLTextAreaElement ||
+		activeElement.isContentEditable
+	) {
+		activeElement.blur();
+	}
+};
 
 interface ExpressionPickerSheetProps {
 	isOpen: boolean;
@@ -116,6 +148,8 @@ interface ExpressionPickerSheetProps {
 	selectedTab?: ExpressionPickerTabType;
 	onTabChange?: (tab: ExpressionPickerTabType) => void;
 	zIndex?: number;
+	keyboardReplacement?: boolean;
+	reactionPicker?: boolean;
 }
 
 export const ExpressionPickerSheet = observer(
@@ -131,6 +165,8 @@ export const ExpressionPickerSheet = observer(
 		selectedTab: controlledSelectedTab,
 		onTabChange,
 		zIndex,
+		keyboardReplacement = false,
+		reactionPicker = false,
 	}: ExpressionPickerSheetProps) => {
 		const {t} = useLingui();
 		const categories = React.useMemo(
@@ -139,6 +175,8 @@ export const ExpressionPickerSheet = observer(
 					(category) => ({
 						type: category.type,
 						label: t(category.label),
+						shortLabel: t(category.shortLabel),
+						icon: category.icon,
 						renderComponent: category.renderComponent,
 					}),
 				),
@@ -150,6 +188,8 @@ export const ExpressionPickerSheet = observer(
 		);
 
 		const [emojiSearchTerm, setEmojiSearchTerm] = React.useState('');
+		const [emojiSearchMode, setEmojiSearchMode] = React.useState(false);
+		const [emojiSearchAutoFocusKey, setEmojiSearchAutoFocusKey] = React.useState(0);
 		const [_hoveredEmoji, setHoveredEmoji] = React.useState<Emoji | null>(null);
 
 		const storeSelectedTab = ExpressionPickerStore.selectedTab;
@@ -157,6 +197,10 @@ export const ExpressionPickerSheet = observer(
 
 		const setSelectedTab = React.useCallback(
 			(tab: ExpressionPickerTabType) => {
+				if (!keyboardReplacement) {
+					blurActiveEditableElement();
+				}
+
 				if (onTabChange) {
 					onTabChange(tab);
 					return;
@@ -169,7 +213,7 @@ export const ExpressionPickerSheet = observer(
 					setInternalSelectedTab(tab);
 				}
 			},
-			[onTabChange],
+			[keyboardReplacement, onTabChange],
 		);
 
 		const selectedCategory = categories.find((category) => category.type === selectedTab) || categories[0];
@@ -184,6 +228,8 @@ export const ExpressionPickerSheet = observer(
 		const handleEmojiSelect = React.useCallback(
 			(emoji: Emoji, shiftKey?: boolean) => {
 				onEmojiSelect(emoji, shiftKey);
+				setEmojiSearchMode(false);
+				setEmojiSearchTerm('');
 				if (closeOnEmojiSelect && !shiftKey) {
 					onClose();
 				}
@@ -192,9 +238,17 @@ export const ExpressionPickerSheet = observer(
 		);
 
 		const showTabs = categories.length > 1;
+		const showEmojiSearchButton = keyboardReplacement && categories.some((category) => category.type === 'emojis');
+		const showEmojiSearchHeader = emojiSearchMode && selectedCategory?.type === 'emojis';
 
 		const segmentedTabs: Array<SegmentedTab<ExpressionPickerTabType>> = React.useMemo(
-			() => categories.map((category) => ({id: category.type, label: category.label})),
+			() =>
+				categories.map((category) => ({
+					id: category.type,
+					label: category.shortLabel,
+					ariaLabel: category.label,
+					icon: category.icon,
+				})),
 			[categories],
 		);
 
@@ -208,14 +262,37 @@ export const ExpressionPickerSheet = observer(
 
 		const headerContent = (
 			<>
-				{showTabs ? (
-					<SegmentedTabs
-						tabs={segmentedTabs}
-						selectedTab={selectedTab}
-						onTabChange={setSelectedTab}
-						ariaLabel={t`Expression picker categories`}
-					/>
-				) : null}
+				<div className={styles.headerControls} data-search-active={showEmojiSearchHeader ? '1' : '0'}>
+					{showTabs && !showEmojiSearchHeader ? (
+						<div className={styles.headerTabs}>
+							<SegmentedTabs
+								tabs={segmentedTabs}
+								selectedTab={selectedTab}
+								onTabChange={setSelectedTab}
+								ariaLabel={t`Expression picker categories`}
+							/>
+						</div>
+					) : null}
+					{showEmojiSearchButton && !showEmojiSearchHeader ? (
+						<button
+							type="button"
+							className={styles.keyboardButton}
+							onClick={() => {
+								setSelectedTab('emojis');
+								setEmojiSearchMode(true);
+								setEmojiSearchAutoFocusKey((key) => key + 1);
+							}}
+							aria-label={t`Search emojis`}
+						>
+							<MagnifyingGlassIcon weight="bold" />
+						</button>
+					) : null}
+					{keyboardReplacement && !showEmojiSearchButton && !showEmojiSearchHeader ? (
+						<button type="button" className={styles.keyboardButton} onClick={onClose} aria-label={t`Show keyboard`}>
+							<KeyboardIcon weight="bold" />
+						</button>
+					) : null}
+				</div>
 				<div ref={headerPortalCallback} className={styles.headerPortal} />
 			</>
 		);
@@ -233,11 +310,19 @@ export const ExpressionPickerSheet = observer(
 					showCloseButton={false}
 					showHandle={false}
 					disableDrag={true}
-					avoidKeyboard={true}
-					backdropOpacity={0}
+					avoidKeyboard={!keyboardReplacement}
+					backdropOpacity={reactionPicker ? 0.48 : 0}
 					showBackdrop={true}
-					disableBackdropBlur={true}
+					disableBackdropBlur={!reactionPicker}
+					animationPreset={keyboardReplacement ? 'keyboard-replacement' : 'default'}
 					zIndex={zIndex}
+					containerClassName={
+						keyboardReplacement
+							? styles.keyboardReplacementSheet
+							: reactionPicker
+								? styles.reactionPickerSheet
+								: undefined
+					}
 				>
 					<div className={styles.container}>
 						<div className={styles.contentContainer}>
@@ -249,6 +334,17 @@ export const ExpressionPickerSheet = observer(
 									searchTerm: selectedTab === 'emojis' ? emojiSearchTerm : undefined,
 									setSearchTerm: selectedTab === 'emojis' ? setEmojiSearchTerm : undefined,
 									setHoveredEmoji: selectedTab === 'emojis' ? setHoveredEmoji : undefined,
+									searchActive: selectedTab === 'emojis' ? emojiSearchMode : false,
+									onSearchActiveChange:
+										selectedTab === 'emojis'
+											? (active: boolean) => {
+													setEmojiSearchMode(active);
+													if (!active) {
+														setEmojiSearchTerm('');
+													}
+												}
+											: undefined,
+									searchAutoFocusKey: emojiSearchAutoFocusKey,
 								})}
 							</div>
 						</div>

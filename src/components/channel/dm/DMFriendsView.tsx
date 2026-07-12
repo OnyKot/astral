@@ -18,11 +18,13 @@
  */
 
 import {Trans, useLingui} from '@lingui/react/macro';
-import {MagnifyingGlassIcon, UserPlusIcon, UsersThreeIcon} from '@phosphor-icons/react';
+import {MagnifyingGlassIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {AnimatePresence, motion, useReducedMotion} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
+import * as ModalActionCreators from '~/actions/ModalActionCreators';
+import {modal} from '~/actions/ModalActionCreators';
 import * as UserProfileActionCreators from '~/actions/UserProfileActionCreators';
 import {RelationshipTypes} from '~/Constants';
 import {ChannelHeader} from '~/components/channel/ChannelHeader';
@@ -30,6 +32,9 @@ import {AddFriendView} from '~/components/channel/dm/AddFriendView';
 import {FriendsList} from '~/components/channel/friends/views/FriendsList';
 import {PendingFriendsView} from '~/components/channel/friends/views/PendingFriendsView';
 import {Input} from '~/components/form/Input';
+import {FriendsIcon} from '~/components/icons/FriendsIcon';
+import {MobileNavigationMenuButton} from '~/components/layout/MobileNavigationDrawer';
+import {AddFriendModal} from '~/components/modals/AddFriendModal';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
 import {MentionBadge} from '~/components/uikit/MentionBadge';
 import {useAstralDocumentTitle} from '~/hooks/useAstralDocumentTitle';
@@ -48,12 +53,11 @@ interface TabButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonEleme
 	onClick: (tab: FriendsTab) => void;
 	label: string;
 	badge?: number;
-	primary?: boolean;
 }
 
 const TabButton = observer(
 	React.forwardRef<HTMLButtonElement, TabButtonProps>(
-		({tab, activeTab, onClick, label, badge, primary, ...props}, ref) => {
+		({tab, activeTab, onClick, label, badge, className, ...props}, ref) => {
 			const isActive = activeTab === tab;
 
 			return (
@@ -63,11 +67,14 @@ const TabButton = observer(
 						type="button"
 						role="tab"
 						aria-selected={isActive}
-						tabIndex={isActive || (primary && activeTab === tab) ? 0 : -1}
-						className={clsx(styles.tabButton, {
-							[styles.active]: isActive,
-							[styles.primary]: primary,
-						})}
+						tabIndex={isActive ? 0 : -1}
+						className={clsx(
+							styles.tabButton,
+							{
+								[styles.active]: isActive,
+							},
+							className,
+						)}
 						onClick={() => onClick(tab)}
 						{...props}
 					>
@@ -84,20 +91,21 @@ const TabButton = observer(
 
 export const DMFriendsView: React.FC = observer(() => {
 	const {t} = useLingui();
-	const [activeTab, setActiveTab] = React.useState<FriendsTab>('online');
+	const [activeTab, setActiveTab] = React.useState<FriendsTab>('all');
 	const prefersReducedMotion = useReducedMotion();
 	const mobileLayout = MobileLayoutStore;
 	const relationships = RelationshipStore.getRelationships();
 	const pendingCount = relationships.filter((relation) => relation.type === RelationshipTypes.INCOMING_REQUEST).length;
 	const tabRefs = React.useRef<Array<HTMLButtonElement | null>>([]);
 	const [searchQuery, setSearchQuery] = React.useState('');
-	const touchStartRef = React.useRef<{x: number; y: number} | null>(null);
+	const touchStartRef = React.useRef<{x: number; y: number; ts: number; status: 'pending' | 'locked'} | null>(null);
+	const touchCurrentRef = React.useRef<{x: number; y: number} | null>(null);
 	const tabs = React.useMemo(
 		() => [
-			{key: 'online' as const, label: t`Online`},
 			{key: 'all' as const, label: t`All`},
+			{key: 'online' as const, label: t`Online`},
 			{key: 'pending' as const, label: t`Pending`, badge: pendingCount},
-			{key: 'add' as const, label: t`Add Friend`, primary: true},
+			{key: 'add' as const, label: t`Add Friend`, className: styles.primary},
 		],
 		[pendingCount, t],
 	);
@@ -105,7 +113,7 @@ export const DMFriendsView: React.FC = observer(() => {
 	React.useEffect(() => {
 		const pendingTab = FriendsTabStore.consumeTab();
 		if (pendingTab) {
-			setActiveTab(pendingTab);
+			setActiveTab(pendingTab === 'add' ? 'all' : pendingTab);
 		}
 	}, []);
 
@@ -159,22 +167,27 @@ export const DMFriendsView: React.FC = observer(() => {
 
 	const handleTabChange = React.useCallback(
 		(tab: FriendsTab) => {
+			if (tab === 'add' && mobileLayout.enabled) {
+				ModalActionCreators.push(modal(() => <AddFriendModal />));
+				return;
+			}
+
 			if (tab === activeTab) {
 				return;
 			}
 
 			setActiveTab(tab);
 		},
-		[activeTab],
+		[activeTab, mobileLayout.enabled],
 	);
 
-	const swipeableTabs = React.useMemo<Array<FriendsTab>>(() => ['online', 'all', 'pending', 'add'], []);
+	const swipeableTabs = React.useMemo<Array<FriendsTab>>(() => ['all', 'online', 'pending'], []);
 
 	const handleTabsTouchStart = React.useCallback((event: React.TouchEvent<HTMLDivElement>) => {
 		const target = event.target as HTMLElement | null;
 		if (
 			target?.closest(
-				'input, textarea, select, button, a, [role="button"], [role="link"], [contenteditable="true"], [data-friends-swipe-ignore="true"]',
+				'input, textarea, select, a, [role="link"], [contenteditable="true"], [data-friends-swipe-ignore="true"]',
 			)
 		) {
 			touchStartRef.current = null;
@@ -183,7 +196,40 @@ export const DMFriendsView: React.FC = observer(() => {
 
 		const touch = event.touches[0];
 		if (!touch) return;
-		touchStartRef.current = {x: touch.clientX, y: touch.clientY};
+		touchStartRef.current = {x: touch.clientX, y: touch.clientY, ts: Date.now(), status: 'pending'};
+		touchCurrentRef.current = {x: touch.clientX, y: touch.clientY};
+	}, []);
+
+	const handleTabsTouchMove = React.useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+		const start = touchStartRef.current;
+		if (!start) return;
+		const touch = event.touches[0];
+		if (!touch) return;
+		const dx = touch.clientX - start.x;
+		const dy = touch.clientY - start.y;
+		const absDx = Math.abs(dx);
+		const absDy = Math.abs(dy);
+		if (start.status === 'pending') {
+			if (absDy >= 18 && absDy >= absDx) {
+				touchStartRef.current = null;
+				touchCurrentRef.current = null;
+				return;
+			}
+			if (absDx < 12) return;
+			if (absDx < absDy * 1.25) {
+				touchStartRef.current = null;
+				touchCurrentRef.current = null;
+				return;
+			}
+			start.status = 'locked';
+		}
+		if (absDy > 46 || absDy > absDx * 0.82) {
+			touchStartRef.current = null;
+			touchCurrentRef.current = null;
+			return;
+		}
+		event.preventDefault();
+		touchCurrentRef.current = {x: touch.clientX, y: touch.clientY};
 	}, []);
 
 	const handleTabsTouchEnd = React.useCallback(
@@ -193,11 +239,22 @@ export const DMFriendsView: React.FC = observer(() => {
 			if (!start) return;
 
 			const touch = event.changedTouches[0];
-			if (!touch) return;
-			const dx = touch.clientX - start.x;
-			const dy = touch.clientY - start.y;
+			const end = touch ? {x: touch.clientX, y: touch.clientY} : touchCurrentRef.current;
+			touchCurrentRef.current = null;
+			if (!end) return;
+			const dx = end.x - start.x;
+			const dy = end.y - start.y;
 			const absDx = Math.abs(dx);
-			if (absDx < 42 || absDx < Math.abs(dy) * 1.2) {
+			const absDy = Math.abs(dy);
+			const elapsed = Math.max(Date.now() - start.ts, 1);
+			const isDeliberateFlick = absDx >= 42 && absDx / elapsed >= 0.42;
+			if (
+				start.status !== 'locked' ||
+				elapsed > 700 ||
+				absDy > 46 ||
+				absDx < absDy * 1.25 ||
+				(absDx < 58 && !isDeliberateFlick)
+			) {
 				return;
 			}
 
@@ -213,6 +270,7 @@ export const DMFriendsView: React.FC = observer(() => {
 	);
 	const handleTabsTouchCancel = React.useCallback(() => {
 		touchStartRef.current = null;
+		touchCurrentRef.current = null;
 	}, []);
 
 	const renderTabList = (className: string) => (
@@ -228,7 +286,7 @@ export const DMFriendsView: React.FC = observer(() => {
 					onClick={handleTabChange}
 					label={tab.label}
 					badge={tab.badge}
-					primary={tab.primary}
+					className={tab.className}
 					onKeyDown={(e) => handleKeyDown(e, index)}
 				/>
 			))}
@@ -240,7 +298,7 @@ export const DMFriendsView: React.FC = observer(() => {
 			{!mobileLayout.enabled && (
 				<>
 					<div className={styles.titleSection}>
-						<UsersThreeIcon weight="fill" className={styles.titleIcon} />
+						<FriendsIcon className={styles.titleIcon} />
 						<span className={styles.titleText}>{t`My Friends`}</span>
 					</div>
 					<div className={styles.divider} />
@@ -303,21 +361,17 @@ export const DMFriendsView: React.FC = observer(() => {
 			<div
 				className={clsx(styles.content, isMobile && styles.contentMobile)}
 				onTouchStart={isMobile ? handleTabsTouchStart : undefined}
+				onTouchMove={isMobile ? handleTabsTouchMove : undefined}
 				onTouchEnd={isMobile ? handleTabsTouchEnd : undefined}
 				onTouchCancel={isMobile ? handleTabsTouchCancel : undefined}
 			>
 				{isMobile && (
 					<div className={styles.mobileTopBar}>
+						<MobileNavigationMenuButton className={styles.mobileMenuButton} />
 						<h1 className={styles.mobileTopTitle}>
+							<FriendsIcon className={styles.mobileTopTitleIcon} />
 							<Trans>Friend List</Trans>
 						</h1>
-						<button type="button" className={styles.mobileAddButton} onClick={() => setActiveTab('add')}>
-							<UserPlusIcon weight="fill" className={styles.mobileTopIcon} />
-							<span>
-								<Trans>Add Friend</Trans>
-							</span>
-							{pendingCount > 0 && <MentionBadge mentionCount={pendingCount} />}
-						</button>
 					</div>
 				)}
 				<AnimatePresence initial={false}>
@@ -342,6 +396,11 @@ export const DMFriendsView: React.FC = observer(() => {
 						</motion.div>
 					)}
 				</AnimatePresence>
+				{isMobile && (
+					<div className={styles.mobileTabsStrip}>
+						<div className={styles.mobileTabsStripViewport}>{renderTabList(styles.mobileTabsInline)}</div>
+					</div>
+				)}
 				<AnimatePresence mode="wait" initial={false}>
 					<motion.div
 						key={activeTab}
@@ -355,11 +414,6 @@ export const DMFriendsView: React.FC = observer(() => {
 					</motion.div>
 				</AnimatePresence>
 			</div>
-			{isMobile && (
-				<div className={styles.mobileTabsDock}>
-					<div className={styles.mobileTabsWrap}>{renderTabList(styles.mobileTabsCapsule)}</div>
-				</div>
-			)}
 		</div>
 	);
 });

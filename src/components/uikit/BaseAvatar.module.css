@@ -54,6 +54,8 @@
 	pointer-events: auto;
 	position: absolute;
 	border: 2px solid color-mix(in srgb, var(--background-primary) 86%, transparent);
+	border-radius: 999px;
+	background: var(--status-cosmic-core);
 	box-shadow:
 		0 0 0 1px color-mix(in srgb, var(--background-primary) 30%, transparent),
 		0 4px 10px rgb(0 0 0 / 0.34);
@@ -117,7 +119,62 @@
 	--status-cosmic-core: color-mix(in srgb, var(--brand-primary) 82%, #ffffff 18%);
 }
 
+.statusStreaming {
+	--status-cosmic-core: color-mix(in srgb, var(--status-streaming, #9147ff) 84%, #ffffff 16%);
+}
+
+.statusGlyph {
+	position: relative;
+	z-index: 1;
+	display: block;
+	width: 100%;
+	height: 100%;
+	border-radius: 999px;
+	background: var(--status-cosmic-core);
+}
+
+.statusGlyphOnline,
+.statusGlyphStreaming {
+	box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28);
+}
+
+.statusGlyphStreaming {
+	background:
+		radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.42), transparent 34%),
+		var(--status-cosmic-core);
+}
+
+.statusGlyphIdle::after {
+	content: '';
+	position: absolute;
+	top: 13%;
+	right: 12%;
+	width: 72%;
+	height: 72%;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--background-primary) 92%, transparent);
+}
+
+.statusGlyphDnd::after {
+	content: '';
+	position: absolute;
+	left: 22%;
+	right: 22%;
+	top: 50%;
+	height: 18%;
+	border-radius: 999px;
+	background: var(--background-primary);
+	transform: translateY(-50%);
+}
+
+.statusGlyphOffline {
+	background: color-mix(in srgb, var(--background-primary) 86%, var(--status-cosmic-core) 14%);
+	box-shadow: inset 0 0 0 2px var(--status-cosmic-core);
+}
+
 .inCallIndicator {
+	position: relative;
+	z-index: 1;
 	width: 100%;
 	height: 100%;
 	background: var(--status-cosmic-core);
@@ -140,6 +197,27 @@
 	justify-content: center;
 }
 
+.typingIndicator {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	width: 100%;
+	height: 100%;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	border-radius: inherit;
+	background: var(--status-cosmic-core);
+}
+
+.typingIndicator span {
+	width: 22%;
+	height: 22%;
+	border-radius: 999px;
+	background: var(--background-primary);
+	animation: typingDotPulse 1.05s ease-in-out infinite;
+}
+
 .typingDot {
 	background-color: white;
 	border-radius: 50%;
@@ -160,6 +238,11 @@
 }
 
 :global(html:not(.window-focused)) .typingDot {
+	animation-play-state: paused;
+	opacity: 1;
+}
+
+:global(html:not(.window-focused)) .typingIndicator span {
 	animation-play-state: paused;
 	opacity: 1;
 }

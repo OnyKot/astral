@@ -259,8 +259,8 @@
 	background-color: transparent;
 	border: 0;
 	transition:
-		background-color 0.15s,
-		transform 0.15s;
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 	cursor: pointer;
 }
 
@@ -270,7 +270,7 @@
 
 .closeButton:active {
 	background-color: var(--background-modifier-selected);
-	transform: translateY(1px);
+	transform: scale(0.95);
 }
 
 .closeButton svg {

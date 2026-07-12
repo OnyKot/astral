@@ -19,7 +19,7 @@
 
 import {makeAutoObservable} from 'mobx';
 
-const BASE_Z_INDEX = 10000;
+const BASE_Z_INDEX = 41000;
 const Z_INDEX_INCREMENT = 10;
 
 class OverlayStackStore {

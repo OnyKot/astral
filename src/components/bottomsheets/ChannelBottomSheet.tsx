@@ -28,9 +28,7 @@ import {
 	LinkIcon,
 	NotePencilIcon,
 	PaperPlaneIcon,
-	PushPinIcon,
 	SignOutIcon,
-	StarIcon,
 	TrashIcon,
 	UserPlusIcon,
 	XIcon,
@@ -40,12 +38,11 @@ import React from 'react';
 import * as ChannelActionCreators from '~/actions/ChannelActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
-import * as PrivateChannelActionCreators from '~/actions/PrivateChannelActionCreators';
 import * as ReadStateActionCreators from '~/actions/ReadStateActionCreators';
 import * as TextCopyActionCreators from '~/actions/TextCopyActionCreators';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
 import * as UserGuildSettingsActionCreators from '~/actions/UserGuildSettingsActionCreators';
-import {ChannelTypes, ME, Permissions} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType, Permissions} from '~/Constants';
 import {createMuteConfig, getMuteDurationOptions} from '~/components/channel/muteOptions';
 import {ChannelSettingsModal} from '~/components/modals/ChannelSettingsModal';
 import {ConfirmModal} from '~/components/modals/ConfirmModal';
@@ -58,9 +55,7 @@ import {MenuBottomSheet} from '~/components/uikit/MenuBottomSheet/MenuBottomShee
 import * as Sheet from '~/components/uikit/Sheet/Sheet';
 import type {ChannelRecord} from '~/records/ChannelRecord';
 import type {GuildRecord} from '~/records/GuildRecord';
-import AccessibilityStore from '~/stores/AccessibilityStore';
 import AuthenticationStore from '~/stores/AuthenticationStore';
-import FavoritesStore from '~/stores/FavoritesStore';
 import PermissionStore from '~/stores/PermissionStore';
 import ReadStateStore from '~/stores/ReadStateStore';
 import UserGuildSettingsStore from '~/stores/UserGuildSettingsStore';
@@ -82,7 +77,7 @@ export const ChannelBottomSheet: React.FC<ChannelBottomSheetProps> = observer(({
 	const isGroupDM = channel.type === ChannelTypes.GROUP_DM;
 	const isDM = channel.type === ChannelTypes.DM;
 	const isTextChannel = channel.type === ChannelTypes.GUILD_TEXT;
-	const isVoiceChannel = channel.type === ChannelTypes.GUILD_VOICE;
+	const isVoiceChannel = isGuildRtcChannelType(channel.type);
 
 	const currentUserId = AuthenticationStore.currentUserId;
 	const isOwner = isGroupDM && channel.ownerId === currentUserId;
@@ -91,7 +86,6 @@ export const ChannelBottomSheet: React.FC<ChannelBottomSheetProps> = observer(({
 	const isMuted = channelOverride?.muted ?? false;
 	const muteConfig = channelOverride?.mute_config;
 	const mutedText = getMutedText(isMuted, muteConfig);
-	const isFavorited = !!FavoritesStore.getChannel(channel.id);
 	const readState = ReadStateStore.get(channel.id);
 	const hasUnread = readState.hasUnread;
 	const [muteSheetOpen, setMuteSheetOpen] = React.useState(false);
@@ -105,18 +99,6 @@ export const ChannelBottomSheet: React.FC<ChannelBottomSheetProps> = observer(({
 	const handleMarkAsRead = () => {
 		ReadStateActionCreators.ack(channel.id, true, true);
 		onClose();
-	};
-
-	const handleToggleFavorite = () => {
-		onClose();
-		const guildId = channel.guildId ?? ME;
-		if (isFavorited) {
-			FavoritesStore.removeChannel(channel.id);
-			ToastActionCreators.createToast({type: 'success', children: t`Removed from favorites`});
-		} else {
-			FavoritesStore.addChannel(channel.id, guildId, null);
-			ToastActionCreators.createToast({type: 'success', children: t`Added to favorites`});
-		}
 	};
 
 	const handleInviteMembers = () => {
@@ -210,32 +192,6 @@ export const ChannelBottomSheet: React.FC<ChannelBottomSheetProps> = observer(({
 		ModalActionCreators.push(modal(() => <GroupInvitesModal channelId={channel.id} />));
 	};
 
-	const handlePinChannel = async () => {
-		onClose();
-		try {
-			await PrivateChannelActionCreators.pinDmChannel(channel.id);
-			ToastActionCreators.createToast({
-				type: 'success',
-				children: isGroupDM ? t`Pinned group` : t`Pinned DM`,
-			});
-		} catch (error) {
-			console.error('Failed to pin:', error);
-		}
-	};
-
-	const handleUnpinChannel = async () => {
-		onClose();
-		try {
-			await PrivateChannelActionCreators.unpinDmChannel(channel.id);
-			ToastActionCreators.createToast({
-				type: 'success',
-				children: isGroupDM ? t`Unpinned group` : t`Unpinned DM`,
-			});
-		} catch (error) {
-			console.error('Failed to unpin:', error);
-		}
-	};
-
 	const handleLeaveGroup = () => {
 		if (!currentUserId) {
 			onClose();
@@ -284,17 +240,6 @@ export const ChannelBottomSheet: React.FC<ChannelBottomSheetProps> = observer(({
 				label: t`Edit Group`,
 				onClick: handleEditGroup,
 			},
-			channel.isPinned
-				? {
-						icon: <PushPinIcon weight="fill" className={sharedStyles.icon} />,
-						label: t`Unpin Group DM`,
-						onClick: handleUnpinChannel,
-					}
-				: {
-						icon: <PushPinIcon weight="fill" className={sharedStyles.icon} />,
-						label: t`Pin Group DM`,
-						onClick: handlePinChannel,
-					},
 		];
 
 		if (isOwner) {
@@ -325,17 +270,6 @@ export const ChannelBottomSheet: React.FC<ChannelBottomSheetProps> = observer(({
 	} else if (isDM) {
 		menuGroups.push({
 			items: [
-				channel.isPinned
-					? {
-							icon: <PushPinIcon weight="fill" className={sharedStyles.icon} />,
-							label: t`Unpin DM`,
-							onClick: handleUnpinChannel,
-						}
-					: {
-							icon: <PushPinIcon weight="fill" className={sharedStyles.icon} />,
-							label: t`Pin DM`,
-							onClick: handlePinChannel,
-						},
 				{
 					icon: <XIcon weight="bold" className={sharedStyles.icon} />,
 					label: t`Close DM`,
@@ -357,18 +291,6 @@ export const ChannelBottomSheet: React.FC<ChannelBottomSheetProps> = observer(({
 						icon: <BookOpenIcon weight="fill" className={sharedStyles.icon} />,
 						label: t`Mark as Read`,
 						onClick: handleMarkAsRead,
-					},
-				],
-			});
-		}
-
-		if (AccessibilityStore.showFavorites) {
-			menuGroups.push({
-				items: [
-					{
-						icon: <StarIcon weight={isFavorited ? 'fill' : 'regular'} className={sharedStyles.icon} />,
-						label: isFavorited ? t`Remove from Favorites` : t`Add to Favorites`,
-						onClick: handleToggleFavorite,
 					},
 				],
 			});

@@ -85,7 +85,11 @@ export function disconnectOtherCurrentUserVoiceConnections(): void {
 	}
 }
 
-export function sendVoiceStateConnect(guildId: string | null, channelId: string): void {
+export function sendVoiceStateConnect(
+	guildId: string | null,
+	channelId: string,
+	options?: {suppress?: boolean; self_mute?: boolean},
+): void {
 	const socket = ConnectionStore.socket;
 	if (!socket) {
 		logger.warn('[sendVoiceStateConnect] No socket');
@@ -113,11 +117,12 @@ export function sendVoiceStateConnect(guildId: string | null, channelId: string)
 	socket.updateVoiceState({
 		guild_id: guildId,
 		channel_id: channelId,
-		self_mute: LocalVoiceStateStore.getSelfMute(),
+		self_mute: options?.self_mute ?? LocalVoiceStateStore.getSelfMute(),
 		self_deaf: LocalVoiceStateStore.getSelfDeaf(),
 		self_video: false,
 		self_stream: false,
 		viewer_stream_key: null,
+		suppress: options?.suppress,
 		connection_id: null,
 	});
 }
@@ -151,10 +156,12 @@ export function syncVoiceStateToServer(
 		self_mute?: boolean;
 		self_deaf?: boolean;
 		viewer_stream_key?: string | null;
+		suppress?: boolean;
 	},
 ): void {
 	const socket = ConnectionStore.socket;
 	if (!socket) return;
+	const currentVoiceState = VoiceStateManager.getVoiceStateByConnectionId(connectionId);
 
 	socket.updateVoiceState({
 		guild_id: guildId,
@@ -164,6 +171,7 @@ export function syncVoiceStateToServer(
 		self_video: partial?.self_video ?? LocalVoiceStateStore.getSelfVideo(),
 		self_stream: partial?.self_stream ?? LocalVoiceStateStore.getSelfStream(),
 		viewer_stream_key: partial?.viewer_stream_key ?? LocalVoiceStateStore.getViewerStreamKey(),
+		suppress: partial?.suppress ?? currentVoiceState?.suppress,
 		connection_id: connectionId,
 	});
 }

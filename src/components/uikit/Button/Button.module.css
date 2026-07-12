@@ -28,14 +28,14 @@
 	height: 42px;
 	min-height: 42px;
 	min-width: 90px;
-	border-radius: 9px;
+	border-radius: 0.52rem;
 	border: 1px solid transparent;
 	cursor: pointer;
 	appearance: none;
 	text-decoration: none;
 	position: relative;
 	overflow: hidden;
-	will-change: transform;
+	will-change: auto;
 	transition: var(
 		--button-motion-transition,
 		background-color 0.16s ease,
@@ -43,6 +43,12 @@
 		border-color 0.16s ease,
 		filter 0.16s ease
 	);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.button:hover:not(:disabled):not(:active) {
+		transform: none;
+	}
 }
 
 .button.matchSkeletonHeight {
@@ -58,7 +64,7 @@
 
 .button:active:not(:disabled) {
 	transition-duration: var(--motion-dur-instant, 100ms);
-	transform: translateY(var(--button-motion-active-translate-y, 0px)) scale(var(--button-motion-active-scale, 0.97));
+	transform: scale(var(--button-motion-active-scale, 0.985));
 }
 
 .button.small {
@@ -82,7 +88,7 @@
 	padding: 4px;
 	font-size: 12px;
 	line-height: 16px;
-	border-radius: 6px;
+	border-radius: 0.5rem;
 }
 
 .button.fitContent {
@@ -102,6 +108,7 @@
 	width: 42px;
 	min-width: 42px;
 	padding: 9px;
+	border-radius: 999px;
 }
 
 .button.square.small {
@@ -204,9 +211,9 @@
 }
 
 .button.dangerSecondary {
-	background: color-mix(in srgb, var(--button-danger-fill) 14%, var(--background-secondary));
+	background: color-mix(in srgb, var(--button-danger-fill) 10%, transparent);
 	color: var(--button-danger-outline-text);
-	border-color: color-mix(in srgb, var(--button-danger-fill) 28%, transparent);
+	border-color: color-mix(in srgb, var(--button-danger-fill) 20%, transparent);
 	box-shadow: none;
 }
 
@@ -431,5 +438,27 @@
 	.button:hover:not(:disabled):not(:active),
 	.button:active:not(:disabled) {
 		transform: none !important;
+	}
+}
+
+@media (max-width: 380px) {
+	.button:not(.square) {
+		min-width: 0;
+		max-width: 100%;
+		height: auto;
+		padding-inline: 0.65rem;
+		font-size: 0.78rem;
+	}
+
+	.button.small:not(.square) {
+		padding-inline: 0.58rem;
+	}
+
+	.iconWrapper {
+		min-width: 0;
+		max-width: 100%;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		text-align: center;
 	}
 }

@@ -143,6 +143,10 @@ export class VoiceStatsManager {
 		logger.debug('[VoiceStatsManager] Starting latency tracking');
 
 		this.latencyIntervalId = setInterval(() => {
+			if (!this.room || this.room.state !== 'connected') {
+				return;
+			}
+
 			const engineWrap = this.room as RoomWithEngine;
 
 			if (!engineWrap?.engine?.client?.rtt) {

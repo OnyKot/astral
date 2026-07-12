@@ -26,15 +26,17 @@ import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import * as NagbarActionCreators from '~/actions/NagbarActionCreators';
 import * as NavigationActionCreators from '~/actions/NavigationActionCreators';
-import {ChannelTypes, GuildFeatures, Permissions} from '~/Constants';
+import {ChannelTypes, GuildFeatures, isGuildRtcChannelType, Permissions} from '~/Constants';
 import {GuildNavbar} from '~/components/layout/GuildNavbar';
 import {GuildNavbarSkeleton} from '~/components/layout/GuildNavbarSkeleton';
 import {Nagbar} from '~/components/layout/Nagbar';
 import {NagbarButton} from '~/components/layout/NagbarButton';
 import {ConfirmModal} from '~/components/modals/ConfirmModal';
+import {useEdgeSwipeBack} from '~/hooks/useEdgeSwipeBack';
 import {ComponentDispatch} from '~/lib/ComponentDispatch';
 import {useParams} from '~/lib/router';
 import {Routes} from '~/Routes';
+import type {GuildRecord} from '~/records/GuildRecord';
 import ChannelStore from '~/stores/ChannelStore';
 import GuildAvailabilityStore from '~/stores/GuildAvailabilityStore';
 import GuildStore from '~/stores/GuildStore';
@@ -167,8 +169,17 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 	const {guildId, channelId, messageId} = useParams() as {guildId: string; channelId?: string; messageId?: string};
 	const mobileLayout = MobileLayoutStore;
 	const guild = GuildStore.getGuild(guildId);
+	const cachedGuildsRef = React.useRef<Record<string, GuildRecord>>({});
 	const unavailableGuilds = GuildAvailabilityStore.unavailableGuilds;
 	const channels = ChannelStore.getGuildChannels(guildId);
+
+	React.useEffect(() => {
+		if (guild) {
+			cachedGuildsRef.current[guild.id] = guild;
+		}
+	}, [guild]);
+
+	const effectiveGuild = guild ?? cachedGuildsRef.current[guildId];
 
 	const user = UserStore.currentUser;
 	const nagbarState = NagbarStore;
@@ -176,34 +187,34 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 	const channel = ChannelStore.getChannel(selectedChannelId ?? '');
 	const isStaff = user?.isStaff() ?? false;
 
-	const invitesDisabledDismissed = NagbarStore.getInvitesDisabledDismissed(guild?.id ?? '');
+	const invitesDisabledDismissed = NagbarStore.getInvitesDisabledDismissed(effectiveGuild?.id ?? '');
 
-	const guildUnavailable = guildId && (unavailableGuilds.has(guildId) || guild?.unavailable);
-	const guildNotFound = !guildUnavailable && !guild;
+	const guildUnavailable = guildId && (unavailableGuilds.has(guildId) || effectiveGuild?.unavailable);
+	const guildNotFound = !guildUnavailable && !effectiveGuild;
 
 	const firstAccessibleTextChannel = React.useMemo(() => {
-		if (!guild) return null;
+		if (!effectiveGuild) return null;
 
 		const textChannels = channels
-			.filter((ch) => ch.type === ChannelTypes.GUILD_TEXT || ch.type === ChannelTypes.GUILD_VOICE)
+			.filter((ch) => ch.type === ChannelTypes.GUILD_TEXT || isGuildRtcChannelType(ch.type))
 			.sort(ChannelUtils.compareChannels);
 
 		return textChannels.length > 0 ? textChannels[0] : null;
-	}, [guild, channels]);
+	}, [effectiveGuild, channels]);
 
 	const shouldShowInvitesDisabled = React.useMemo(() => {
 		if (!selectedChannelId) return false;
 		if (!channel?.guildId) return false;
-		if (!guild) return false;
+		if (!effectiveGuild) return false;
 
 		if (nagbarState.forceHideInvitesDisabled) return false;
 		if (nagbarState.forceInvitesDisabled) return true;
 
-		if (user && !user.isClaimed() && guild.ownerId === user.id) {
+		if (user && !user.isClaimed() && effectiveGuild.ownerId === user.id) {
 			return false;
 		}
 
-		const hasInvitesDisabled = guild.features.has(GuildFeatures.INVITES_DISABLED);
+		const hasInvitesDisabled = effectiveGuild.features.has(GuildFeatures.INVITES_DISABLED);
 		if (!hasInvitesDisabled) return false;
 
 		const canInvite = InviteUtils.canInviteToChannel(selectedChannelId, channel.guildId);
@@ -217,7 +228,7 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 	}, [
 		selectedChannelId,
 		channel,
-		guild,
+		effectiveGuild,
 		invitesDisabledDismissed,
 		nagbarState.forceInvitesDisabled,
 		nagbarState.forceHideInvitesDisabled,
@@ -227,12 +238,12 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 	const shouldShowStaffOnlyGuild = React.useMemo(() => {
 		if (!selectedChannelId) return false;
 		if (!channel?.guildId) return false;
-		if (!guild) return false;
+		if (!effectiveGuild) return false;
 		if (!isStaff) return false;
 
-		const isStaffOnly = guild.features.has(GuildFeatures.UNAVAILABLE_FOR_EVERYONE_BUT_STAFF);
+		const isStaffOnly = effectiveGuild.features.has(GuildFeatures.UNAVAILABLE_FOR_EVERYONE_BUT_STAFF);
 		return isStaffOnly;
-	}, [selectedChannelId, channel, guild, isStaff]);
+	}, [selectedChannelId, channel, effectiveGuild, isStaff]);
 
 	const hasGuildNagbars = shouldShowStaffOnlyGuild || shouldShowInvitesDisabled;
 	const nagbarCount = (shouldShowStaffOnlyGuild ? 1 : 0) + (shouldShowInvitesDisabled ? 1 : 0);
@@ -266,7 +277,7 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 	}, [guildId, channelId, messageId]);
 
 	React.useEffect(() => {
-		if (!guild || !channelId || guildUnavailable || guildNotFound) return;
+		if (!effectiveGuild || !channelId || guildUnavailable || guildNotFound) return;
 
 		const currentChannel = ChannelStore.getChannel(channelId);
 		const currentPath = RouterUtils.getHistory()?.location.pathname ?? '';
@@ -277,7 +288,7 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 				RouterUtils.replaceWith(Routes.guildChannel(guildId, firstAccessibleTextChannel.id));
 			}
 		}
-	}, [guild, guildId, channelId, firstAccessibleTextChannel, guildUnavailable, guildNotFound]);
+	}, [effectiveGuild, guildId, channelId, firstAccessibleTextChannel, guildUnavailable, guildNotFound]);
 
 	const guildNagbars = (
 		<>
@@ -288,6 +299,34 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 				<InvitesDisabledNagbar isMobile={mobileLayout.enabled} guildId={guildId} />
 			)}
 		</>
+	);
+	const handleMobileSwipeBack = React.useCallback(() => {
+		RouterUtils.transitionTo(Routes.guildChannel(guildId));
+	}, [guildId]);
+	const {
+		gestureProps,
+		containerRef: edgeSwipeContainerRef,
+		stageStyle,
+		isActive: isMobileSwipeActive,
+		progress: mobileSwipeProgress,
+	} = useEdgeSwipeBack({
+		enabled: Boolean(mobileLayout.enabled && channelId && effectiveGuild),
+		onBack: handleMobileSwipeBack,
+		edgeZonePx: 42,
+		activationPx: 12,
+		triggerPx: 84,
+		maxOffsetPx: 240,
+		maxVerticalDriftPx: 52,
+		triggerVelocityPxPerSecond: 840,
+		commitDurationMs: 190,
+	});
+	const mobileSwipePreviewStyle = React.useMemo(
+		() =>
+			({
+				'--guild-layout-swipe-preview-opacity': Math.min(1, mobileSwipeProgress * 1.05),
+				'--guild-layout-swipe-preview-offset': `${-10 + mobileSwipeProgress * 10}px`,
+			}) as React.CSSProperties,
+		[mobileSwipeProgress],
 	);
 
 	if (mobileLayout.enabled) {
@@ -318,15 +357,32 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 			}
 			return (
 				<TopNagbarContext.Provider value={nagbarContextValue}>
-					<GuildNavbar guild={guild!} />
+					<GuildNavbar guild={effectiveGuild!} />
 				</TopNagbarContext.Provider>
 			);
 		}
 		return (
 			<TopNagbarContext.Provider value={nagbarContextValue}>
-				<div className={hasGuildNagbars ? styles.guildLayoutContainerWithNagbar : styles.guildLayoutContainer}>
-					{guildNagbars}
-					<div className={styles.guildMainContent}>{children}</div>
+				<div
+					ref={edgeSwipeContainerRef}
+					className={styles.guildMobileSwipeHost}
+					data-edge-swipe-active={isMobileSwipeActive ? '1' : '0'}
+					data-chat-edge-swipe-host="true"
+					style={mobileSwipePreviewStyle}
+					{...gestureProps}
+				>
+					<div className={styles.guildMobileSwipePreview} aria-hidden={!isMobileSwipeActive}>
+						{effectiveGuild && <GuildNavbar guild={effectiveGuild} />}
+					</div>
+					<div
+						className={styles.guildMobileSwipeStage}
+						style={stageStyle}
+					>
+						<div className={hasGuildNagbars ? styles.guildLayoutContainerWithNagbar : styles.guildLayoutContainer}>
+							{guildNagbars}
+							<div className={styles.guildMainContent}>{children}</div>
+						</div>
+					</div>
 				</div>
 			</TopNagbarContext.Provider>
 		);
@@ -378,7 +434,7 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 				<div className={hasGuildNagbars ? styles.guildLayoutContainerWithNagbar : styles.guildLayoutContainer}>
 					{guildNagbars}
 					<div className={styles.guildLayoutContent}>
-						<GuildNavbar guild={guild!} />
+						<GuildNavbar guild={effectiveGuild!} />
 						<div className={styles.guildMainContent}>
 							<GuildUnavailable
 								icon={SmileySadIcon}
@@ -397,7 +453,7 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 			<div className={hasGuildNagbars ? styles.guildLayoutContainerWithNagbar : styles.guildLayoutContainer}>
 				{guildNagbars}
 				<div className={styles.guildLayoutContent}>
-					<GuildNavbar guild={guild!} />
+					<GuildNavbar guild={effectiveGuild!} />
 					<div className={styles.guildMainContent}>{children}</div>
 				</div>
 			</div>

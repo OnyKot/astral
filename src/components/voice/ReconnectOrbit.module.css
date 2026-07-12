@@ -1,0 +1,78 @@
+.orbit {
+	--orbit-size: 3.8rem;
+	--orbit-color: color-mix(in srgb, var(--brand-primary) 76%, var(--text-primary));
+	--orbit-color-secondary: color-mix(in srgb, var(--status-idle) 72%, var(--text-primary));
+	position: relative;
+	display: inline-grid;
+	place-items: center;
+	width: var(--orbit-size);
+	height: var(--orbit-size);
+	flex: 0 0 auto;
+	pointer-events: none;
+	isolation: isolate;
+}
+
+.compact {
+	--orbit-size: 2.35rem;
+}
+
+.large {
+	--orbit-size: 5.4rem;
+}
+
+.sun {
+	width: calc(var(--orbit-size) * 0.22);
+	height: calc(var(--orbit-size) * 0.22);
+	border-radius: 50%;
+	background: var(--orbit-color-secondary);
+	box-shadow:
+		0 0 0 calc(var(--orbit-size) * 0.05) color-mix(in srgb, var(--orbit-color-secondary) 14%, transparent),
+		0 0 calc(var(--orbit-size) * 0.22) color-mix(in srgb, var(--orbit-color-secondary) 44%, transparent);
+}
+
+.track,
+.trackOuter {
+	position: absolute;
+	inset: 17%;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 14%, transparent);
+	border-radius: 50%;
+	animation: reconnectOrbitSpin 2.2s linear infinite;
+}
+
+.trackOuter {
+	inset: 3%;
+	animation-duration: 3.6s;
+	animation-direction: reverse;
+}
+
+.planet,
+.planetOuter {
+	position: absolute;
+	top: 50%;
+	left: 100%;
+	width: calc(var(--orbit-size) * 0.15);
+	height: calc(var(--orbit-size) * 0.15);
+	border-radius: 50%;
+	background: var(--orbit-color);
+	box-shadow: 0 0 calc(var(--orbit-size) * 0.12) color-mix(in srgb, var(--orbit-color) 46%, transparent);
+	transform: translate(-50%, -50%);
+}
+
+.planetOuter {
+	width: calc(var(--orbit-size) * 0.11);
+	height: calc(var(--orbit-size) * 0.11);
+	background: color-mix(in srgb, var(--brand-primary-light) 74%, var(--text-primary));
+}
+
+@keyframes reconnectOrbitSpin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.track,
+	.trackOuter {
+		animation-duration: 8s;
+	}
+}

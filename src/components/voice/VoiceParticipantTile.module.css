@@ -27,10 +27,13 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background-color: rgb(0 0 0 / 0.7);
+	background:
+		linear-gradient(180deg, rgb(0 0 0 / 0.18), rgb(0 0 0 / 0.38)),
+		rgb(0 0 0 / 0.16);
 	z-index: 10;
 	pointer-events: auto;
 	border-radius: var(--radius-lg);
+	backdrop-filter: blur(3px);
 }
 
 .watchStreamButton {
@@ -60,13 +63,15 @@
 	position: absolute;
 	top: 0.5rem;
 	right: 0.5rem;
-	border-radius: 0.25rem;
-	background-color: var(--status-danger);
-	padding: 0.125rem 0.5rem;
+	border-radius: 999px;
+	background: rgb(0 0 0 / 0.48);
+	border: 1px solid rgb(255 255 255 / 0.14);
+	padding: 0.12rem 0.45rem;
 	font-weight: 700;
 	color: white;
-	font-size: 0.75rem;
+	font-size: 0.68rem;
 	line-height: 1rem;
+	text-transform: uppercase;
 }
 
 .avatarRing {
@@ -76,6 +81,7 @@
 .avatarRingSpeaking {
 	border-radius: 9999px;
 	box-shadow: 0 0 0 2px var(--status-online);
+	animation: voiceSpeakingRing 1.6s var(--motion-ease-smooth) infinite;
 }
 
 .focusOverlay {
@@ -171,7 +177,10 @@
 	box-sizing: border-box;
 	border: 1px solid transparent;
 	cursor: pointer;
-	transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		border-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 	user-select: none;
 	-webkit-user-select: none;
 	-webkit-user-drag: none;
@@ -179,6 +188,7 @@
 
 .menuButton:hover {
 	background-color: rgb(0 0 0 / 0.9);
+	transform: translateY(-1px);
 }
 
 .tileFullscreenQuickButton {
@@ -203,8 +213,9 @@
 		inset 0 1px 0 var(--voice-highlight);
 	backdrop-filter: blur(18px) saturate(124%);
 	transition:
-		background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
-		border-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		border-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .tileFullscreenQuickButton:hover {
@@ -212,6 +223,7 @@
 		linear-gradient(180deg, var(--voice-pill-hover-top), var(--voice-pill-hover-bottom)),
 		color-mix(in srgb, var(--background-primary) 16%, transparent);
 	border-color: color-mix(in srgb, var(--brand-primary) 16%, transparent);
+	transform: translateY(-1px);
 }
 
 .tileFullscreenQuickButtonActive {
@@ -323,6 +335,27 @@
 	right: 0.5rem;
 }
 
+.stopSelfStreamButton {
+	position: absolute;
+	right: 0.5rem;
+	bottom: 0.5rem;
+	pointer-events: auto;
+	border: 1px solid color-mix(in srgb, var(--status-danger) 38%, transparent);
+	background: rgb(0 0 0 / 0.46);
+	color: color-mix(in srgb, var(--status-danger) 82%, white);
+	box-shadow: 0 8px 18px rgb(0 0 0 / 0.2);
+	backdrop-filter: blur(10px);
+	transition:
+		background-color 120ms ease,
+		border-color 120ms ease,
+		color 120ms ease;
+}
+
+.stopSelfStreamButton:hover {
+	background: rgb(0 0 0 / 0.58);
+	border-color: color-mix(in srgb, var(--status-danger) 56%, transparent);
+}
+
 .selfStreamPreviewPaused {
 	display: flex;
 	flex-direction: column;
@@ -415,5 +448,33 @@
 		bottom: 0.4rem;
 		width: 2.2rem;
 		height: 2.2rem;
+	}
+}
+
+@keyframes voiceSpeakingRing {
+	0%,
+	100% {
+		box-shadow: 0 0 0 2px var(--status-online);
+	}
+	50% {
+		box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-online) 40%, transparent);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.avatarRingSpeaking {
+		animation: none;
+	}
+
+	.menuButton,
+	.tileFullscreenQuickButton {
+		transition:
+			background-color var(--motion-dur-short) var(--motion-ease-snap),
+			border-color var(--motion-dur-short) var(--motion-ease-snap);
+	}
+
+	.menuButton:hover,
+	.tileFullscreenQuickButton:hover {
+		transform: none;
 	}
 }

@@ -28,6 +28,7 @@ import {
 	ChatCircleDotsIcon,
 	CheckCircleIcon,
 	CheckIcon,
+	ChecksIcon,
 	ClipboardTextIcon,
 	ClockCounterClockwiseIcon,
 	CopyIcon as CopyIconPhosphor,
@@ -71,6 +72,9 @@ export const ReplyIcon: React.FC<IconProps> = observer(({size = 16}) => (
 ));
 export const ForwardIcon: React.FC<IconProps> = observer(({size = 16}) => (
 	<ArrowBendUpRightIcon size={size} weight="fill" />
+));
+export const SelectMessagesIcon: React.FC<IconProps> = observer(({size = 16}) => (
+	<ChecksIcon size={size} weight="bold" />
 ));
 export const EditIcon: React.FC<IconProps> = observer(({size = 16}) => <PencilIcon size={size} weight="fill" />);
 export const DeleteIcon: React.FC<IconProps> = observer(({size = 16}) => <TrashIcon size={size} weight="fill" />);

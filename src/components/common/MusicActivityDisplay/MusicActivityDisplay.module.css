@@ -5,15 +5,11 @@
 	gap: 0.75rem;
 	width: 100%;
 	min-width: 0;
-	padding: 0.75rem;
-	border-radius: 1rem;
-	background:
-		linear-gradient(135deg, color-mix(in srgb, var(--brand-primary, #6e6af6) 10%, transparent), transparent 58%),
-		color-mix(in srgb, var(--background-tertiary, #0f1320) 88%, transparent);
-	border: 1px solid color-mix(in srgb, var(--brand-primary, #6e6af6) 18%, var(--border-subtle, rgb(255 255 255 / 8%)));
-	box-shadow:
-		0 18px 42px rgb(0 0 0 / 22%),
-		inset 0 1px 0 rgb(255 255 255 / 5%);
+	padding: 0.65rem;
+	border-radius: 0.7rem;
+	background: color-mix(in srgb, var(--background-tertiary, #0f1320) 58%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
+	box-shadow: none;
 }
 
 .compact {
@@ -23,24 +19,38 @@
 }
 
 .artwork {
+	position: relative;
+	overflow: hidden;
 	width: 3rem;
 	height: 3rem;
-	border-radius: 0.9rem;
-	background:
-		radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--brand-primary, #6e6af6) 42%, transparent), transparent 58%),
-		linear-gradient(160deg, var(--background-secondary-alt, #171b2b), var(--background-secondary, #10141f));
-	background-position: center;
-	background-size: cover;
+	border-radius: 0.55rem;
+	background: color-mix(in srgb, var(--brand-primary, #6e6af6) 12%, var(--background-secondary-alt, #171b2b));
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%);
+	box-shadow: none;
+}
+
+.artworkImage {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	object-position: center;
+	background: color-mix(in srgb, var(--background-primary, #090b12) 58%, black 42%);
+}
+
+.artworkShade {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(180deg, transparent 48%, rgb(9 11 20 / 28%));
 }
 
 .compact .artwork {
 	width: 2.5rem;
 	height: 2.5rem;
-	border-radius: 0.8rem;
+	border-radius: 0.5rem;
 }
 
 .compact .topRow {
@@ -74,7 +84,7 @@
 .compact .linkButton {
 	width: 1.85rem;
 	height: 1.85rem;
-	border-radius: 0.7rem;
+	border-radius: 0.5rem;
 	align-self: center;
 }
 
@@ -109,28 +119,28 @@
 	justify-content: center;
 	width: 1.1rem;
 	height: 1.1rem;
-	border-radius: 999px;
-	background: color-mix(in srgb, var(--green, #27c26c) 22%, transparent);
+	border-radius: 0.35rem;
+	background: color-mix(in srgb, var(--green, #27c26c) 14%, transparent);
 	color: color-mix(in srgb, var(--green, #27c26c) 75%, white);
 }
 
 .stateText {
 	font-size: 0.675rem;
 	font-weight: 700;
-	letter-spacing: 0.02em;
+	letter-spacing: 0;
 	text-transform: uppercase;
 	color: var(--text-primary-muted);
 }
 
 .providerBadge {
 	flex-shrink: 0;
-	padding: 0.18rem 0.5rem;
-	border-radius: 999px;
+	padding: 0;
+	border-radius: 0;
 	font-size: 0.68rem;
 	font-weight: 700;
-	color: var(--text-primary);
-	background: color-mix(in srgb, var(--brand-primary, #6e6af6) 16%, transparent);
-	border: 1px solid color-mix(in srgb, var(--brand-primary, #6e6af6) 28%, transparent);
+	color: var(--text-secondary);
+	background: transparent;
+	border: 0;
 	max-width: 9.75rem;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -168,10 +178,10 @@
 	justify-content: center;
 	width: 2rem;
 	height: 2rem;
-	border-radius: 0.75rem;
+	border-radius: 0.5rem;
 	color: var(--text-primary);
-	background: color-mix(in srgb, var(--background-secondary-alt, #171b2b) 94%, transparent);
-	border: 1px solid color-mix(in srgb, var(--border-subtle, rgb(255 255 255 / 8%)) 84%, transparent);
+	background: transparent;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
 	text-decoration: none;
 	transition:
 		transform 140ms ease,
@@ -181,8 +191,8 @@
 
 .linkButton:hover {
 	transform: translateY(-1px);
-	background: color-mix(in srgb, var(--brand-primary, #6e6af6) 14%, var(--background-secondary-alt, #171b2b));
-	border-color: color-mix(in srgb, var(--brand-primary, #6e6af6) 26%, transparent);
+	background: color-mix(in srgb, var(--brand-primary, #6e6af6) 10%, transparent);
+	border-color: color-mix(in srgb, var(--brand-primary, #6e6af6) 18%, transparent);
 }
 
 .emptyState {
@@ -190,10 +200,10 @@
 	grid-template-columns: 3.25rem minmax(0, 1fr);
 	align-items: center;
 	gap: 0.9rem;
-	padding: 0.95rem 1rem;
-	border-radius: 1rem;
-	background: color-mix(in srgb, var(--background-secondary-alt, #171b2b) 80%, transparent);
-	border: 1px dashed color-mix(in srgb, var(--border-subtle, rgb(255 255 255 / 8%)) 85%, transparent);
+	padding: 0.8rem;
+	border-radius: 0.7rem;
+	background: color-mix(in srgb, var(--background-secondary-alt, #171b2b) 58%, transparent);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
 }
 
 .emptyIcon {
@@ -202,12 +212,10 @@
 	flex-shrink: 0;
 	color: var(--text-primary-muted);
 	place-self: center;
-	padding: 0.85rem;
-	border-radius: 1rem;
-	background:
-		radial-gradient(circle at top, color-mix(in srgb, var(--brand-primary, #6e6af6) 20%, transparent), transparent 60%),
-		color-mix(in srgb, var(--background-primary, #090b12) 55%, transparent);
-	border: 1px solid color-mix(in srgb, var(--border-subtle, rgb(255 255 255 / 8%)) 82%, transparent);
+	padding: 0.75rem;
+	border-radius: 0.55rem;
+	background: color-mix(in srgb, var(--brand-primary, #6e6af6) 10%, transparent);
+	border: 0;
 }
 
 .emptyText {
@@ -239,7 +247,7 @@
 	.artwork {
 		width: 2.75rem;
 		height: 2.75rem;
-		border-radius: 0.85rem;
+		border-radius: 0.55rem;
 	}
 
 	.title {
@@ -266,5 +274,42 @@
 
 	.emptyIcon {
 		place-self: start;
+	}
+}
+
+@media (max-width: 380px) {
+	.card,
+	.compact {
+		grid-template-columns: 2.35rem minmax(0, 1fr);
+		gap: 0.55rem;
+		padding: 0.6rem;
+		border-radius: 0.65rem;
+		box-shadow: none;
+	}
+
+	.artwork,
+	.compact .artwork {
+		width: 2.35rem;
+		height: 2.35rem;
+		border-radius: 0.7rem;
+	}
+
+	.topRow,
+	.compact .topRow {
+		align-items: center;
+		flex-wrap: nowrap;
+	}
+
+	.stateText {
+		display: none;
+	}
+
+	.providerBadge {
+		max-width: 7rem;
+	}
+
+	.linkButton,
+	.compact .linkButton {
+		display: none;
 	}
 }

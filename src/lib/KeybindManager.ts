@@ -190,6 +190,7 @@ class KeybindManager {
 	private handlers = new Map<KeybindAction, KeybindHandler>();
 	private initialized = false;
 	private globalShortcutsEnabled = false;
+	private registeredGlobalShortcutIds = new Set<string>();
 	private suspended = false;
 	private disposers: Array<() => void> = [];
 	private combokeys: CombokeysInstance | null = null;
@@ -239,7 +240,11 @@ class KeybindManager {
 
 	private get activeGlobalKeybinds(): Array<KeybindConfig & {combo: KeyCombo}> {
 		return this.activeKeybinds.filter(
-			(k) => k.allowGlobal && (k.combo.global ?? false) && ((k.combo.key ?? '') !== '' || (k.combo.code ?? '') !== ''),
+			(k) =>
+				k.action !== 'push_to_talk' &&
+				k.allowGlobal &&
+				(k.combo.global ?? false) &&
+				((k.combo.key ?? '') !== '' || (k.combo.code ?? '') !== ''),
 		);
 	}
 
@@ -873,6 +878,8 @@ class KeybindManager {
 	private async refreshGlobalShortcuts() {
 		const electronApi = getElectronAPI();
 		if (!electronApi) return;
+		this.globalShortcutsEnabled = false;
+		this.registeredGlobalShortcutIds.clear();
 
 		const keybinds = this.activeGlobalKeybinds;
 
@@ -888,6 +895,7 @@ class KeybindManager {
 		}
 
 		if (!(await this.checkInputMonitoringPermission())) {
+			this.globalShortcutsEnabled = false;
 			return;
 		}
 
@@ -916,12 +924,13 @@ class KeybindManager {
 		for (const {shortcut} of shortcuts) {
 			try {
 				await electronApi.registerGlobalShortcut?.(shortcut, shortcut);
+				this.registeredGlobalShortcutIds.add(shortcut);
 			} catch (error) {
 				console.error(`Failed to register global shortcut ${shortcut}`, error);
 			}
 		}
 
-		this.globalShortcutsEnabled = true;
+		this.globalShortcutsEnabled = this.registeredGlobalShortcutIds.size > 0;
 	}
 
 	private refreshLocalShortcuts() {
@@ -944,6 +953,7 @@ class KeybindManager {
 		const ignoreInEditable = isAltOnlyArrowCombo(combo);
 
 		const shouldIgnoreEvent = (event: KeyboardEvent): boolean => {
+			if (action === 'push_to_talk') return false;
 			const target = event.target ?? null;
 			if (!isEditableElement(target)) return false;
 			if (!hasModifier) return true;
@@ -954,8 +964,15 @@ class KeybindManager {
 			if (!event) return;
 
 			if (shouldIgnoreEvent(event)) return;
+			if (action === 'push_to_talk' && event.repeat) return;
 
-			if (this.globalShortcutsEnabled && (combo.global ?? false)) {
+			const globalShortcutId = comboToShortcutString(combo);
+			if (
+				this.globalShortcutsEnabled &&
+				(combo.global ?? false) &&
+				globalShortcutId &&
+				this.registeredGlobalShortcutIds.has(globalShortcutId)
+			) {
 				return;
 			}
 
@@ -969,6 +986,12 @@ class KeybindManager {
 
 		const combokeys = this.ensureCombokeys();
 		if (combokeys) {
+			if (action === 'push_to_talk') {
+				combokeys.bind(shortcut, wrapHandler('press'), 'keydown');
+				combokeys.bind(shortcut, wrapHandler('release'), 'keyup');
+				return;
+			}
+
 			combokeys.bind(shortcut, wrapHandler('press'), 'keydown');
 			combokeys.bind(shortcut, wrapHandler('release'), 'keyup');
 		}

@@ -22,18 +22,28 @@
 	min-height: 0;
 	flex-direction: column;
 	border-radius: 0.88rem;
-	border: none;
+	border: 1px solid rgb(206 161 72 / 0.24);
 	background:
-		radial-gradient(circle at 22% -12%, rgb(168 131 255 / 0.18), transparent 42%),
-		rgb(18 15 38 / 0.75);
+		radial-gradient(circle at 50% -12%, rgb(229 186 93 / 0.2), transparent 40%),
+		linear-gradient(160deg, rgb(20 18 14 / 0.92), rgb(12 11 10 / 0.97));
 	padding: 0.95rem;
 	text-align: center;
-	transition: transform 180ms ease, border-color 180ms ease;
+	box-shadow:
+		inset 0 1px 0 rgb(255 230 173 / 0.1),
+		0 10px 24px rgb(0 0 0 / 0.3);
+	transition:
+		transform 180ms ease,
+		border-color 180ms ease,
+		box-shadow 180ms ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
 	.benefit:hover {
 		transform: translateY(-2px);
+		border-color: rgb(218 179 96 / 0.4);
+		box-shadow:
+			inset 0 1px 0 rgb(255 230 173 / 0.18),
+			0 14px 26px rgb(0 0 0 / 0.38);
 	}
 }
 
@@ -52,11 +62,12 @@
 	justify-content: center;
 	border-radius: 9999px;
 	background:
-		linear-gradient(145deg, rgb(160 124 255 / 0.95), rgb(104 65 215 / 0.95)),
-		rgb(125 84 232);
+		linear-gradient(145deg, rgb(52 43 29 / 0.95), rgb(124 91 38 / 0.95)),
+		rgb(74 55 28);
+	border: 1px solid rgb(255 216 133 / 0.34);
 	box-shadow:
-		0 10px 16px rgb(89 56 182 / 0.42),
-		inset 0 1px 0 rgb(255 255 255 / 0.24);
+		0 10px 16px rgb(42 30 12 / 0.48),
+		inset 0 1px 0 rgb(255 233 182 / 0.3);
 }
 
 .title {
@@ -65,12 +76,12 @@
 	font-weight: 650;
 	font-size: 0.875rem;
 	line-height: 1.25;
-	color: rgb(245 241 255);
+	color: rgb(255 240 213);
 }
 
 .description {
 	min-height: 0;
 	font-size: 0.76rem;
 	line-height: 1.58;
-	color: rgb(186 177 220);
+	color: rgb(201 185 151);
 }

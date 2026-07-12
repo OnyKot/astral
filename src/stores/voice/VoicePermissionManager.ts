@@ -18,7 +18,7 @@
  */
 
 import type {LocalAudioTrack, LocalParticipant, Room} from 'livekit-client';
-import {Track, VideoQuality} from 'livekit-client';
+import {Track} from 'livekit-client';
 import {autorun, makeAutoObservable, runInAction} from 'mobx';
 import {Permissions} from '~/Constants';
 import {Logger} from '~/lib/Logger';
@@ -270,7 +270,6 @@ class VoicePermissionManager {
 			participant.videoTrackPublications.forEach((publication) => {
 				try {
 					publication.setSubscribed(false);
-					publication.setVideoQuality(VideoQuality.LOW);
 				} catch (error) {
 					logger.error('[initializeSubscriptions] Failed to unsubscribe video', {error});
 				}
@@ -298,8 +297,18 @@ class VoicePermissionManager {
 		room.remoteParticipants.forEach((participant) => {
 			participant.audioTrackPublications.forEach((publication) => {
 				try {
-					publication.setEnabled(!deafened);
-					publication.setSubscribed(!deafened);
+					if (deafened) {
+						if (publication.isSubscribed || publication.track) {
+							publication.setEnabled(false);
+						}
+						publication.setSubscribed(false);
+						return;
+					}
+
+					publication.setSubscribed(true);
+					if (publication.isSubscribed || publication.track) {
+						publication.setEnabled(true);
+					}
 				} catch (error) {
 					logger.error('[applyDeafen] Failed to apply deaf state', {
 						error,
@@ -449,8 +458,10 @@ class VoicePermissionManager {
 	}
 
 	extractUserIdFromIdentity(identity: string): string | null {
-		const match = identity.match(/^user_(\d+)(?:_(.+))?$/);
-		return match ? match[1] : null;
+		if (!identity.startsWith('user_')) return null;
+		const value = identity.slice(5);
+		const delimiterIndex = value.indexOf('_');
+		return delimiterIndex === -1 ? value : value.slice(0, delimiterIndex);
 	}
 }
 

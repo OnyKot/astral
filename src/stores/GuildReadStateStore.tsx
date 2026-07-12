@@ -18,7 +18,7 @@
  */
 
 import {makeAutoObservable, observable, reaction, runInAction} from 'mobx';
-import {ChannelTypes, ME, Permissions} from '~/Constants';
+import {isGuildRtcChannelType, ME, Permissions} from '~/Constants';
 import ChannelStore from './ChannelStore';
 import GuildStore from './GuildStore';
 import PermissionStore from './PermissionStore';
@@ -71,7 +71,7 @@ function canContributeToGuildUnread(
 	},
 	mentionCount: number,
 ): boolean {
-	if (channel.type === ChannelTypes.GUILD_VOICE && mentionCount === 0) {
+	if (isGuildRtcChannelType(channel.type) && mentionCount === 0) {
 		return false;
 	}
 
@@ -407,7 +407,7 @@ class GuildReadStateStore {
 		const channels = ChannelStore.getGuildChannels(guildId);
 
 		for (const channel of channels) {
-			if (channel.type === ChannelTypes.GUILD_VOICE && ReadStateStore.getMentionCount(channel.id) === 0) {
+			if (isGuildRtcChannelType(channel.type) && ReadStateStore.getMentionCount(channel.id) === 0) {
 				continue;
 			}
 

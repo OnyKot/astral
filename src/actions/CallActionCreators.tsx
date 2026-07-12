@@ -32,10 +32,12 @@ import {SoundType} from '~/utils/SoundUtils';
 interface PendingRing {
 	channelId: string;
 	recipients: Array<string>;
-	dispose: () => void;
+	dispose: (() => void) | null;
+	fallbackTimeoutId: ReturnType<typeof setTimeout> | null;
 }
 
 let pendingRing: PendingRing | null = null;
+const DM_CALL_RING_FALLBACK_DELAY_MS = 2800;
 
 export async function checkCallEligibility(channelId: string): Promise<{ringable: boolean}> {
 	const response = await HttpClient.get<{ringable: boolean}>(Endpoints.CHANNEL_CALL(channelId));
@@ -69,14 +71,42 @@ export async function stopRingingParticipants(channelId: string, recipients?: Ar
 }
 
 function clearPendingRing(): void {
-	if (pendingRing) {
-		pendingRing.dispose();
-		pendingRing = null;
+	const current = pendingRing;
+	pendingRing = null;
+	if (current?.fallbackTimeoutId) {
+		clearTimeout(current.fallbackTimeoutId);
 	}
+	current?.dispose?.();
 }
 
 function setupPendingRing(channelId: string, recipients: Array<string>): void {
 	clearPendingRing();
+
+	const nextPendingRing: PendingRing = {
+		channelId,
+		recipients: [...recipients],
+		dispose: null,
+		fallbackTimeoutId: null,
+	};
+	pendingRing = nextPendingRing;
+
+	nextPendingRing.fallbackTimeoutId = setTimeout(() => {
+		if (pendingRing !== nextPendingRing) {
+			return;
+		}
+
+		const stillJoiningThisCall = MediaEngineStore.channelId === channelId && (MediaEngineStore.connected || MediaEngineStore.connecting);
+		if (!stillJoiningThisCall) {
+			clearPendingRing();
+			return;
+		}
+
+		const recipientsToRing = nextPendingRing.recipients;
+		clearPendingRing();
+		void ringCallRecipients(channelId, recipientsToRing).catch((error) => {
+			console.error('Failed to ring call recipients:', error);
+		});
+	}, DM_CALL_RING_FALLBACK_DELAY_MS);
 
 	const dispose = reaction(
 		() => ({
@@ -84,17 +114,22 @@ function setupPendingRing(channelId: string, recipients: Array<string>): void {
 			currentChannelId: MediaEngineStore.channelId,
 		}),
 		({connected, currentChannelId}) => {
-			if (connected && currentChannelId === channelId && pendingRing?.channelId === channelId) {
-				void ringCallRecipients(channelId, pendingRing.recipients).catch((error) => {
+			if (connected && currentChannelId === channelId && pendingRing === nextPendingRing) {
+				const recipientsToRing = nextPendingRing.recipients;
+				clearPendingRing();
+				void ringCallRecipients(channelId, recipientsToRing).catch((error) => {
 					console.error('Failed to ring call recipients:', error);
 				});
-				clearPendingRing();
 			}
 		},
 		{fireImmediately: true},
 	);
 
-	pendingRing = {channelId, recipients, dispose};
+	if (pendingRing === nextPendingRing) {
+		nextPendingRing.dispose = dispose;
+	} else {
+		dispose();
+	}
 }
 
 export function startCall(channelId: string, silent = false): void {
@@ -106,6 +141,15 @@ export function startCall(channelId: string, silent = false): void {
 	const recipients = channel ? channel.recipientIds.filter((id) => id !== currentUser.id) : [];
 
 	CallInitiatorStore.markInitiated(channelId, recipients);
+	CallStateStore.handleCallCreate({
+		channelId,
+		call: {
+			channel_id: channelId,
+			region: 'local',
+			ringing: silent ? [] : recipients,
+			voice_states: [{user_id: currentUser.id, channel_id: channelId}],
+		},
+	});
 
 	if (!silent) {
 		setupPendingRing(channelId, recipients);
@@ -123,6 +167,10 @@ export function joinCall(channelId: string): void {
 		return;
 	}
 	CallStateStore.clearPendingRinging(channelId, [currentUser.id]);
+	if (pendingRing?.channelId === channelId) {
+		clearPendingRing();
+	}
+	CallInitiatorStore.clearChannel(channelId);
 	SoundStore.stopIncomingRing();
 	SoundStore.playSound(SoundType.UserJoin);
 	try {
@@ -159,7 +207,13 @@ export async function leaveCall(channelId: string): Promise<void> {
 
 	CallInitiatorStore.clearChannel(channelId);
 
-	void MediaEngineStore.disconnectFromVoiceChannel('user');
+	if (MediaEngineStore.channelId === channelId) {
+		void MediaEngineStore.disconnectFromVoiceChannel('user');
+	}
+
+	if (call?.region === 'local') {
+		CallStateStore.handleCallDelete({channelId});
+	}
 }
 
 export function rejectCall(channelId: string): void {
@@ -168,6 +222,9 @@ export function rejectCall(channelId: string): void {
 		return;
 	}
 	CallStateStore.clearPendingRinging(channelId, [currentUser.id]);
+	if (pendingRing?.channelId === channelId) {
+		clearPendingRing();
+	}
 	const connectedChannelId = MediaEngineStore.channelId;
 	if (connectedChannelId === channelId) {
 		void MediaEngineStore.disconnectFromVoiceChannel('user');
@@ -185,6 +242,9 @@ export function ignoreCall(channelId: string): void {
 		return;
 	}
 	CallStateStore.clearPendingRinging(channelId, [currentUser.id]);
+	if (pendingRing?.channelId === channelId) {
+		clearPendingRing();
+	}
 	void stopRingingCallRecipients(channelId, [currentUser.id]).catch((error) => {
 		console.error('Failed to stop ringing:', error);
 	});

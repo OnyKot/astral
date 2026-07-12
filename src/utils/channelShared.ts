@@ -17,12 +17,12 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {ChannelTypes} from '~/Constants';
+import {ChannelTypes, GUILD_RTC_CHANNEL_TYPES} from '~/Constants';
 import type {ChannelRecord} from '~/records/ChannelRecord';
 
 type MinimalChannel = Pick<ChannelRecord, 'id' | 'type' | 'position' | 'guildId'>;
 
-const VIEWABLE_CHANNEL_TYPES = new Set<number>([ChannelTypes.GUILD_TEXT, ChannelTypes.GUILD_VOICE]);
+const VIEWABLE_CHANNEL_TYPES = new Set<number>([ChannelTypes.GUILD_TEXT, ...GUILD_RTC_CHANNEL_TYPES]);
 
 export const compareChannelPosition = (a: MinimalChannel, b: MinimalChannel): number => {
 	if (a.position !== b.position) {

@@ -24,7 +24,7 @@ import React from 'react';
 import * as GuildMemberActionCreators from '~/actions/GuildMemberActionCreators';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
 import * as VoiceStateActionCreators from '~/actions/VoiceStateActionCreators';
-import {ChannelTypes, Permissions} from '~/Constants';
+import {isGuildRtcChannelType, Permissions} from '~/Constants';
 import ChannelStore from '~/stores/ChannelStore';
 import ConnectionStore from '~/stores/ConnectionStore';
 import PermissionStore from '~/stores/PermissionStore';
@@ -54,7 +54,7 @@ export const MoveToChannelSubmenu: React.FC<MoveToChannelSubmenuProps> = observe
 
 		const voiceChannels = React.useMemo(() => {
 			return channels.filter((channel) => {
-				if (channel.type !== ChannelTypes.GUILD_VOICE) {
+				if (!isGuildRtcChannelType(channel.type)) {
 					return false;
 				}
 

@@ -41,6 +41,8 @@
 	max-width: 200px;
 	min-height: 200px;
 	max-height: 200px;
+	box-sizing: border-box;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 
 .uploadContainer {
@@ -312,6 +314,50 @@
 	border-radius: 50%;
 	border-top-color: hsl(0, 0%, 100%);
 	animation: spin 1s ease infinite;
+}
+
+@media (max-width: 767px) {
+	.scroller {
+		margin-left: 2px;
+	}
+
+	.channelAttachmentArea {
+		gap: 10px;
+		padding: 12px 6px 8px;
+	}
+
+	.upload {
+		min-width: 158px;
+		max-width: 158px;
+		min-height: 158px;
+		max-height: 158px;
+		padding: 6px;
+		border-radius: 0.65rem;
+	}
+
+	.iconImage {
+		width: 68px;
+		height: 68px;
+	}
+
+	.filenameContainer {
+		min-height: 34px;
+		margin-top: 6px;
+		padding-inline: 2px;
+	}
+
+	.actionBar {
+		transform: translate(12%, -12%);
+	}
+}
+
+@media (max-width: 380px) {
+	.upload {
+		min-width: 146px;
+		max-width: 146px;
+		min-height: 150px;
+		max-height: 150px;
+	}
 }
 
 @keyframes spin {

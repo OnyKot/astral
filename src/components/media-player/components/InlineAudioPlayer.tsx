@@ -104,7 +104,6 @@ export function InlineAudioPlayer({
 
 	const [hasStarted, setHasStarted] = useState(false);
 	const [voiceEnvelope, setVoiceEnvelope] = useState<Array<number>>([]);
-	const [voiceEnvelopeDuration, setVoiceEnvelopeDuration] = useState<number>(0);
 	const [waveBarCount, setWaveBarCount] = useState(() => (isMobileLayout ? 52 : 56));
 	const [pendingSeekRatio, setPendingSeekRatio] = useState<number | null>(null);
 	const wavePointerIdRef = useRef<number | null>(null);
@@ -114,6 +113,25 @@ export function InlineAudioPlayer({
 		persistVolume: true,
 		persistPlaybackRate: true,
 	});
+
+	useEffect(() => {
+		if (!state.isPlaying) {
+			return;
+		}
+
+		const currentAudio = mediaRef.current;
+		if (!currentAudio) {
+			return;
+		}
+
+		const activePlayers = document.querySelectorAll<HTMLAudioElement>('audio[data-inline-audio-player]');
+		for (const player of activePlayers) {
+			if (player === currentAudio || player.paused) {
+				continue;
+			}
+			player.pause();
+		}
+	}, [mediaRef, state.isPlaying]);
 
 	const {currentTime, duration, progress, buffered, seekToPercentage, startSeeking, endSeeking} = useMediaProgress({
 		mediaRef,
@@ -153,93 +171,12 @@ export function InlineAudioPlayer({
 	useEffect(() => {
 		if (!isVoiceMessage || !src) {
 			setVoiceEnvelope([]);
-			setVoiceEnvelopeDuration(0);
 			return;
 		}
 
 		const decodedWaveform = decodeVoiceWaveform(waveform);
-		if (decodedWaveform) {
-			setVoiceEnvelope(decodedWaveform);
-			setVoiceEnvelopeDuration(initialDuration ?? 0);
-			return;
-		}
-
-		const isLocalDevelopmentHost =
-			typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
-		if (isLocalDevelopmentHost) {
-			setVoiceEnvelope([]);
-			setVoiceEnvelopeDuration(initialDuration ?? 0);
-			return;
-		}
-
-		let disposed = false;
-
-		const buildEnvelope = async () => {
-			try {
-				const response = await fetch(src);
-				if (!response.ok) return;
-				const arrayBuffer = await response.arrayBuffer();
-				const context = new AudioContext();
-				try {
-					const buffer = await context.decodeAudioData(arrayBuffer);
-					if (disposed) return;
-
-					const channelCount = Math.max(1, buffer.numberOfChannels);
-					const sampleCount = buffer.length;
-					const segmentCount = 360;
-					const segmentSize = Math.max(1, Math.floor(sampleCount / segmentCount));
-					const envelope: Array<number> = [];
-
-					for (let segment = 0; segment < segmentCount; segment += 1) {
-						const start = segment * segmentSize;
-						const end = Math.min(sampleCount, start + segmentSize);
-						if (start >= end) {
-							envelope.push(0);
-							continue;
-						}
-
-						let sumSquares = 0;
-						let points = 0;
-						for (let channel = 0; channel < channelCount; channel += 1) {
-							const data = buffer.getChannelData(channel);
-							for (let index = start; index < end; index += 1) {
-								const value = data[index] ?? 0;
-								sumSquares += value * value;
-								points += 1;
-							}
-						}
-
-						const rms = points > 0 ? Math.sqrt(sumSquares / points) : 0;
-						envelope.push(rms);
-					}
-
-					const sorted = [...envelope].sort((a, b) => a - b);
-					const floorIndex = Math.floor(sorted.length * 0.12);
-					const peakIndex = Math.floor(sorted.length * 0.96);
-					const floor = sorted[floorIndex] ?? 0;
-					const peak = sorted[peakIndex] ?? floor + 1;
-					const normalized = envelope.map((value) => {
-						const cleaned = Math.max(0, value - floor);
-						const range = Math.max(0.0001, peak - floor);
-						return Math.max(0, Math.min(1, cleaned / range));
-					});
-
-					setVoiceEnvelope(normalized);
-					setVoiceEnvelopeDuration(buffer.duration || 0);
-				} finally {
-					void context.close().catch(() => undefined);
-				}
-			} catch {
-				setVoiceEnvelope([]);
-				setVoiceEnvelopeDuration(0);
-			}
-		};
-
-		void buildEnvelope();
-		return () => {
-			disposed = true;
-		};
-	}, [initialDuration, isVoiceMessage, src, waveform]);
+		setVoiceEnvelope(decodedWaveform ?? []);
+	}, [isVoiceMessage, src, waveform]);
 
 	useEffect(() => {
 		if (!isVoiceMessage) {
@@ -372,7 +309,7 @@ export function InlineAudioPlayer({
 				played: normalizedProgress >= endRatio,
 			};
 		});
-	}, [currentTime, displayDuration, progress, voiceEnvelope, voiceEnvelopeDuration, waveBarCount]);
+	}, [progress, voiceEnvelope, waveBarCount]);
 
 	const handlePlayClick = useCallback(
 		(e: React.MouseEvent) => {
@@ -523,21 +460,9 @@ export function InlineAudioPlayer({
 				ref={mediaRef as React.RefObject<HTMLAudioElement>}
 				src={hasStarted ? src : undefined}
 				preload="none"
+				data-inline-audio-player
 				onLoadedMetadata={handleAudioLoadedMetadata}
 			/>
-			{isVoiceMessage && (
-				<button
-					type="button"
-					onClick={handleSpeedToggle}
-					className={clsx(
-						styles.voiceSpeedPill,
-						isSpeedShadeActive && styles.voiceSpeedPillShade,
-					)}
-					aria-label={t`Change playback speed`}
-				>
-					<span className={styles.voiceSpeedPillValue}>{speedLabel}</span>
-				</button>
-			)}
 
 			<div className={styles.header}>
 				{!isVoiceMessage && (
@@ -585,6 +510,14 @@ export function InlineAudioPlayer({
 								{voiceMetaString}
 							</span>
 						)}
+						<button
+							type="button"
+							onClick={handleSpeedToggle}
+							className={clsx(styles.voiceSpeedPill, isSpeedShadeActive && styles.voiceSpeedPillShade)}
+							aria-label={t`Change playback speed`}
+						>
+							<span className={styles.voiceSpeedPillValue}>{speedLabel}</span>
+						</button>
 					</div>
 				)}
 

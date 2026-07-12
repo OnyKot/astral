@@ -154,7 +154,8 @@ export const BioEditor = observer(
 							) : (
 								<Popout
 									position="bottom-end"
-									animationType="none"
+									animationType="smooth"
+									zIndexBoost={200}
 									offsetMainAxis={8}
 									offsetCrossAxis={0}
 									onOpen={() => onEmojiPickerOpenChange(true)}

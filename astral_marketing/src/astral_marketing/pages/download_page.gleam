@@ -30,9 +30,9 @@ import lustre/element.{type Element}
 import lustre/element/html
 import wisp
 
-const windows_version = "1.2.5"
+const windows_version = "1.5.0"
 
-const android_version = "1.2.6"
+const android_version = "1.5.0"
 
 fn tr(ctx: Context, ru: String, en: String) -> String {
   case ctx.locale {
@@ -82,7 +82,24 @@ fn hero_section(ctx: Context) -> Element(a) {
 
 fn download_grid(ctx: Context) -> Element(a) {
   html.div([attribute.class("mt-12 md:mt-16 w-full max-w-5xl mx-auto")], [
-    html.div([attribute.class("mb-10 rounded-[28px] border border-white/10 bg-white/[0.03] p-6 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.6)] backdrop-blur-xl md:p-8")], [
+    html.div([attribute.class("mb-10 download-release-panel p-6 md:p-8")], [
+      html.div([attribute.class("mb-7 flex flex-col gap-3 text-left md:flex-row md:items-end md:justify-between")], [
+        html.div([], [
+          html.span([attribute.class("marketing-kicker")], [
+            html.text(tr(ctx, "Свежие сборки", "Fresh builds")),
+          ]),
+          html.h2([attribute.class("mt-4 text-2xl font-semibold text-white md:text-4xl")], [
+            html.text("Astral for Windows + Android 1.5.0"),
+          ]),
+        ]),
+        html.p([attribute.class("max-w-xl text-sm leading-relaxed text-[hsl(var(--muted-foreground))] md:text-right md:text-base")], [
+          html.text(tr(
+            ctx,
+            "Android APK отдается напрямую из статики лендинга. Windows-сборка остается доступной через основной download endpoint.",
+            "Android APK is served directly from the landing static bundle. The Windows build remains available through the main download endpoint.",
+          )),
+        ]),
+      ]),
       html.div(
         [
           attribute.class(
@@ -284,10 +301,10 @@ fn support_cta_button(
   new_tab: Bool,
 ) -> Element(a) {
   let attrs = [
-    attribute.href(href),
-    attribute.class(
-      "liquid-glass interactive-glass inline-flex flex-col items-center justify-center gap-1 rounded-2xl px-6 py-5 md:px-8 md:py-6 transition-colors text-white hover:bg-white/8",
-    ),
+      attribute.href(href),
+      attribute.class(
+      "astral-button astral-button-secondary inline-flex flex-col items-center justify-center gap-1 px-6 py-5 md:px-8 md:py-6 text-white",
+      ),
   ]
 
   let attrs = case new_tab {

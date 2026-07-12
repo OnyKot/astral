@@ -42,15 +42,25 @@ export type LivekitParticipantSnapshot = Readonly<{
 	lastSpokeAt: number | null;
 }>;
 
-const extractUserId = (identity: string): string | null => {
-	const match = identity.match(/^user_(\d+)(?:_(.+))?$/);
-	return match ? match[1] : null;
+const parseVoiceIdentity = (identity: string): {userId: string | null; connectionId: string | null} => {
+	if (!identity.startsWith('user_')) {
+		return {userId: null, connectionId: null};
+	}
+
+	const value = identity.slice(5);
+	const delimiterIndex = value.indexOf('_');
+	if (delimiterIndex === -1) {
+		return {userId: value || null, connectionId: null};
+	}
+
+	const userId = value.slice(0, delimiterIndex) || null;
+	const connectionId = value.slice(delimiterIndex + 1) || null;
+	return {userId, connectionId};
 };
 
-const extractConnectionId = (identity: string): string | null => {
-	const match = identity.match(/^user_(\d+)_(.+)$/);
-	return match ? match[2] : null;
-};
+const extractUserId = (identity: string): string | null => parseVoiceIdentity(identity).userId;
+
+const extractConnectionId = (identity: string): string | null => parseVoiceIdentity(identity).connectionId;
 
 const keysSorted = (m: Map<string, unknown>): ReadonlyArray<string> => Object.freeze([...m.keys()].sort());
 

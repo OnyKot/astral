@@ -51,6 +51,7 @@
 	height: 2px;
 	background-color: var(--background-modifier-accent);
 	opacity: 0.3;
+	animation: dividerLineIn var(--motion-dur-short) var(--motion-ease-smooth) both;
 }
 
 .text {
@@ -59,6 +60,7 @@
 	font-weight: 500;
 	color: var(--text-tertiary);
 	background-color: var(--background-secondary-lighter);
+	border-radius: 999px;
 	position: relative;
 	z-index: 1;
 	white-space: nowrap;
@@ -70,6 +72,7 @@
 	height: 2px;
 	background-color: var(--status-danger);
 	opacity: 0.4;
+	animation: dividerLineIn var(--motion-dur-short) var(--motion-ease-smooth) both;
 }
 
 .dateWithUnreadText {
@@ -81,6 +84,7 @@
 	font-weight: 500;
 	color: var(--status-danger);
 	background-color: var(--background-secondary-lighter);
+	border-radius: 999px;
 	z-index: 2;
 	white-space: nowrap;
 }
@@ -102,4 +106,35 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	animation: contextMenuIn var(--motion-dur-short) var(--motion-ease-smooth) both;
+}
+
+@keyframes dividerLineIn {
+	from {
+		opacity: 0;
+		transform: scaleX(0.92);
+	}
+	to {
+		opacity: 1;
+		transform: scaleX(1);
+	}
+}
+
+@keyframes contextMenuIn {
+	from {
+		opacity: 0;
+		transform: translateY(4px) scale(0.98);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.line,
+	.unreadLine,
+	.unreadBadge {
+		animation: none;
+	}
 }

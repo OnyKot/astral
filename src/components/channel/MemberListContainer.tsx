@@ -37,7 +37,8 @@ export const MemberListContainer: React.FC<MemberListContainerProps> = observer(
 			<ResizeHandle
 				direction="left"
 				getSize={() => LayoutSizingStore.memberListWidthPx}
-				onResize={(px) => LayoutSizingStore.setMemberListWidth(px)}
+				onResize={(px) => LayoutSizingStore.previewMemberListWidth(px)}
+				onResizeEnd={(px) => LayoutSizingStore.commitMemberListWidth(px)}
 				onReset={() => LayoutSizingStore.resetMemberList()}
 			/>
 			<Scroller className={styles.memberListScroller} key={`member-list-scroller-${channelId}`} onScroll={onScroll}>

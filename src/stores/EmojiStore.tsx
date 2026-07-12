@@ -347,6 +347,10 @@ class EmojiStore {
 		const lowerCasedQuery = normalizedQuery.toLowerCase();
 		if (!lowerCasedQuery) {
 			const allEmojis = this.getAllEmojis(channel);
+			if (Object.keys(EmojiPickerStore.emojiUsage).length === 0) {
+				return count > 0 ? allEmojis.slice(0, count) : allEmojis;
+			}
+
 			const sorted = [...allEmojis].sort(
 				(a, b) => EmojiPickerStore.getFrecencyScoreForEmoji(b) - EmojiPickerStore.getFrecencyScoreForEmoji(a),
 			);

@@ -18,6 +18,7 @@
  */
 
 import {clsx} from 'clsx';
+import {AnimatePresence, motion, useReducedMotion} from 'framer-motion';
 import type React from 'react';
 import styles from '../ChannelIndexPage.module.css';
 
@@ -36,13 +37,31 @@ export const ChannelViewScaffold: React.FC<ChannelViewScaffoldProps> = ({
 	showMemberListDivider = false,
 	className,
 }) => {
+	const prefersReducedMotion = useReducedMotion();
+	const panelTransition = prefersReducedMotion
+		? {duration: 0}
+		: {duration: 0.2, ease: [0.22, 1, 0.36, 1] as const};
+
 	return (
 		<div className={clsx(styles.channelGrid, className)}>
 			<div>{header}</div>
 			<div className={styles.contentGrid}>
 				{showMemberListDivider && <div className={styles.memberListDivider} />}
 				{chatArea}
-				{sidePanel}
+				<AnimatePresence initial={false} mode="wait">
+					{sidePanel && (
+						<motion.div
+							key={showMemberListDivider ? 'member-panel' : 'side-panel'}
+							className={styles.sidePanelMotion}
+							initial={prefersReducedMotion ? false : {opacity: 0, x: 12}}
+							animate={{opacity: 1, x: 0}}
+							exit={prefersReducedMotion ? {opacity: 0} : {opacity: 0, x: 8}}
+							transition={panelTransition}
+						>
+							{sidePanel}
+						</motion.div>
+					)}
+				</AnimatePresence>
 			</div>
 		</div>
 	);

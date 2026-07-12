@@ -26,7 +26,7 @@ import EmojiStore from '~/stores/EmojiStore';
 import GuildStore from '~/stores/GuildStore';
 import UserStore from '~/stores/UserStore';
 import {detectPastedSegments, type LookupFunctions} from '~/utils/PasteSegmentUtils';
-import type {TextareaSegmentManager} from '~/utils/TextareaSegmentManager';
+import type {MentionSegment, TextareaSegmentManager} from '~/utils/TextareaSegmentManager';
 
 interface UseTextareaPasteParams {
 	channel?: ChannelRecord | null;
@@ -62,6 +62,11 @@ export function useTextareaPaste({
 
 			if (!shouldUseSegments && opts.forceHandlePlainText) {
 				const newText = beforeSelection + pastedText + afterSelection;
+				segmentManagerRef.current.updateSegmentsForTextChange(
+					selectionStart,
+					selectionEnd,
+					pastedText.length,
+				);
 
 				setValue(newText);
 				previousValueRef.current = newText;
@@ -116,36 +121,43 @@ export function useTextareaPaste({
 				},
 			};
 
-			const segments = detectPastedSegments(pastedText, beforeSelection.length, lookups);
-
-			let newText = beforeSelection;
+			const segments = detectPastedSegments(pastedText, 0, lookups);
+			const insertedSegments: Array<MentionSegment> = [];
+			let displayReplacement = '';
 			let lastEnd = 0;
 
 			for (const segment of segments) {
-				const relativeStart = segment.start - beforeSelection.length;
-				newText += pastedText.slice(lastEnd, relativeStart);
-
-				const insertPos = newText.length;
-				segmentManagerRef.current.insertSegment(
-					newText,
-					insertPos,
-					segment.displayText,
-					segment.actualText,
-					segment.type,
-					segment.id,
-				);
-				newText += segment.displayText;
-
-				lastEnd = segment.end - beforeSelection.length;
+				displayReplacement += pastedText.slice(lastEnd, segment.start);
+				const displayStart = selectionStart + displayReplacement.length;
+				displayReplacement += segment.displayText;
+				insertedSegments.push({
+					type: segment.type,
+					id: segment.id,
+					displayText: segment.displayText,
+					actualText: segment.actualText,
+					start: displayStart,
+					end: displayStart + segment.displayText.length,
+				});
+				lastEnd = segment.end;
 			}
 
-			newText += pastedText.slice(lastEnd);
-			newText += afterSelection;
+			displayReplacement += pastedText.slice(lastEnd);
+			segmentManagerRef.current.updateSegmentsForTextChange(
+				selectionStart,
+				selectionEnd,
+				displayReplacement.length,
+			);
+			segmentManagerRef.current.setSegments([
+				...segmentManagerRef.current.getSegments(),
+				...insertedSegments,
+			]);
+
+			const newText = beforeSelection + displayReplacement + afterSelection;
 
 			setValue(newText);
 			previousValueRef.current = newText;
 
-			const newCursorPosition = beforeSelection.length + pastedText.length;
+			const newCursorPosition = selectionStart + displayReplacement.length;
 			setTimeout(() => {
 				const t = textareaRef.current;
 				if (t) {

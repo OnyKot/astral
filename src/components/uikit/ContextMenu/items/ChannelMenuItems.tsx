@@ -311,7 +311,12 @@ export const DeleteChannelMenuItem: React.FC<ChannelMenuItemProps> = observer(({
 
 	const handleDeleteChannel = React.useCallback(() => {
 		onClose();
-		const channelType = channel.type === ChannelTypes.GUILD_VOICE ? t`Voice Channel` : t`Text Channel`;
+		const channelType =
+			channel.type === ChannelTypes.GUILD_STAGE
+				? t`Stage Channel`
+				: channel.type === ChannelTypes.GUILD_VOICE
+					? t`Voice Channel`
+					: t`Text Channel`;
 		const channelName = channel.name ?? 'this channel';
 
 		ModalActionCreators.push(

@@ -18,7 +18,6 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import * as UserProfileActionCreators from '~/actions/UserProfileActionCreators';
 
 interface UserProfileMobileState {
 	userId: string | null;
@@ -43,9 +42,6 @@ class UserProfileMobileStore {
 		this.userId = userId;
 		this.guildId = guildId;
 		this.autoFocusNote = autoFocusNote;
-		UserProfileActionCreators.fetch(userId, guildId).catch((error) => {
-			console.error('Failed to fetch user profile:', error);
-		});
 	}
 
 	close(): void {

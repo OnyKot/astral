@@ -40,6 +40,7 @@ import {getAccountAvatarUrl} from '~/components/accounts/AccountListItem';
 import AccountSwitcherModal from '~/components/accounts/AccountSwitcherModal';
 import {CustomStatusDisplay} from '~/components/common/CustomStatusDisplay/CustomStatusDisplay';
 import {MusicActivityDisplay} from '~/components/common/MusicActivityDisplay/MusicActivityDisplay';
+import {SteamNowPlayingBlock} from '~/components/common/SteamNowPlayingBlock/SteamNowPlayingBlock';
 import {CustomStatusModal} from '~/components/modals/CustomStatusModal';
 import {UserProfileModal} from '~/components/modals/UserProfileModal';
 import {UserSettingsModal} from '~/components/modals/UserSettingsModal';
@@ -50,7 +51,9 @@ import {UserProfileBio} from '~/components/popouts/UserProfileShared';
 import {ProfileCardBanner} from '~/components/profile/ProfileCard/ProfileCardBanner';
 import {ProfileCardContent} from '~/components/profile/ProfileCard/ProfileCardContent';
 import {ProfileCardFooter} from '~/components/profile/ProfileCard/ProfileCardFooter';
+import {ProfileIntegrationsBlock} from '~/components/profile/ProfileCard/ProfileIntegrationsBlock';
 import {ProfileCardLayout} from '~/components/profile/ProfileCard/ProfileCardLayout';
+import {ProfileStreamingStatusCard} from '~/components/profile/ProfileCard/ProfileStreamingStatusCard';
 import {ProfileCardUserInfo} from '~/components/profile/ProfileCard/ProfileCardUserInfo';
 import {Button} from '~/components/uikit/Button/Button';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
@@ -65,13 +68,13 @@ import {normalizeCustomStatus} from '~/lib/customStatus';
 import type {AccountSummary} from '~/stores/AccountManager';
 import PresenceStore from '~/stores/PresenceStore';
 import StatusExpiryStore from '~/stores/StatusExpiryStore';
-import LocalProfileEffectsStore from '~/stores/LocalProfileEffectsStore';
 import UserProfileStore from '~/stores/UserProfileStore';
 import UserStore from '~/stores/UserStore';
 import {useAccountSwitcherLogic} from '~/utils/accounts/AccountSwitcherModalUtils';
 import * as ColorUtils from '~/utils/ColorUtils';
 import * as NicknameUtils from '~/utils/NicknameUtils';
 import * as ProfileDisplayUtils from '~/utils/ProfileDisplayUtils';
+import {getProfileAccentEffectPreset} from '~/utils/ProfileEffectResolver';
 import {createMockProfile} from '~/utils/ProfileUtils';
 
 const STATUS_ORDER = [StatusTypes.ONLINE, StatusTypes.IDLE, StatusTypes.DND, StatusTypes.INVISIBLE];
@@ -378,7 +381,7 @@ export const UserAreaPopout = observer(({variant = 'default'}: {variant?: UserAr
 	const accentColorHex = typeof rawAccentColor === 'number' ? ColorUtils.int2hex(rawAccentColor) : rawAccentColor;
 	const borderColor = accentColorHex || DEFAULT_ACCENT_COLOR;
 	const bannerColor = accentColorHex || DEFAULT_ACCENT_COLOR;
-	const accentEffectPreset = currentUser ? LocalProfileEffectsStore.getUserPreset(currentUser.id) : 'none';
+	const accentEffectPreset = getProfileAccentEffectPreset(currentUser);
 
 	const displayName = currentUser ? NicknameUtils.getNickname(currentUser) : '';
 	const customStatus = currentUserId ? PresenceStore.getCustomStatus(currentUserId) : null;
@@ -432,6 +435,12 @@ export const UserAreaPopout = observer(({variant = 'default'}: {variant?: UserAr
 									</button>
 								</FocusRing>
 							)}
+						</div>
+						<div className={styles.profileAddonBlock}>
+							<ProfileIntegrationsBlock userId={currentUser.id} compact={true} displayMode="icon-row" hideTitle={true} />
+						</div>
+						<div className={styles.profileAddonBlock}>
+							<ProfileStreamingStatusCard userId={currentUser.id} compact={true} />
 						</div>
 					</ProfileCardContent>
 
@@ -520,7 +529,18 @@ export const UserAreaPopout = observer(({variant = 'default'}: {variant?: UserAr
 						onAvatarClick={openUserProfile}
 					/>
 
-					<UserProfileBadges user={currentUser} profile={profile} />
+					<div className={styles.profileHeaderMetaRow}>
+						<div className={styles.profileHeaderIntegrations}>
+							<ProfileIntegrationsBlock
+								userId={currentUser.id}
+								compact={true}
+								displayMode="icon-row"
+								hideTitle={true}
+								transparent={true}
+							/>
+						</div>
+						<UserProfileBadges user={currentUser} profile={profile} inline={true} className={styles.profileHeaderBadges} />
+					</div>
 
 					<ProfileCardContent isWebhook={false}>
 						<ProfileCardUserInfo
@@ -570,6 +590,10 @@ export const UserAreaPopout = observer(({variant = 'default'}: {variant?: UserAr
 						</div>
 
 						<MusicActivityDisplay userId={currentUser.id} compact className={styles.musicActivityRow} />
+						<SteamNowPlayingBlock userId={currentUser.id} compact className={styles.steamNowPlayingRow} />
+						<div className={styles.profileAddonBlock}>
+							<ProfileStreamingStatusCard userId={currentUser.id} compact={true} />
+						</div>
 
 						<UserProfileBio profile={profile} profileData={profileData} />
 					</ProfileCardContent>

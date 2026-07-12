@@ -36,7 +36,7 @@ export const useVirtualRows = (
 	emojisPerRow: number = EMOJIS_PER_ROW,
 ) => {
 	const {t, i18n} = useLingui();
-	const collapsedCategories = EmojiPickerStore.collapsedCategories;
+	const collapsedCategoriesRevision = EmojiPickerStore.collapsedCategoriesRevision;
 
 	return React.useMemo(() => {
 		const rows: Array<VirtualRow> = [];
@@ -147,6 +147,6 @@ export const useVirtualRows = (
 		customEmojisByGuildId,
 		unicodeEmojisByCategory,
 		emojisPerRow,
-		collapsedCategories,
+		collapsedCategoriesRevision,
 	]);
 };

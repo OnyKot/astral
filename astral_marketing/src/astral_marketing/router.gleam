@@ -35,6 +35,7 @@ import astral_marketing/pages/philosophy_page
 import astral_marketing/pages/plutonium_page
 import astral_marketing/pages/press_page
 import astral_marketing/pages/privacy_page
+import astral_marketing/pages/how_it_works_page
 import astral_marketing/pages/security_page
 import astral_marketing/pages/status_page
 import astral_marketing/pages/terms_page
@@ -78,6 +79,7 @@ pub fn handle_request(req: Request, ctx: Context) -> Response {
     ["terms"] -> terms_page.render(req, ctx)
     ["privacy"] -> privacy_page.render(req, ctx)
     ["philosophy"] -> philosophy_page.render(req, ctx)
+    ["how-it-works"] -> how_it_works_page.handle(ctx, req)
     ["manifest"] -> wisp.redirect(prepend_base_path(ctx, "/philosophy"))
     ["manifesto"] -> wisp.redirect(prepend_base_path(ctx, "/philosophy"))
     ["security"] -> security_page.render(req, ctx)

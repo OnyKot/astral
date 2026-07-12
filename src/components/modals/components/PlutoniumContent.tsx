@@ -32,7 +32,6 @@ import * as LocaleUtils from '~/utils/LocaleUtils';
 import {getFormattedPrice, PricingTier} from '~/utils/PricingUtils';
 import {FeatureComparisonTable} from './FeatureComparisonTable';
 import styles from './PlutoniumContent.module.css';
-import {PurchaseDisclaimer} from './PurchaseDisclaimer';
 import {BottomCTASection} from './plutonium/BottomCTASection';
 import {GiftInventoryBanner} from './plutonium/GiftInventoryBanner';
 import {GiftSection} from './plutonium/GiftSection';
@@ -157,7 +156,7 @@ export const PlutoniumContent: React.FC<{defaultGiftMode?: boolean}> = observer(
 						title={t`Network error`}
 						description={t`Failed to load Visionary information. Please try again later.`}
 					/>
-				) : !isVisionarySoldOut ? (
+				) : (
 					<VisionarySection
 						visionarySlots={visionarySlots}
 						formatter={formatter}
@@ -168,7 +167,7 @@ export const PlutoniumContent: React.FC<{defaultGiftMode?: boolean}> = observer(
 						loadingSlots={loadingSlots}
 						handleSelectPlan={handleSelectPlan}
 					/>
-				) : null}
+				)}
 
 				<div ref={perksSectionRef}>
 					<section className={styles.perksSection}>
@@ -246,9 +245,6 @@ export const PlutoniumContent: React.FC<{defaultGiftMode?: boolean}> = observer(
 						purchaseDisabled={purchaseDisabled}
 						purchaseDisabledTooltip={purchaseDisabledTooltip}
 					/>
-					<div className={styles.disclaimerContainer}>
-						<PurchaseDisclaimer align="center" isPremium />
-					</div>
 				</section>
 			)}
 
@@ -295,7 +291,7 @@ export const PlutoniumContent: React.FC<{defaultGiftMode?: boolean}> = observer(
 					title={t`Network error`}
 					description={t`Failed to load Visionary information. Please try again later.`}
 				/>
-			) : !isVisionarySoldOut ? (
+			) : (
 				<VisionarySection
 					visionarySlots={visionarySlots}
 					formatter={formatter}
@@ -308,7 +304,7 @@ export const PlutoniumContent: React.FC<{defaultGiftMode?: boolean}> = observer(
 					purchaseDisabled={purchaseDisabled}
 					purchaseDisabledTooltip={purchaseDisabledTooltip}
 				/>
-			) : null}
+			)}
 
 			<div ref={perksSectionRef}>
 				<section className={styles.perksSection}>

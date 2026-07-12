@@ -22,3 +22,24 @@ import MobileLayoutStore from '~/stores/MobileLayoutStore';
 export const isMobileExperienceEnabled = (): boolean => {
 	return MobileLayoutStore.platformMobileDetected || MobileLayoutStore.isMobileLayout();
 };
+
+export const isLowEndMobileExperience = (): boolean => {
+	if (!isMobileExperienceEnabled() || typeof navigator === 'undefined') {
+		return false;
+	}
+
+	const nav = navigator as Navigator & {
+		connection?: {
+			saveData?: boolean;
+			effectiveType?: string;
+		};
+		deviceMemory?: number;
+		hardwareConcurrency?: number;
+	};
+
+	if (nav.connection?.saveData) return true;
+	if (nav.connection?.effectiveType === 'slow-2g' || nav.connection?.effectiveType === '2g') return true;
+	if (typeof nav.deviceMemory === 'number' && nav.deviceMemory <= 3) return true;
+	if (typeof nav.hardwareConcurrency === 'number' && nav.hardwareConcurrency <= 4) return true;
+	return false;
+};

@@ -19,8 +19,6 @@
 
 import * as v from 'valibot';
 
-const importMetaEnv = (import.meta as ImportMeta).env ?? ({} as ImportMetaEnv);
-
 const envSchema = v.object({
 	PUBLIC_BUILD_SHA: v.optional(v.string(), 'dev'),
 	PUBLIC_BUILD_NUMBER: v.optional(v.pipe(v.string(), v.transform(Number), v.number()), '0'),
@@ -36,7 +34,6 @@ const envSchema = v.object({
 	PUBLIC_API_VERSION: v.optional(v.pipe(v.string(), v.transform(Number), v.number()), '1'),
 	PUBLIC_BOOTSTRAP_API_ENDPOINT: v.optional(v.string(), '/api'),
 	PUBLIC_BOOTSTRAP_API_PUBLIC_ENDPOINT: v.optional(v.string()),
-	PUBLIC_SPOTIFY_CLIENT_ID: v.optional(v.nullable(v.string()), null),
 	PUBLIC_EMOJI_STYLE: v.optional(v.picklist(['twemoji', 'telegram', 'apple', 'vk']), 'telegram'),
 	PUBLIC_EMOJI_STYLE_CDN: v.optional(v.string(), ''),
 	PUBLIC_TELEGRAM_EMOJI_STYLE_CDN: v.optional(v.string(), ''),
@@ -44,31 +41,31 @@ const envSchema = v.object({
 	PUBLIC_EMOJI_STYLE_FILE_EXT: v.optional(v.picklist(['svg', 'png', 'webp']), 'svg'),
 	PUBLIC_FIRST_PARTY_HOSTS: v.optional(
 		v.string(),
-		'astraof.com,api.astraof.com,gateway.astraof.com,asrtal.ru,api.asrtal.ru,gateway.asrtal.ru',
+		'astraof.com,api.astraof.com,gateway.astraof.com,asrtal.ru,api.asrtal.ru,gateway.asrtal.ru,localhost,127.0.0.1',
 	),
 	PUBLIC_FIRST_PARTY_HOST_SUFFIXES: v.optional(v.string(), '.astraof.com,.asrtal.ru'),
 });
 
+// Each field must read import.meta.env.* directly so rspack DefinePlugin can inline values.
 const env = v.parse(envSchema, {
-	PUBLIC_BUILD_SHA: importMetaEnv.PUBLIC_BUILD_SHA,
-	PUBLIC_BUILD_NUMBER: importMetaEnv.PUBLIC_BUILD_NUMBER,
-	PUBLIC_BUILD_TIMESTAMP: importMetaEnv.PUBLIC_BUILD_TIMESTAMP,
-	PUBLIC_PROJECT_ENV: importMetaEnv.PUBLIC_PROJECT_ENV,
-	PUBLIC_SENTRY_DSN: importMetaEnv.PUBLIC_SENTRY_DSN,
-	PUBLIC_SENTRY_PROJECT_ID: importMetaEnv.PUBLIC_SENTRY_PROJECT_ID,
-	PUBLIC_SENTRY_PUBLIC_KEY: importMetaEnv.PUBLIC_SENTRY_PUBLIC_KEY,
-	PUBLIC_SENTRY_PROXY_PATH: importMetaEnv.PUBLIC_SENTRY_PROXY_PATH,
-	PUBLIC_API_VERSION: importMetaEnv.PUBLIC_API_VERSION,
-	PUBLIC_BOOTSTRAP_API_ENDPOINT: importMetaEnv.PUBLIC_BOOTSTRAP_API_ENDPOINT,
-	PUBLIC_BOOTSTRAP_API_PUBLIC_ENDPOINT: importMetaEnv.PUBLIC_BOOTSTRAP_API_PUBLIC_ENDPOINT,
-	PUBLIC_SPOTIFY_CLIENT_ID: importMetaEnv.PUBLIC_SPOTIFY_CLIENT_ID,
-	PUBLIC_EMOJI_STYLE: importMetaEnv.PUBLIC_EMOJI_STYLE,
-	PUBLIC_EMOJI_STYLE_CDN: importMetaEnv.PUBLIC_EMOJI_STYLE_CDN,
-	PUBLIC_TELEGRAM_EMOJI_STYLE_CDN: importMetaEnv.PUBLIC_TELEGRAM_EMOJI_STYLE_CDN,
-	PUBLIC_VK_EMOJI_STYLE_CDN: importMetaEnv.PUBLIC_VK_EMOJI_STYLE_CDN,
-	PUBLIC_EMOJI_STYLE_FILE_EXT: importMetaEnv.PUBLIC_EMOJI_STYLE_FILE_EXT,
-	PUBLIC_FIRST_PARTY_HOSTS: importMetaEnv.PUBLIC_FIRST_PARTY_HOSTS,
-	PUBLIC_FIRST_PARTY_HOST_SUFFIXES: importMetaEnv.PUBLIC_FIRST_PARTY_HOST_SUFFIXES,
+	PUBLIC_BUILD_SHA: import.meta.env.PUBLIC_BUILD_SHA,
+	PUBLIC_BUILD_NUMBER: import.meta.env.PUBLIC_BUILD_NUMBER,
+	PUBLIC_BUILD_TIMESTAMP: import.meta.env.PUBLIC_BUILD_TIMESTAMP,
+	PUBLIC_PROJECT_ENV: import.meta.env.PUBLIC_PROJECT_ENV,
+	PUBLIC_SENTRY_DSN: import.meta.env.PUBLIC_SENTRY_DSN,
+	PUBLIC_SENTRY_PROJECT_ID: import.meta.env.PUBLIC_SENTRY_PROJECT_ID,
+	PUBLIC_SENTRY_PUBLIC_KEY: import.meta.env.PUBLIC_SENTRY_PUBLIC_KEY,
+	PUBLIC_SENTRY_PROXY_PATH: import.meta.env.PUBLIC_SENTRY_PROXY_PATH,
+	PUBLIC_API_VERSION: import.meta.env.PUBLIC_API_VERSION,
+	PUBLIC_BOOTSTRAP_API_ENDPOINT: import.meta.env.PUBLIC_BOOTSTRAP_API_ENDPOINT,
+	PUBLIC_BOOTSTRAP_API_PUBLIC_ENDPOINT: import.meta.env.PUBLIC_BOOTSTRAP_API_PUBLIC_ENDPOINT,
+	PUBLIC_EMOJI_STYLE: import.meta.env.PUBLIC_EMOJI_STYLE,
+	PUBLIC_EMOJI_STYLE_CDN: import.meta.env.PUBLIC_EMOJI_STYLE_CDN,
+	PUBLIC_TELEGRAM_EMOJI_STYLE_CDN: import.meta.env.PUBLIC_TELEGRAM_EMOJI_STYLE_CDN,
+	PUBLIC_VK_EMOJI_STYLE_CDN: import.meta.env.PUBLIC_VK_EMOJI_STYLE_CDN,
+	PUBLIC_EMOJI_STYLE_FILE_EXT: import.meta.env.PUBLIC_EMOJI_STYLE_FILE_EXT,
+	PUBLIC_FIRST_PARTY_HOSTS: import.meta.env.PUBLIC_FIRST_PARTY_HOSTS,
+	PUBLIC_FIRST_PARTY_HOST_SUFFIXES: import.meta.env.PUBLIC_FIRST_PARTY_HOST_SUFFIXES,
 });
 
 export default {
@@ -83,7 +80,6 @@ export default {
 	PUBLIC_API_VERSION: env.PUBLIC_API_VERSION,
 	PUBLIC_BOOTSTRAP_API_ENDPOINT: env.PUBLIC_BOOTSTRAP_API_ENDPOINT,
 	PUBLIC_BOOTSTRAP_API_PUBLIC_ENDPOINT: env.PUBLIC_BOOTSTRAP_API_PUBLIC_ENDPOINT ?? env.PUBLIC_BOOTSTRAP_API_ENDPOINT,
-	PUBLIC_SPOTIFY_CLIENT_ID: env.PUBLIC_SPOTIFY_CLIENT_ID,
 	PUBLIC_EMOJI_STYLE: env.PUBLIC_EMOJI_STYLE,
 	PUBLIC_EMOJI_STYLE_CDN: env.PUBLIC_EMOJI_STYLE_CDN,
 	PUBLIC_TELEGRAM_EMOJI_STYLE_CDN: env.PUBLIC_TELEGRAM_EMOJI_STYLE_CDN,

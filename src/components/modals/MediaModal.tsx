@@ -132,55 +132,28 @@ interface FileInfoProps {
 		expiresAt: Date | null;
 		isExpired: boolean;
 	};
-	currentIndex?: number;
-	totalAttachments?: number;
-	onPrevious?: () => void;
-	onNext?: () => void;
 }
 
 const FileInfo: FC<FileInfoProps> = observer(
-	({fileName, fileSize, dimensions, expiryInfo, currentIndex, totalAttachments, onPrevious, onNext}) => {
-		const {t} = useLingui();
-		const hasNavigation = currentIndex !== undefined && totalAttachments !== undefined && totalAttachments > 1;
-
-		if (!fileName && !hasNavigation) {
+	({fileName, fileSize, dimensions, expiryInfo}) => {
+		if (!fileName) {
 			return null;
 		}
 
 		return (
 			<div className={styles.fileInfoInline}>
-				{fileName && (
-					<div className={styles.fileInfoContent}>
-						<p className={styles.fileInfoName}>{fileName}</p>
-						<p className={styles.fileInfoMeta}>
-							{[fileSize, dimensions].filter(Boolean).join(' \u2022 ')}
-							{expiryInfo?.expiresAt && AccessibilityStore.showAttachmentExpiryIndicator && (
-								<>
-									{(fileSize || dimensions) && ' \u2022 '}
-									<ExpiryFootnote expiresAt={expiryInfo.expiresAt} isExpired={expiryInfo.isExpired} inline />
-								</>
-							)}
-						</p>
-					</div>
-				)}
-
-				{hasNavigation && (
-					<div className={styles.fileInfoNavigation}>
-						<ControlButton
-							icon={<CaretLeftIcon size={16} weight="bold" />}
-							label={t`Previous attachment`}
-							onClick={onPrevious ?? (() => {})}
-							disabled={currentIndex === 0}
-						/>
-						<span className={styles.fileInfoNavigationText}>{t`${currentIndex + 1}/${totalAttachments}`}</span>
-						<ControlButton
-							icon={<CaretRightIcon size={16} weight="bold" />}
-							label={t`Next attachment`}
-							onClick={onNext ?? (() => {})}
-							disabled={currentIndex === totalAttachments - 1}
-						/>
-					</div>
-				)}
+				<div className={styles.fileInfoContent}>
+					<p className={styles.fileInfoName}>{fileName}</p>
+					<p className={styles.fileInfoMeta}>
+						{[fileSize, dimensions].filter(Boolean).join(' \u2022 ')}
+						{expiryInfo?.expiresAt && AccessibilityStore.showAttachmentExpiryIndicator && (
+							<>
+								{(fileSize || dimensions) && ' \u2022 '}
+								<ExpiryFootnote expiresAt={expiryInfo.expiresAt} isExpired={expiryInfo.isExpired} inline />
+							</>
+						)}
+					</p>
+				</div>
 			</div>
 		);
 	},
@@ -242,9 +215,9 @@ const Controls: FC<ControlsProps> = observer(
 									<ControlButton
 										icon={
 											zoomState === 'fit' ? (
-												<MagnifyingGlassPlusIcon size={18} weight="bold" />
+												<MagnifyingGlassPlusIcon size={18} weight="regular" />
 											) : (
-												<MagnifyingGlassMinusIcon size={18} weight="bold" />
+												<MagnifyingGlassMinusIcon size={18} weight="regular" />
 											)
 										}
 										label={zoomState === 'fit' ? t`Zoom in` : t`Zoom out`}
@@ -258,7 +231,7 @@ const Controls: FC<ControlsProps> = observer(
 							<Tooltip text={isFavorited ? t`Remove from favorites` : t`Add to favorites`} position="bottom">
 								<span>
 									<ControlButton
-										icon={<StarIcon size={18} weight={isFavorited ? 'fill' : 'bold'} />}
+										icon={<StarIcon size={18} weight={isFavorited ? 'fill' : 'regular'} />}
 										label={isFavorited ? t`Remove from favorites` : t`Add to favorites`}
 										onClick={onFavorite}
 										variant={isFavorited ? 'primary' : 'default'}
@@ -272,7 +245,7 @@ const Controls: FC<ControlsProps> = observer(
 							<Tooltip text={t`Save media`} position="bottom">
 								<span>
 									<ControlButton
-										icon={<DownloadSimpleIcon size={18} weight="bold" />}
+										icon={<DownloadSimpleIcon size={18} weight="regular" />}
 										label={t`Save media`}
 										onClick={onSave}
 									/>
@@ -284,7 +257,7 @@ const Controls: FC<ControlsProps> = observer(
 							<Tooltip text={t`Open in browser`} position="bottom">
 								<span>
 									<ControlButton
-										icon={<ArrowSquareOutIcon size={18} weight="bold" />}
+										icon={<ArrowSquareOutIcon size={18} weight="regular" />}
 										label={t`Open in browser`}
 										onClick={onOpenInBrowser}
 									/>
@@ -296,7 +269,7 @@ const Controls: FC<ControlsProps> = observer(
 							<Tooltip text={t`Show media information`} position="bottom">
 								<span>
 									<ControlButton
-										icon={<InfoIcon size={18} weight="bold" />}
+										icon={<InfoIcon size={18} weight="regular" />}
 										label={t`Show media information`}
 										onClick={onInfo}
 									/>
@@ -311,7 +284,11 @@ const Controls: FC<ControlsProps> = observer(
 				<div className={styles.closeControlBox}>
 					<Tooltip text={t`Close modal`} position="bottom">
 						<span>
-							<ControlButton icon={<XIcon size={18} weight="bold" />} label={t`Close modal`} onClick={onClose} />
+							<ControlButton
+								icon={<XIcon size={18} weight="regular" />}
+								label={t`Close modal`}
+								onClick={onClose}
+							/>
 						</span>
 					</Tooltip>
 				</div>
@@ -712,10 +689,6 @@ export const MediaModal: FC<MediaModalProps> = observer(
 											fileSize={fileSize}
 											dimensions={dimensions}
 											expiryInfo={expiryInfo}
-											currentIndex={currentIndex}
-											totalAttachments={totalAttachments}
-											onPrevious={onPrevious}
-											onNext={onNext}
 										/>
 									</div>
 								)}
@@ -803,7 +776,7 @@ export const MediaModal: FC<MediaModalProps> = observer(
 										<Tooltip text={t`Previous attachment`} position="top">
 											<span>
 												<ControlButton
-													icon={<CaretLeftIcon size={20} weight="bold" />}
+													icon={<CaretLeftIcon size={20} weight="regular" />}
 													label={t`Previous attachment`}
 													onClick={onPrevious ?? (() => {})}
 													disabled={currentIndex === 0}
@@ -816,7 +789,7 @@ export const MediaModal: FC<MediaModalProps> = observer(
 										<Tooltip text={t`Next attachment`} position="top">
 											<span>
 												<ControlButton
-													icon={<CaretRightIcon size={20} weight="bold" />}
+													icon={<CaretRightIcon size={20} weight="regular" />}
 													label={t`Next attachment`}
 													onClick={onNext ?? (() => {})}
 													disabled={currentIndex === totalAttachments - 1}

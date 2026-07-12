@@ -31,7 +31,10 @@ import type {UserRecord} from '~/records/UserRecord';
 import GuildMemberStore from '~/stores/GuildMemberStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 
-type PreloadableChildProps = React.HTMLAttributes<HTMLElement> & React.RefAttributes<HTMLElement>;
+type PreloadableChildProps = React.HTMLAttributes<HTMLElement> &
+	React.RefAttributes<HTMLElement> & {
+		'data-message-swipe-ignore'?: string;
+	};
 
 export const PreloadableUserPopout = React.forwardRef<
 	HTMLElement,
@@ -69,14 +72,48 @@ export const PreloadableUserPopout = React.forwardRef<
 	) => {
 		const mobileLayout = MobileLayoutStore;
 		const [showActionsSheet, setShowActionsSheet] = React.useState(false);
+		const profileTapStartRef = React.useRef<{x: number; y: number} | null>(null);
 
 		const member = guildId ? GuildMemberStore.getMember(guildId, user.id) : null;
 
-		const handleMobileClick = React.useCallback(() => {
+		const openMobileProfile = React.useCallback(() => {
 			if (isWebhook) return;
-
 			UserProfileActionCreators.openUserProfile(user.id, guildId);
 		}, [user.id, guildId, isWebhook]);
+
+		const handleMobileClick = React.useCallback(
+			(event: React.MouseEvent<HTMLElement>) => {
+				event.stopPropagation();
+				openMobileProfile();
+			},
+			[openMobileProfile],
+		);
+
+		const handleMobileTouchStart = React.useCallback((event: React.TouchEvent<HTMLElement>) => {
+			event.stopPropagation();
+			const touch = event.touches[0];
+			if (!touch) return;
+			profileTapStartRef.current = {x: touch.clientX, y: touch.clientY};
+		}, []);
+
+		const handleMobileTouchEnd = React.useCallback(
+			(event: React.TouchEvent<HTMLElement>) => {
+				event.stopPropagation();
+				const start = profileTapStartRef.current;
+				profileTapStartRef.current = null;
+				if (!start || isWebhook) return;
+
+				const touch = event.changedTouches[0];
+				if (!touch) return;
+
+				const dx = Math.abs(touch.clientX - start.x);
+				const dy = Math.abs(touch.clientY - start.y);
+				if (dx <= 12 && dy <= 12) {
+					openMobileProfile();
+				}
+			},
+			[isWebhook, openMobileProfile],
+		);
 
 		const handleContextMenu = React.useCallback(
 			(event: React.MouseEvent<Element>) => {
@@ -109,15 +146,33 @@ export const PreloadableUserPopout = React.forwardRef<
 
 		if (mobileLayout.enabled) {
 			const child = React.Children.only(children) as React.ReactElement<PreloadableChildProps>;
-			const {onClick: originalOnClick, onContextMenu: originalOnContextMenu} = child.props;
+			const {
+				onClick: originalOnClick,
+				onContextMenu: originalOnContextMenu,
+				onTouchStart: originalTouchStart,
+				onTouchEnd: originalTouchEnd,
+			} = child.props;
 
 			const clonedChild = React.cloneElement(child, {
 				ref,
+				'data-message-swipe-ignore': 'true',
 				onClick: (event: React.MouseEvent<HTMLElement>) => {
 					if (originalOnClick) {
 						(originalOnClick as React.MouseEventHandler<HTMLElement>)(event);
 					}
-					handleMobileClick();
+					handleMobileClick(event);
+				},
+				onTouchStart: (event: React.TouchEvent<HTMLElement>) => {
+					if (originalTouchStart) {
+						(originalTouchStart as React.TouchEventHandler<HTMLElement>)(event);
+					}
+					handleMobileTouchStart(event);
+				},
+				onTouchEnd: (event: React.TouchEvent<HTMLElement>) => {
+					if (originalTouchEnd) {
+						(originalTouchEnd as React.TouchEventHandler<HTMLElement>)(event);
+					}
+					handleMobileTouchEnd(event);
 				},
 				onContextMenu: (event: React.MouseEvent<HTMLElement>) => {
 					if (originalOnContextMenu) {

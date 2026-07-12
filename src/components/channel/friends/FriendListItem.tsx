@@ -18,7 +18,16 @@
  */
 
 import {Trans, useLingui} from '@lingui/react/macro';
-import {ChatTeardropIcon, CheckIcon, DotsThreeVerticalIcon, XIcon} from '@phosphor-icons/react';
+import {
+	ChatTeardropIcon,
+	CheckIcon,
+	DotsThreeVerticalIcon,
+	PhoneIcon,
+	UserCircleIcon,
+	UserMinusIcon,
+	VideoCameraIcon,
+	XIcon,
+} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {autorun} from 'mobx';
 import {observer} from 'mobx-react-lite';
@@ -37,13 +46,17 @@ import {RemoveFriendMenuItem} from '~/components/uikit/ContextMenu/items/Relatio
 import {MenuGroup} from '~/components/uikit/ContextMenu/MenuGroup';
 import {UserContextMenu} from '~/components/uikit/ContextMenu/UserContextMenu';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
+import {MenuBottomSheet, type MenuGroupType} from '~/components/uikit/MenuBottomSheet/MenuBottomSheet';
 import {StatusAwareAvatar} from '~/components/uikit/StatusAwareAvatar';
 import {normalizeCustomStatus} from '~/lib/customStatus';
 import ContextMenuStore from '~/stores/ContextMenuStore';
+import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import PresenceStore from '~/stores/PresenceStore';
 import UserStore from '~/stores/UserStore';
+import * as CallUtils from '~/utils/CallUtils';
 import {stopPropagationOnEnterSpace} from '~/utils/KeyboardUtils';
 import * as NicknameUtils from '~/utils/NicknameUtils';
+import * as RelationshipActionUtils from '~/utils/RelationshipActionUtils';
 import {ActionButton} from './ActionButton';
 import styles from './FriendListItem.module.css';
 
@@ -67,12 +80,13 @@ const statusLabels = {
 };
 
 export const FriendListItem: React.FC<FriendListItemProps> = observer((props) => {
-	const {t} = useLingui();
+	const {t, i18n} = useLingui();
 	const {userId, relationshipType, openProfile} = props;
 
 	const itemRef = React.useRef<HTMLDivElement>(null);
 	const [status, setStatus] = React.useState(() => PresenceStore.getStatus(userId));
 	const [contextMenuOpen, setContextMenuOpen] = React.useState(false);
+	const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
 	React.useEffect(() => {
 		const handlePresenceUpdate = (_userId: string, newStatus: StatusType) => {
@@ -126,6 +140,22 @@ export const FriendListItem: React.FC<FriendListItemProps> = observer((props) =>
 				await PrivateChannelActionCreators.openDMChannel(userId);
 			} catch (error) {
 				console.error('Failed to open DM channel:', error);
+			}
+		},
+		[userId],
+	);
+
+	const startVoiceCall = React.useCallback(
+		async (e: React.MouseEvent) => {
+			e.stopPropagation();
+			const user = UserStore.getUser(userId);
+			if (user?.bot) return;
+
+			try {
+				const channelId = await PrivateChannelActionCreators.ensureDMChannel(userId);
+				await CallUtils.checkAndStartCall(channelId);
+			} catch (error) {
+				console.error('Failed to start voice call:', error);
 			}
 		},
 		[userId],
@@ -187,6 +217,11 @@ export const FriendListItem: React.FC<FriendListItemProps> = observer((props) =>
 			const user = UserStore.getUser(userId);
 			if (!user) return;
 
+			if (MobileLayoutStore.isMobileLayout()) {
+				setMobileMenuOpen(true);
+				return;
+			}
+
 			ContextMenuActionCreators.openFromEvent(e, ({onClose}) => (
 				<>
 					<MenuGroup>
@@ -224,6 +259,16 @@ export const FriendListItem: React.FC<FriendListItemProps> = observer((props) =>
 						onClick: createDMChannel,
 						className: styles.actionButtonMessage,
 					},
+					...(UserStore.getUser(userId)?.bot
+						? []
+						: [
+								{
+									icon: <PhoneIcon weight="fill" className={styles.iconSize} />,
+									tooltip: t`Start Voice Call`,
+									onClick: startVoiceCall,
+									className: styles.actionButtonCall,
+								},
+							]),
 					{
 						icon: <DotsThreeVerticalIcon weight="bold" className={styles.iconSize} />,
 						tooltip: t`More`,
@@ -261,76 +306,152 @@ export const FriendListItem: React.FC<FriendListItemProps> = observer((props) =>
 	}, [
 		relationshipType,
 		createDMChannel,
+		startVoiceCall,
 		handleContextMenuClick,
 		acceptFriendRequest,
 		ignoreIncomingFriendRequest,
 		cancelOutgoingFriendRequest,
+		userId,
 	]);
 
 	const user = UserStore.getUser(userId);
 	if (!user) return null;
+	const avatarSize = MobileLayoutStore.isMobileLayout() ? 48 : 36;
+
+	const closeMobileMenu = () => setMobileMenuOpen(false);
+	const handleMobileViewProfile = () => {
+		closeMobileMenu();
+		openProfile(userId);
+	};
+	const handleMobileVoiceCall = async () => {
+		closeMobileMenu();
+		try {
+			const channelId = await PrivateChannelActionCreators.ensureDMChannel(userId);
+			await CallUtils.checkAndStartCall(channelId);
+		} catch (error) {
+			console.error('Failed to start voice call:', error);
+		}
+	};
+	const handleMobileVideoCall = async () => {
+		closeMobileMenu();
+		try {
+			const channelId = await PrivateChannelActionCreators.ensureDMChannel(userId);
+			await CallUtils.checkAndStartCall(channelId);
+		} catch (error) {
+			console.error('Failed to start video call:', error);
+		}
+	};
+	const handleMobileRemoveFriend = () => {
+		closeMobileMenu();
+		RelationshipActionUtils.showRemoveFriendConfirmation(i18n, user);
+	};
+
+	const mobileMenuGroups: Array<MenuGroupType> = [
+		{
+			items: [
+				{
+					icon: <UserCircleIcon weight="fill" className={styles.iconSize} />,
+					label: t`View Profile`,
+					onClick: handleMobileViewProfile,
+				},
+				{
+					icon: <PhoneIcon weight="fill" className={styles.iconSize} />,
+					label: t`Start Voice Call`,
+					onClick: handleMobileVoiceCall,
+					disabled: user.bot,
+				},
+				{
+					icon: <VideoCameraIcon weight="fill" className={styles.iconSize} />,
+					label: t`Start Video Call`,
+					onClick: handleMobileVideoCall,
+					disabled: user.bot,
+				},
+			],
+		},
+		{
+			items: [
+				{
+					icon: <UserMinusIcon weight="fill" className={styles.iconSize} />,
+					label: t`Remove Friend`,
+					onClick: handleMobileRemoveFriend,
+					danger: true,
+				},
+			],
+		},
+	];
 
 	const actions = getFriendActions();
 	const customStatus = relationshipType === RelationshipTypes.FRIEND ? PresenceStore.getCustomStatus(userId) : null;
 	const hasCustomStatus = !!normalizeCustomStatus(customStatus);
 
 	return (
-		<FocusRing>
-			<div
-				ref={itemRef}
-				className={clsx(styles.friendListItem, contextMenuOpen && styles.contextMenuActive)}
-				onClick={() => openProfile(userId)}
-				onContextMenu={handleUserContextMenu}
-				role="button"
-				tabIndex={0}
-				onKeyDown={(e) => {
-					if (e.key === 'Enter' || e.key === ' ') {
-						openProfile(userId);
-					}
-				}}
-			>
-				<div className={styles.friendInfo}>
-					<StatusAwareAvatar user={user} size={36} />
-					<div className={styles.friendDetails}>
-						<div className={styles.friendNameRow}>
-							<span className={styles.friendName}>{NicknameUtils.getNickname(user)}</span>
-							<span className={styles.friendTag}>{user.tag}</span>
+		<>
+			<FocusRing>
+				<div
+					ref={itemRef}
+					className={clsx(styles.friendListItem, contextMenuOpen && styles.contextMenuActive)}
+					onClick={() => openProfile(userId)}
+					onContextMenu={handleUserContextMenu}
+					role="button"
+					tabIndex={0}
+					onKeyDown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							openProfile(userId);
+						}
+					}}
+					data-list-item
+				>
+					<div className={styles.friendInfo}>
+						<StatusAwareAvatar user={user} size={avatarSize} />
+						<div className={styles.friendDetails}>
+							<div className={styles.friendNameRow}>
+								<span className={styles.friendName}>{NicknameUtils.getNickname(user)}</span>
+								<span className={styles.friendTag}>{user.tag}</span>
+							</div>
+							{hasCustomStatus ? (
+								<CustomStatusDisplay
+									userId={userId}
+									className={styles.friendSubtext}
+									showTooltip
+									constrained
+									animateOnParentHover
+								/>
+							) : (
+								<span className={clsx(styles.friendSubtext, getStatusClassName())}>
+									{getStatusText() || <StatusLabel status={status} />}
+								</span>
+							)}
 						</div>
-						{hasCustomStatus ? (
-							<CustomStatusDisplay
-								userId={userId}
-								className={styles.friendSubtext}
-								showTooltip
-								constrained
-								animateOnParentHover
-							/>
-						) : (
-							<span className={clsx(styles.friendSubtext, getStatusClassName())}>
-								{getStatusText() || <StatusLabel status={status} />}
-							</span>
-						)}
+					</div>
+					{/* biome-ignore lint/a11y/noStaticElementInteractions: Actions container needs click handler to prevent event bubbling */}
+					<div
+						className={styles.friendActions}
+						onClick={(e) => e.stopPropagation()}
+						onKeyDown={stopPropagationOnEnterSpace}
+					>
+						{actions.map((action, index) => (
+							<ActionButton
+								key={index}
+								tooltip={action.tooltip}
+								onClick={action.onClick}
+								className={action.className}
+								danger={action.danger}
+							>
+								{action.icon}
+							</ActionButton>
+						))}
 					</div>
 				</div>
-				{/* biome-ignore lint/a11y/noStaticElementInteractions: Actions container needs click handler to prevent event bubbling */}
-				<div
-					className={styles.friendActions}
-					onClick={(e) => e.stopPropagation()}
-					onKeyDown={stopPropagationOnEnterSpace}
-				>
-					{actions.map((action, index) => (
-						<ActionButton
-							key={index}
-							tooltip={action.tooltip}
-							onClick={action.onClick}
-							className={action.className}
-							danger={action.danger}
-						>
-							{action.icon}
-						</ActionButton>
-					))}
-				</div>
-			</div>
-		</FocusRing>
+			</FocusRing>
+			{relationshipType === RelationshipTypes.FRIEND && (
+				<MenuBottomSheet
+					isOpen={mobileMenuOpen}
+					onClose={closeMobileMenu}
+					title={NicknameUtils.getNickname(user)}
+					groups={mobileMenuGroups}
+				/>
+			)}
+		</>
 	);
 });
 

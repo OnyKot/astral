@@ -31,6 +31,7 @@ interface ResizeHandleProps {
 	 */
 	getSize: () => number;
 	onResize: (nextPx: number) => void;
+	onResizeEnd?: (nextPx: number) => void;
 	onReset?: () => void;
 	direction: 'left' | 'right';
 	ariaLabel?: string;
@@ -49,11 +50,22 @@ interface ResizeHandleProps {
  * sense.
  */
 export const ResizeHandle: React.FC<ResizeHandleProps> = observer(
-	({getSize, onResize, onReset, direction, ariaLabel, disabled = false}) => {
+	({getSize, onResize, onResizeEnd, onReset, direction, ariaLabel, disabled = false}) => {
 		const {t} = useLingui();
 		const isMobile = MobileLayoutStore.isMobileLayout();
 		const dragStateRef = React.useRef<{startX: number; startSize: number} | null>(null);
+		const pendingSizeRef = React.useRef<number | null>(null);
+		const latestSizeRef = React.useRef<number | null>(null);
+		const frameRef = React.useRef<number | null>(null);
 		const [isDragging, setIsDragging] = React.useState(false);
+
+		const flushResize = React.useCallback(() => {
+			frameRef.current = null;
+			const next = pendingSizeRef.current;
+			if (next === null) return;
+			pendingSizeRef.current = null;
+			onResize(next);
+		}, [onResize]);
 
 		const handlePointerDown = React.useCallback(
 			(event: React.PointerEvent<HTMLDivElement>) => {
@@ -72,11 +84,26 @@ export const ResizeHandle: React.FC<ResizeHandleProps> = observer(
 					if (!drag) return;
 					const delta = moveEvent.clientX - drag.startX;
 					const next = direction === 'right' ? drag.startSize + delta : drag.startSize - delta;
-					onResize(next);
+					pendingSizeRef.current = next;
+					latestSizeRef.current = next;
+					if (frameRef.current === null) {
+						frameRef.current = window.requestAnimationFrame(flushResize);
+					}
 				};
 
 				const handleUp = () => {
 					dragStateRef.current = null;
+					if (frameRef.current !== null) {
+						window.cancelAnimationFrame(frameRef.current);
+						frameRef.current = null;
+					}
+					if (pendingSizeRef.current !== null) {
+						flushResize();
+					}
+					if (latestSizeRef.current !== null) {
+						onResizeEnd?.(latestSizeRef.current);
+						latestSizeRef.current = null;
+					}
 					setIsDragging(false);
 					window.removeEventListener('pointermove', handleMove);
 					window.removeEventListener('pointerup', handleUp);
@@ -87,7 +114,7 @@ export const ResizeHandle: React.FC<ResizeHandleProps> = observer(
 				window.addEventListener('pointerup', handleUp);
 				window.addEventListener('pointercancel', handleUp);
 			},
-			[direction, disabled, getSize, onResize],
+			[direction, disabled, flushResize, getSize, onResizeEnd],
 		);
 
 		const handleDoubleClick = React.useCallback(() => {
@@ -102,30 +129,46 @@ export const ResizeHandle: React.FC<ResizeHandleProps> = observer(
 				if (event.key === 'ArrowLeft') {
 					event.preventDefault();
 					const cur = getSize();
-					onResize(direction === 'right' ? cur - STEP : cur + STEP);
+					const next = direction === 'right' ? cur - STEP : cur + STEP;
+					onResize(next);
+					onResizeEnd?.(next);
 				} else if (event.key === 'ArrowRight') {
 					event.preventDefault();
 					const cur = getSize();
-					onResize(direction === 'right' ? cur + STEP : cur - STEP);
+					const next = direction === 'right' ? cur + STEP : cur - STEP;
+					onResize(next);
+					onResizeEnd?.(next);
 				} else if (event.key === 'Home' && onReset) {
 					event.preventDefault();
 					onReset();
 				}
 			},
-			[direction, disabled, getSize, onResize, onReset],
+			[direction, disabled, getSize, onResize, onResizeEnd, onReset],
 		);
 
 		React.useEffect(() => {
 			if (!isDragging) return;
+			const root = document.documentElement;
 			const previousCursor = document.body.style.cursor;
 			const previousUserSelect = document.body.style.userSelect;
+			root.classList.add('panel-resizing');
 			document.body.style.cursor = 'col-resize';
 			document.body.style.userSelect = 'none';
 			return () => {
+				root.classList.remove('panel-resizing');
 				document.body.style.cursor = previousCursor;
 				document.body.style.userSelect = previousUserSelect;
 			};
 		}, [isDragging]);
+
+		React.useEffect(() => {
+			return () => {
+				if (frameRef.current !== null) {
+					window.cancelAnimationFrame(frameRef.current);
+					frameRef.current = null;
+				}
+			};
+		}, []);
 
 		if (isMobile || disabled) return null;
 

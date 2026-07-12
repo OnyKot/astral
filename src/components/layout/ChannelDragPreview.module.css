@@ -1,0 +1,87 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.dragLayer {
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 2147483200;
+}
+
+.dragPreview {
+	position: absolute;
+	top: 0;
+	left: 0;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	max-width: min(21rem, 78vw);
+	padding: 0.42rem 0.58rem;
+	border-radius: 0.75rem;
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 28%, transparent);
+	background: color-mix(in srgb, var(--background-floating) 92%, var(--background-secondary) 8%);
+	box-shadow:
+		0 14px 28px rgb(0 0 0 / 0.28),
+		0 0 0 1px color-mix(in srgb, var(--text-primary) 6%, transparent);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	will-change: transform;
+	animation: dragPreviewFadeIn 120ms linear;
+}
+
+.dragPreviewIconWrap {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 1.2rem;
+	width: 1.2rem;
+	color: color-mix(in srgb, var(--text-primary) 82%, var(--brand-primary) 18%);
+	flex-shrink: 0;
+}
+
+.dragPreviewIcon {
+	height: 1rem;
+	width: 1rem;
+}
+
+.dragPreviewLabel {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.82rem;
+	line-height: 1.02rem;
+	font-weight: 700;
+	color: var(--text-primary);
+}
+
+@keyframes dragPreviewFadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dragPreview {
+		animation: none;
+	}
+}

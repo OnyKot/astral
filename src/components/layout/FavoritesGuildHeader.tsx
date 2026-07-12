@@ -25,6 +25,7 @@ import React from 'react';
 import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators';
 import {FavoritesGuildHeaderBottomSheet} from '~/components/bottomsheets/FavoritesGuildHeaderBottomSheet';
 import {GuildHeaderShell} from '~/components/layout/GuildHeaderShell';
+import {MobileNavigationMenuButton} from '~/components/layout/MobileNavigationDrawer';
 import {FavoritesGuildHeaderPopout} from '~/components/popouts/FavoritesGuildHeaderPopout';
 import {FavoritesGuildContextMenu} from '~/components/uikit/ContextMenu/FavoritesGuildContextMenu';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
@@ -62,6 +63,7 @@ export const FavoritesGuildHeader = observer(() => {
 			>
 				{(isOpen) => (
 					<>
+						{isMobile && <MobileNavigationMenuButton />}
 						<div className={styles.headerIconContainer}>
 							<StarIcon weight="fill" className={clsx(guildHeaderStyles.verifiedIconDefault, styles.headerIcon)} />
 							<span className={guildHeaderStyles.guildNameDefault}>{t`Favorites`}</span>

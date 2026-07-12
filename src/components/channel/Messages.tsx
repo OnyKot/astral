@@ -18,7 +18,7 @@
  */
 
 import {useLingui} from '@lingui/react/macro';
-import {motion, useReducedMotion} from 'framer-motion';
+import {AnimatePresence, motion, useReducedMotion} from 'framer-motion';
 import {runInAction} from 'mobx';
 import {observer, useLocalObservable} from 'mobx-react-lite';
 import type React from 'react';
@@ -49,14 +49,17 @@ import {useScrollManager} from '~/lib/ScrollManager';
 import type {ChannelRecord} from '~/records/ChannelRecord';
 import type {MessageRecord} from '~/records/MessageRecord';
 import AccessibilityStore from '~/stores/AccessibilityStore';
+import ConnectionStore from '~/stores/ConnectionStore';
 import GuildVerificationStore from '~/stores/GuildVerificationStore';
 import KeyboardModeStore from '~/stores/KeyboardModeStore';
 import MessageEditStore from '~/stores/MessageEditStore';
+import MessageSelectionStore from '~/stores/MessageSelectionStore';
 import MessageStore from '~/stores/MessageStore';
 import ModalStore from '~/stores/ModalStore';
 import PermissionStore from '~/stores/PermissionStore';
 import ReadStateStore from '~/stores/ReadStateStore';
 import SavedMessagesStore from '~/stores/SavedMessagesStore';
+import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import UserSettingsStore from '~/stores/UserSettingsStore';
 import UserStore from '~/stores/UserStore';
 import WindowStore from '~/stores/WindowStore';
@@ -177,18 +180,32 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 		}
 	}, [state.messageGroupSpacing]);
 
+	useEffect(() => {
+		return () => {
+			if (MessageSelectionStore.isActiveForChannel(channel.id)) {
+				MessageSelectionStore.clear();
+			}
+		};
+	}, [channel.id]);
+
 	const jumpHighlightTimeoutRef = useRef<number | null>(null);
 	const lastJumpSequenceIdRef = useRef<number | null>(null);
 
+	const updateFromStoresFrameRef = useRef<number | null>(null);
 	const updateFromStores = useCallback(() => {
-		const snapshot = readFromStores(channel.id);
-		const previous = lastStoreSnapshotRef.current;
-		if (previous && shallowEqual(previous, snapshot)) return;
+		if (updateFromStoresFrameRef.current != null) return;
 
-		runInAction(() => {
-			Object.assign(state, snapshot);
+		updateFromStoresFrameRef.current = window.requestAnimationFrame(() => {
+			updateFromStoresFrameRef.current = null;
+			const snapshot = readFromStores(channel.id);
+			const previous = lastStoreSnapshotRef.current;
+			if (previous && shallowEqual(previous, snapshot)) return;
+
+			runInAction(() => {
+				Object.assign(state, snapshot);
+			});
+			lastStoreSnapshotRef.current = snapshot;
 		});
-		lastStoreSnapshotRef.current = snapshot;
 	}, [channel.id, state]);
 
 	const onMessageEdit = useCallback(
@@ -256,8 +273,30 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 	}, [channel.id, state.messages?.hasMoreAfter, state.visualUnreadMessageId, scrollManager]);
 
 	const onRetryLoadMessages = useCallback(() => {
+		if (channel.guildId) {
+			ConnectionStore.syncGuildIfNeeded(channel.guildId, 'messages-retry');
+		}
 		void MessageActionCreators.fetchMessages(channel.id, null, null, MAX_MESSAGES_PER_CHANNEL);
-	}, [channel.id]);
+	}, [channel.guildId, channel.id]);
+
+	useEffect(() => {
+		if (!ConnectionStore.isReady || !ConnectionStore.isConnected) return;
+		if (safeMessages.ready || safeMessages.loadingMore || safeMessages.error) return;
+
+		if (channel.guildId) {
+			ConnectionStore.syncGuildIfNeeded(channel.guildId, 'messages-autoload');
+		}
+
+		void MessageActionCreators.fetchMessages(channel.id, null, null, MAX_MESSAGES_PER_CHANNEL);
+	}, [
+		channel.guildId,
+		channel.id,
+		safeMessages.error,
+		safeMessages.loadingMore,
+		safeMessages.ready,
+		ConnectionStore.isConnected,
+		ConnectionStore.isReady,
+	]);
 
 	useEffect(() => {
 		const storeUnsubs = [
@@ -349,6 +388,10 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 		return () => {
 			storeUnsubs.forEach((u) => u());
 			dispatchUnsubs.forEach((u) => u());
+			if (updateFromStoresFrameRef.current != null) {
+				window.cancelAnimationFrame(updateFromStoresFrameRef.current);
+				updateFromStoresFrameRef.current = null;
+			}
 		};
 	}, [channel.id, updateFromStores, onScrollToPresent, onScrollToPresentAndAck, scrollManager]);
 
@@ -697,6 +740,9 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 	) : null;
 
 	const readyMessages = state.messages?.ready ? state.messages : null;
+	const isMobileLayout = MobileLayoutStore.enabled;
+
+	const scrollerContentRef = useRef<HTMLDivElement>(null);
 
 	const scrollerInner = readyMessages ? (
 		<>
@@ -712,16 +758,13 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 			<div className={styles.scrollerSpacer} />
 		</>
 	) : (
-		/*
-		 * First-load skeleton: previously the channel rendered an empty
-		 * scroller until messages arrived, which on slow connections felt
-		 * like the app froze. Reusing the existing ScrollFillerSkeleton
-		 * means the loader matches the eventual layout density (avatar +
-		 * lines) and disappears the moment real content takes over.
-		 */
 		<>
-			<div className={styles.placeholderSpacer} />
-			<ScrollFillerSkeleton {...placeholderSpecs} />
+			{!isMobileLayout && (
+				<>
+					<div className={styles.placeholderSpacer} />
+					<ScrollFillerSkeleton {...placeholderSpecs} />
+				</>
+			)}
 			<div className={styles.scrollerSpacer} />
 		</>
 	);
@@ -754,15 +797,18 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 					key={`scroller-${channel.id}`}
 				>
 					<div className={styles.scrollerContent}>
-						<div className={styles.scrollerInner}>{scrollerInner}</div>
+						<div className={styles.scrollerInner} ref={scrollerContentRef}>{scrollerInner}</div>
 					</div>
 				</Scroller>
-				{showScrollToBottomFab && (
-					<ScrollToBottomButton
-						unreadCount={state.unreadCount}
-						onClick={() => scrollManager.setScrollToBottom(true)}
-					/>
-				)}
+				<AnimatePresence>
+					{showScrollToBottomFab && (
+						<ScrollToBottomButton
+							key="scroll-to-bottom"
+							unreadCount={state.unreadCount}
+							onClick={() => scrollManager.setScrollToBottom(true)}
+						/>
+					)}
+				</AnimatePresence>
 			</div>
 			{loadErrorBar ?? jumpToPresentBar}
 		</div>
@@ -801,6 +847,7 @@ function renderChannelStream(props: {
 	let pendingFlashKey: number | undefined;
 	let lastRenderedGroupKind: MessageGroupKind | null = null;
 	let spacerCounter = 0;
+	const usedGroupKeys = new Map<string, number>();
 
 	const pushSpacerIfNeeded = (nextKind: MessageGroupKind, keyBase: string, nextMessageHasUnreadDivider = false) => {
 		if (showMessageDividers || messageGroupSpacing <= 0 || lastRenderedGroupKind == null) return;
@@ -815,11 +862,14 @@ function renderChannelStream(props: {
 	const flushPendingGroup = () => {
 		if (pendingMessages.length === 0) return;
 
-		const groupKey = pendingGroupId ?? pendingMessages[0].id;
+		const groupKey = pendingMessages[0].nonce ?? pendingGroupId ?? pendingMessages[0].id;
 		const groupKind = getMessageGroupKind(pendingMessages[0]);
 		const streamItemsMap = new Map(pendingStreamItems.map((item) => [(item.content as MessageRecord).id, item]));
 		const firstMessageHasUnreadDivider = streamItemsMap.get(pendingMessages[0].id)?.showUnreadDividerBefore ?? false;
 		pushSpacerIfNeeded(groupKind, groupKey, firstMessageHasUnreadDivider);
+		const keyUseCount = usedGroupKeys.get(groupKey) ?? 0;
+		usedGroupKeys.set(groupKey, keyUseCount + 1);
+		const renderGroupKey = keyUseCount === 0 ? groupKey : `${groupKey}-${keyUseCount}`;
 
 		const getUnreadDividerVisibility = (messageId: string, position: 'before' | 'after') => {
 			if (position === 'before') {
@@ -832,7 +882,7 @@ function renderChannelStream(props: {
 
 		nodes.push(
 			<MessageGroup
-				key={groupKey}
+				key={renderGroupKey}
 				messages={pendingMessages}
 				channel={channel}
 				onEdit={onMessageEdit}

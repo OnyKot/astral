@@ -35,6 +35,7 @@ export const create = async (userId: string) => {
 			body: {recipient_id: userId},
 		});
 		const channel = response.body;
+		ChannelStore.handleChannelCreate({channel});
 		return channel;
 	} catch (error) {
 		logger.error('Failed to create private channel:', error);
@@ -49,6 +50,7 @@ export const createGroupDM = async (recipientIds: Array<string>) => {
 			body: {recipients: recipientIds},
 		});
 		const channel = response.body;
+		ChannelStore.handleChannelCreate({channel});
 		return channel;
 	} catch (error) {
 		logger.error('Failed to create group DM:', error);

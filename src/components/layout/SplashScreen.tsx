@@ -36,8 +36,7 @@ import {isNativeMobile} from '~/utils/NativeUtils';
 import {NativeDragRegion} from './NativeDragRegion';
 import styles from './SplashScreen.module.css';
 
-const SPLASH_SCREEN_DELAY = 10000;
-const LOADING_FRAME_DELAY_MS = 500;
+const LOADING_FRAME_DELAY_MS = 900;
 
 const LOADING_FRAMES = [
 	{id: 'logo', src: LogoSvg},
@@ -49,20 +48,46 @@ const LOADING_FRAMES = [
 	{id: 'unicorn', src: UnicornSvg},
 ] as const;
 
+const EMOJI_LOADING_FRAMES = LOADING_FRAMES.slice(1);
+
+type LoadingFrame = (typeof LOADING_FRAMES)[number];
+
+const createLoadingFrameSequence = (): ReadonlyArray<LoadingFrame> => {
+	const shuffled = [...EMOJI_LOADING_FRAMES];
+	for (let index = shuffled.length - 1; index > 0; index -= 1) {
+		const swapIndex = Math.floor(Math.random() * (index + 1));
+		[shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+	}
+	return [LOADING_FRAMES[0], ...shuffled];
+};
+
+let hasCompletedBootstrapOnce = false;
+
 export const SplashScreen = observer(() => {
 	const shouldBypass = DeveloperOptionsStore.bypassSplashScreen;
 	const connected = ConnectionStore.isConnected;
 	const isInitialized = InitializationStore.canNavigateToProtectedRoutes;
-	const [showSplash, setShowSplash] = React.useState(true);
+	const [showSplash, setShowSplash] = React.useState(
+		() => !(hasCompletedBootstrapOnce || (connected && isInitialized)),
+	);
 
 	React.useEffect(() => {
 		if (connected && isInitialized) {
+			hasCompletedBootstrapOnce = true;
 			setShowSplash(false);
 			return;
 		}
 
-		const timer = setTimeout(() => setShowSplash(true), SPLASH_SCREEN_DELAY);
-		return () => clearTimeout(timer);
+		/*
+		 * Keep splash visible only during cold bootstrap. Once the app has
+		 * successfully entered the main experience, transient reconnects
+		 * (calls, navigation, typing bursts) must not bring it back.
+		 */
+		if (!hasCompletedBootstrapOnce) {
+			setShowSplash(true);
+		} else {
+			setShowSplash(false);
+		}
 	}, [connected, isInitialized]);
 
 	if (shouldBypass) return null;
@@ -78,6 +103,7 @@ const SplashScreenContent = observer(({connected, isInitialized}: {connected: bo
 	const reducedMotion = useReducedMotion() ?? false;
 	const [appInfo, setAppInfo] = React.useState<AndroidAppInfo | null>(null);
 	const [loadingFrameIndex, setLoadingFrameIndex] = React.useState(0);
+	const loadingFrameSequence = React.useMemo(createLoadingFrameSequence, []);
 
 	React.useEffect(() => {
 		if (!nativeMobile) {
@@ -103,15 +129,24 @@ const SplashScreenContent = observer(({connected, isInitialized}: {connected: bo
 		}
 
 		const timer = window.setInterval(() => {
-			setLoadingFrameIndex((current) => (current + 1) % LOADING_FRAMES.length);
+			setLoadingFrameIndex((current) => (current + 1) % loadingFrameSequence.length);
 		}, LOADING_FRAME_DELAY_MS);
 
 		return () => {
 			window.clearInterval(timer);
 		};
-	}, [reducedMotion]);
+	}, [loadingFrameSequence.length, reducedMotion]);
 
-	const activeLoadingFrame = LOADING_FRAMES[loadingFrameIndex] ?? LOADING_FRAMES[LOADING_FRAMES.length - 1];
+	const activeLoadingFrame = loadingFrameSequence[loadingFrameIndex] ?? loadingFrameSequence[loadingFrameSequence.length - 1];
+	const progressLabel = connected && isInitialized ? <Trans>Ready to open</Trans> : <Trans>Preparing UI 4.0</Trans>;
+	const loadingProgress = (
+		<div className={styles.splashProgress} aria-hidden="true">
+			<div className={styles.splashProgressTrack}>
+				<div className={styles.splashProgressBar} />
+			</div>
+			<div className={styles.splashProgressLabel}>{progressLabel}</div>
+		</div>
+	);
 
 	return (
 		<motion.div
@@ -144,10 +179,10 @@ const SplashScreenContent = observer(({connected, isInitialized}: {connected: bo
 											aria-hidden="true"
 											draggable={false}
 											className={styles.loadingFrameImage}
-											initial={reducedMotion ? false : {opacity: 0, x: 20, scale: 0.96}}
+											initial={reducedMotion ? false : {opacity: 0, x: 14, scale: 0.98}}
 											animate={{opacity: 1, x: 0, scale: 1}}
-											exit={reducedMotion ? {opacity: 0} : {opacity: 0, x: -20, scale: 0.98}}
-											transition={reducedMotion ? {duration: 0.08} : {duration: 0.26, ease: [0.22, 1, 0.36, 1]}}
+											exit={reducedMotion ? {opacity: 0} : {opacity: 0, x: -14, scale: 0.99}}
+											transition={reducedMotion ? {duration: 0.08} : {duration: 0.42, ease: [0.2, 0.82, 0.24, 1]}}
 										/>
 									</AnimatePresence>
 								</div>
@@ -189,6 +224,7 @@ const SplashScreenContent = observer(({connected, isInitialized}: {connected: bo
 								<span>{isInitialized ? <Trans>Ready to open</Trans> : <Trans>Syncing messages and voice</Trans>}</span>
 							</div>
 						</div>
+						{loadingProgress}
 					</div>
 				) : (
 					<>
@@ -203,18 +239,19 @@ const SplashScreenContent = observer(({connected, isInitialized}: {connected: bo
 										aria-hidden="true"
 										draggable={false}
 										className={styles.loadingFrameImage}
-										initial={reducedMotion ? false : {opacity: 0, x: 20, scale: 0.96}}
+										initial={reducedMotion ? false : {opacity: 0, x: 14, scale: 0.98}}
 										animate={{opacity: 1, x: 0, scale: 1}}
-										exit={reducedMotion ? {opacity: 0} : {opacity: 0, x: -20, scale: 0.98}}
-										transition={reducedMotion ? {duration: 0.08} : {duration: 0.26, ease: [0.22, 1, 0.36, 1]}}
+										exit={reducedMotion ? {opacity: 0} : {opacity: 0, x: -14, scale: 0.99}}
+										transition={reducedMotion ? {duration: 0.08} : {duration: 0.42, ease: [0.2, 0.82, 0.24, 1]}}
 									/>
 								</AnimatePresence>
 							</div>
 						</div>
+						{loadingProgress}
 					</>
 				)}
 			</div>
-			<div className={styles.splashVersionLabel}>Astral 3.0</div>
+			<div className={styles.splashVersionLabel}>UI 4.0</div>
 		</motion.div>
 	);
 });

@@ -365,6 +365,10 @@ export class ScrollManager {
 		const {messages} = this.props;
 		const {scrollTop} = this.getScrollerState();
 
+		if (isBefore) {
+			return this.findTopVisibleAnchor() ?? this.automaticAnchor;
+		}
+
 		const direction = isBefore ? -1 : 1;
 		const startIndex = isBefore ? messages.length - 1 : 0;
 		let anchor: AnchorData | null = null;
@@ -383,7 +387,8 @@ export class ScrollManager {
 
 	getAnchorFixData(): {node: HTMLElement; fixedScrollTop: number} | null {
 		const candidates = [this.focusAnchor, this.isLoading() ? null : this.messageFetchAnchor, this.automaticAnchor];
-		const currentScrollTop = this.getScrollerState().scrollTop;
+		const scrollerNode = this.ref.current?.getScrollerNode();
+		if (!scrollerNode) return null;
 
 		for (const anchor of candidates) {
 			if (!anchor) continue;
@@ -391,11 +396,13 @@ export class ScrollManager {
 			if (!element) continue;
 
 			const heightDiff = anchor === this.messageFetchAnchor ? anchor.offsetHeight - element.offsetHeight : 0;
-			const currentOffsetFromTop = Math.max(0, element.offsetTop - currentScrollTop);
+			const targetOffsetFromTop = anchor.clamped
+				? Math.max(-anchor.offsetHeight, Math.min(anchor.offsetFromTop, element.offsetHeight))
+				: anchor.offsetFromTop;
 
 			return {
 				node: element,
-				fixedScrollTop: element.offsetTop - (currentOffsetFromTop + heightDiff),
+				fixedScrollTop: this.getOffsetTop(element, scrollerNode) - (targetOffsetFromTop + heightDiff),
 			};
 		}
 
@@ -595,16 +602,28 @@ export class ScrollManager {
 			if (first) beforeId = first.id;
 		}
 
-		const {scrollTop, scrollHeight} = this.getScrollerState();
+		const state = this.getScrollerState();
+		const {scrollTop, offsetHeight, scrollHeight} = state;
 		if (!loadAfter) {
 			this.prependScrollSnapshot = {
 				scrollTop,
 				scrollHeight,
 			};
 			this.lastMessageLoadDirection = 'before';
+			this.messageFetchAnchor = this.findLoadMoreAnchor(true);
+			if (!this.messageFetchAnchor) {
+				this.messageFetchAnchor = this.findTopVisibleAnchor() ?? this.automaticAnchor;
+			}
+			if (scrollTop <= this.props.placeholderHeight && offsetHeight > 0) {
+				const safeTop = Math.max(0, Math.min(this.getOffsetToPreventLoading('top'), scrollHeight - offsetHeight));
+				if (safeTop > scrollTop) {
+					this.mergeTo(safeTop);
+				}
+			}
 		} else {
 			this.prependScrollSnapshot = null;
 			this.lastMessageLoadDirection = 'after';
+			this.messageFetchAnchor = this.findLoadMoreAnchor(false);
 		}
 
 		if (KeyboardModeStore.keyboardModeEnabled) {
@@ -622,7 +641,6 @@ export class ScrollManager {
 			}
 		}
 
-		this.messageFetchAnchor = this.findLoadMoreAnchor(loadAfter);
 		this.isLoadingMoreMessages = true;
 
 		MessageActionCreators.fetchMessages(channel.id, beforeId ?? null, afterId ?? null, MAX_MESSAGES_PER_CHANNEL);

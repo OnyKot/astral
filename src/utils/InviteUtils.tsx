@@ -17,7 +17,7 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {ChannelTypes, Permissions} from '~/Constants';
+import {ChannelTypes, GUILD_RTC_CHANNEL_TYPES, Permissions} from '~/Constants';
 import type {ChannelRecord} from '~/records/ChannelRecord';
 import type {GuildRecord} from '~/records/GuildRecord';
 import ChannelStore from '~/stores/ChannelStore';
@@ -42,7 +42,7 @@ export function findInvite(content: string | null): string | null {
 	return CodeLinkUtils.findCode(content, INVITE_CONFIG);
 }
 
-const INVITABLE_CHANNEL_TYPES: Set<number> = new Set([ChannelTypes.GUILD_TEXT, ChannelTypes.GUILD_VOICE]);
+const INVITABLE_CHANNEL_TYPES: Set<number> = new Set([ChannelTypes.GUILD_TEXT, ...GUILD_RTC_CHANNEL_TYPES]);
 
 export function getFirstInvitableChannel(guildId: string): string | undefined {
 	const channels = ChannelStore.getGuildChannels(guildId);

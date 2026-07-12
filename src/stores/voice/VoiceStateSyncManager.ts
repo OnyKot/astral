@@ -29,6 +29,7 @@ export interface VoiceStateSyncPayload {
 	self_video: boolean;
 	self_stream: boolean;
 	viewer_stream_key: string | null;
+	suppress?: boolean;
 }
 
 const logger = new Logger('VoiceStateSyncManager');
@@ -119,6 +120,7 @@ export class VoiceStateSyncManager {
 			self_video: this.pending.self_video,
 			self_stream: this.pending.self_stream,
 			viewer_stream_key: this.pending.viewer_stream_key,
+			suppress: this.pending.suppress,
 		});
 
 		this.lastSent = this.pending;
@@ -135,7 +137,8 @@ export class VoiceStateSyncManager {
 			a.self_deaf === b.self_deaf &&
 			a.self_video === b.self_video &&
 			a.self_stream === b.self_stream &&
-			a.viewer_stream_key === b.viewer_stream_key
+			a.viewer_stream_key === b.viewer_stream_key &&
+			(a.suppress ?? null) === (b.suppress ?? null)
 		);
 	}
 }

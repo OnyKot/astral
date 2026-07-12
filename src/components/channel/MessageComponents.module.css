@@ -19,6 +19,11 @@
 	align-items: stretch;
 }
 
+.storyPreviewRow {
+	flex: 1 1 100%;
+	min-width: 0;
+}
+
 .button {
 	display: inline-flex;
 	align-items: center;

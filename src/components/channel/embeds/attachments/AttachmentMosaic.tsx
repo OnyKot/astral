@@ -33,7 +33,16 @@ import {modal} from '~/actions/ModalActionCreators';
 import {MessageAttachmentFlags} from '~/Constants';
 import {EmbedGif} from '~/components/channel/embeds/media/EmbedGifv';
 import {EmbedImage} from '~/components/channel/embeds/media/EmbedImage';
+import EmbedAudio from '~/components/channel/embeds/media/EmbedAudio';
 import EmbedVideo from '~/components/channel/embeds/media/EmbedVideo';
+import {
+	isAudioAttachment,
+	isGifType,
+	isImageType,
+	isMediaAttachment,
+	isVideoAttachment,
+	isVoiceLikeAttachment,
+} from '~/components/channel/messageAttachmentUtils';
 import {getMediaButtonVisibility} from '~/components/channel/embeds/media/MediaButtonUtils';
 import {MediaContainer} from '~/components/channel/embeds/media/MediaContainer';
 import {NSFWBlurOverlay} from '~/components/channel/embeds/NSFWBlurOverlay';
@@ -72,15 +81,15 @@ interface SingleAttachmentProps {
 	isPreview?: boolean;
 }
 
-const isImageType = (contentType?: string): boolean => contentType?.startsWith('image/') ?? false;
-const isVideoType = (contentType?: string): boolean => contentType?.startsWith('video/') ?? false;
-const isAudioType = (contentType?: string): boolean => contentType?.startsWith('audio/') ?? false;
-const isGifType = (contentType?: string): boolean => contentType === 'image/gif';
 const isAnimated = (flags: number): boolean => (flags & MessageAttachmentFlags.IS_ANIMATED) !== 0;
+const FALLBACK_VIDEO_DIMENSIONS = {width: 640, height: 360};
 
-const isMediaAttachment = (attachment: MessageAttachment): boolean => {
-	if (!attachment.width || !attachment.height) return false;
-	return isImageType(attachment.content_type) || isVideoType(attachment.content_type);
+const getMediaDimensions = (attachment: MessageAttachment): {width: number; height: number} => {
+	if (attachment.width && attachment.height) {
+		return {width: attachment.width, height: attachment.height};
+	}
+
+	return isVideoAttachment(attachment) ? FALLBACK_VIDEO_DIMENSIONS : {width: 1, height: 1};
 };
 
 interface MediaLoadingState {
@@ -132,8 +141,8 @@ const MosaicItemBase: FC<MosaicItemProps> = observer(
 	({attachment, style, message, mediaAttachments = [], isPreview}) => {
 		const {i18n} = useLingui();
 		const messageViewContext = useMaybeMessageViewContext();
-		const isVideo = isVideoType(attachment.content_type);
-		const isAudio = isAudioType(attachment.content_type);
+		const isVideo = isVideoAttachment(attachment);
+		const isAudio = isAudioAttachment(attachment);
 		const isAnimatedGif = isAnimated(attachment.flags) || isGifType(attachment.content_type);
 		const isSpoiler = (attachment.flags & MessageAttachmentFlags.IS_SPOILER) !== 0;
 		const nsfw = attachment.nsfw || (attachment.flags & MessageAttachmentFlags.CONTAINS_EXPLICIT_MEDIA) !== 0;
@@ -152,10 +161,9 @@ const MosaicItemBase: FC<MosaicItemProps> = observer(
 
 		const mosaicDimensions = getMosaicMediaDimensions(message);
 		const maxMosaicWidth = mosaicDimensions.maxWidth;
-		const targetWidth = Math.min(attachment.width || maxMosaicWidth, maxMosaicWidth * 2);
-		const targetHeight = attachment.height
-			? Math.round((targetWidth / attachment.width!) * attachment.height)
-			: targetWidth;
+		const naturalDimensions = getMediaDimensions(attachment);
+		const targetWidth = Math.min(naturalDimensions.width, maxMosaicWidth * 2);
+		const targetHeight = Math.round((targetWidth / naturalDimensions.width) * naturalDimensions.height);
 
 		const proxyUrl = attachment.proxy_url ?? attachment.url ?? '';
 		const isBlob = proxyUrl.startsWith('blob:');
@@ -199,8 +207,8 @@ const MosaicItemBase: FC<MosaicItemProps> = observer(
 				const currentIndex = mediaAttachments.findIndex((a) => a.id === attachment.id);
 
 				const items = mediaAttachments.map((att) => {
-					const attIsVideo = isVideoType(att.content_type);
-					const attIsAudio = isAudioType(att.content_type);
+					const attIsVideo = isVideoAttachment(att);
+					const attIsAudio = isAudioAttachment(att);
 					const attIsAnimatedGif =
 						(att.flags & MessageAttachmentFlags.IS_ANIMATED) !== 0 || att.content_type === 'image/gif';
 
@@ -314,8 +322,7 @@ const MosaicItemBase: FC<MosaicItemProps> = observer(
 		const mediaType = isAudio ? 'audio' : isVideo ? 'video' : isAnimatedGif ? 'animated GIF' : 'image';
 		const ariaLabel = `Open ${mediaType} in full view`;
 		const shouldRenderPlaceholder = !loaded || error;
-		const aspectRatioStyle =
-			attachment.width && attachment.height ? {aspectRatio: `${attachment.width} / ${attachment.height}`} : undefined;
+		const aspectRatioStyle = {aspectRatio: `${naturalDimensions.width} / ${naturalDimensions.height}`};
 
 		const canFavorite = !!(message?.channelId && message?.id);
 		const {showFavoriteButton, showDownloadButton, showDeleteButton} = getMediaButtonVisibility(
@@ -406,7 +413,8 @@ const MosaicItemBase: FC<MosaicItemProps> = observer(
 );
 
 const SingleAttachment: FC<SingleAttachmentProps> = observer(({attachment, message, mediaAttachments, isPreview}) => {
-	const isVideo = isVideoType(attachment.content_type);
+	const isVideo = isVideoAttachment(attachment);
+	const isAudio = isAudioAttachment(attachment);
 	const isAnimatedGif = isAnimated(attachment.flags) || isGifType(attachment.content_type);
 	const isSpoiler = (attachment.flags & MessageAttachmentFlags.IS_SPOILER) !== 0;
 	const nsfw = attachment.nsfw || (attachment.flags & MessageAttachmentFlags.CONTAINS_EXPLICIT_MEDIA) !== 0;
@@ -429,13 +437,8 @@ const SingleAttachment: FC<SingleAttachmentProps> = observer(({attachment, messa
 		responsive: true,
 	});
 
-	const {dimensions} = standaloneMediaCalculator.calculate(
-		{
-			width: attachment.width!,
-			height: attachment.height!,
-		},
-		{forceScale: true},
-	);
+	const naturalDimensions = getMediaDimensions(attachment);
+	const {dimensions} = standaloneMediaCalculator.calculate(naturalDimensions, {forceScale: true});
 
 	const safeProxy = attachment.proxy_url ?? attachment.url ?? '';
 	const safeUrl = attachment.url ?? '';
@@ -449,6 +452,26 @@ const SingleAttachment: FC<SingleAttachmentProps> = observer(({attachment, messa
 		placeholder: attachment.placeholder,
 		nsfw,
 	};
+
+	if (isAudio) {
+		return wrapSpoiler(
+			<EmbedAudio
+				src={safeProxy}
+				title={attachment.title || attachment.filename}
+				duration={attachment.duration}
+				waveform={attachment.waveform}
+				embedUrl={safeUrl}
+				channelId={message?.channelId}
+				messageId={message?.id}
+				attachmentId={attachment.id}
+				message={message}
+				contentHash={attachment.content_hash}
+				fileSize={attachment.size}
+				isPreview={isPreview}
+				isVoiceMessage={isVoiceLikeAttachment(attachment)}
+			/>,
+		);
+	}
 
 	if (isVideo) {
 		return wrapSpoiler(
@@ -523,7 +546,9 @@ const AttachmentMosaicComponent: FC<AttachmentMosaicProps> = observer(
 		const {t} = useLingui();
 
 		const mediaAttachments = attachments.filter(isMediaAttachment);
-		const count = mediaAttachments.length;
+		const audioAttachments = mediaAttachments.filter(isAudioAttachment);
+		const visualMediaAttachments = mediaAttachments.filter((attachment) => !isAudioAttachment(attachment));
+		const count = visualMediaAttachments.length;
 		const aggregateExpiry = getEarliestAttachmentExpiry(attachments);
 
 		const renderFootnote = () => {
@@ -551,7 +576,24 @@ const AttachmentMosaicComponent: FC<AttachmentMosaicProps> = observer(
 		};
 
 		if (count === 0) {
-			return null;
+			if (audioAttachments.length === 0) {
+				return null;
+			}
+
+			return (
+				<div className={styles.mosaicContainerWrapper}>
+					{audioAttachments.map((attachment) => (
+						<SingleAttachment
+							key={attachment.id}
+							attachment={attachment}
+							message={message}
+							mediaAttachments={visualMediaAttachments}
+							isPreview={isPreview}
+						/>
+					))}
+					{renderFootnote()}
+				</div>
+			);
 		}
 
 		const renderMosaicItem = (attachment: MessageAttachment, key?: string) => (
@@ -559,141 +601,180 @@ const AttachmentMosaicComponent: FC<AttachmentMosaicProps> = observer(
 				key={key || attachment.id}
 				attachment={attachment}
 				message={message}
-				mediaAttachments={mediaAttachments}
+				mediaAttachments={visualMediaAttachments}
 				isPreview={isPreview}
 			/>
 		);
 
-		const renderGrid = (items: ReadonlyArray<MessageAttachment>, gridClassName: string) => (
-			<div className={styles.mosaicContainerWrapper}>
-				<div className={styles.mosaicContainer}>
-					<div className={gridClassName}>{items.map((attachment) => renderMosaicItem(attachment))}</div>
+		const renderAudioAttachments = () =>
+			audioAttachments.length > 0 ? (
+				<div className={styles.mosaicContainerWrapper}>
+					{audioAttachments.map((attachment) => (
+						<SingleAttachment
+							key={attachment.id}
+							attachment={attachment}
+							message={message}
+							mediaAttachments={visualMediaAttachments}
+							isPreview={isPreview}
+						/>
+					))}
 				</div>
-				{renderFootnote()}
-			</div>
+			) : null;
+
+		const renderGrid = (items: ReadonlyArray<MessageAttachment>, gridClassName: string) => (
+			<>
+				<div className={styles.mosaicContainerWrapper}>
+					<div className={styles.mosaicContainer}>
+						<div className={gridClassName}>{items.map((attachment) => renderMosaicItem(attachment))}</div>
+					</div>
+					{renderFootnote()}
+				</div>
+				{renderAudioAttachments()}
+			</>
 		);
 
 		switch (count) {
 			case 1:
 				return (
-					<div className={clsx(styles.mosaicContainerWrapper, styles.singleMosaicContainerWrapper)}>
-						<div className={styles.mosaicContainer}>
-							<SingleAttachment
-								attachment={mediaAttachments[0]}
-								message={message}
-								mediaAttachments={mediaAttachments}
-								isPreview={isPreview}
-							/>
+					<>
+						<div className={clsx(styles.mosaicContainerWrapper, styles.singleMosaicContainerWrapper)}>
+							<div className={styles.mosaicContainer}>
+								<SingleAttachment
+									attachment={visualMediaAttachments[0]}
+									message={message}
+									mediaAttachments={visualMediaAttachments}
+									isPreview={isPreview}
+								/>
+							</div>
+							{renderFootnote()}
 						</div>
-						{renderFootnote()}
-					</div>
+						{renderAudioAttachments()}
+					</>
 				);
 
 			case 2:
 				return (
-					<div className={styles.mosaicContainerWrapper}>
-						<div className={styles.mosaicContainer}>
-							<div className={styles.oneByTwoGrid}>
-								{mediaAttachments.map((attachment) => (
-									<div key={attachment.id} className={styles.oneByTwoGridItem}>
-										{renderMosaicItem(attachment)}
-									</div>
-								))}
+					<>
+						<div className={styles.mosaicContainerWrapper}>
+							<div className={styles.mosaicContainer}>
+								<div className={styles.oneByTwoGrid}>
+									{visualMediaAttachments.map((attachment) => (
+										<div key={attachment.id} className={styles.oneByTwoGridItem}>
+											{renderMosaicItem(attachment)}
+										</div>
+									))}
+								</div>
 							</div>
+							{renderFootnote()}
 						</div>
-						{renderFootnote()}
-					</div>
+						{renderAudioAttachments()}
+					</>
 				);
 
 			case 3:
 				return (
-					<div className={styles.mosaicContainerWrapper}>
-						<div className={styles.mosaicContainer}>
-							<div className={clsx(styles.oneByTwoGrid, styles.oneByTwoLayoutThreeGrid)}>
-								<div className={styles.oneByTwoSoloItem}>{renderMosaicItem(mediaAttachments[0])}</div>
-								<div className={styles.oneByTwoDuoItem}>
-									<div className={styles.twoByOneGrid}>
-										<div className={styles.twoByOneGridItem}>{renderMosaicItem(mediaAttachments[1])}</div>
-										<div className={styles.twoByOneGridItem}>{renderMosaicItem(mediaAttachments[2])}</div>
+					<>
+						<div className={styles.mosaicContainerWrapper}>
+							<div className={styles.mosaicContainer}>
+								<div className={clsx(styles.oneByTwoGrid, styles.oneByTwoLayoutThreeGrid)}>
+									<div className={styles.oneByTwoSoloItem}>{renderMosaicItem(visualMediaAttachments[0])}</div>
+									<div className={styles.oneByTwoDuoItem}>
+										<div className={styles.twoByOneGrid}>
+											<div className={styles.twoByOneGridItem}>{renderMosaicItem(visualMediaAttachments[1])}</div>
+											<div className={styles.twoByOneGridItem}>{renderMosaicItem(visualMediaAttachments[2])}</div>
+										</div>
 									</div>
 								</div>
 							</div>
+							{renderFootnote()}
 						</div>
-						{renderFootnote()}
-					</div>
+						{renderAudioAttachments()}
+					</>
 				);
 
 			case 4:
-				return renderGrid(mediaAttachments, styles.twoByTwoGrid);
+				return renderGrid(visualMediaAttachments, styles.twoByTwoGrid);
 
 			case 5:
 				return (
-					<div className={styles.mosaicContainerWrapper}>
-						<div className={styles.mosaicContainer}>
-							<div className={clsx(styles.fiveAttachmentContainer)}>
-								<div className={styles.oneByTwoGrid}>
-									<div className={styles.oneByTwoGridItem}>{renderMosaicItem(mediaAttachments[0])}</div>
-									<div className={styles.oneByTwoGridItem}>{renderMosaicItem(mediaAttachments[1])}</div>
-								</div>
-								<div className={styles.threeByThreeGrid}>
-									{mediaAttachments.slice(2, 5).map((attachment) => renderMosaicItem(attachment))}
+					<>
+						<div className={styles.mosaicContainerWrapper}>
+							<div className={styles.mosaicContainer}>
+								<div className={clsx(styles.fiveAttachmentContainer)}>
+									<div className={styles.oneByTwoGrid}>
+										<div className={styles.oneByTwoGridItem}>{renderMosaicItem(visualMediaAttachments[0])}</div>
+										<div className={styles.oneByTwoGridItem}>{renderMosaicItem(visualMediaAttachments[1])}</div>
+									</div>
+									<div className={styles.threeByThreeGrid}>
+										{visualMediaAttachments.slice(2, 5).map((attachment) => renderMosaicItem(attachment))}
+									</div>
 								</div>
 							</div>
+							{renderFootnote()}
 						</div>
-						{renderFootnote()}
-					</div>
+						{renderAudioAttachments()}
+					</>
 				);
 
 			case 6:
-				return renderGrid(mediaAttachments, styles.threeByThreeGrid);
+				return renderGrid(visualMediaAttachments, styles.threeByThreeGrid);
 
 			case 7:
 				return (
-					<div className={styles.mosaicContainerWrapper}>
-						<div className={styles.mosaicContainer}>
-							<div className={clsx(styles.oneByOneGrid, styles.oneByOneGridMosaic)}>
-								{renderMosaicItem(mediaAttachments[0])}
+					<>
+						<div className={styles.mosaicContainerWrapper}>
+							<div className={styles.mosaicContainer}>
+								<div className={clsx(styles.oneByOneGrid, styles.oneByOneGridMosaic)}>
+									{renderMosaicItem(visualMediaAttachments[0])}
+								</div>
+								<div className={styles.threeByThreeGrid}>
+									{visualMediaAttachments.slice(1, 7).map((attachment) => renderMosaicItem(attachment))}
+								</div>
 							</div>
-							<div className={styles.threeByThreeGrid}>
-								{mediaAttachments.slice(1, 7).map((attachment) => renderMosaicItem(attachment))}
-							</div>
+							{renderFootnote()}
 						</div>
-						{renderFootnote()}
-					</div>
+						{renderAudioAttachments()}
+					</>
 				);
 
 			case 8:
 				return (
-					<div className={styles.mosaicContainerWrapper}>
-						<div className={styles.mosaicContainer}>
-							<div className={styles.oneByTwoGrid}>
-								<div className={styles.oneByTwoGridItem}>{renderMosaicItem(mediaAttachments[0])}</div>
-								<div className={styles.oneByTwoGridItem}>{renderMosaicItem(mediaAttachments[1])}</div>
+					<>
+						<div className={styles.mosaicContainerWrapper}>
+							<div className={styles.mosaicContainer}>
+								<div className={styles.oneByTwoGrid}>
+									<div className={styles.oneByTwoGridItem}>{renderMosaicItem(visualMediaAttachments[0])}</div>
+									<div className={styles.oneByTwoGridItem}>{renderMosaicItem(visualMediaAttachments[1])}</div>
+								</div>
+								<div className={styles.threeByThreeGrid}>
+									{visualMediaAttachments.slice(2, 8).map((attachment) => renderMosaicItem(attachment))}
+								</div>
 							</div>
-							<div className={styles.threeByThreeGrid}>
-								{mediaAttachments.slice(2, 8).map((attachment) => renderMosaicItem(attachment))}
-							</div>
+							{renderFootnote()}
 						</div>
-						{renderFootnote()}
-					</div>
+						{renderAudioAttachments()}
+					</>
 				);
 
 			case 9:
-				return renderGrid(mediaAttachments, styles.threeByThreeGrid);
+				return renderGrid(visualMediaAttachments, styles.threeByThreeGrid);
 
 			case 10:
 				return (
-					<div className={styles.mosaicContainerWrapper}>
-						<div className={styles.mosaicContainer}>
-							<div className={clsx(styles.oneByOneGrid, styles.oneByOneGridMosaic)}>
-								{renderMosaicItem(mediaAttachments[0])}
+					<>
+						<div className={styles.mosaicContainerWrapper}>
+							<div className={styles.mosaicContainer}>
+								<div className={clsx(styles.oneByOneGrid, styles.oneByOneGridMosaic)}>
+									{renderMosaicItem(visualMediaAttachments[0])}
+								</div>
+								<div className={styles.threeByThreeGrid}>
+									{visualMediaAttachments.slice(1, 10).map((attachment) => renderMosaicItem(attachment))}
+								</div>
 							</div>
-							<div className={styles.threeByThreeGrid}>
-								{mediaAttachments.slice(1, 10).map((attachment) => renderMosaicItem(attachment))}
-							</div>
+							{renderFootnote()}
 						</div>
-						{renderFootnote()}
-					</div>
+						{renderAudioAttachments()}
+					</>
 				);
 
 			default:

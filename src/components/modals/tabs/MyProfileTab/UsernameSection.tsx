@@ -32,16 +32,22 @@ import styles from './UsernameSection.module.css';
 interface UsernameSectionProps {
 	isClaimed: boolean;
 	hasPremium: boolean;
+	username: string;
 	discriminator: string;
 }
 
-export const UsernameSection = observer(({isClaimed, hasPremium, discriminator}: UsernameSectionProps) => {
+export const UsernameSection = observer(({isClaimed, hasPremium, username, discriminator}: UsernameSectionProps) => {
 	const {t} = useLingui();
 
 	return (
 		<div>
 			<div className={styles.label}>
 				<Trans>Username</Trans>
+			</div>
+
+			<div className={styles.currentTag}>
+				<span className={styles.currentUsername}>{username}</span>
+				<span className={styles.currentDiscriminator}>#{discriminator}</span>
 			</div>
 
 			<div className={styles.actions}>

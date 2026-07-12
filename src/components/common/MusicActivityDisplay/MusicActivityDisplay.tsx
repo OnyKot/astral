@@ -82,6 +82,8 @@ export const MusicActivityDisplay: React.FC<MusicActivityDisplayProps> = observe
 		const {t} = useLingui();
 		const resolvedActivity = activity ?? (userId ? PresenceStore.getMusicActivity(userId) : null);
 		const [fallbackArtworkUrl, setFallbackArtworkUrl] = useState<string | null>(null);
+		const normalizedProvider = resolvedActivity?.provider?.trim().toLowerCase() ?? '';
+		const isSteamActivity = normalizedProvider.includes('steam');
 
 		const artworkLookupKey = useMemo(
 			() => (resolvedActivity ? buildArtworkLookupKey(resolvedActivity) : null),
@@ -132,7 +134,7 @@ export const MusicActivityDisplay: React.FC<MusicActivityDisplayProps> = observe
 			};
 		}, [resolvedActivity, artworkLookupKey]);
 
-		if (!resolvedActivity) {
+		if (!resolvedActivity || isSteamActivity) {
 			if (!showEmptyState) {
 				return null;
 			}
@@ -157,24 +159,23 @@ export const MusicActivityDisplay: React.FC<MusicActivityDisplayProps> = observe
 				? t`Spotify`
 				: resolvedActivity.provider === 'yandex_music'
 					? t`Yandex Music`
-					: resolvedActivity.trackUrl
-						? t`Astral Music`
-						: t`Desktop Now Playing`;
+					: resolvedActivity.provider === 'steam'
+						? t`Steam`
+						: resolvedActivity.trackUrl
+							? t`Astral Music`
+							: t`Desktop Now Playing`;
 		const stateLabel = resolvedActivity.isPlaying ? t`Listening now` : t`Paused`;
 		const displayArtworkUrl = resolvedActivity.artworkUrl || fallbackArtworkUrl;
 
 		return (
 			<div className={clsx(styles.card, compact && styles.compact, className)}>
-				<div
-					className={styles.artwork}
-					style={
-						displayArtworkUrl
-							? {
-									backgroundImage: `linear-gradient(180deg, rgb(14 16 26 / 10%), rgb(9 11 20 / 65%)), url(${displayArtworkUrl})`,
-								}
-							: undefined
-					}
-				>
+				<div className={styles.artwork}>
+					{displayArtworkUrl && (
+						<>
+							<img src={displayArtworkUrl} alt="" className={styles.artworkImage} draggable={false} />
+							<span className={styles.artworkShade} aria-hidden />
+						</>
+					)}
 					{!displayArtworkUrl && <MusicNoteIcon className={styles.artworkIcon} weight="fill" />}
 				</div>
 
@@ -192,9 +193,11 @@ export const MusicActivityDisplay: React.FC<MusicActivityDisplayProps> = observe
 					<div className={styles.title} title={resolvedActivity.title}>
 						{resolvedActivity.title}
 					</div>
-					<div className={styles.artists} title={formatMusicArtists(resolvedActivity.artists)}>
-						{formatMusicArtists(resolvedActivity.artists)}
-					</div>
+					{resolvedActivity.artists.length > 0 && (
+						<div className={styles.artists} title={formatMusicArtists(resolvedActivity.artists)}>
+							{formatMusicArtists(resolvedActivity.artists)}
+						</div>
+					)}
 					{resolvedActivity.album && (
 						<div className={styles.album} title={resolvedActivity.album}>
 							{resolvedActivity.album}

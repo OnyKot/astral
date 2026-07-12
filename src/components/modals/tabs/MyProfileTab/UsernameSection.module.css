@@ -18,10 +18,34 @@
  */
 
 .label {
-	margin-bottom: 0.5rem;
+	margin-bottom: 0.35rem;
 	font-weight: 500;
 	color: var(--text-primary);
 	font-size: 0.875rem;
+}
+
+.currentTag {
+	display: inline-flex;
+	align-items: baseline;
+	max-width: 100%;
+	margin-bottom: 0.6rem;
+	border-radius: 0.55rem;
+	background: color-mix(in srgb, var(--background-secondary) 72%, transparent);
+	padding: 0.42rem 0.55rem;
+	font-weight: 700;
+	color: var(--text-primary);
+}
+
+.currentUsername,
+.currentDiscriminator {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.currentDiscriminator {
+	color: var(--text-tertiary);
 }
 
 .actions {

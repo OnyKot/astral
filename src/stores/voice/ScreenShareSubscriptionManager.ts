@@ -107,12 +107,13 @@ export class ScreenShareSubscriptionManager {
 
 		try {
 			screenSharePublication.setSubscribed(true);
-			if (enabled) {
-				screenSharePublication.setEnabled(true);
-			} else {
-				screenSharePublication.setEnabled(false);
-			}
-			this.applyQuality(screenSharePublication, quality);
+			this.applyPublicationSettingsWhenReady(
+				participantIdentity,
+				screenSharePublication,
+				enabled,
+				quality,
+				'subscribe',
+			);
 
 			const observer = element ? this.createObserver(participantIdentity, element) : null;
 
@@ -188,8 +189,13 @@ export class ScreenShareSubscriptionManager {
 				const screenSharePublication = this.findScreenSharePublication(participant);
 				if (screenSharePublication) {
 					try {
-						screenSharePublication.setEnabled(enabled);
-						this.applyQuality(screenSharePublication, quality);
+						this.applyPublicationSettingsWhenReady(
+							participantIdentity,
+							screenSharePublication,
+							enabled,
+							quality,
+							'setContext',
+						);
 
 						runInAction(() => {
 							state.context = context;
@@ -233,6 +239,45 @@ export class ScreenShareSubscriptionManager {
 		}
 	}
 
+	private applyPublicationSettingsWhenReady(
+		participantIdentity: string,
+		publication: RemoteTrackPublication,
+		enabled: boolean,
+		quality: VideoQualityLevel,
+		reason: string,
+		attempt = 0,
+	): void {
+		if (publication.isSubscribed || publication.track) {
+			try {
+				publication.setEnabled(enabled);
+				this.applyQuality(publication, quality);
+			} catch (error) {
+				logger.error('[applyPublicationSettingsWhenReady] Failed to apply settings', {
+					participantIdentity,
+					enabled,
+					quality,
+					reason,
+					error,
+				});
+			}
+			return;
+		}
+
+		if (attempt >= 4 || typeof window === 'undefined') {
+			logger.debug('[applyPublicationSettingsWhenReady] Track not subscribed yet', {
+				participantIdentity,
+				reason,
+				attempt,
+			});
+			return;
+		}
+
+		window.setTimeout(
+			() => this.applyPublicationSettingsWhenReady(participantIdentity, publication, enabled, quality, reason, attempt + 1),
+			80 * (attempt + 1),
+		);
+	}
+
 	private getQualityForContext(context: 'focused' | 'carousel' | 'hidden'): VideoQualityLevel {
 		switch (context) {
 			case 'focused':
@@ -262,7 +307,13 @@ export class ScreenShareSubscriptionManager {
 							const pub = this.findScreenSharePublication(participant);
 							if (pub) {
 								try {
-									pub.setEnabled(isIntersecting);
+									this.applyPublicationSettingsWhenReady(
+										participantIdentity,
+										pub,
+										isIntersecting,
+										state.quality,
+										'observer',
+									);
 									runInAction(() => {
 										state.enabled = isIntersecting;
 									});

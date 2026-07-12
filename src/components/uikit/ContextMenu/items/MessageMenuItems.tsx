@@ -41,6 +41,7 @@ import {
 	PinIcon,
 	RemoveAllReactionsIcon,
 	ReplyIcon,
+	SelectMessagesIcon,
 	SpeakIcon,
 	SuppressEmbedsIcon,
 } from '../ContextMenuIcons';
@@ -117,6 +118,24 @@ export const ForwardMessageMenuItem: React.FC<ForwardMessageMenuItemProps> = obs
 	return (
 		<MenuItem icon={<ForwardIcon />} onClick={handleForward} shortcut="f">
 			{t`Forward`}
+		</MenuItem>
+	);
+});
+
+type SelectMessagesMenuItemProps = MessageMenuItemProps & {
+	onSelectMessages: () => void;
+};
+
+export const SelectMessagesMenuItem: React.FC<SelectMessagesMenuItemProps> = observer(({onSelectMessages, onClose}) => {
+	const {t} = useLingui();
+	const handleSelectMessages = React.useCallback(() => {
+		onSelectMessages();
+		onClose();
+	}, [onSelectMessages, onClose]);
+
+	return (
+		<MenuItem icon={<SelectMessagesIcon />} onClick={handleSelectMessages}>
+			{t`Select Messages`}
 		</MenuItem>
 	);
 });

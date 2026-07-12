@@ -49,6 +49,7 @@ export const AddFriendSheet: React.FC<AddFriendSheetProps> = observer(({isOpen, 
 			initialSnap={1}
 			title={t`Add Friend`}
 			disablePadding
+			showHandle={false}
 		>
 			<div className={styles.container}>
 				<Scroller className={styles.scroller} key="add-friend-sheet-scroller">

@@ -29,6 +29,8 @@ import {ScreenRecordingPermissionDeniedError} from '~/utils/errors/ScreenRecordi
 import {ensureNativePermission} from '~/utils/NativePermissions';
 import {isDesktop, isNativeMacOS} from '~/utils/NativeUtils';
 import {SoundType} from '~/utils/SoundUtils';
+import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
+import {getScreenShareQualityOptions} from '~/utils/voice/StreamQualityUtils';
 
 const logger = new Logger('VoiceScreenShareManager');
 
@@ -146,7 +148,18 @@ class VoiceScreenShareManager {
 
 	async toggleScreenShareFromKeybind(room: Room | null, sync: VoiceStateSync): Promise<void> {
 		const current = LocalVoiceStateStore.getSelfStream();
-		await this.setScreenShareEnabled(room, !current, sync);
+		const enabled = !current;
+
+		if (!enabled) {
+			await this.setScreenShareEnabled(room, false, sync);
+			return;
+		}
+
+		const {captureOptions, publishOptions} = getScreenShareQualityOptions(
+			VoiceSettingsStore.getScreenshareResolution(),
+			VoiceSettingsStore.getVideoFrameRate(),
+		);
+		await this.setScreenShareEnabled(room, true, sync, captureOptions, publishOptions);
 	}
 
 	resetStreamTracking(): void {

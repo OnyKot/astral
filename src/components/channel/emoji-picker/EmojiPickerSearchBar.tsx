@@ -39,6 +39,7 @@ interface EmojiPickerSearchBarProps {
 	onSearchFocusChange?: (isFocused: boolean) => void;
 	className?: string;
 	compact?: boolean;
+	showSkinToneSelector?: boolean;
 }
 
 export const EmojiPickerSearchBar = observer(
@@ -55,6 +56,7 @@ export const EmojiPickerSearchBar = observer(
 		onSearchFocusChange,
 		className,
 		compact = false,
+		showSkinToneSelector = true,
 	}: EmojiPickerSearchBarProps) => {
 		const {t} = useLingui();
 		const handleKeyDown = React.useCallback(
@@ -199,7 +201,7 @@ export const EmojiPickerSearchBar = observer(
 					onFocus={handleFocus}
 					onBlur={handleBlur}
 				/>
-				<SkinToneSelector />
+				{showSkinToneSelector && <SkinToneSelector />}
 			</div>
 		);
 	},

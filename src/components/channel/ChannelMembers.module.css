@@ -24,14 +24,9 @@
 	flex: 0 0 auto;
 	flex-direction: column;
 	box-sizing: border-box;
-	border: 1px solid color-mix(in srgb, var(--background-modifier-accent) 78%, transparent);
-	border-radius: 0.95rem;
-	background:
-		linear-gradient(
-			180deg,
-			color-mix(in srgb, var(--background-floating) 28%, transparent),
-			color-mix(in srgb, var(--background-primary) 94%, transparent)
-		);
+	border: none;
+	border-radius: 0.75rem;
+	background: transparent;
 	overflow: hidden;
 }
 
@@ -41,20 +36,8 @@
 	box-shadow: none;
 }
 
-@media (min-width: 768px) {
-	/*
-	 * Desktop-only entrance animation for the members panel.
-	 * We keep this subtle (short duration, small X offset) so it reads as
-	 * "panel appeared from the right rail" without pulling focus from chat.
-	 */
-	.memberFrame {
-		animation: memberListSlideIn var(--motion-dur-medium) var(--motion-ease-snap);
-		transform-origin: right center;
-	}
-}
-
 .groupHeader {
-	padding: 0.75rem 0.8rem 0.5rem;
+	padding: 0.7rem 0.72rem 0.45rem;
 	font-size: 0.675rem;
 	font-weight: 700;
 	letter-spacing: 0.1em;
@@ -141,16 +124,4 @@
 	background: var(--background-modifier-accent);
 	opacity: 0.45;
 	border-radius: 4px;
-}
-
-@keyframes memberListSlideIn {
-	from {
-		opacity: 0;
-		transform: translateX(18px);
-	}
-
-	to {
-		opacity: 1;
-		transform: translateX(0);
-	}
 }

@@ -515,3 +515,95 @@
 		flex-direction: column;
 	}
 }
+
+/* Minimal modal-friendly styling */
+.hero,
+.connectionCard,
+.scopePanel,
+.eventSubPanel,
+.resultCard,
+.grantsSummary,
+.liveStateCard,
+.noteItem,
+.eventSubRow {
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--background-secondary) 92%, var(--background-primary) 8%);
+	box-shadow: none;
+}
+
+.hero,
+.scopePanel,
+.eventSubPanel {
+	background-image: none;
+}
+
+.hero {
+	padding: 1rem;
+	border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.heroIcon,
+.scopeIcon,
+.resultIcon {
+	border-radius: 10px;
+	background: color-mix(in srgb, var(--background-modifier-hover) 62%, var(--background-secondary));
+	border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+	color: var(--text-primary);
+}
+
+.heroTitle {
+	font-size: 1.08rem;
+}
+
+.heroDescription,
+.statusText,
+.scopeText,
+.resultText,
+.eventSubText,
+.eventSubMeta,
+.liveStateText,
+.noteText,
+.summaryLabel {
+	color: var(--text-secondary);
+}
+
+.audienceSwitch {
+	padding: 0.3rem;
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--background-tertiary) 90%, var(--background-primary) 10%);
+}
+
+.audienceButton {
+	min-height: 2.45rem;
+	border-radius: 10px;
+	font-size: 0.84rem;
+}
+
+.audienceButtonActive {
+	background: color-mix(in srgb, var(--background-modifier-hover) 68%, var(--background-secondary));
+	box-shadow: none;
+}
+
+.connectionCard,
+.eventSubPanel,
+.scopePanel,
+.grantsSummary,
+.resultCard,
+.liveStateCard,
+.noteItem,
+.eventSubRow {
+	border-color: color-mix(in srgb, var(--text-primary) 9%, transparent);
+}
+
+.actions {
+	gap: 0.5rem;
+}
+
+.embeddedContainer {
+	gap: 0;
+}
+
+.embeddedContent {
+	gap: 1rem;
+	padding-top: 0.15rem;
+}

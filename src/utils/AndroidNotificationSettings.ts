@@ -1,10 +1,12 @@
 import {registerPlugin} from '@capacitor/core';
 import {isNativeAndroidApp} from '~/utils/AndroidAppInfo';
+import {getAndroidWebViewBridge, parseAndroidBridgeJson} from '~/utils/AndroidWebViewBridge';
 
-export const ANDROID_NOTIFICATION_MESSAGE_CHANNEL_ID = 'astral_messages';
-export const ANDROID_NOTIFICATION_MENTION_CHANNEL_ID = 'astral_mentions';
-export const ANDROID_NOTIFICATION_CALL_CHANNEL_ID = 'astral_calls';
-export const ANDROID_NOTIFICATION_SYSTEM_CHANNEL_ID = 'astral_system';
+export const ANDROID_NOTIFICATION_CHANNEL_ID = 'astral_notifications';
+export const ANDROID_NOTIFICATION_MESSAGE_CHANNEL_ID = ANDROID_NOTIFICATION_CHANNEL_ID;
+export const ANDROID_NOTIFICATION_MENTION_CHANNEL_ID = ANDROID_NOTIFICATION_CHANNEL_ID;
+export const ANDROID_NOTIFICATION_CALL_CHANNEL_ID = ANDROID_NOTIFICATION_CHANNEL_ID;
+export const ANDROID_NOTIFICATION_SYSTEM_CHANNEL_ID = ANDROID_NOTIFICATION_CHANNEL_ID;
 
 export interface AndroidNotificationSettings {
 	messageSound: boolean;
@@ -38,6 +40,10 @@ export const getAndroidNotificationSettings = async (): Promise<AndroidNotificat
 	}
 
 	try {
+		const bridge = getAndroidWebViewBridge();
+		if (bridge) {
+			return parseAndroidBridgeJson<AndroidNotificationSettings>(bridge.getNotificationSettings());
+		}
 		return await AndroidNotifications.getSettings();
 	} catch {
 		return null;
@@ -52,6 +58,12 @@ export const updateAndroidNotificationSettings = async (
 	}
 
 	try {
+		const bridge = getAndroidWebViewBridge();
+		if (bridge) {
+			return parseAndroidBridgeJson<AndroidNotificationSettings>(
+				bridge.updateNotificationSettings(JSON.stringify(settings)),
+			);
+		}
 		return await AndroidNotifications.updateSettings({settings});
 	} catch {
 		return null;
@@ -64,6 +76,10 @@ export const areAndroidNotificationsEnabled = async (): Promise<boolean> => {
 	}
 
 	try {
+		const bridge = getAndroidWebViewBridge();
+		if (bridge) {
+			return bridge.areNotificationsEnabled();
+		}
 		const result = await AndroidNotifications.areNotificationsEnabled();
 		return Boolean(result.enabled);
 	} catch {
@@ -77,6 +93,11 @@ export const openAndroidAppNotificationSettings = async (): Promise<void> => {
 	}
 
 	try {
+		const bridge = getAndroidWebViewBridge();
+		if (bridge) {
+			bridge.openAppNotificationSettings();
+			return;
+		}
 		await AndroidNotifications.openAppNotificationSettings();
 	} catch {
 		// ignore
@@ -89,6 +110,11 @@ export const openAndroidChannelNotificationSettings = async (channelId: string):
 	}
 
 	try {
+		const bridge = getAndroidWebViewBridge();
+		if (bridge) {
+			bridge.openChannelNotificationSettings(channelId);
+			return;
+		}
 		await AndroidNotifications.openChannelNotificationSettings({channelId});
 	} catch {
 		// ignore

@@ -144,6 +144,10 @@
 	font-weight: 600;
 	background: color-mix(in srgb, var(--background-primary) 38%, transparent);
 	color: color-mix(in srgb, var(--text-primary) 86%, var(--text-secondary));
+	font-variant-numeric: tabular-nums;
+	transition:
+		background-color 220ms var(--motion-ease-snap, ease),
+		color 220ms var(--motion-ease-snap, ease);
 }
 
 .caret {

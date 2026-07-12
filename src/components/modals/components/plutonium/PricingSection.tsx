@@ -24,7 +24,6 @@ import type React from 'react';
 import type {VisionarySlots} from '~/actions/PremiumActionCreators';
 import {PricingCard} from '../PricingCard';
 import gridStyles from '../PricingGrid.module.css';
-import {PurchaseDisclaimer} from '../PurchaseDisclaimer';
 import {ToggleButton} from '../ToggleButton';
 import styles from './PricingSection.module.css';
 import {PurchaseDisabledWrapper} from './PurchaseDisabledWrapper';
@@ -54,7 +53,6 @@ export const PricingSection: React.FC<PricingSectionProps> = observer(
 		visionarySlots,
 		loadingCheckout,
 		loadingSlots,
-		isVisionarySoldOut,
 		handleSelectPlan,
 		purchaseDisabled = false,
 		purchaseDisabledTooltip,
@@ -96,16 +94,15 @@ export const PricingSection: React.FC<PricingSectionProps> = observer(
 										disabled={purchaseDisabled}
 									/>
 								</PurchaseDisabledWrapper>
-								<PurchaseDisabledWrapper disabled={purchaseDisabled || isVisionarySoldOut} tooltipText={tooltipText}>
+								<PurchaseDisabledWrapper disabled={purchaseDisabled} tooltipText={tooltipText}>
 									<PricingCard
 										title={t`Visionary`}
 										price={visionaryPrice}
 										period={t`one-time, lifetime`}
-										remainingSlots={loadingSlots ? undefined : visionarySlots?.remaining}
+										remainingSlots={loadingSlots ? undefined : visionarySlots?.remaining ?? undefined}
 										onSelect={() => handleSelectPlan('visionary')}
 										isLoading={loadingCheckout || loadingSlots}
-										disabled={purchaseDisabled || isVisionarySoldOut}
-										soldOut={isVisionarySoldOut}
+										disabled={purchaseDisabled}
 									/>
 								</PurchaseDisabledWrapper>
 							</>
@@ -135,17 +132,16 @@ export const PricingSection: React.FC<PricingSectionProps> = observer(
 										disabled={purchaseDisabled}
 									/>
 								</PurchaseDisabledWrapper>
-								<PurchaseDisabledWrapper disabled={purchaseDisabled || isVisionarySoldOut} tooltipText={tooltipText}>
+								<PurchaseDisabledWrapper disabled={purchaseDisabled} tooltipText={tooltipText}>
 									<PricingCard
 										title={t`Visionary Gift`}
 										price={visionaryPrice}
 										period={t`one-time, lifetime`}
-										remainingSlots={loadingSlots ? undefined : visionarySlots?.remaining}
+										remainingSlots={loadingSlots ? undefined : visionarySlots?.remaining ?? undefined}
 										onSelect={() => handleSelectPlan('giftVisionary')}
 										buttonText={t`Buy Gift`}
 										isLoading={loadingCheckout || loadingSlots}
-										disabled={purchaseDisabled || isVisionarySoldOut}
-										soldOut={isVisionarySoldOut}
+										disabled={purchaseDisabled}
 									/>
 								</PurchaseDisabledWrapper>
 							</>
@@ -154,7 +150,6 @@ export const PricingSection: React.FC<PricingSectionProps> = observer(
 				</div>
 
 				<div className={styles.footerContainer}>
-					<PurchaseDisclaimer />
 					<div className={styles.scrollPromptContainer}>
 						<p className={styles.scrollPromptText}>
 							<Trans>Scroll down to view all the sweet perks you get with Plutonium</Trans>

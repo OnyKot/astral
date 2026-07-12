@@ -19,8 +19,12 @@
 
 import {NotFoundPage} from '~/components/pages/NotFoundPage';
 import {createRootRoute, createRoute, Redirect} from '~/lib/router';
+import SessionManager from '~/lib/SessionManager';
 import {Routes} from '~/Routes';
 import {RootComponent} from '~/router/components/RootComponent';
+import AuthenticationStore from '~/stores/AuthenticationStore';
+import RuntimeConfigStore from '~/stores/RuntimeConfigStore';
+import * as RouterUtils from '~/utils/RouterUtils';
 
 export const rootRoute = createRootRoute({
 	layout: ({children}) => <RootComponent>{children}</RootComponent>,
@@ -32,9 +36,64 @@ export const notFoundRoute = createRoute({
 	component: () => <NotFoundPage />,
 });
 
+const redirectAfterSession = (authenticatedPath: string, guestPath: string) => {
+	if (SessionManager.isInitialized) {
+		return new Redirect(AuthenticationStore.isAuthenticated ? authenticatedPath : guestPath);
+	}
+
+	void SessionManager.initialize().then(() => {
+		RouterUtils.replaceWith(AuthenticationStore.isAuthenticated ? authenticatedPath : guestPath);
+	});
+
+	return undefined;
+};
+
 export const homeRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	id: 'home',
 	path: '/',
-	onEnter: () => new Redirect(Routes.ME),
+	onEnter: () => redirectAfterSession(Routes.ME, Routes.MARKETING),
+});
+
+export const marketingRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	id: 'marketing',
+	path: Routes.MARKETING,
+	onEnter: () => {
+		if (SessionManager.isInitialized && AuthenticationStore.isAuthenticated) {
+			return new Redirect(Routes.ME);
+		}
+
+		if (!SessionManager.isInitialized) {
+			void SessionManager.initialize().then(() => {
+				if (AuthenticationStore.isAuthenticated) {
+					RouterUtils.replaceWith(Routes.ME);
+				}
+			});
+		}
+
+		return undefined;
+	},
+	component: () => {
+		const endpoint = RuntimeConfigStore.marketingEndpoint;
+		const current = `${window.location.origin}${Routes.MARKETING}`;
+
+		if (endpoint && endpoint.replace(/\/$/, '') !== current.replace(/\/$/, '')) {
+			window.location.replace(endpoint);
+			return null;
+		}
+
+		return (
+			<div style={{display: 'grid', minHeight: '100dvh', placeItems: 'center', padding: 24}}>
+				<div style={{display: 'grid', gap: 16, maxWidth: 420, textAlign: 'center'}}>
+					<h1 style={{margin: 0}}>Astral</h1>
+					<p style={{margin: 0, color: 'var(--text-secondary)'}}>Welcome to Astral.</p>
+					<div style={{display: 'flex', gap: 12, justifyContent: 'center'}}>
+						<a href={Routes.LOGIN}>Log in</a>
+						<a href={Routes.REGISTER}>Create account</a>
+					</div>
+				</div>
+			</div>
+		);
+	},
 });

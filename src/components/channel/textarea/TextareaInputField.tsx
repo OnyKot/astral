@@ -78,6 +78,7 @@ interface RenderableEmojiToken {
 	fallbackUrl?: string;
 	alt: string;
 	isAnimated: boolean;
+	isUnicode: boolean;
 }
 
 interface OverlaySpan {
@@ -93,13 +94,7 @@ const INLINE_EMOJI_NAME_RE = /^:([^\s:]+?(?:::skin-tone-\d)?):$/;
 const CUSTOM_EMOJI_MARKDOWN_RE = /^<a?:([a-zA-Z0-9_~+-]+):(\d+)>$/;
 const MAX_TOKEN_CACHE = 600;
 const EMOJI_TOKEN_CACHE = new Map<string, RenderableEmojiToken>();
-const MAY_CONTAIN_EMOJI_RE = /[\u00A9\u00AE\u200D\u203C-\u3299\u{1F000}-\u{1FAFF}:]/u;
-
-function convertToCodePointsPreservingVariation(emoji: string): string {
-	return Array.from(emoji)
-		.map((char) => char.codePointAt(0)?.toString(16).replace(/^0+/, '') || '')
-		.join('-');
-}
+const MAY_CONTAIN_EMOJI_RE = /[\u00A9\u00AE\u200D\u203C-\u3299\u{1F000}-\u{1FAFF}]/u;
 
 function getCachedEmojiToken(cacheKey: string, resolver: () => RenderableEmojiToken | null): RenderableEmojiToken | null {
 	if (EMOJI_TOKEN_CACHE.has(cacheKey)) {
@@ -132,16 +127,14 @@ function buildTokenFromEmojiLike(emoji: Partial<Emoji>): RenderableEmojiToken | 
 			url: AvatarUtils.getEmojiURL({id: emoji.id, animated: emoji.animated}),
 			alt: `:${emoji.name || emoji.uniqueName || 'emoji'}:`,
 			isAnimated: Boolean(emoji.animated),
+			isUnicode: false,
 		};
 	}
 
 	const surrogates = typeof emoji.surrogates === 'string' ? emoji.surrogates : '';
-	const preservedVariationUrl = surrogates
-		? (EmojiUtils.getTwemojiURL(convertToCodePointsPreservingVariation(surrogates)) ?? null)
-		: null;
 	const canonicalUrl = surrogates ? EmojiUtils.getEmojiURL(surrogates) : null;
 	const configuredUrl = typeof emoji.url === 'string' && emoji.url ? emoji.url : null;
-	const primaryUrl = preservedVariationUrl || configuredUrl || canonicalUrl;
+	const primaryUrl = configuredUrl || canonicalUrl;
 	if (!primaryUrl) {
 		return null;
 	}
@@ -158,6 +151,7 @@ function buildTokenFromEmojiLike(emoji: Partial<Emoji>): RenderableEmojiToken | 
 		fallbackUrl: fallbackUrl && fallbackUrl !== primaryUrl ? fallbackUrl : undefined,
 		alt: `:${emoji.name || emoji.uniqueName || 'emoji'}:`,
 		isAnimated: false,
+		isUnicode: true,
 	};
 }
 
@@ -216,6 +210,7 @@ function resolveTokenFromSegment(segment: MentionSegment): RenderableEmojiToken 
 				url: AvatarUtils.getEmojiURL({id: inlineCustomMatch[2], animated}),
 				alt: `:${inlineCustomMatch[1]}:`,
 				isAnimated: animated,
+				isUnicode: false,
 			};
 		}
 
@@ -235,7 +230,7 @@ function resolveTokenFromSegment(segment: MentionSegment): RenderableEmojiToken 
 			}
 		}
 
-		return resolveTokenFromSurrogate(segment.displayText);
+		return resolveTokenFromSurrogate(trimmedActualText) ?? resolveTokenFromSurrogate(segment.displayText);
 	});
 }
 
@@ -338,12 +333,18 @@ function buildOverlayNodes(value: string, segments: Array<MentionSegment>): Arra
 					<img
 						src={span.token.url}
 						alt={span.token.alt}
+						crossOrigin={span.token.isUnicode ? 'anonymous' : undefined}
 						loading="eager"
 						decoding="async"
 						draggable={false}
 						className={css.textareaOverlayEmojiImage ?? 'textareaOverlayEmojiImage'}
 						data-animated={span.token.isAnimated || undefined}
 						data-fallback-url={span.token.fallbackUrl}
+						onLoad={
+							span.token.isUnicode
+								? (event) => EmojiUtils.applyEmojiVisualNormalization(event.currentTarget)
+								: undefined
+						}
 						onError={handleOverlayEmojiImageError}
 					/>
 				</span>,
@@ -418,9 +419,13 @@ export const TextareaInputField = React.forwardRef<HTMLTextAreaElement, Textarea
 		_ref,
 	) => {
 		useTextareaAutofocus(textareaRef, isMobile, !disabled);
-		const hasOverlay = value.length > 0 && !voiceInteractionActive;
-		const overlayNodes = React.useMemo(() => buildOverlayNodes(value, segments), [value, segments]);
-		const [overlayScrollOffset, setOverlayScrollOffset] = React.useState({top: 0, left: 0});
+		const hasComposerEmoji = value.includes(EMOJI_DISPLAY_PLACEHOLDER) || MAY_CONTAIN_EMOJI_RE.test(value);
+		const hasOverlay = value.length > 0 && !voiceInteractionActive && hasComposerEmoji;
+		const overlayNodes = React.useMemo(
+			() => (hasOverlay ? buildOverlayNodes(value, segments) : []),
+			[hasOverlay, value, segments],
+		);
+		const [overlayScrollTop, setOverlayScrollTop] = React.useState(0);
 		const clampedVoiceLevel = Math.max(0, Math.min(1, voiceInputLevel));
 		const elapsedLabel = React.useMemo(() => {
 			const totalSeconds = Math.max(0, Math.floor(voiceElapsedMs / 1000));
@@ -430,7 +435,7 @@ export const TextareaInputField = React.forwardRef<HTMLTextAreaElement, Textarea
 		}, [voiceElapsedMs]);
 		const recorderBars = React.useMemo(
 			() => {
-				const barCount = 20;
+				const barCount = 12;
 				return Array.from({length: barCount}, (_, index) => {
 					const spectral = Math.max(0, Math.min(1, voiceSpectrum[index] ?? clampedVoiceLevel * 0.5));
 					const amplitude = Math.max(0, spectral - 0.035);
@@ -441,6 +446,20 @@ export const TextareaInputField = React.forwardRef<HTMLTextAreaElement, Textarea
 			},
 			[clampedVoiceLevel, voiceSpectrum],
 		);
+
+		React.useLayoutEffect(() => {
+			if (!hasOverlay) {
+				setOverlayScrollTop((prev) => (prev === 0 ? prev : 0));
+				return;
+			}
+
+			const node = textareaRef.current;
+			if (!node) {
+				return;
+			}
+
+			setOverlayScrollTop((prev) => (prev === node.scrollTop ? prev : node.scrollTop));
+		}, [hasOverlay, textareaRef]);
 
 		const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
 			onCursorMove();
@@ -486,14 +505,10 @@ export const TextareaInputField = React.forwardRef<HTMLTextAreaElement, Textarea
 		const handleTextareaScroll = React.useCallback((event: React.UIEvent<HTMLTextAreaElement>) => {
 			const target = event.currentTarget;
 			const nextTop = target.scrollTop;
-			const nextLeft = target.scrollLeft;
-
-			setOverlayScrollOffset((prev) => {
-				if (prev.top === nextTop && prev.left === nextLeft) {
-					return prev;
-				}
-				return {top: nextTop, left: nextLeft};
-			});
+			if (target.scrollLeft !== 0) {
+				target.scrollLeft = 0;
+			}
+			setOverlayScrollTop((prev) => (prev === nextTop ? prev : nextTop));
 		}, []);
 
 		const handleTextareaContextMenu = React.useCallback(
@@ -533,7 +548,7 @@ export const TextareaInputField = React.forwardRef<HTMLTextAreaElement, Textarea
 				{hasOverlay && (
 					<div
 						className={css.textareaOverlay ?? 'textareaOverlay'}
-						style={{transform: `translate(${-overlayScrollOffset.left}px, ${-overlayScrollOffset.top}px)`}}
+						style={{transform: `translateY(${-overlayScrollTop}px)`}}
 						aria-hidden={true}
 					>
 						{overlayNodes}
@@ -575,7 +590,7 @@ export const TextareaInputField = React.forwardRef<HTMLTextAreaElement, Textarea
 					onHeightChange={(h) => onHeightChange(h)}
 					onKeyDown={handleKeyDown}
 					onCopy={onCopy}
-					onScroll={handleTextareaScroll}
+					onScroll={hasOverlay ? handleTextareaScroll : undefined}
 					placeholder={voiceInteractionActive ? '' : placeholder}
 					readOnly={voiceInteractionActive}
 					ref={textareaRef}

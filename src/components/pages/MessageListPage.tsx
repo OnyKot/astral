@@ -65,7 +65,7 @@ export const MessageListPage = observer(
 
 		return (
 			<div className={styles.container}>
-				<ChannelHeader leftContent={leftContent} showPins={false} />
+				<ChannelHeader leftContent={leftContent} showPins={false} showMobileBackButton={false} />
 
 				<div className={styles.content}>
 					{messages.length > 0 ? (

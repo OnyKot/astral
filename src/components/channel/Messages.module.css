@@ -28,31 +28,6 @@
 	font-size: var(--font-size, 16px);
 	--scrollbar-track-bg: transparent;
 	--message-group-spacing: 16px;
-	/*
-	 * Soft fade-in when the channel mounts. Previously switching
-	 * channels caused the old messages to disappear instantly and the
-	 * new messages to flash in (because Messages is keyed by channel.id
-	 * and remounts on every transition). The fade smooths out the
-	 * jump without forcing AnimatePresence around a stateful tree.
-	 */
-	animation: messagesWrapperFadeIn 0.18s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes messagesWrapperFadeIn {
-	from {
-		opacity: 0;
-		transform: translateY(4px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.messagesWrapper {
-		animation: none;
-	}
 }
 
 .nativeAnchor {
@@ -126,20 +101,7 @@
 	}
 }
 
-@keyframes messagesWrapperFadeInMobile {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-
 @media (max-width: 767px) {
-	.messagesWrapper {
-		animation: messagesWrapperFadeInMobile 0.14s ease-out;
-	}
-
 	.scrollerInner {
 		padding-left: max(0.75rem, var(--safe-area-left, 0px));
 		padding-right: max(0.75rem, var(--safe-area-right, 0px));
@@ -153,6 +115,29 @@
 		padding-left: max(0.6875rem, var(--safe-area-left, 0px));
 		padding-right: max(0.6875rem, var(--safe-area-right, 0px));
 		padding-top: 0.7rem;
+	}
+}
+
+@media (max-width: 380px) {
+	.messagesWrapper {
+		--message-group-spacing: 12px;
+	}
+
+	.scrollerInner {
+		padding-left: max(0.45rem, var(--safe-area-left, 0px));
+		padding-right: max(0.45rem, var(--safe-area-right, 0px));
+		padding-top: 0.55rem;
+	}
+
+	.newMessagesBar {
+		right: 0.3rem;
+		left: 0.3rem;
+		padding-inline: 0.55rem;
+	}
+
+	.newMessagesBarText,
+	.newMessagesBarAction {
+		font-size: 0.75rem;
 	}
 }
 
@@ -176,8 +161,8 @@
 	padding-right: 0.75rem;
 	cursor: pointer;
 	transition:
-		transform 0.1s ease-out,
-		box-shadow 0.1s ease-out;
+		transform var(--motion-dur-short) var(--motion-ease-smooth),
+		box-shadow var(--motion-dur-short) var(--motion-ease-smooth);
 	box-shadow:
 		0 16px 28px rgb(37 99 235 / 0.18),
 		inset 0 1px 0 rgb(255 255 255 / 0.18);
@@ -254,6 +239,24 @@
 	display: block;
 	padding-top: 0.25rem;
 	padding-bottom: 0.25rem;
+	animation: unreadSlotReveal var(--motion-dur-short) var(--motion-ease-smooth) both;
+}
+
+@keyframes unreadSlotReveal {
+	from {
+		opacity: 0;
+		transform: translateY(-6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.unreadSlot[data-visible='1'] {
+		animation: none;
+	}
 }
 
 @media (min-width: 768px) {

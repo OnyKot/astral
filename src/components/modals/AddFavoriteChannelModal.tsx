@@ -22,7 +22,7 @@ import {MagnifyingGlassIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
-import {ChannelTypes} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType} from '~/Constants';
 import {Input} from '~/components/form/Input';
 import {Select, type SelectOption} from '~/components/form/Select';
 import styles from '~/components/modals/AddFavoriteChannelModal.module.css';
@@ -71,7 +71,7 @@ export const AddFavoriteChannelModal = observer(({categoryId}: {categoryId?: str
 		const query = searchQuery.toLowerCase().trim();
 
 		for (const channel of guildChannels) {
-			if (channel.type !== ChannelTypes.GUILD_TEXT && channel.type !== ChannelTypes.GUILD_VOICE) {
+			if (channel.type !== ChannelTypes.GUILD_TEXT && !isGuildRtcChannelType(channel.type)) {
 				continue;
 			}
 

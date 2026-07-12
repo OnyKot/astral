@@ -45,6 +45,8 @@ import {GuildSettingsModal} from '~/components/modals/GuildSettingsModal';
 import {InviteModal} from '~/components/modals/InviteModal';
 import {UserSettingsModal} from '~/components/modals/UserSettingsModal';
 import {GuildIcon} from '~/components/popouts/GuildIcon';
+import {useAnimatedNumber} from '~/hooks/useAnimatedNumber';
+import {useGuildPresenceCounts} from '~/hooks/useGuildPresenceCounts';
 import {useLeaveGuild} from '~/hooks/useLeaveGuild';
 import type {GuildRecord} from '~/records/GuildRecord';
 import AuthenticationStore from '~/stores/AuthenticationStore';
@@ -217,12 +219,27 @@ export const CommunityMembersCard = observer(({guild}: {guild: GuildRecord}) => 
 	]);
 
 	const bannerUrl = AvatarUtils.getGuildBannerURL({id: guild.id, banner: guild.banner}, true);
-	const presenceCount = PresenceStore.getPresenceCount(guild.id);
-	const memberCountFromGuild = guild.memberCount;
+	const {data: liveCounts} = useGuildPresenceCounts(guild.id, {intervalMs: 10000});
+	const rawPresenceCount = Math.max(PresenceStore.getPresenceCount(guild.id), liveCounts?.presenceCount ?? 0);
+	const lastNonZeroPresenceCountRef = React.useRef(0);
+	if (rawPresenceCount > 0) {
+		lastNonZeroPresenceCountRef.current = rawPresenceCount;
+	}
+	const presenceCount = rawPresenceCount > 0 ? rawPresenceCount : lastNonZeroPresenceCountRef.current;
+	const guildWideMemberCount = guild.memberCount ?? 0;
+	const cachedMemberCount = GuildMemberStore.getMemberCount(guild.id);
+	const liveMemberCount = liveCounts?.memberCount ?? 0;
 	const memberCount =
-		typeof memberCountFromGuild === 'number' && memberCountFromGuild > 0
-			? memberCountFromGuild
-			: GuildMemberStore.getMemberCount(guild.id);
+		guildWideMemberCount > 0
+			? Math.max(guildWideMemberCount, liveMemberCount)
+			: Math.max(cachedMemberCount, liveMemberCount);
+	const animatedPresenceCount = useAnimatedNumber(presenceCount, {durationMs: 560});
+	const animatedMemberCount = useAnimatedNumber(memberCount, {durationMs: 720});
+	const countFormatter = React.useMemo(() => new Intl.NumberFormat(), []);
+	const onlineCountLabel = `${countFormatter.format(animatedPresenceCount)} ${t`Online`}`;
+	const memberCountLabel = `${countFormatter.format(animatedMemberCount)} ${
+		animatedMemberCount === 1 ? t`Member` : t`Members`
+	}`;
 
 	return (
 		<section className={styles.card}>
@@ -248,10 +265,8 @@ export const CommunityMembersCard = observer(({guild}: {guild: GuildRecord}) => 
 						<span className={styles.eyebrow}>{t`Community`}</span>
 						<span className={styles.title}>{guild.name}</span>
 						<div className={styles.stats}>
-							<span className={styles.statPill}>{t`${presenceCount} Online`}</span>
-							<span className={styles.statPill}>
-								{memberCount === 1 ? t`${memberCount} Member` : t`${memberCount} Members`}
-							</span>
+							<span className={styles.statPill}>{onlineCountLabel}</span>
+							<span className={styles.statPill}>{memberCountLabel}</span>
 						</div>
 					</div>
 					<CaretDownIcon className={clsx(styles.caret, isExpanded && styles.caretExpanded)} weight="bold" />

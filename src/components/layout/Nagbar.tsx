@@ -37,6 +37,14 @@ interface NagbarProps {
 export const Nagbar = observer(
 	({isMobile, backgroundColor, textColor, children, onDismiss, dismissible = false}: NagbarProps) => {
 		const showDismissButton = dismissible && onDismiss;
+		const handleDismissPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+			event.stopPropagation();
+		};
+		const handleDismissClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+			event.preventDefault();
+			event.stopPropagation();
+			onDismiss?.();
+		};
 
 		return (
 			<NativeDragRegion
@@ -57,10 +65,11 @@ export const Nagbar = observer(
 					<FocusRing>
 						<button
 							type="button"
-							className={styles.dismissButton}
+							className={clsx(styles.dismissButton, 'no-press-feedback')}
 							style={{color: textColor}}
 							aria-label="Close"
-							onClick={onDismiss}
+							onPointerDown={handleDismissPointerDown}
+							onClick={handleDismissClick}
 						>
 							<XIcon weight="regular" className={styles.dismissIcon} />
 						</button>

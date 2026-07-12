@@ -25,6 +25,10 @@ export default defineConfig({
 		alias: {
 			'~': path.resolve(__dirname, './src'),
 			'@pkgs': path.resolve(__dirname, './pkgs'),
+			// Redirect framer-motion / motion to the in-tree WAAPI engine so
+			// consumer tests resolve to src/lib/anim with zero import edits.
+			'framer-motion': path.resolve(__dirname, './src/lib/anim/index.ts'),
+			'motion': path.resolve(__dirname, './src/lib/anim/index.ts'),
 		},
 		extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
 	},

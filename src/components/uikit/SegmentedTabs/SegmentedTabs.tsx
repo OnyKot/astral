@@ -19,11 +19,14 @@
 
 import {clsx} from 'clsx';
 import {motion} from 'framer-motion';
+import type React from 'react';
 import styles from './SegmentedTabs.module.css';
 
 export type SegmentedTab<T extends string = string> = {
 	id: T;
 	label: string;
+	ariaLabel?: string;
+	icon?: React.ComponentType<{className?: string; weight?: 'regular' | 'bold' | 'fill'}>;
 };
 
 type SegmentedTabsProps<T extends string = string> = {
@@ -42,22 +45,34 @@ export function SegmentedTabs<T extends string = string>({
 	className,
 }: SegmentedTabsProps<T>) {
 	const selectedIndex = tabs.findIndex((tab) => tab.id === selectedTab);
+	const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+		if (event.pointerType === 'touch') {
+			(event.currentTarget as HTMLButtonElement).blur();
+		}
+	};
 
 	return (
 		<div className={clsx(styles.container, className)}>
 			<div className={styles.tabList} role="tablist" aria-label={ariaLabel}>
-				{tabs.map((tab) => (
-					<button
-						key={tab.id}
-						type="button"
-						role="tab"
-						aria-selected={selectedTab === tab.id}
-						onClick={() => onTabChange(tab.id)}
-						className={clsx(styles.tab, selectedTab === tab.id ? styles.tabActive : styles.tabInactive)}
-					>
-						{tab.label}
-					</button>
-				))}
+				{tabs.map((tab) => {
+					const Icon = tab.icon;
+
+					return (
+						<button
+							key={tab.id}
+							type="button"
+							role="tab"
+							aria-label={tab.ariaLabel ?? tab.label}
+							aria-selected={selectedTab === tab.id}
+							onPointerDown={handlePointerDown}
+							onClick={() => onTabChange(tab.id)}
+							className={clsx(styles.tab, selectedTab === tab.id ? styles.tabActive : styles.tabInactive)}
+						>
+							{Icon ? <Icon className={styles.tabIcon} weight={selectedTab === tab.id ? 'bold' : 'regular'} /> : null}
+							<span className={styles.tabLabel}>{tab.label}</span>
+						</button>
+					);
+				})}
 				<motion.div
 					className={styles.tabBackground}
 					layout

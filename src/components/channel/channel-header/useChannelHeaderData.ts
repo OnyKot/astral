@@ -112,6 +112,10 @@ export const useChannelHeaderData = (channel?: ChannelRecord): ChannelHeaderData
 			return t`Voice Channel`;
 		}
 
+		if (channel.type === ChannelTypes.GUILD_STAGE) {
+			return t`Stage Channel`;
+		}
+
 		return null;
 	}, [channel]);
 

@@ -406,7 +406,9 @@ const AuthLoginLayout = observer(function AuthLoginLayout({
 
 			const deltaX = touch.clientX - swipeStart.x;
 			const deltaY = touch.clientY - swipeStart.y;
-			if (Math.abs(deltaX) < 72 || Math.abs(deltaY) > 42) {
+			const absDeltaX = Math.abs(deltaX);
+			const absDeltaY = Math.abs(deltaY);
+			if (absDeltaX < 72 || absDeltaY > 42 || absDeltaX < absDeltaY * 1.6) {
 				return;
 			}
 
@@ -419,6 +421,10 @@ const AuthLoginLayout = observer(function AuthLoginLayout({
 		},
 		[handleShowManualLogin, handleShowSavedProfiles, hasStoredAccounts],
 	);
+
+	const handleMobileSwipeCancel = useCallback(() => {
+		mobileSwipeStartRef.current = null;
+	}, []);
 
 	const biometricQuickCard = showBiometricLogin ? (
 		<div className={`${styles.nativeAccessCard} ${styles.nativeAccessCardAccent}`.trim()}>
@@ -866,7 +872,12 @@ const AuthLoginLayout = observer(function AuthLoginLayout({
 						<Trans>Manual</Trans>
 					</button>
 				</div>
-				<div className={styles.mobileModeStage} onTouchStart={handleMobileSwipeStart} onTouchEnd={handleMobileSwipeEnd}>
+				<div
+					className={styles.mobileModeStage}
+					onTouchStart={handleMobileSwipeStart}
+					onTouchEnd={handleMobileSwipeEnd}
+					onTouchCancel={handleMobileSwipeCancel}
+				>
 					<div className={styles.mobileModeHint}>
 						<Trans>Swipe left or right to switch panels.</Trans>
 					</div>

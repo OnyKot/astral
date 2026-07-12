@@ -109,7 +109,11 @@ export const MessageActionBottomSheet: React.FC<MessageActionBottomSheetProps> =
 					onClose={handleEmojiPickerClose}
 					channelId={message.channelId}
 					onEmojiSelect={handlers.handleEmojiSelect}
+					initialSnap={1}
+					snapPoints={[0, 1]}
 					visibleTabs={['emojis']}
+					zIndex={30000}
+					reactionPicker={true}
 				/>
 			</>
 		);

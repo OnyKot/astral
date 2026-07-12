@@ -100,14 +100,12 @@ vi.mock('~/lib/HttpClient', () => {
 	const defaultInstance = {
 		api_code_version: 1,
 		endpoints: {
-			api: 'https://localhost/api',
 			api_client: 'https://localhost/api',
 			api_public: 'https://localhost/api',
 			gateway: 'wss://localhost/gateway',
 			media: 'https://localhost/media',
 			cdn: 'https://localhost/cdn',
 			marketing: 'https://localhost/marketing',
-			admin: 'https://localhost/admin',
 			invite: 'https://localhost/invite',
 			gift: 'https://localhost/gift',
 			webapp: 'https://localhost',
@@ -232,3 +230,68 @@ vi.mock('~/utils/NotificationUtils', () => ({
 	closeNativeNotification: () => undefined,
 	closeNativeNotifications: () => undefined,
 }));
+
+/*
+ * WAAPI mock for happy-dom, which doesn't ship `element.animate()`.
+ *
+ * The animation engine falls back to rAF when `element.animate` is absent, but
+ * that path uses real `requestAnimationFrame` timing — fine in a browser, but
+ * in unit tests we want the WAAPI path exercised deterministically. This mock
+ * returns a fake Animation whose `onfinish` fires synchronously on the next
+ * microtask, so `playAnimation(...).finished` resolves without waiting on rAF.
+ */
+class FakeAnimation {
+	onfinish: (() => void) | null = null;
+	oncancel: (() => void) | null = null;
+	private cancelled = false;
+	playbackRate = 1;
+	startTime = null;
+	currentTime = null;
+
+	constructor(private readonly keyframes: Keyframe[], private readonly options: KeyframeAnimationOptions) {}
+
+	cancel() {
+		if (this.cancelled) return;
+		this.cancelled = true;
+		this.oncancel?.();
+	}
+	finish() {
+		if (this.cancelled) return;
+		this.onfinish?.();
+	}
+	commitStyles() {}
+}
+
+// Install animate() on Element.prototype so every element supports it.
+if (typeof Element !== 'undefined' && !Element.prototype.animate) {
+	Object.defineProperty(Element.prototype, 'animate', {
+		configurable: true,
+		writable: true,
+		value(this: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
+			const anim = new FakeAnimation(keyframes, options);
+			// Fire onfinish on the next microtask so `.finished` resolves.
+			queueMicrotask(() => anim.finish());
+			return anim as unknown as Animation;
+		},
+	});
+}
+
+// getTotalLength stub for SVGPathElement (pathLength tests). happy-dom ships
+// one that returns 0, so override unconditionally.
+if (typeof SVGPathElement !== 'undefined') {
+	Object.defineProperty(SVGPathElement.prototype, 'getTotalLength', {
+		configurable: true,
+		writable: true,
+		value() {
+			return 100;
+		},
+	});
+}
+
+// rAF polyfill for happy-dom (used by the rAF fallback + attribute writer).
+if (typeof globalThis.requestAnimationFrame !== 'function') {
+	globalThis.requestAnimationFrame = ((cb: FrameRequestCallback): number => {
+		return setTimeout(() => cb(performance.now()), 0) as unknown as number;
+	}) as typeof requestAnimationFrame;
+	globalThis.cancelAnimationFrame = ((id: number) => clearTimeout(id)) as typeof cancelAnimationFrame;
+}

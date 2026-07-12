@@ -37,3 +37,39 @@ export const isAutoRedirectExemptPath = (pathname: string): boolean => {
 
 	return AUTO_REDIRECT_EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 };
+
+/**
+ * Routes an unauthenticated visitor is allowed to view without being bounced
+ * to the login screen. These include the public marketing surface, which is
+ * normally served by the marketing service but can be handled by the SPA in
+ * local development or after an edge-routing fallback.
+ */
+export const PUBLIC_UNAUTHENTICATED_PATHS = new Set<string>([
+	Routes.HOME,
+	Routes.MARKETING,
+	'/ai-agent',
+	'/careers',
+	'/company-information',
+	'/docs',
+	'/download',
+	'/guidelines',
+	'/help',
+	'/how-it-works',
+	'/manifest',
+	'/manifesto',
+	'/moved',
+	'/partners',
+	'/philosophy',
+	'/plutonium',
+	'/press',
+	'/privacy',
+	'/security',
+	'/status',
+	'/terms',
+]);
+
+const PUBLIC_UNAUTHENTICATED_PREFIXES = [`${Routes.MARKETING}/`, '/help/'];
+
+export const isPublicUnauthenticatedPath = (pathname: string): boolean =>
+	PUBLIC_UNAUTHENTICATED_PATHS.has(pathname) ||
+	PUBLIC_UNAUTHENTICATED_PREFIXES.some((prefix) => pathname.startsWith(prefix));

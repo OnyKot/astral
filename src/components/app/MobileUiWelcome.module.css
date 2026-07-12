@@ -1,0 +1,135 @@
+.overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 1150;
+	display: grid;
+	place-items: center;
+	padding: max(1.25rem, var(--safe-area-top, 0px)) 1.25rem max(1.25rem, var(--safe-area-bottom, 0px));
+	pointer-events: none;
+	overflow: hidden;
+	background: radial-gradient(circle at 50% 46%, color-mix(in srgb, var(--background-primary) 16%, transparent), transparent 52%);
+}
+
+.copy {
+	position: relative;
+	z-index: 3;
+	display: flex;
+	width: min(100%, 21rem);
+	flex-direction: column;
+	align-items: center;
+	gap: 0.62rem;
+	padding: 1.15rem 1.2rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 11%, transparent);
+	border-radius: 1.35rem;
+	background: color-mix(in srgb, var(--background-primary) 78%, transparent);
+	box-shadow:
+		0 22px 58px rgb(0 0 0 / 0.28),
+		inset 0 1px 0 color-mix(in srgb, white 7%, transparent);
+	backdrop-filter: blur(22px) saturate(130%);
+	text-align: center;
+}
+
+.badge {
+	display: inline-flex;
+	min-height: 1.65rem;
+	align-items: center;
+	padding: 0.28rem 0.68rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 16%, transparent);
+	color: color-mix(in srgb, var(--brand-primary) 76%, var(--text-primary));
+	font-size: 0.68rem;
+	font-weight: 800;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.title {
+	color: var(--text-primary);
+	font-size: clamp(1.3rem, 6vw, 1.72rem);
+	font-weight: 820;
+	line-height: 1.12;
+	letter-spacing: -0.025em;
+}
+
+.description {
+	max-width: 18rem;
+	color: var(--text-secondary);
+	font-size: 0.9rem;
+	font-weight: 580;
+	line-height: 1.42;
+}
+
+.leftGlow,
+.rightGlow,
+.topGlow,
+.bottomGlow {
+	position: absolute;
+	pointer-events: none;
+	filter: blur(20px);
+	opacity: 0.78;
+}
+
+.leftGlow,
+.rightGlow {
+	inset-block: -8%;
+	width: 4.2rem;
+	background: linear-gradient(180deg, transparent 3%, color-mix(in srgb, var(--brand-primary) 64%, transparent) 48%, transparent 97%);
+	animation: mobileUiEdgeBreath 2.2s ease-in-out infinite alternate;
+}
+
+.leftGlow {
+	left: -2.1rem;
+}
+
+.rightGlow {
+	right: -2.1rem;
+	animation-delay: 180ms;
+}
+
+.topGlow,
+.bottomGlow {
+	inset-inline: 8%;
+	height: 3.6rem;
+	background: linear-gradient(90deg, transparent 3%, color-mix(in srgb, var(--brand-primary) 48%, transparent) 50%, transparent 97%);
+	animation: mobileUiEdgeBreath 2.5s ease-in-out infinite alternate;
+}
+
+.topGlow {
+	top: -1.8rem;
+}
+
+.bottomGlow {
+	bottom: -1.8rem;
+	animation-delay: 260ms;
+}
+
+@keyframes mobileUiEdgeBreath {
+	from {
+		opacity: 0.42;
+		transform: scale(0.94);
+	}
+	to {
+		opacity: 0.9;
+		transform: scale(1.06);
+	}
+}
+
+@media (max-width: 380px) {
+	.copy {
+		width: min(100%, 19rem);
+		padding: 1rem;
+	}
+
+	.description {
+		font-size: 0.84rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.leftGlow,
+	.rightGlow,
+	.topGlow,
+	.bottomGlow {
+		animation: none;
+	}
+}

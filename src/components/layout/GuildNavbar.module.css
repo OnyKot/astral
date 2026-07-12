@@ -20,7 +20,7 @@
 .guildNavbarContainer {
 	--guild-navbar-top: var(--background-secondary);
 	--guild-navbar-bottom: var(--background-secondary);
-	--guild-navbar-stroke: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	--guild-navbar-stroke: color-mix(in srgb, var(--text-primary) 4%, transparent);
 	display: block;
 	height: calc(
 		100% -
@@ -36,7 +36,8 @@
 	background: var(--guild-navbar-top);
 	position: relative;
 	box-shadow: none;
-	border-right: 1px solid var(--guild-navbar-stroke);
+	border-right: none;
+	contain: layout paint;
 	transition:
 		width var(--motion-dur-medium) var(--motion-ease-smooth),
 		height var(--motion-dur-medium) var(--motion-ease-smooth);
@@ -62,6 +63,7 @@
 .guildNavbarContainerCollapsed {
 	width: 0;
 	overflow: visible;
+	z-index: calc(var(--z-index-elevated-1) + 6);
 }
 
 .guildNavbarContainerCollapsed .sidebarInner {
@@ -72,10 +74,6 @@
 
 .guildNavbarContainerMobile {
 	width: 100%;
-}
-
-.guildNavbarReserveMobileBottomNav {
-	--layout-mobile-bottom-nav-reserved-height: var(--mobile-bottom-nav-height);
 }
 
 :global(html.platform-native-desktop) .guildNavbarContainer {
@@ -91,7 +89,7 @@
 
 .collapsedDock {
 	position: absolute;
-	top: 0.875rem;
+	top: 0.68rem;
 	left: 100%;
 	display: flex;
 	align-items: center;
@@ -102,12 +100,12 @@
 	transition:
 		opacity var(--motion-dur-medium) var(--motion-ease-smooth),
 		transform var(--motion-dur-medium) var(--motion-ease-smooth);
-	z-index: 5;
+	z-index: 12;
 }
 
 .guildNavbarContainerCollapsed .collapsedDock {
 	opacity: 1;
-	transform: translateX(0.18rem);
+	transform: translateX(0.5rem);
 	pointer-events: auto;
 }
 
@@ -115,23 +113,22 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 1.9rem;
-	height: 1.9rem;
+	width: 2.15rem;
+	height: 2.15rem;
 	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
-	border-radius: 0.7rem;
-	background: color-mix(in srgb, var(--background-floating) 90%, var(--background-primary) 10%);
+	border-radius: 0.5rem;
+	background: color-mix(in srgb, var(--background-secondary) 94%, var(--background-primary) 6%);
 	color: var(--text-primary);
 	cursor: pointer;
 	box-shadow: none;
 	transition:
 		transform var(--motion-dur-short) var(--motion-ease-smooth),
-		border-color var(--motion-dur-short) var(--motion-ease-snap),
 		background-color var(--motion-dur-short) var(--motion-ease-snap);
 }
 
 .collapsedDockButton:hover {
-	transform: none;
-	border-color: color-mix(in srgb, var(--brand-primary) 20%, transparent);
+	transform: translateX(2px);
+	border-color: color-mix(in srgb, var(--brand-primary) 34%, transparent);
 	background: color-mix(in srgb, var(--background-floating) 84%, var(--brand-primary) 16%);
 }
 

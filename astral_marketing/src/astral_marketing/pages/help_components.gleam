@@ -257,24 +257,24 @@ pub fn hero_section(
           [
             attribute.method("GET"),
             attribute.action(search_action),
-            attribute.class("motion-reveal motion-delay-4 mx-auto max-w-2xl"),
+            attribute.class("motion-reveal motion-delay-4 mx-auto max-w-3xl"),
           ],
           [
-            html.div([attribute.class("relative flex items-center")], [
+            html.div([attribute.class("help-search-box flex flex-col gap-3 sm:flex-row sm:items-center")], [
               html.input([
                 attribute.type_("text"),
                 attribute.name("q"),
                 attribute.value(search_value),
                 attribute.placeholder(search_placeholder),
                 attribute.class(
-                  "liquid-glass w-full rounded-full border border-white/12 bg-white/6 px-5 py-4 pr-24 text-base text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] outline-none placeholder:text-white/60 focus-visible:ring-2 focus-visible:ring-white/40 sm:pr-28 sm:text-lg",
+                  "help-search-input w-full px-5 py-3.5 text-base text-white outline-none placeholder:text-white/52 sm:text-lg",
                 ),
               ]),
               html.button(
                 [
                   attribute.type_("submit"),
                   attribute.class(
-                    "liquid-glass absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-5 py-2 text-sm font-semibold text-white transition-transform hover:scale-[1.03] md:text-base",
+                    "help-search-button astral-button astral-button-primary shrink-0 px-6 py-3.5 text-sm font-semibold text-white md:text-base",
                   ),
                 ],
                 [html.text(g_(i18n_ctx, "Search"))],

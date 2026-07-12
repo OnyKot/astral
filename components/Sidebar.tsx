@@ -105,6 +105,12 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (!normalizedQuery) return true;
     return channel.name.toLowerCase().includes(normalizedQuery);
   }) || [];
+
+  const formatDmTime = (dm: DM) => {
+    const lastMessage = dm.messages[dm.messages.length - 1];
+    if (!lastMessage?.timestamp) return '';
+    return new Date(lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
   
   const ServerIcon = ({ server }: { server: Server, key?: React.Key }) => (
     <div 
@@ -135,7 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="flex h-full w-full sm:w-auto bg-black">
       {/* ---------------- SERVER RAIL ---------------- */}
-      <div className="w-[72px] h-full bg-[#050505] border-r border-white/5 flex flex-col items-center py-4 gap-3 no-scrollbar overflow-y-auto pb-32 md:pb-4 z-20">
+      <div className="hidden md:flex w-[72px] h-full bg-[#050505] border-r border-white/5 flex-col items-center py-4 gap-3 no-scrollbar overflow-y-auto pb-32 md:pb-4 z-20">
         <div 
             onClick={() => onSelectServer('home')}
             className="group relative w-12 h-12 cursor-pointer active:scale-90 transition-transform flex-shrink-0"
@@ -166,7 +172,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* ---------------- CHANNEL/DM LIST ---------------- */}
       <div className="flex-1 md:w-64 bg-[#09090b] flex flex-col z-10 w-full min-w-0">
         {/* Header */}
-        <div className="h-14 border-b border-white/5 flex items-center px-4 justify-between bg-black/20 flex-shrink-0 shadow-sm backdrop-blur-sm">
+        <div className={`h-14 border-b border-white/5 items-center px-4 justify-between bg-black/20 flex-shrink-0 shadow-sm backdrop-blur-sm ${activeServerId === 'home' ? 'hidden md:flex' : 'flex'}`}>
           <span className="font-black text-sm tracking-tight text-white uppercase truncate flex items-center gap-2">
             {activeServerId === 'home' ? (
               <>
@@ -217,7 +223,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto py-4 px-2.5 space-y-6 custom-scrollbar pb-32 md:pb-4">
+        <div
+          className={`flex-1 overflow-y-auto custom-scrollbar pb-32 md:pb-4 ${
+            activeServerId === 'home'
+              ? 'py-0 px-0 md:py-4 md:px-2.5'
+              : 'py-4 px-2.5'
+          }`}
+        >
           <div className="px-1">
             <div className="relative group flex items-center gap-2">
               <input
@@ -241,7 +253,89 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {activeServerId === 'home' && (
-             <div className="space-y-1">
+             <>
+               <div className="md:hidden px-5 pt-4 pb-2">
+                 <div className="flex items-center justify-between mb-4">
+                   <div className="flex items-center gap-3 min-w-0">
+                     <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+                       {currentUser.name.slice(0, 1).toUpperCase()}
+                     </div>
+                     <div className="min-w-0">
+                       <div className="text-xl font-bold text-white truncate">
+                         {isRu ? `Привет, ${currentUser.name}` : `Hello ${currentUser.name}`}
+                       </div>
+                     </div>
+                   </div>
+                   <button
+                     type="button"
+                     onClick={onOpenSettings}
+                     className="w-9 h-9 rounded-full bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 flex items-center justify-center"
+                   >
+                     <Settings size={16} />
+                   </button>
+                 </div>
+
+                 <div className="relative group flex items-center gap-2">
+                   <input
+                     type="text"
+                     placeholder={t.sidebar.search_placeholder}
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                     className="w-full h-11 bg-[#18181b] rounded-2xl pl-10 pr-4 text-sm text-white placeholder:text-zinc-500 border border-transparent focus:border-indigo-500/50 focus:bg-black focus:outline-none transition-all"
+                   />
+                   <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-indigo-500 transition-colors" />
+                 </div>
+               </div>
+
+               <div className="md:hidden px-2 pb-6 space-y-0.5">
+                 {filteredDms.map((dm) => {
+                   const last = dm.messages[dm.messages.length - 1];
+                   const hasIncomingLast = Boolean(last && last.senderId !== currentUser.id);
+                   const lastTime = formatDmTime(dm);
+                   return (
+                     <button
+                       key={dm.id}
+                       type="button"
+                       onClick={() => onSelectDM(dm.id)}
+                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all ${
+                         activeChannelId === dm.id
+                           ? 'bg-white/10 text-white'
+                           : 'text-zinc-300 hover:bg-white/5'
+                       }`}
+                     >
+                       <div className="relative w-11 h-11 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-semibold text-zinc-300 overflow-hidden shrink-0">
+                         {dm.avatarUrl ? (
+                           <img src={dm.avatarUrl} alt={dm.userName} className="w-full h-full object-cover" />
+                         ) : (
+                           dm.userName.slice(0, 1).toUpperCase()
+                         )}
+                         {!hideOnlineStatus && (
+                           <span className="absolute right-0 bottom-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-[#09090b]" />
+                         )}
+                       </div>
+                       <div className="min-w-0 flex-1 text-left">
+                         <div className="text-[17px] font-semibold leading-5 truncate">{dm.userName}</div>
+                         <div className="text-sm text-zinc-400 truncate mt-1">
+                           {dm.lastMessage || (isRu ? 'Нет сообщений' : 'No messages yet')}
+                         </div>
+                       </div>
+                       <div className="flex flex-col items-end gap-1 shrink-0 min-w-[46px]">
+                         <span className="text-xs text-zinc-500">{lastTime || '--:--'}</span>
+                         {hasIncomingLast && (
+                           <span className="h-6 min-w-6 px-2 rounded-full bg-indigo-600 text-white text-xs font-semibold inline-flex items-center justify-center">
+                             1
+                           </span>
+                         )}
+                       </div>
+                     </button>
+                   );
+                 })}
+                 {filteredDms.length === 0 && (
+                   <div className="px-3 py-5 text-sm text-zinc-500">{ui.noFriends}</div>
+                 )}
+               </div>
+
+               <div className="hidden md:block space-y-1">
                  <div className="px-2 mb-1 text-[10px] font-black text-zinc-500 uppercase tracking-widest">{ui.servers}</div>
                  {filteredServers.map((server) => (
                     <div
@@ -308,7 +402,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                  {filteredDms.length === 0 && (
                     <div className="px-2.5 py-2 text-xs text-zinc-500">{ui.noFriends}</div>
                  )}
-             </div>
+               </div>
+             </>
           )}
 
           {activeServerId !== 'home' && activeServer && (

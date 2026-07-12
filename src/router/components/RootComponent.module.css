@@ -1,0 +1,27 @@
+.mobileRouteLayer {
+	position: relative;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	transform-origin: center top;
+	will-change: transform, opacity;
+}
+
+.mobileNavigationPushLayer {
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	transform: translate3d(var(--mobile-navigation-content-offset, 0px), 0, 0);
+	transition: transform 210ms cubic-bezier(0.22, 1, 0.36, 1);
+	will-change: transform;
+}
+
+:global(html[data-mobile-navigation-dragging='true']) .mobileNavigationPushLayer {
+	transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mobileNavigationPushLayer {
+		transition: none;
+	}
+}

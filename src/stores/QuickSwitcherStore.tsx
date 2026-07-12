@@ -730,6 +730,31 @@ class QuickSwitcherStore {
 					channelById.set(channel.id, candidate);
 					break;
 				}
+				case ChannelTypes.GUILD_STAGE: {
+					if (!channel.guildId) break;
+					const guild = guildMap.get(channel.guildId) ?? null;
+					const title = channel.name ?? this.i18n._(msg`Stage channel`);
+					const subtitle = guild?.name;
+					const searchValues = [channel.name ?? '', guild?.name ?? ''].filter(Boolean);
+
+					const baseWeight = this.getChannelRecency(channel);
+					const sortWeight = this.getChannelSortWeight(channel.id, baseWeight);
+
+					const candidate: VoiceChannelCandidate = {
+						type: QuickSwitcherResultTypes.VOICE_CHANNEL,
+						id: channel.id,
+						title,
+						subtitle,
+						channel,
+						guild,
+						searchValues,
+						sortWeight,
+					};
+
+					voiceChannelCandidates.push(candidate);
+					channelById.set(channel.id, candidate);
+					break;
+				}
 				default:
 					break;
 			}
@@ -1181,6 +1206,13 @@ class QuickSwitcherStore {
 				return null;
 			}
 			case ChannelTypes.GUILD_VOICE: {
+				const candidate = sets.channelById.get(channel.id);
+				if (candidate && candidate.type === QuickSwitcherResultTypes.VOICE_CHANNEL) {
+					return this.candidateToResult(candidate, viewContext);
+				}
+				return null;
+			}
+			case ChannelTypes.GUILD_STAGE: {
 				const candidate = sets.channelById.get(channel.id);
 				if (candidate && candidate.type === QuickSwitcherResultTypes.VOICE_CHANNEL) {
 					return this.candidateToResult(candidate, viewContext);

@@ -42,6 +42,8 @@ export const ActionButton = observer(
 			<FocusRing>
 				<button
 					type="button"
+					aria-label={tooltip}
+					title={tooltip}
 					className={clsx(styles.button, danger && styles.danger, !danger && className)}
 					onClick={(e) => {
 						e.stopPropagation();

@@ -18,7 +18,7 @@
  */
 
 import {action, makeAutoObservable, reaction} from 'mobx';
-import {ChannelTypes, Permissions} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType, Permissions} from '~/Constants';
 import {Endpoints} from '~/Endpoints';
 import http from '~/lib/HttpClient';
 import {Logger} from '~/lib/Logger';
@@ -789,7 +789,7 @@ class ReadStateStore {
 		}
 
 		for (const channel of action.channels) {
-			if (channel.type === ChannelTypes.GUILD_VOICE) continue;
+			if (isGuildRtcChannelType(channel.type)) continue;
 
 			const state = this.get(channel.id);
 			state.lastMessageId = channel.last_message_id ?? null;
@@ -813,7 +813,7 @@ class ReadStateStore {
 	handleGuildCreate(action: {guild: {id: GuildId; channels?: ReadonlyArray<ChannelPayload>}}): void {
 		if (action.guild.channels) {
 			for (const channel of action.guild.channels) {
-				if (channel.type === ChannelTypes.GUILD_VOICE) continue;
+				if (isGuildRtcChannelType(channel.type)) continue;
 
 				const state = this.get(channel.id);
 				state.lastMessageId = channel.last_message_id ?? null;

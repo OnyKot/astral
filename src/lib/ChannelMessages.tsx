@@ -69,6 +69,19 @@ function hydrateMessage(channelMessages: ChannelMessages, raw: Message): Message
 	return current;
 }
 
+function dedupeRecords(records: Array<MessageRecord>): Array<MessageRecord> {
+	const seen = new Set<MessageId>();
+	const result: Array<MessageRecord> = [];
+
+	for (const record of records) {
+		if (seen.has(record.id)) continue;
+		seen.add(record.id);
+		result.push(record);
+	}
+
+	return result;
+}
+
 class MessageBufferSegment {
 	private readonly fromOlderSide: boolean;
 	private items: Array<MessageRecord> = [];
@@ -529,9 +542,9 @@ export class ChannelMessages {
 
 	reset(records: Array<MessageRecord>): ChannelMessages {
 		return this.cloneAnd((draft) => {
-			draft.messageList = records;
+			draft.messageList = dedupeRecords(records);
 			draft.messageIndex = {};
-			for (const m of records) {
+			for (const m of draft.messageList) {
 				draft.messageIndex[m.id] = m;
 			}
 			draft.beforeBuffer.clear();
@@ -760,8 +773,9 @@ export class ChannelMessages {
 
 	private mergeInto(incoming: Array<MessageRecord>, prepend = false, clearSideBuffer = false): void {
 		const newItems: Array<MessageRecord> = [];
+		const incomingRecords = dedupeRecords(incoming);
 
-		for (const msg of incoming) {
+		for (const msg of incomingRecords) {
 			const existing = this.messageIndex[msg.id];
 			this.messageIndex[msg.id] = msg;
 

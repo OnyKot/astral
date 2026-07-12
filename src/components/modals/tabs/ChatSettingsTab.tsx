@@ -23,7 +23,6 @@ import React from 'react';
 import {SettingsSection} from '~/components/modals/shared/SettingsSection';
 import {SettingsTabContainer, SettingsTabContent} from '~/components/modals/shared/SettingsTabLayout';
 import type {ChatTab} from '~/components/modals/utils/settingsConstants';
-import {AiTabContent} from './ChatSettingsTab/AiTab';
 import {DisplayTabContent} from './ChatSettingsTab/DisplayTab';
 import {InputTabContent} from './ChatSettingsTab/InputTab';
 import {InteractionTabContent} from './ChatSettingsTab/InteractionTab';
@@ -37,7 +36,6 @@ const ChatSettingsTab: React.FC<ChatSettingsTabProps> = observer(({initialSubtab
 	const {t} = useLingui();
 	const [expandedSections, setExpandedSections] = React.useState(() => ({
 		interaction: initialSubtab === 'interaction',
-		ai: initialSubtab === 'ai',
 	}));
 
 	React.useEffect(() => {
@@ -45,7 +43,7 @@ const ChatSettingsTab: React.FC<ChatSettingsTabProps> = observer(({initialSubtab
 			return;
 		}
 
-		if (initialSubtab === 'interaction' || initialSubtab === 'ai') {
+		if (initialSubtab === 'interaction') {
 			setExpandedSections((previous) => ({
 				...previous,
 				[initialSubtab]: true,
@@ -102,22 +100,6 @@ const ChatSettingsTab: React.FC<ChatSettingsTabProps> = observer(({initialSubtab
 					<InteractionTabContent />
 				</SettingsSection>
 
-				<SettingsSection
-					id="ai"
-					title={t`AI Assistant`}
-					description={t`Configure built-in /ai command and model settings.`}
-					isAdvanced
-					defaultExpanded={false}
-					expanded={expandedSections.ai}
-					onExpandedChange={(expanded) =>
-						setExpandedSections((previous) => ({
-							...previous,
-							ai: expanded,
-						}))
-					}
-				>
-					<AiTabContent />
-				</SettingsSection>
 			</SettingsTabContent>
 		</SettingsTabContainer>
 	);

@@ -24,8 +24,8 @@
 	--settings-shell-surface-bottom: color-mix(in srgb, var(--background-secondary) 26%, var(--background-primary) 74%);
 	--settings-shell-surface-hover-top: color-mix(in srgb, var(--background-floating) 88%, var(--background-primary) 12%);
 	--settings-shell-surface-hover-bottom: color-mix(in srgb, var(--background-secondary) 30%, var(--background-primary) 70%);
-	--settings-shell-stroke: color-mix(in srgb, var(--text-primary) 10%, transparent);
-	--settings-shell-highlight: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	--settings-shell-stroke: color-mix(in srgb, var(--text-primary) 4%, transparent);
+	--settings-shell-highlight: color-mix(in srgb, var(--text-primary) 3%, transparent);
 	display: flex;
 	flex: 1 1 auto;
 	min-height: 0;
@@ -37,7 +37,12 @@
 	overflow: hidden;
 	--settings-edge-gutter: clamp(16px, 3vw, 24px);
 	isolation: isolate;
-	background: linear-gradient(180deg, var(--settings-shell-top), var(--settings-shell-bottom));
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-primary) 97%, var(--background-secondary) 3%),
+			var(--settings-shell-bottom) 18rem
+		);
 }
 
 .settingsTrafficLightsBackdrop {
@@ -99,7 +104,12 @@
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
-	background: var(--background-secondary);
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--background-primary) 96%, var(--background-secondary) 4%),
+			var(--background-secondary) 16rem
+		);
 	display: flex;
 	flex-direction: column;
 }
@@ -108,7 +118,7 @@
 	position: relative;
 	flex-shrink: 0;
 	z-index: 10;
-	background: var(--background-primary);
+	background: color-mix(in srgb, var(--background-primary) 96%, var(--background-secondary) 4%);
 }
 
 .mobileHeaderContent {
@@ -118,7 +128,9 @@
 .mobileContentContainer {
 	position: relative;
 	flex: 1 1 auto;
+	min-height: 0;
 	overflow: hidden;
+	touch-action: pan-y;
 }
 
 .mobileContentPane {
@@ -127,17 +139,18 @@
 	left: 0;
 	width: 100%;
 	height: 100%;
+	min-height: 0;
 	display: flex;
 	flex-direction: column;
-	background: var(--background-secondary);
+	background: transparent;
 	contain: layout style paint;
+	touch-action: pan-y;
 }
 
 .mobileSlideContainer {
 	display: flex;
 	height: 100%;
 	width: 200%;
-	will-change: transform;
 	-webkit-backface-visibility: hidden;
 	backface-visibility: hidden;
 }
@@ -148,13 +161,16 @@
 	left: 0;
 	width: 100%;
 	height: 100%;
+	min-height: 0;
 	display: flex;
 	flex-direction: column;
-	background: var(--background-secondary);
-	will-change: transform;
+	background: transparent;
+	overflow-x: hidden;
+	overflow-y: auto;
 	-webkit-overflow-scrolling: touch;
 	overscroll-behavior-y: contain;
 	contain: layout style paint;
+	touch-action: pan-y;
 }
 
 .mobilePaneActive {
@@ -167,20 +183,21 @@
 }
 
 .desktopSidebar {
-	flex: 0 0 clamp(260px, 24svw, 332px);
+	flex: 0 0 clamp(238px, 21svw, 292px);
 	display: flex;
 	border-right: none;
-	background: color-mix(in srgb, var(--background-primary) 90%, var(--background-secondary) 10%);
+	background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
 	overflow: hidden;
 	position: relative;
-	box-shadow: inset -1px 0 0 var(--settings-shell-stroke);
+	box-shadow: none;
+	contain: layout paint;
 }
 
 .desktopSidebarInner {
 	display: flex;
 	flex-direction: column;
-	padding: 20px 14px 12px;
-	gap: 0;
+	padding: 16px 12px 12px;
+	gap: 4px;
 	height: 100%;
 	flex: 1 1 auto;
 	min-width: 0;
@@ -210,7 +227,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 0;
-	padding: 14px 14px 14px 0;
+	padding: 12px 12px 12px 0;
 	box-sizing: border-box;
 	flex: 1;
 	min-height: 0;
@@ -221,25 +238,25 @@
 	min-height: 0;
 	display: flex;
 	flex-direction: column;
-	border-radius: 1rem;
+	border-radius: 0.75rem;
 	overflow: hidden;
-	background: color-mix(in srgb, var(--background-primary) 92%, var(--app-surface-background) 8%);
-	border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
-	box-shadow: 0 4px 12px rgb(6 10 21 / 0.08);
+	background: color-mix(in srgb, var(--background-primary) 94%, var(--app-surface-background) 6%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 5%, transparent);
+	box-shadow: none;
 }
 
 .desktopHeader {
 	position: sticky;
 	top: 0;
 	z-index: 10;
-	height: 68px;
+	height: 56px;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 0 24px;
+	padding: 0 18px;
 	flex-shrink: 0;
-	background: color-mix(in srgb, var(--background-primary) 96%, var(--app-surface-background) 4%);
-	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
+	background: color-mix(in srgb, var(--background-primary) 94%, var(--app-surface-background) 6%);
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 5%, transparent);
 	contain: layout style paint;
 	-webkit-app-region: drag;
 }
@@ -247,15 +264,25 @@
 .desktopScroll {
 	flex: 1 1 auto;
 	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior-y: contain;
 	overflow-anchor: none;
 	scroll-padding-top: 0;
+	touch-action: pan-y;
 }
 
 .desktopScrollInner {
 	width: 100%;
 	margin: 0 auto;
 	padding: 0 var(--settings-edge-gutter);
-	max-width: clamp(640px, 90%, 800px);
+	max-width: clamp(680px, 92%, 860px);
+}
+
+.desktopPanelTransition {
+	width: 100%;
+	min-height: 0;
 }
 
 @media screen and (min-width: 1024px) {
@@ -303,7 +330,7 @@
 		border-radius: 12px;
 		overflow: hidden;
 		background: color-mix(in srgb, var(--background-primary) 94%, var(--app-surface-background) 6%);
-		border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
+		border: none;
 		isolation: isolate;
 	}
 	.containerFullscreen .desktopHeader {
@@ -353,16 +380,16 @@
 }
 
 .sidebarCategory {
-	margin-bottom: 10px;
-	padding: 8px 6px 6px;
-	border-radius: 0.9rem;
-	background: color-mix(in srgb, var(--background-primary) 94%, var(--background-secondary) 6%);
-	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	margin-bottom: 6px;
+	padding: 4px;
+	border-radius: 0.65rem;
+	background: transparent;
+	border: none;
 	box-shadow: none;
 }
 
 .sidebarCategoryTitle {
-	padding: 0.15rem 0.72rem 0.42rem;
+	padding: 0.1rem 0.64rem 0.34rem;
 	font-size: 0.66rem;
 	font-weight: 700;
 	color: var(--text-tertiary);
@@ -372,13 +399,13 @@
 
 .sidebarItem {
 	background: transparent;
-	border: 1px solid transparent;
+	border: none;
 	margin-bottom: 3px;
-	padding: 0.68rem 0.8rem;
-	border-radius: 0.68rem;
+	padding: 0.54rem 0.66rem;
+	border-radius: 0.5rem;
 	color: var(--text-primary-muted);
-	font-size: 0.9rem;
-	line-height: 1.35rem;
+	font-size: 0.84rem;
+	line-height: 1.18rem;
 	font-weight: 500;
 	display: flex;
 	align-items: center;
@@ -390,15 +417,15 @@
 	width: 100%;
 	text-align: left;
 	transition:
-		color 130ms ease,
-		background-color 130ms ease,
-		border-color 130ms ease;
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		opacity var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .sidebarItemSelected {
-	background: color-mix(in srgb, var(--brand-primary) 13%, var(--background-primary));
+	background: color-mix(in srgb, var(--brand-primary) 12%, var(--background-primary));
 	color: color-mix(in srgb, var(--brand-primary) 72%, var(--text-primary));
-	border-color: color-mix(in srgb, var(--brand-primary) 24%, transparent);
 	box-shadow: none;
 }
 
@@ -430,9 +457,9 @@
 
 @media (hover: hover) and (pointer: fine) {
 	.sidebarItem:hover:not(.sidebarItemSelected):not(.sidebarItemDanger) {
-		background: color-mix(in srgb, var(--background-floating) 16%, var(--background-primary));
-		border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+		background: color-mix(in srgb, var(--background-floating) 18%, var(--background-primary));
 		color: var(--text-primary);
+		transform: translate3d(1px, 0, 0);
 	}
 
 	.sidebarItem:hover:not(.sidebarItemSelected):not(.sidebarItemDanger) .sidebarItemIcon {
@@ -495,24 +522,31 @@
 }
 
 .closeButton {
-	width: 40px;
-	height: 40px;
+	width: 38px;
+	height: 38px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	border-radius: 0.95rem;
+	border-radius: 0.65rem;
 	color: var(--text-primary-muted);
 	cursor: pointer;
-	border: 1px solid var(--settings-shell-stroke);
-	background: color-mix(in srgb, var(--background-floating) 88%, var(--background-primary) 12%);
+	border: none;
+	background: color-mix(in srgb, var(--text-primary) 5%, transparent);
 	-webkit-app-region: no-drag;
 	box-shadow: none;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .closeButton:hover {
 	background: color-mix(in srgb, var(--background-floating) 94%, var(--background-primary) 6%);
 	color: var(--text-primary);
-	border-color: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+}
+
+.closeButton:active {
+	transform: scale(0.95);
 }
 
 .preloadContent {
@@ -530,12 +564,12 @@
 }
 
 .desktopScrollSpacerTop {
-	height: 20px;
+	height: 18px;
 	flex-shrink: 0;
 }
 
 .desktopScrollSpacerBottom {
-	height: 32px;
+	height: 28px;
 	flex-shrink: 0;
 }
 
@@ -544,15 +578,15 @@
 	flex-direction: column;
 	margin-left: 14px;
 	padding-left: 10px;
-	border-left: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+	border-left: none;
 	margin-bottom: 4px;
 }
 
 .sidebarSubItem {
 	background: transparent;
-	border: 1px solid transparent;
-	padding: 0.38rem 0.62rem;
-	border-radius: 0.56rem;
+	border: none;
+	padding: 0.38rem 0.58rem;
+	border-radius: 0.48rem;
 	color: var(--text-secondary);
 	font-size: 0.79rem;
 	line-height: 1.15rem;
@@ -569,7 +603,7 @@
 	transition:
 		color 130ms ease,
 		background-color 130ms ease,
-		border-color 130ms ease;
+		opacity 130ms ease;
 }
 
 .sidebarSubItemIndicator {
@@ -603,7 +637,6 @@
 @media (hover: hover) and (pointer: fine) {
 	.sidebarSubItem:hover:not(.sidebarSubItemActive) {
 		background: color-mix(in srgb, var(--background-floating) 14%, var(--background-primary));
-		border-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
 		color: var(--text-primary);
 	}
 }

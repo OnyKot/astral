@@ -32,6 +32,8 @@ class AndroidNotificationSettingsStore {
 	supported = isNativeAndroidApp();
 	systemNotificationsEnabled = false;
 	settings: AndroidNotificationSettings = {...DEFAULT_SETTINGS};
+	private refreshPromise: Promise<void> | null = null;
+	private lastRefreshAt = 0;
 
 	constructor() {
 		makeAutoObservable(this, {}, {autoBind: true});
@@ -64,29 +66,41 @@ class AndroidNotificationSettingsStore {
 			return;
 		}
 
-		runInAction(() => {
-			this.loading = true;
-		});
+		if (this.refreshPromise) return this.refreshPromise;
+		if (this.initialized && Date.now() - this.lastRefreshAt < 500) return;
 
-		try {
-			const [settings, enabled] = await Promise.all([
-				getAndroidNotificationSettings(),
-				areAndroidNotificationsEnabled(),
-			]);
+		this.refreshPromise = (async () => {
+			if (!this.initialized) {
+				runInAction(() => {
+					this.loading = true;
+				});
+			}
 
-			runInAction(() => {
-				this.settings = settings ?? {...DEFAULT_SETTINGS};
-				this.systemNotificationsEnabled = enabled;
-				this.initialized = true;
-				this.loading = false;
-			});
-		} catch (error) {
-			logger.error('Failed to refresh Android notification settings', {error});
-			runInAction(() => {
-				this.initialized = true;
-				this.loading = false;
-			});
-		}
+			try {
+				const [settings, enabled] = await Promise.all([
+					getAndroidNotificationSettings(),
+					areAndroidNotificationsEnabled(),
+				]);
+
+				runInAction(() => {
+					if (settings) this.settings = settings;
+					this.systemNotificationsEnabled = enabled;
+					this.initialized = true;
+					this.loading = false;
+					this.lastRefreshAt = Date.now();
+				});
+			} catch (error) {
+				logger.error('Failed to refresh Android notification settings', {error});
+				runInAction(() => {
+					this.initialized = true;
+					this.loading = false;
+				});
+			} finally {
+				this.refreshPromise = null;
+			}
+		})();
+
+		return this.refreshPromise;
 	}
 
 	async updateSetting<K extends keyof AndroidNotificationSettings>(

@@ -26,13 +26,9 @@
 	min-width: 0;
 	overflow: hidden;
 	position: relative;
-	background:
-		linear-gradient(
-			170deg,
-			color-mix(in srgb, var(--background-primary) 92%, transparent) 0%,
-			color-mix(in srgb, var(--background-primary) 86%, var(--background-floating)) 100%
-		);
+	background: color-mix(in srgb, var(--background-primary) 96%, var(--background-secondary) 4%);
 	--member-list-width: 100svw;
+	contain: layout paint;
 }
 
 @media (min-width: 768px) {

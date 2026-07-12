@@ -26,6 +26,7 @@ import SoundStore from '~/stores/SoundStore';
 import UserStore from '~/stores/UserStore';
 import {checkAndroidPermission, requestAndroidPermission} from '~/utils/AndroidPermissions';
 import {isNativeAndroidApp} from '~/utils/AndroidAppInfo';
+import {getAndroidWebViewBridge} from '~/utils/AndroidWebViewBridge';
 import {
 	isPermissionGranted,
 	LocalNotifications,
@@ -44,6 +45,7 @@ let localNotificationId = 100000;
 const LOCAL_NOTIFICATION_PREFIX = 'local:';
 const ONGOING_CALL_NOTIFICATION_ID = 99999;
 const ONGOING_CALL_NOTIFICATION_NATIVE_ID = `${LOCAL_NOTIFICATION_PREFIX}${ONGOING_CALL_NOTIFICATION_ID}`;
+const ANDROID_WEBVIEW_NOTIFICATION_PREFIX = 'android-webview:';
 export const NATIVE_CALL_ACTION_ANSWER = 'answer_call';
 export const NATIVE_CALL_ACTION_REJECT = 'reject_call';
 export const NATIVE_CALL_ACTION_HANGUP = 'hangup_call';
@@ -51,9 +53,10 @@ export const NATIVE_CALL_ACTION_HANGUP = 'hangup_call';
 const LOCAL_ACTION_TYPE_MESSAGE = 'astral_message';
 const LOCAL_ACTION_TYPE_INCOMING_CALL = 'astral_incoming_call';
 const LOCAL_ACTION_TYPE_ONGOING_CALL = 'astral_ongoing_call';
-const ANDROID_MESSAGE_CHANNEL_ID = 'astral_messages';
-const ANDROID_CALL_CHANNEL_ID = 'astral_calls';
-const ANDROID_ONGOING_CALL_CHANNEL_ID = 'astral_ongoing_calls';
+const ANDROID_NOTIFICATION_CHANNEL_ID = 'astral_notifications';
+const ANDROID_MESSAGE_CHANNEL_ID = ANDROID_NOTIFICATION_CHANNEL_ID;
+const ANDROID_CALL_CHANNEL_ID = ANDROID_NOTIFICATION_CHANNEL_ID;
+const ANDROID_ONGOING_CALL_CHANNEL_ID = ANDROID_NOTIFICATION_CHANNEL_ID;
 
 let nativeActionTypesRegistered = false;
 
@@ -74,12 +77,17 @@ export const ensureDesktopNotificationClickHandler = (): void => {
 
 export const hasNotification = (): boolean => {
 	if (isDesktop()) return true;
+	if (isNativeAndroidApp()) return true;
 	if (isNativeMobile()) return true;
 	return typeof Notification !== 'undefined';
 };
 
 export const isGranted = async (): Promise<boolean> => {
 	if (isDesktop()) return true;
+	const androidBridge = getAndroidWebViewBridge();
+	if (androidBridge) {
+		return androidBridge.areNotificationsEnabled();
+	}
 	if (isNativeMobile()) {
 		if (isNativeAndroidApp()) {
 			return (await checkAndroidPermission('notifications')) === 'granted';
@@ -177,7 +185,7 @@ export const requestPermission = async (i18n: I18n): Promise<void> => {
 		return;
 	}
 
-	const result = isNativeMobile() ? await requestNativePermission() : await requestBrowserPermission();
+	const result = isNativeAndroidApp() || isNativeMobile() ? await requestNativePermission() : await requestBrowserPermission();
 	if (result !== 'granted') {
 		NotificationActionCreators.permissionDenied(i18n);
 		return;
@@ -185,7 +193,7 @@ export const requestPermission = async (i18n: I18n): Promise<void> => {
 
 	NotificationActionCreators.permissionGranted();
 
-	if (isNativeMobile()) {
+	if (isNativeAndroidApp() || isNativeMobile()) {
 		return;
 	}
 
@@ -287,6 +295,30 @@ const nextLocalNotificationId = (): number => {
 	return localNotificationId;
 };
 
+const tryShowNotificationViaAndroidWebView = ({
+	title,
+	body,
+	url,
+	tag,
+	isCall,
+}: {
+	title: string;
+	body: string;
+	url?: string;
+	tag?: string;
+	isCall: boolean;
+}): NotificationResult | null => {
+	const bridge = getAndroidWebViewBridge();
+	if (!bridge) return null;
+
+	const notificationTag = tag || `astral-${nextLocalNotificationId()}`;
+	bridge.showNotification(title, body, url ?? '', notificationTag, isCall);
+	return {
+		browserNotification: null,
+		nativeNotificationId: `${ANDROID_WEBVIEW_NOTIFICATION_PREFIX}${notificationTag}`,
+	};
+};
+
 const ensureNativeActionTypesRegistered = async (): Promise<void> => {
 	if (!isNativeMobile() || nativeActionTypesRegistered) {
 		return;
@@ -381,6 +413,15 @@ export const showOngoingCallNotification = async ({
 	url?: string;
 	channelId: string;
 }): Promise<string | null> => {
+	const webViewResult = tryShowNotificationViaAndroidWebView({
+		title,
+		body,
+		url,
+		tag: 'ongoing-call',
+		isCall: true,
+	});
+	if (webViewResult) return webViewResult.nativeNotificationId;
+
 	if (!isNativeMobile()) {
 		return null;
 	}
@@ -431,6 +472,15 @@ export const showIncomingCallNotification = async ({
 	url?: string;
 	channelId: string;
 }): Promise<string | null> => {
+	const webViewResult = tryShowNotificationViaAndroidWebView({
+		title,
+		body,
+		url,
+		tag: `incoming-call:${channelId}`,
+		isCall: true,
+	});
+	if (webViewResult) return webViewResult.nativeNotificationId;
+
 	if (!isNativeMobile()) {
 		return null;
 	}
@@ -470,6 +520,12 @@ export const showIncomingCallNotification = async ({
 };
 
 export const clearOngoingCallNotification = async (): Promise<void> => {
+	const bridge = getAndroidWebViewBridge();
+	if (bridge) {
+		bridge.cancelNotification('ongoing-call');
+		return;
+	}
+
 	if (!isNativeMobile()) {
 		return;
 	}
@@ -518,6 +574,11 @@ export const showNotification = async ({
 
 		const targetUserId = AuthenticationStore.currentUserId ?? undefined;
 
+		const webViewResult = tryShowNotificationViaAndroidWebView({title, body, url, isCall: false});
+		if (webViewResult) {
+			return webViewResult;
+		}
+
 		if (isNativeMobile()) {
 			try {
 				return await tryShowNotificationViaNativeMobile({title, body, url, targetUserId});
@@ -547,6 +608,11 @@ export const showNotification = async ({
 };
 
 export const closeNativeNotification = (id: string): void => {
+	if (id.startsWith(ANDROID_WEBVIEW_NOTIFICATION_PREFIX)) {
+		getAndroidWebViewBridge()?.cancelNotification(id.slice(ANDROID_WEBVIEW_NOTIFICATION_PREFIX.length));
+		return;
+	}
+
 	const localId = toLocalNotificationId(id);
 	if (localId !== null) {
 		void LocalNotifications.cancel({notifications: [{id: localId}]}).catch(() => undefined);
@@ -561,6 +627,15 @@ export const closeNativeNotification = (id: string): void => {
 
 export const closeNativeNotifications = (ids: Array<string>): void => {
 	if (ids.length === 0) return;
+
+	const bridge = getAndroidWebViewBridge();
+	if (bridge) {
+		for (const id of ids) {
+			if (id.startsWith(ANDROID_WEBVIEW_NOTIFICATION_PREFIX)) {
+				bridge.cancelNotification(id.slice(ANDROID_WEBVIEW_NOTIFICATION_PREFIX.length));
+			}
+		}
+	}
 
 	const localNotifications = ids.map(toLocalNotificationId).filter((id): id is number => id !== null);
 	if (localNotifications.length > 0) {

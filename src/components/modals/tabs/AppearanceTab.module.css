@@ -18,7 +18,7 @@
  */
 
 .previewWrapper {
-	background: var(--background-secondary-lighter);
+	background: transparent;
 }
 
 .previewContainer {
@@ -32,6 +32,7 @@
 	padding-bottom: 0;
 	border-radius: 8px;
 	border: 1px solid var(--background-modifier-accent);
+	background-color: var(--background-primary);
 	background:
 		linear-gradient(
 			180deg,
@@ -53,19 +54,20 @@
 	z-index: 0;
 	background-image: var(--chat-background-pattern-image, none);
 	background-repeat: repeat;
-	background-position: center top;
+	background-position: 0 0;
 	background-size:
 		calc(var(--chat-background-pattern-size, 360px) * var(--chat-background-pattern-scale, 1))
-		calc(var(--chat-background-pattern-size, 360px) * var(--chat-background-pattern-scale, 1));
+		auto;
 	opacity: var(--chat-background-pattern-opacity, 0);
+	filter: var(--chat-background-pattern-filter, none);
 }
 
 .previewContainer::after {
 	z-index: 0;
 	background:
 		linear-gradient(180deg, rgb(255 255 255 / 0.03) 0%, transparent 20%, rgb(0 0 0 / 0.08) 100%),
-		var(--theme-preset-overlay-background, transparent);
-	opacity: calc(0.2 + (var(--theme-preset-overlay-opacity, 0) * 0.45));
+		var(--chat-gradient-overlay-background, transparent);
+	opacity: calc(0.2 + (var(--chat-gradient-overlay-opacity, 0) * 0.45));
 	mix-blend-mode: screen;
 }
 

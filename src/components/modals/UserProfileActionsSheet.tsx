@@ -41,6 +41,7 @@ import {BanMemberModal} from '~/components/modals/BanMemberModal';
 import {ChangeNicknameModal} from '~/components/modals/ChangeNicknameModal';
 import {ConfirmModal} from '~/components/modals/ConfirmModal';
 import {KickMemberModal} from '~/components/modals/KickMemberModal';
+import {ProfileQrModal} from '~/components/modals/ProfileQrModal';
 import {TransferOwnershipModal} from '~/components/modals/TransferOwnershipModal';
 import {MenuBottomSheet, type MenuGroupType} from '~/components/uikit/MenuBottomSheet/MenuBottomSheet';
 import {useRoleHierarchy} from '~/hooks/useRoleHierarchy';
@@ -119,6 +120,13 @@ export const UserProfileActionsSheet: React.FC<UserProfileActionsSheetProps> = o
 			});
 			TextCopyActionCreators.copy(i18n, link, true);
 			onClose();
+		};
+
+		const handleShowProfileQr = () => {
+			const scopedChannelId = guildId ? SelectedChannelStore.selectedChannelIds.get(guildId) : undefined;
+			const channelId = scopedChannelId ?? SelectedChannelStore.currentChannelId ?? undefined;
+			onClose();
+			ModalActionCreators.push(modal(() => <ProfileQrModal user={user} guildId={guildId} channelId={channelId} />));
 		};
 
 		const handleRemoveFriend = () => {
@@ -231,6 +239,11 @@ export const UserProfileActionsSheet: React.FC<UserProfileActionsSheetProps> = o
 					icon: <LinkSimpleIcon className={styles.icon} weight="bold" />,
 					label: t`Copy Profile Link`,
 					onClick: handleCopyProfileLink,
+				},
+				{
+					icon: <IdentificationCardIcon className={styles.icon} weight="bold" />,
+					label: t`Show Profile QR`,
+					onClick: handleShowProfileQr,
 				},
 			],
 		});

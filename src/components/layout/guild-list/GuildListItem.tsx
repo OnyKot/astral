@@ -180,10 +180,11 @@ export const GuildListItem = observer(
 		const mergedRef = useMergeRefs([setNodeRef, hoverRef, focusableRef]);
 		const sortableStyle: React.CSSProperties = {
 			transform: CSS.Transform.toString(transform),
-			transition,
+			transition: isDragging ? 'none' : transition,
 			opacity: isDragging ? 0.56 : 1,
 			cursor: isDragging ? 'grabbing' : undefined,
 			zIndex: isDragging ? 16 : undefined,
+			willChange: isSortingList || isDragging ? 'transform' : undefined,
 		};
 
 		React.useEffect(() => {
@@ -266,7 +267,7 @@ export const GuildListItem = observer(
 				>
 					<FocusRing focusTarget={focusableRef} ringTarget={focusRingTargetRef} offset={-2}>
 						<LongPressable
-							className={styles.guildListItem}
+							className={clsx(styles.guildListItem, isDocked && isDragging && styles.guildListItemDockDragging)}
 							aria-label={`${guild.name}${isSelected ? ' (selected)' : ''}`}
 							aria-pressed={isSelected}
 							onClick={handleSelect}
@@ -275,6 +276,8 @@ export const GuildListItem = observer(
 							ref={mergedRef as React.Ref<HTMLDivElement>}
 							role="button"
 							tabIndex={0}
+							data-guild-item={isDocked ? 'dock' : 'rail'}
+							data-dragging={isDragging ? 'true' : undefined}
 							data-scroll-indicator={guildScrollSeverity}
 							data-scroll-id={guildScrollId}
 							data-guild-read-sentinel={guildReadSentinel}

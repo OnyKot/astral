@@ -21,13 +21,15 @@
 	width: 100%;
 	resize: none;
 	appearance: none;
-	border-radius: 0.5rem;
-	border: 1px solid var(--background-modifier-accent);
-	padding: 0.625rem 1rem;
+	border-radius: 0.45rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	padding: 0.625rem 0.9rem;
 	font-size: 0.875rem;
 	line-height: 1.25rem;
 	color: var(--text-primary);
-	transition-property: color, background-color, border-color;
+	background: color-mix(in srgb, var(--background-primary) 88%, var(--background-floating) 12%);
+	box-shadow: none;
+	transition-property: color, background-color, border-color, box-shadow;
 	transition-duration: 150ms;
 	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -44,7 +46,7 @@
 }
 
 :global(.theme-light) .input {
-	background-color: var(--background-modifier-hover);
+	background-color: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
 }
 
 .input::placeholder {
@@ -69,7 +71,8 @@
 
 .input.focusable:focus,
 .input.focusable:focus-within {
-	border-color: var(--background-modifier-accent-focus);
+	border-color: color-mix(in srgb, var(--brand-primary) 28%, transparent);
+	box-shadow: 0 0 0 0.14rem color-mix(in srgb, var(--brand-primary) 9%, transparent);
 }
 
 .input.error {
@@ -188,15 +191,17 @@
 
 .textareaWrapper {
 	display: flex;
-	border-radius: 0.5rem;
-	border: 1px solid var(--background-modifier-accent);
-	transition-property: color, background-color, border-color;
+	border-radius: 0.45rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: color-mix(in srgb, var(--background-primary) 88%, var(--background-floating) 12%);
+	transition-property: color, background-color, border-color, box-shadow;
 	transition-duration: 150ms;
 	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .textareaWrapper.focusable:focus-within {
-	border-color: var(--background-modifier-accent-focus);
+	border-color: color-mix(in srgb, var(--brand-primary) 28%, transparent);
+	box-shadow: 0 0 0 0.14rem color-mix(in srgb, var(--brand-primary) 9%, transparent);
 }
 
 .textareaWrapper.error {

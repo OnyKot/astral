@@ -50,7 +50,7 @@ export const SavedMessagesPage = observer(() => {
 	);
 
 	return (
-		<div>
+		<div className={styles.page}>
 			{missingSavedMessages.length > 0 && (
 				<div className={styles.missingList}>
 					{missingSavedMessages.map((entry) => (

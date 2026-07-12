@@ -25,9 +25,17 @@ import GuildListStore from '~/stores/GuildListStore';
 
 export const useEmojiCategories = (allEmojis: Array<Emoji>) => {
 	const guilds = GuildListStore.guilds;
+	const favoriteEmojisRevision = EmojiPickerStore.favoriteEmojisRevision;
+	const emojiUsageRevision = EmojiPickerStore.emojiUsageRevision;
 
-	const favoriteEmojis = EmojiPickerStore.getFavoriteEmojis(allEmojis);
-	const frequentlyUsedEmojis = EmojiPickerStore.getFrecentEmojis(allEmojis, 42);
+	const favoriteEmojis = React.useMemo(
+		() => EmojiPickerStore.getFavoriteEmojis(allEmojis),
+		[allEmojis, favoriteEmojisRevision],
+	);
+	const frequentlyUsedEmojis = React.useMemo(
+		() => EmojiPickerStore.getFrecentEmojis(allEmojis, 42),
+		[allEmojis, emojiUsageRevision],
+	);
 
 	const customEmojisByGuildId = React.useMemo(() => {
 		const guildEmojis = allEmojis.filter((emoji) => emoji.guildId != null);

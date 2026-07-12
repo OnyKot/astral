@@ -28,6 +28,7 @@ import * as PopoutActionCreators from '~/actions/PopoutActionCreators';
 import styles from '~/components/modals/Modal.module.css';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
 import FocusRingManager from '~/components/uikit/FocusRing/FocusRingManager';
+import {getDesktopModalMotion} from '~/utils/motion/MotionPresets';
 import FocusRingScope from '~/components/uikit/FocusRing/FocusRingScope';
 import {Scroller, type ScrollerHandle} from '~/components/uikit/Scroller';
 import KeyboardModeStore from '~/stores/KeyboardModeStore';
@@ -134,11 +135,19 @@ const RootComponent = React.forwardRef<HTMLDivElement, ModalProps>(
 			[ref],
 		);
 
-		const mobileFullscreenAnimations = {
-			initial: {opacity: 0},
-			animate: {opacity: 1},
-			exit: {opacity: 0},
-		};
+		const mobileFullscreenAnimations = prefersReducedMotion
+			? {
+					initial: {opacity: 0},
+					animate: {opacity: 1},
+					exit: {opacity: 0},
+				}
+			: {
+					initial: {opacity: 0, y: 8, scale: 0.996},
+					animate: {opacity: 1, y: 0, scale: 1},
+					exit: {opacity: 0, y: 6, scale: 0.998},
+				};
+
+		const desktopModalMotion = React.useMemo(() => getDesktopModalMotion(prefersReducedMotion), [prefersReducedMotion]);
 
 		const defaultAnimations = prefersReducedMotion
 			? {
@@ -147,13 +156,9 @@ const RootComponent = React.forwardRef<HTMLDivElement, ModalProps>(
 					exit: {opacity: 0},
 				}
 			: {
-					// Subtle "rise + settle" entrance: content fades in while
-					// scaling from 0.94 and sliding up 12px. Slightly larger
-					// delta than before so the motion reads clearly without
-					// feeling heavy. Exit is shorter for snappy dismissal.
-					initial: {opacity: 0, scale: 0.94, y: 12},
-					animate: {opacity: 1, scale: 1, y: 0},
-					exit: {opacity: 0, scale: 0.98, y: 4},
+					initial: desktopModalMotion.initial,
+					animate: desktopModalMotion.animate,
+					exit: desktopModalMotion.exit,
 				};
 
 		const animations = isFullscreenOnMobile ? mobileFullscreenAnimations : defaultAnimations;
@@ -288,10 +293,10 @@ const RootComponent = React.forwardRef<HTMLDivElement, ModalProps>(
 						exit={{opacity: 0}}
 						transition={
 							prefersReducedMotion || isInstantTransition
-								? {duration: 0.05}
+								? {duration: 0.03}
 								: shouldInstantBackdrop
-									? {duration: 0.18, ease: [0.22, 1, 0.36, 1]}
-									: {duration: 0.24, ease: [0.22, 1, 0.36, 1]}
+									? {duration: 0.1, ease: [0.22, 1, 0.36, 1]}
+									: {duration: 0.12, ease: [0.22, 1, 0.36, 1]}
 						}
 					/>
 				)}
@@ -310,7 +315,7 @@ const RootComponent = React.forwardRef<HTMLDivElement, ModalProps>(
 							initial={{opacity: 0}}
 							animate={{opacity: 1}}
 							exit={{opacity: 0}}
-							transition={{duration: 0.15}}
+							transition={{duration: 0.08}}
 							style={{position: 'absolute', inset: 0, pointerEvents: 'none'}}
 						/>
 					)}
@@ -385,26 +390,25 @@ const RootComponent = React.forwardRef<HTMLDivElement, ModalProps>(
 											{...animations}
 											transition={
 												prefersReducedMotion || transitionPreset === 'instant'
-													? {duration: 0.05}
+													? {duration: 0.03}
 													: isFullscreenOnMobile
-														? {duration: 0.2, ease: [0.22, 1, 0.36, 1]}
+														? {duration: 0.12, ease: [0.22, 1, 0.36, 1]}
 														: {
-																// Custom spring tuned for a gentle settle:
-																// quick initial move, subtle bounce (~3%),
-																// no over-long tail. Matches --motion-dur-medium.
 																type: 'spring',
-																stiffness: 320,
-																damping: 26,
-																mass: 0.8,
-																restDelta: 0.001,
+																stiffness: 420,
+																damping: 34,
+																mass: 0.62,
+																restDelta: 0.002,
 															}
 											}
 											onAnimationStart={handleAnimationStart}
 											onAnimationComplete={handleAnimationComplete}
 											ref={setMotionElementRef}
-											style={{
-												opacity: canSwipeDismiss ? Math.max(0.84, 1 - dragOffsetY / 560) : 1,
-											}}
+											style={
+												canSwipeDismiss && dragOffsetY > 0
+													? {opacity: Math.max(0.84, 1 - dragOffsetY / 560)}
+													: undefined
+											}
 											{...props}
 										>
 											<ModalContext.Provider value={enhancedModalContextValue}>

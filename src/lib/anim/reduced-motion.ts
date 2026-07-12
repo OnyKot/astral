@@ -9,7 +9,7 @@
  * (at your option) any later version.
  *
  * Astral is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * but WITHOUT ANY WARRANTY; without even implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
  *
@@ -17,20 +17,18 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {makeAutoObservable} from 'mobx';
+/*
+ * Collapse a transition for reduced motion.
+ *
+ * When the user prefers reduced motion, animations should be instant — but
+ * not absent: the element still reaches its target state, just with
+ * `duration: 0`. This keeps the structural behavior (exit unmount, variant
+ * switches) intact while removing the motion.
+ */
 
-export type MobileBottomNavTab = 'profile' | 'friends' | 'chats' | 'settings' | null;
+import type {Transition} from './types';
 
-class MobileBottomNavStore {
-	selectedTab: MobileBottomNavTab = null;
-
-	constructor() {
-		makeAutoObservable(this, {}, {autoBind: true});
-	}
-
-	setSelectedTab(tab: MobileBottomNavTab): void {
-		this.selectedTab = tab;
-	}
+export function collapseTransition(transition: Transition | undefined, reduced: boolean): Transition | undefined {
+	if (!reduced) return transition;
+	return {duration: 0};
 }
-
-export default new MobileBottomNavStore();

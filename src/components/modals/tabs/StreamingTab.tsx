@@ -45,32 +45,69 @@ import TwitchIntegrationStore, {
 } from '~/stores/TwitchIntegrationStore';
 import styles from './StreamingTab.module.css';
 
-const TIER_OPTIONS: Array<{value: TwitchSubscriptionTier; label: string}> = [
-	{value: '1000', label: 'Tier 1 / Prime'},
-	{value: '2000', label: 'Tier 2'},
-	{value: '3000', label: 'Tier 3'},
-];
+interface StreamingTabProps {
+	embedded?: boolean;
+}
 
-const REWARD_KIND_OPTIONS: Array<{value: TwitchCreatorRewardKind; label: string}> = [
-	{value: 'badge', label: 'Creator badge'},
-	{value: 'role', label: 'Community role'},
-	{value: 'early_access', label: 'Early access'},
-	{value: 'cosmetic', label: 'Cosmetic perk'},
-	{value: 'custom', label: 'Custom perk'},
-];
-
-function formatDateTime(value: number): string {
-	if (!value) return 'Never';
+function formatDateTime(value: number, fallbackLabel: string): string {
+	if (!value) return fallbackLabel;
 	return new Intl.DateTimeFormat(undefined, {
 		dateStyle: 'medium',
 		timeStyle: 'short',
 	}).format(value);
 }
 
-const StreamingTab: React.FC = observer(() => {
+const StreamingTab: React.FC<StreamingTabProps> = observer(({embedded = false}) => {
 	const {t} = useLingui();
 	const [creatorLoginToCheck, setCreatorLoginToCheck] = React.useState('');
 	const [audienceMode, setAudienceMode] = React.useState<'viewer' | 'streamer'>('viewer');
+	const neverLabel = t`Never`;
+
+	const tierOptions = React.useMemo<Array<{value: TwitchSubscriptionTier; label: string}>>(
+		() => [
+			{value: '1000', label: t`Tier 1 / Prime`},
+			{value: '2000', label: t`Tier 2`},
+			{value: '3000', label: t`Tier 3`},
+		],
+		[t],
+	);
+
+	const rewardKindOptions = React.useMemo<Array<{value: TwitchCreatorRewardKind; label: string}>>(
+		() => [
+			{value: 'badge', label: t`Creator badge`},
+			{value: 'role', label: t`Community role`},
+			{value: 'early_access', label: t`Early access`},
+			{value: 'cosmetic', label: t`Cosmetic perk`},
+			{value: 'custom', label: t`Custom perk`},
+		],
+		[t],
+	);
+
+	const getEventSubStatusLabel = React.useCallback(
+		(status: string): string => {
+			switch (status) {
+				case 'enabled':
+					return t`Active`;
+				case 'webhook_callback_verification_pending':
+					return t`Verification pending`;
+				case 'webhook_callback_verification_failed':
+					return t`Verification failed`;
+				case 'authorization_revoked':
+					return t`Authorization revoked`;
+				case 'user_removed':
+					return t`User removed`;
+				case 'version_removed':
+					return t`Version removed`;
+				case 'beta_maintenance':
+					return t`Maintenance`;
+				case 'disabled':
+					return t`Disabled`;
+				default:
+					return status;
+			}
+		},
+		[t],
+	);
 
 	React.useEffect(() => {
 		void TwitchIntegrationStore.ensureBootstrapped();
@@ -102,13 +139,15 @@ const StreamingTab: React.FC = observer(() => {
 			: t`Connect a Twitch account to prepare live detection and stream announcements.`;
 
 	return (
-		<SettingsTabContainer>
-			<SettingsTabHeader
-				title={t`Streaming & Twitch`}
-				description={t`Connect Twitch and tune how Astral behaves when you go live, share your screen, or enter stream mode.`}
-			/>
+		<SettingsTabContainer className={embedded ? styles.embeddedContainer : undefined}>
+			{!embedded && (
+				<SettingsTabHeader
+					title={t`Streaming & Twitch`}
+					description={t`Connect Twitch and tune how Astral behaves when you go live, share your screen, or enter stream mode.`}
+				/>
+			)}
 
-			<SettingsTabContent>
+			<SettingsTabContent className={embedded ? styles.embeddedContent : undefined}>
 				<section className={styles.hero}>
 					<div className={styles.heroIcon}>
 						<ProjectorScreenIcon size={24} weight="fill" />
@@ -224,7 +263,7 @@ const StreamingTab: React.FC = observer(() => {
 									<Input
 										label={t`Creator Twitch login`}
 										value={creatorLoginToCheck}
-										placeholder={connection?.login || 'twitchdev'}
+										placeholder={connection?.login || t`example_streamer`}
 										maxLength={80}
 										onChange={(event) => setCreatorLoginToCheck(event.currentTarget.value)}
 									/>
@@ -385,7 +424,7 @@ const StreamingTab: React.FC = observer(() => {
 									<Select<TwitchSubscriptionTier>
 										label={t`Minimum Twitch sub tier`}
 										value={creatorProgram.minimumTier}
-										options={TIER_OPTIONS}
+										options={tierOptions}
 										disabled={!connected || creatorProgramSaving}
 										isSearchable={false}
 										onChange={(value) => void TwitchIntegrationStore.updateCreatorProgram({minimumTier: value})}
@@ -393,7 +432,7 @@ const StreamingTab: React.FC = observer(() => {
 									<Select<TwitchCreatorRewardKind>
 										label={t`Astral perk type`}
 										value={creatorProgram.rewardKind}
-										options={REWARD_KIND_OPTIONS}
+										options={rewardKindOptions}
 										disabled={!connected || creatorProgramSaving}
 										isSearchable={false}
 										onChange={(value) => void TwitchIntegrationStore.updateCreatorProgram({rewardKind: value})}
@@ -512,7 +551,7 @@ const StreamingTab: React.FC = observer(() => {
 												<div className={styles.eventSubRow} key={`${subscription.type}-${subscription.id || subscription.status}`}>
 													<span className={styles.eventSubType}>{subscription.type}</span>
 													<span className={clsx(styles.eventSubStatus, subscription.status === 'enabled' && styles.eventSubStatusEnabled)}>
-														{subscription.status}
+														{getEventSubStatusLabel(subscription.status)}
 													</span>
 												</div>
 											))}
@@ -521,7 +560,7 @@ const StreamingTab: React.FC = observer(() => {
 
 									{creatorProgram.eventSubLastSyncedAt > 0 && (
 										<div className={styles.eventSubMeta}>
-											<Trans>Last sync:</Trans> {formatDateTime(creatorProgram.eventSubLastSyncedAt)}
+											<Trans>Last sync:</Trans> {formatDateTime(creatorProgram.eventSubLastSyncedAt, neverLabel)}
 										</div>
 									)}
 
@@ -541,8 +580,8 @@ const StreamingTab: React.FC = observer(() => {
 										<div className={styles.liveStateText}>
 											{liveState
 												? liveState.isLive
-													? t`${liveState.displayName || liveState.login} started at ${formatDateTime(liveState.startedAt)}`
-													: t`Last update: ${formatDateTime(liveState.updatedAt)}`
+													? t`${liveState.displayName || liveState.login} started at ${formatDateTime(liveState.startedAt, neverLabel)}`
+													: t`Last update: ${formatDateTime(liveState.updatedAt, neverLabel)}`
 												: t`No live-state event has been received yet.`}
 										</div>
 									</div>

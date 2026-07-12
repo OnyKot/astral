@@ -32,19 +32,18 @@ export const PurchaseDisclaimer = observer(
 					By purchasing, you agreed to our <ExternalLink href={Routes.terms()}>Terms of Service</ExternalLink> and{' '}
 					<ExternalLink href={Routes.privacy()}>Privacy Policy</ExternalLink>. All purchases are refundable within 14
 					days by emailing <ExternalLink href="mailto:support@astraof.com">support@astraof.com</ExternalLink>. Chargebacks
-					result in permanent account bans вЂ” if you want a refund, we're more than happy to give you one if you contact
-					us first! Payment information is securely handled by Stripe вЂ” we never have access to your full card number.
+					result in permanent account bans - if you want a refund, we're more than happy to give you one if you contact
+					us first! Payment information is securely handled by Stripe - we never have access to your full card number.
 				</Trans>
 			) : (
 				<Trans>
 					By purchasing, you agree to our <ExternalLink href={Routes.terms()}>Terms of Service</ExternalLink> and{' '}
 					<ExternalLink href={Routes.privacy()}>Privacy Policy</ExternalLink>. All purchases are refundable within 14
 					days by emailing <ExternalLink href="mailto:support@astraof.com">support@astraof.com</ExternalLink>. Chargebacks
-					result in permanent account bans вЂ” if you want a refund, we're more than happy to give you one if you contact
-					us first! Payment information is securely handled by Stripe вЂ” we never have access to your full card number.
+					result in permanent account bans - if you want a refund, we're more than happy to give you one if you contact
+					us first! Payment information is securely handled by Stripe - we never have access to your full card number.
 				</Trans>
 			)}
 		</p>
 	),
 );
-

@@ -18,7 +18,7 @@
  */
 
 import {useLingui} from '@lingui/react/macro';
-import {DownloadSimpleIcon, StarIcon, TrashIcon} from '@phosphor-icons/react';
+import {CornersOutIcon, DownloadSimpleIcon, StarIcon, TrashIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import {forwardRef, type ReactNode} from 'react';
@@ -41,6 +41,8 @@ interface MediaContainerProps {
 	showFavoriteButton?: boolean;
 	isFavorited?: boolean;
 	onFavoriteClick?: (e: React.MouseEvent) => void;
+	showOpenButton?: boolean;
+	onOpenClick?: (e: React.MouseEvent) => void;
 	showDownloadButton?: boolean;
 	onDownloadClick?: (e: React.MouseEvent) => void;
 	showDeleteButton?: boolean;
@@ -63,6 +65,8 @@ export const MediaContainer = observer(
 				showFavoriteButton = false,
 				isFavorited = false,
 				onFavoriteClick,
+				showOpenButton = false,
+				onOpenClick,
 				showDownloadButton = false,
 				onDownloadClick,
 				showDeleteButton = false,
@@ -83,6 +87,11 @@ export const MediaContainer = observer(
 				onDownloadClick?.(e);
 			};
 
+			const handleOpenClick = (e: React.MouseEvent) => {
+				e.stopPropagation();
+				onOpenClick?.(e);
+			};
+
 			const handleDeleteClick = (e: React.MouseEvent) => {
 				e.stopPropagation();
 				onDeleteClick?.(e);
@@ -94,10 +103,11 @@ export const MediaContainer = observer(
 				(renderedWidth < MIN_SIZE_FOR_OVERLAYS || renderedHeight < MIN_SIZE_FOR_OVERLAYS);
 
 			const shouldShowFavorite = showFavoriteButton && (forceShowFavoriteButton || !isMediaTooSmall);
+			const shouldShowOpen = showOpenButton && !isMediaTooSmall;
 			const shouldShowDownload = showDownloadButton && !isMediaTooSmall;
 			const shouldShowDelete = showDeleteButton && !isMediaTooSmall;
 
-			const hasAnyButton = shouldShowFavorite || shouldShowDownload || shouldShowDelete;
+			const hasAnyButton = shouldShowFavorite || shouldShowOpen || shouldShowDownload || shouldShowDelete;
 
 			return (
 				// biome-ignore lint/a11y/noStaticElementInteractions: This container wraps interactive media elements
@@ -111,6 +121,18 @@ export const MediaContainer = observer(
 				>
 					{hasAnyButton && (
 						<div className={mediaStyles.mediaHoverAction}>
+							{shouldShowOpen && onOpenClick && (
+								<Tooltip text={t`Open in full view`} position="top">
+									<button
+										type="button"
+										onClick={handleOpenClick}
+										className={mediaStyles.actionButton}
+										aria-label={t`Open media in full view`}
+									>
+										<CornersOutIcon size={18} weight="bold" className={mediaStyles.actionIcon} />
+									</button>
+								</Tooltip>
+							)}
 							{shouldShowDelete && onDeleteClick && (
 								<Tooltip text={t`Delete`} position="top">
 									<button

@@ -17,7 +17,7 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {ChannelTypes} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType} from '~/Constants';
 import type {ChannelRecord} from '~/records/ChannelRecord';
 import type {DragItem, DropResult} from '../types/dnd';
 import {flattenOrganizedChannels} from './channelOrganization';
@@ -139,7 +139,7 @@ export const createChannelMoveOperation = ({
 		}
 	}
 
-	if (draggedChannel.type === ChannelTypes.GUILD_VOICE && newParentId) {
+	if (isGuildRtcChannelType(draggedChannel.type) && newParentId) {
 		const siblingIndices = baseList.reduce<Array<{index: number; channel: ChannelRecord}>>((acc, ch, index) => {
 			if (ch.parentId === newParentId) {
 				acc.push({index, channel: ch});

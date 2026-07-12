@@ -19,6 +19,7 @@
 
 import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
+import VoiceActivityManager from '~/stores/voice/VoiceActivityManager';
 
 export const update = (
 	settings: Partial<{
@@ -30,6 +31,8 @@ export const update = (
 		echoCancellation: boolean;
 		noiseSuppression: boolean;
 		autoGainControl: boolean;
+		voiceActivityThreshold: number;
+		voiceActivityAutoThreshold: boolean;
 		cameraResolution: 'low' | 'medium' | 'high';
 		screenshareResolution: 'low' | 'medium' | 'high' | 'ultra' | '4k';
 		videoFrameRate: number;
@@ -49,5 +52,16 @@ export const update = (
 		settings.inputDeviceId !== undefined
 	) {
 		void MediaEngineStore.applyLiveMicrophoneSettings();
+	}
+
+	if (
+		settings.voiceActivityThreshold !== undefined ||
+		settings.voiceActivityAutoThreshold !== undefined ||
+		settings.echoCancellation !== undefined ||
+		settings.noiseSuppression !== undefined ||
+		settings.autoGainControl !== undefined ||
+		settings.inputDeviceId !== undefined
+	) {
+		VoiceActivityManager.refreshSettings();
 	}
 };

@@ -32,7 +32,9 @@ import AccessibilityStore from '~/stores/AccessibilityStore';
 import SettingsSidebarStore from '~/stores/SettingsSidebarStore';
 import {SettingsModalHeader} from '../components/SettingsModalHeader';
 import styles from '../GuildSettingsModal.module.css';
+import {useDesktopSettingsTabDirection} from '../hooks/useDesktopSettingsTabDirection';
 import {useUnsavedChangesFlash} from '../hooks/useUnsavedChangesFlash';
+import {DesktopSettingsPanelTransition} from '../shared/DesktopSettingsPanelTransition';
 import {
 	SettingsModalDesktopContent,
 	SettingsModalDesktopScroll,
@@ -110,6 +112,11 @@ export const DesktopChannelSettingsView: React.FC<DesktopChannelSettingsViewProp
 			() => `channel-settings-${channel.id}-${selectedTab ?? 'none'}`,
 			[channel.id, selectedTab],
 		);
+		const tabOrder = React.useMemo(
+			() => Object.values(groupedSettingsTabs).flat().map((tab) => tab.type),
+			[groupedSettingsTabs],
+		);
+		const direction = useDesktopSettingsTabDirection(selectedTab, tabOrder);
 
 		return (
 			<>
@@ -206,7 +213,13 @@ export const DesktopChannelSettingsView: React.FC<DesktopChannelSettingsViewProp
 						onClose={handleClose}
 					/>
 					<SettingsModalDesktopScroll scrollKey={scrollKey}>
-						{currentTab && <currentTab.component channelId={channel.id} />}
+						<DesktopSettingsPanelTransition
+							panelKey={scrollKey}
+							direction={direction}
+							reducedMotion={prefersReducedMotion}
+						>
+							{currentTab && <currentTab.component channelId={channel.id} />}
+						</DesktopSettingsPanelTransition>
 					</SettingsModalDesktopScroll>
 				</SettingsModalDesktopContent>
 			</>

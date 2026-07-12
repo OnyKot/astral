@@ -92,6 +92,7 @@ import {handleUserSettingsUpdate} from './user/userSettingsUpdate';
 import {handleUserUpdate} from './user/userUpdate';
 import {handleVoiceServerUpdate} from './voice/voiceServerUpdate';
 import {handleVoiceStateUpdate} from './voice/voiceStateUpdate';
+import {handleIntegrationUpdate} from './misc/integrationUpdate';
 
 export function createHandlerRegistry(): GatewayHandlerRegistry {
 	const registry: GatewayHandlerRegistry = new Map();
@@ -171,6 +172,7 @@ export function createHandlerRegistry(): GatewayHandlerRegistry {
 	registry.set('FAVORITE_MEME_DELETE', handleFavoriteMemeDelete as GatewayEventHandler);
 
 	registry.set('SESSIONS_REPLACE', () => {});
+	registry.set('INTEGRATION_UPDATE', handleIntegrationUpdate as GatewayEventHandler);
 
 	return registry;
 }

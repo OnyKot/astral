@@ -130,7 +130,7 @@ export const MobileFriendRequestItem: React.FC<MobileFriendRequestItemProps> = o
 		return (
 			<>
 				<LongPressable className={styles.requestItem} onLongPress={() => setMenuOpen(true)}>
-					<StatusAwareAvatar user={user} size={40} />
+					<StatusAwareAvatar user={user} size={48} />
 					<div className={styles.userInfo}>
 						<span className={styles.userName}>{NicknameUtils.getNickname(user)}</span>
 						<span className={styles.requestStatus}>{statusText}</span>

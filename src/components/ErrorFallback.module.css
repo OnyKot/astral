@@ -68,3 +68,20 @@
 		flex-direction: row;
 	}
 }
+
+
+.errorFallbackDiagnostics {
+	margin-top: 1.25rem;
+	font-size: 0.75rem;
+	line-height: 1.4;
+	color: var(--text-tertiary, rgba(255, 255, 255, 0.5));
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	text-align: center;
+	user-select: text;
+}
+
+.errorFallbackDiagnostics code {
+	background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	padding: 0.1rem 0.35rem;
+	border-radius: 0.3rem;
+}

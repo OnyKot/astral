@@ -51,14 +51,6 @@ function computeRowConstraints(el: HTMLTextAreaElement, minRows?: number, maxRow
 	};
 }
 
-function supportsFieldSizingContent(): boolean {
-	try {
-		return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('field-sizing: content');
-	} catch {
-		return false;
-	}
-}
-
 function normalizeValueForMeasurement(value: string): string {
 	if (!value.includes('\n')) return value;
 	const parts = value.split('\n');
@@ -133,8 +125,6 @@ export const TextareaAutosize = React.forwardRef<HTMLTextAreaElement, TextareaAu
 	const resolvedRows = rows ?? 1;
 	const minRows = minRowsProp ?? (typeof resolvedRows === 'number' ? resolvedRows : undefined);
 
-	const nativeFieldSizing = supportsFieldSizingContent();
-
 	const elRef = React.useRef<HTMLTextAreaElement | null>(null);
 	const measureRef = React.useRef<HTMLTextAreaElement | null>(null);
 
@@ -157,27 +147,12 @@ export const TextareaAutosize = React.forwardRef<HTMLTextAreaElement, TextareaAu
 	}, [onHeightChange]);
 
 	React.useEffect(() => {
-		if (nativeFieldSizing) return;
 		const measure = ensureMeasureEl();
 		measureRef.current = measure;
 		return () => {
 			measureRef.current?.remove();
 			measureRef.current = null;
 		};
-	}, [nativeFieldSizing]);
-
-	const emitHeightIfChanged = React.useCallback(() => {
-		const el = elRef.current;
-		if (!el) return;
-
-		const cs = window.getComputedStyle(el);
-		const lineHeight = getLineHeight(cs);
-		const height = Math.round(el.getBoundingClientRect().height);
-
-		if (lastEmittedHeightRef.current !== height) {
-			lastEmittedHeightRef.current = height;
-			onHeightChangeRef.current?.(height, {rowHeight: lineHeight});
-		}
 	}, []);
 
 	React.useLayoutEffect(() => {
@@ -193,11 +168,6 @@ export const TextareaAutosize = React.forwardRef<HTMLTextAreaElement, TextareaAu
 	const resize = React.useCallback(() => {
 		const el = elRef.current;
 		if (!el) return;
-
-		if (nativeFieldSizing) {
-			emitHeightIfChanged();
-			return;
-		}
 
 		const measure = measureRef.current;
 		if (!measure) return;
@@ -228,7 +198,7 @@ export const TextareaAutosize = React.forwardRef<HTMLTextAreaElement, TextareaAu
 			lastEmittedHeightRef.current = emittedHeight;
 			onHeightChangeRef.current?.(emittedHeight, {rowHeight: lineHeight});
 		}
-	}, [emitHeightIfChanged, maxRows, minRows, nativeFieldSizing]);
+	}, [maxRows, minRows]);
 
 	const scheduleResize = React.useCallback(() => {
 		if (resizeScheduledRef.current) return;
@@ -256,14 +226,11 @@ export const TextareaAutosize = React.forwardRef<HTMLTextAreaElement, TextareaAu
 				return;
 			}
 
-			if (nativeFieldSizing) {
-				emitHeightIfChanged();
-			}
 		});
 
 		ro.observe(el);
 		return () => ro.disconnect();
-	}, [emitHeightIfChanged, nativeFieldSizing, scheduleResize]);
+	}, [scheduleResize]);
 
 	const computedStyle = React.useMemo(
 		(): React.CSSProperties => ({
@@ -275,15 +242,15 @@ export const TextareaAutosize = React.forwardRef<HTMLTextAreaElement, TextareaAu
 
 	const handleInput = React.useCallback(
 		(event: React.FormEvent<HTMLTextAreaElement>) => {
-			scheduleResize();
+			resize();
 			onInput?.(event);
 		},
-		[onInput, scheduleResize],
+		[onInput, resize],
 	);
 
 	React.useLayoutEffect(() => {
 		scheduleResize();
-	}, [scheduleResize, props.value, props.defaultValue, rows, minRows, maxRows, nativeFieldSizing]);
+	}, [scheduleResize, props.value, props.defaultValue, rows, minRows, maxRows]);
 
 	return <textarea {...rest} ref={setRef} rows={resolvedRows} style={computedStyle} onInput={handleInput} />;
 });

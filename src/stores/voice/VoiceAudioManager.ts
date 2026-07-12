@@ -23,6 +23,10 @@ import {Logger} from '~/lib/Logger';
 import KeybindStore from '~/stores/KeybindStore';
 import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
 import ParticipantVolumeStore from '~/stores/ParticipantVolumeStore';
+import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
+import VoiceDevicePermissionStore from '~/stores/voice/VoiceDevicePermissionStore';
+import VoiceActivityManager from '~/stores/voice/VoiceActivityManager';
+import {clampMediaVolumePercent} from '~/utils/voice/audioVolume';
 import type {VoiceState} from './VoiceStateManager';
 
 const logger = new Logger('VoiceAudioManager');
@@ -31,8 +35,10 @@ const isRemoteAudioTrack = (track: unknown): track is RemoteAudioTrack =>
 	track != null && typeof track === 'object' && 'kind' in track && (track as {kind: string}).kind === Track.Kind.Audio;
 
 const extractUserId = (identity: string): string | null => {
-	const match = identity.match(/^user_(\d+)(?:_(.+))?$/);
-	return match ? match[1] : null;
+	if (!identity.startsWith('user_')) return null;
+	const value = identity.slice(5);
+	const delimiterIndex = value.indexOf('_');
+	return delimiterIndex === -1 ? value : value.slice(0, delimiterIndex);
 };
 
 export function applyLocalAudioPreferencesForUser(userId: string, room: Room | null): void {
@@ -53,11 +59,13 @@ export function applyLocalAudioPreferencesForUser(userId: string, room: Room | n
 
 				const track = pub.track;
 				if (isRemoteAudioTrack(track)) {
-					track.setVolume(volume / 100);
+					track.setVolume(clampMediaVolumePercent(volume));
 				}
 
 				const shouldDisable = locallyMuted || selfDeaf;
-				pub.setEnabled(!shouldDisable);
+				if (pub.isSubscribed || pub.track) {
+					pub.setEnabled(!shouldDisable);
+				}
 			} catch (error) {
 				logger.warn(`[applyLocalAudioPreferencesForUser] Failed for user ${userId}`, {error});
 			}
@@ -85,10 +93,11 @@ export function applyPushToTalkHold(
 	if (!KeybindStore.isPushToTalkEnabled()) return;
 
 	const serverVoiceState = getCurrentUserVoiceState();
-	if (serverVoiceState?.mute) return;
+	if (serverVoiceState?.mute || serverVoiceState?.suppress) return;
 
-	const userMuted = LocalVoiceStateStore.getHasUserSetMute() && LocalVoiceStateStore.getSelfMute();
-	const shouldMute = userMuted || !held;
+	// In push-to-talk mode, key hold state is the source of truth:
+	// hold -> unmuted, release -> muted.
+	const shouldMute = !held;
 
 	applyLocalMuteState(shouldMute, room, syncVoiceState);
 }
@@ -99,14 +108,15 @@ export function handlePushToTalkModeChange(
 	syncVoiceState: (partial: {self_mute?: boolean}) => void,
 ): void {
 	const serverVoiceState = getCurrentUserVoiceState();
-	if (serverVoiceState?.mute) return;
+	if (serverVoiceState?.mute || serverVoiceState?.suppress) return;
 
-	if (KeybindStore.isPushToTalkEffective()) {
+	// Push-to-talk means the mic stays closed until a key is held. Mute as soon
+	// as the mode is selected — even before a key is bound — so the user is never
+	// unexpectedly transmitting on an open mic while they think PTT is active.
+	if (KeybindStore.isPushToTalkEnabled()) {
 		KeybindStore.setPushToTalkHeld(false);
 		KeybindStore.resetPushToTalkState();
-		if (!LocalVoiceStateStore.getHasUserSetMute()) {
-			applyLocalMuteState(true, room, syncVoiceState);
-		}
+		applyLocalMuteState(true, room, syncVoiceState);
 	} else if (!LocalVoiceStateStore.getHasUserSetMute()) {
 		applyLocalMuteState(false, room, syncVoiceState);
 	}
@@ -117,7 +127,7 @@ export function getMuteReason(voiceState: VoiceState | null): 'guild' | 'push_to
 	if (isGuildMuted) return 'guild';
 
 	const selfMuted = voiceState?.self_mute ?? LocalVoiceStateStore.getSelfMute();
-	if (KeybindStore.isPushToTalkEffective() && KeybindStore.isPushToTalkMuted(selfMuted)) return 'push_to_talk';
+	if (KeybindStore.isPushToTalkEnabled() && KeybindStore.isPushToTalkMuted(selfMuted)) return 'push_to_talk';
 	if (selfMuted) return 'self';
 	return null;
 }
@@ -130,7 +140,35 @@ export function applyLocalMuteState(
 	const targetMute = LocalVoiceStateStore.getSelfDeaf() ? true : muted;
 	const currentMute = LocalVoiceStateStore.getSelfMute();
 
+	if (!targetMute && room?.localParticipant) {
+		const participant = room.localParticipant;
+		const hasAudioTrack = participant.audioTrackPublications.size > 0;
+		if (!hasAudioTrack || !participant.isMicrophoneEnabled) {
+			let inputDeviceId = VoiceSettingsStore.getInputDeviceId() || 'default';
+			const devices = VoiceDevicePermissionStore.getState().inputDevices;
+			const hasRequestedInput =
+				inputDeviceId === 'default' || devices.some((device) => device.deviceId === inputDeviceId);
+			if (!hasRequestedInput && devices.length > 0) {
+				inputDeviceId = 'default';
+			}
+
+			void participant
+				.setMicrophoneEnabled(true, {
+					deviceId: inputDeviceId,
+					echoCancellation: VoiceSettingsStore.getEchoCancellation(),
+					noiseSuppression: VoiceSettingsStore.getNoiseSuppression(),
+					autoGainControl: VoiceSettingsStore.getAutoGainControl(),
+				})
+				.catch((error) => {
+					logger.error('Failed to enable microphone while unmuting push-to-talk', {error});
+					LocalVoiceStateStore.updateSelfMute(true);
+					syncVoiceState({self_mute: true});
+				});
+		}
+	}
+
 	if (currentMute === targetMute) {
+		VoiceActivityManager.refresh();
 		return;
 	}
 
@@ -148,4 +186,5 @@ export function applyLocalMuteState(
 	}
 
 	syncVoiceState({self_mute: targetMute});
+	VoiceActivityManager.refresh();
 }

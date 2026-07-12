@@ -55,6 +55,7 @@ import * as AvatarUtils from '~/utils/AvatarUtils';
 import * as MessageUtils from '~/utils/MessageUtils';
 import * as NicknameUtils from '~/utils/NicknameUtils';
 import * as NotificationUtils from '~/utils/NotificationUtils';
+import {parseForwardedStoryPreview, parseForwardedStoryPreviewFromComponents} from '~/utils/StoryForwardPayload';
 import {SystemMessageUtils} from '~/utils/SystemMessageUtils';
 import FriendsTabStore from './FriendsTabStore';
 import GuildNSFWAgreeStore from './GuildNSFWAgreeStore';
@@ -347,6 +348,8 @@ class NotificationStore {
 
 		if (!isUserMessage) {
 			body = SystemMessageUtils.stringify(message, this.i18n) || '';
+		} else if (parseForwardedStoryPreview(message.content) || parseForwardedStoryPreviewFromComponents(message.components)) {
+			body = this.i18n._(msg`Story preview`);
 		} else {
 			body = parseAndRenderToPlaintext(
 				message.content,

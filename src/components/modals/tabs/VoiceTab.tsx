@@ -43,6 +43,7 @@ import {openExternalUrl} from '~/utils/NativeUtils';
 import {hasDeviceLabels, resolveEffectiveDeviceId} from '~/utils/VoiceDeviceManager';
 import {EntranceSoundSection} from './components/EntranceSoundSection';
 import {MicTestSection} from './components/MicTestSection';
+import {VoiceActivitySection} from './components/VoiceActivitySection';
 import {useMediaPermission} from './hooks/useMediaPermission';
 import styles from './VoiceTab.module.css';
 
@@ -253,6 +254,12 @@ export const VoiceTab: React.FC<VoiceTabProps> = observer(
 							aria-label={t`Select input mode for voice transmission`}
 						/>
 
+						{!isPushToTalk && (
+							<div className={styles.pttSettings}>
+								<VoiceActivitySection settings={voiceSettings} />
+							</div>
+						)}
+
 						{isPushToTalk && (
 							<div className={styles.pttSettings}>
 								<div className={styles.pttSettingRow}>
@@ -264,7 +271,6 @@ export const VoiceTab: React.FC<VoiceTabProps> = observer(
 											action="push_to_talk"
 											value={pttKeybind.combo}
 											defaultValue={defaultPttCombo}
-											disabled={isPttLimited}
 											onChange={(combo) => {
 												KeybindStore.setKeybind('push_to_talk', {
 													...combo,

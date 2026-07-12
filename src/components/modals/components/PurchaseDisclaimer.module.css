@@ -30,3 +30,12 @@
 .left {
 	text-align: left;
 }
+
+@media (max-width: 560px) {
+	.disclaimer {
+		font-size: 0.7rem;
+		line-height: 1.45;
+		text-align: left;
+		overflow-wrap: anywhere;
+	}
+}

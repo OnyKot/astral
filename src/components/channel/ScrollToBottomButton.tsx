@@ -19,7 +19,9 @@
 
 import {useLingui} from '@lingui/react/macro';
 import {ArrowDownIcon} from '@phosphor-icons/react';
+import {motion, useReducedMotion} from 'framer-motion';
 import React from 'react';
+import {getFabMotion} from '~/utils/motion/MotionPresets';
 import {hapticTap} from '~/utils/haptics';
 import styles from './ScrollToBottomButton.module.css';
 
@@ -38,9 +40,13 @@ interface ScrollToBottomButtonProps {
  * Shows an unread badge if the channel has unreads — gives a visual
  * hook for "I see there's activity below, take me there" without
  * requiring the NewMessagesBar at the top.
+ *
+ * Entrance uses a bouncy spring-pop (physics, not linear) so the button
+ * feels like it physically emerges when scrolled away from the bottom.
  */
 export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({unreadCount = 0, onClick}) => {
 	const {t} = useLingui();
+	const reducedMotion = useReducedMotion() ?? false;
 
 	const handleClick = () => {
 		hapticTap();
@@ -50,7 +56,7 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({unrea
 	const displayCount = unreadCount > 99 ? '99+' : String(unreadCount);
 
 	return (
-		<button
+		<motion.button
 			type="button"
 			className={styles.button}
 			onClick={handleClick}
@@ -59,6 +65,7 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({unrea
 					? t`Jump to latest (${displayCount} unread)`
 					: t`Jump to latest messages`
 			}
+			{...getFabMotion(reducedMotion)}
 		>
 			<ArrowDownIcon weight="bold" className={styles.icon} aria-hidden="true" />
 			{unreadCount > 0 && (
@@ -66,6 +73,6 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({unrea
 					{displayCount}
 				</span>
 			)}
-		</button>
+		</motion.button>
 	);
 };

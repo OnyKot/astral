@@ -33,6 +33,7 @@ import GuildStore from '~/stores/GuildStore';
 import MobileMentionToastStore from '~/stores/MobileMentionToastStore';
 import * as ChannelUtils from '~/utils/ChannelUtils';
 import {isMobileExperienceEnabled} from '~/utils/mobileExperience';
+import {parseForwardedStoryPreview, parseForwardedStoryPreviewFromComponents} from '~/utils/StoryForwardPayload';
 import {SystemMessageUtils} from '~/utils/SystemMessageUtils';
 import styles from './MobileMentionToast.module.css';
 
@@ -77,6 +78,10 @@ const renderMessageContent = (message: MessageRecord, i18n: I18n): React.ReactNo
 	}
 
 	if (message.content) {
+		if (parseForwardedStoryPreview(message.content) || parseForwardedStoryPreviewFromComponents(message.components)) {
+			return <span className={styles.systemLabel}>{i18n._(msg`Story preview`)}</span>;
+		}
+
 		return (
 			<div className={styles.messageContent}>
 				<SafeMarkdown

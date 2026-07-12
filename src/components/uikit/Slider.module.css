@@ -49,8 +49,8 @@
 }
 
 .bar {
-	background-color: var(--interactive-muted, #dcddde);
-	border-radius: 4px;
+	background-color: color-mix(in srgb, var(--text-primary) 13%, var(--background-tertiary) 87%);
+	border-radius: 999px;
 	display: block;
 	height: var(--bar-size);
 	overflow: hidden;
@@ -69,7 +69,7 @@
 
 .barFill {
 	background-color: var(--bg-brand, var(--brand-primary));
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	border: 0;
 	height: 100%;
 }
 
@@ -85,7 +85,9 @@
 	background-color: color-mix(in srgb, var(--background-primary, #fff) 10%, #fff 90%);
 	border: 1px solid color-mix(in srgb, var(--border-normal, #dcddde) 60%, #fff 40%);
 	border-radius: 50%;
-	box-shadow: var(--shadow-low, 0 1px 3px rgba(0, 0, 0, 0.1));
+	box-shadow:
+		0 3px 9px rgb(0 0 0 / 0.24),
+		0 0 0 1px color-mix(in srgb, var(--brand-primary) 12%, transparent);
 	box-sizing: border-box;
 	cursor: ew-resize;
 	height: var(--grabber-size);
@@ -95,6 +97,16 @@
 	position: absolute;
 	left: 0;
 	top: 50%;
+	transition:
+		transform var(--motion-dur-short) var(--motion-ease-smooth),
+		box-shadow var(--motion-dur-short) var(--motion-ease-snap);
+}
+
+.slider:hover .grabber {
+	transform: scale(1.08);
+	box-shadow:
+		0 5px 12px rgb(0 0 0 / 0.28),
+		0 0 0 3px color-mix(in srgb, var(--brand-primary) 12%, transparent);
 }
 
 .disabled .grabber {

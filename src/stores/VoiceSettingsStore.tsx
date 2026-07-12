@@ -29,6 +29,9 @@ interface BackgroundImage {
 export const NONE_BACKGROUND_ID = 'none';
 export const BLUR_BACKGROUND_ID = 'blur';
 
+export const VAD_MIN_THRESHOLD_DB = -100;
+export const VAD_MAX_THRESHOLD_DB = 0;
+
 export type CameraResolution = 'low' | 'medium' | 'high';
 export type ScreenshareResolution = 'low' | 'medium' | 'high' | 'ultra' | '4k';
 
@@ -41,6 +44,8 @@ type VoiceSettingsUpdate = Partial<{
 	echoCancellation: boolean;
 	noiseSuppression: boolean;
 	autoGainControl: boolean;
+	voiceActivityThreshold: number;
+	voiceActivityAutoThreshold: boolean;
 	cameraResolution: CameraResolution;
 	screenshareResolution: ScreenshareResolution;
 	videoFrameRate: number;
@@ -61,8 +66,13 @@ class VoiceSettingsStore {
 	echoCancellation = true;
 	noiseSuppression = true;
 	autoGainControl = true;
-	cameraResolution: CameraResolution = 'medium';
-	screenshareResolution: ScreenshareResolution = 'medium';
+	// Voice-activity detection threshold in dBFS. Audio louder than this counts
+	// as speech and opens the mic gate. Range is VAD_MIN_THRESHOLD_DB..0.
+	voiceActivityThreshold = -50;
+	// When enabled the threshold auto-tracks the ambient noise floor.
+	voiceActivityAutoThreshold = true;
+	cameraResolution: CameraResolution = 'high';
+	screenshareResolution: ScreenshareResolution = 'high';
 	videoFrameRate = 30;
 	backgroundImageId = NONE_BACKGROUND_ID;
 	backgroundImages: Array<BackgroundImage> = [];
@@ -87,6 +97,8 @@ class VoiceSettingsStore {
 			'echoCancellation',
 			'noiseSuppression',
 			'autoGainControl',
+			'voiceActivityThreshold',
+			'voiceActivityAutoThreshold',
 			'cameraResolution',
 			'screenshareResolution',
 			'videoFrameRate',
@@ -184,6 +196,14 @@ class VoiceSettingsStore {
 		return this.autoGainControl;
 	}
 
+	getVoiceActivityThreshold(): number {
+		return this.voiceActivityThreshold;
+	}
+
+	getVoiceActivityAutoThreshold(): boolean {
+		return this.voiceActivityAutoThreshold;
+	}
+
 	getCameraResolution(): CameraResolution {
 		return this.cameraResolution;
 	}
@@ -231,6 +251,9 @@ class VoiceSettingsStore {
 		if (validated.echoCancellation !== undefined) this.echoCancellation = validated.echoCancellation;
 		if (validated.noiseSuppression !== undefined) this.noiseSuppression = validated.noiseSuppression;
 		if (validated.autoGainControl !== undefined) this.autoGainControl = validated.autoGainControl;
+		if (validated.voiceActivityThreshold !== undefined) this.voiceActivityThreshold = validated.voiceActivityThreshold;
+		if (validated.voiceActivityAutoThreshold !== undefined)
+			this.voiceActivityAutoThreshold = validated.voiceActivityAutoThreshold;
 		if (validated.cameraResolution !== undefined) this.cameraResolution = validated.cameraResolution;
 		if (validated.screenshareResolution !== undefined) this.screenshareResolution = validated.screenshareResolution;
 		if (validated.videoFrameRate !== undefined) this.videoFrameRate = validated.videoFrameRate;
@@ -285,6 +308,11 @@ class VoiceSettingsStore {
 			echoCancellation: data.echoCancellation ?? this.echoCancellation,
 			noiseSuppression: data.noiseSuppression ?? this.noiseSuppression,
 			autoGainControl: data.autoGainControl ?? this.autoGainControl,
+			voiceActivityThreshold: Math.max(
+				VAD_MIN_THRESHOLD_DB,
+				Math.min(VAD_MAX_THRESHOLD_DB, data.voiceActivityThreshold ?? this.voiceActivityThreshold),
+			),
+			voiceActivityAutoThreshold: data.voiceActivityAutoThreshold ?? this.voiceActivityAutoThreshold,
 			cameraResolution,
 			screenshareResolution,
 			videoFrameRate: Math.max(15, Math.min(60, videoFrameRate)),

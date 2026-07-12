@@ -30,16 +30,16 @@ pub type HeroConfig(a) {
 }
 
 pub fn default_padding() -> String {
-  "marketing-shell text-white"
+  "marketing-shell marketing-hero-stage text-white"
 }
 
 pub fn render(config: HeroConfig(a)) -> Element(a) {
   html.section([attribute.class(config.custom_padding)], [
-    html.div([attribute.class("mx-auto w-full max-w-5xl")], [
+    html.div([attribute.class("mx-auto w-full max-w-6xl")], [
       html.div(
         [
           attribute.class(
-            "marketing-frame liquid-glass motion-reveal relative px-6 py-10 md:px-12 md:py-14 text-center",
+            "motion-reveal relative text-center",
           ),
         ],
         [
@@ -47,7 +47,7 @@ pub fn render(config: HeroConfig(a)) -> Element(a) {
             html.div(
               [
                 attribute.class(
-                  "inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/8 backdrop-blur-sm md:h-20 md:w-20",
+                  "hero-icon-shell inline-flex h-16 w-16 items-center justify-center md:h-20 md:w-20",
                 ),
               ],
               [config.icon],
@@ -55,7 +55,7 @@ pub fn render(config: HeroConfig(a)) -> Element(a) {
           ]),
           html.h1(
             [
-              attribute.class("marketing-title mb-4 md:mb-5"),
+              attribute.class("marketing-title hero-title mb-4 md:mb-5"),
             ],
             [html.text(config.title)],
           ),

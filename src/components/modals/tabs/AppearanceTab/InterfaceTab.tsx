@@ -174,9 +174,25 @@ export const InterfaceTabContent: React.FC = observer(() => {
 					description={t`Pin the desktop dock at the bottom and reserve space for chat content above it.`}
 				>
 					<Switch
+						label={t`Use classic community appearance`}
+						description={t`Show communities as a vertical rail beside your DM list and channel list. The experimental dock panel is hidden while this is enabled.`}
+						value={AccessibilityStore.useClassicCommunityList}
+						onChange={(value) =>
+							AccessibilityActionCreators.update({
+								useClassicCommunityList: value,
+								classicCommunityListCollapsed: value ? AccessibilityStore.classicCommunityListCollapsed : false,
+							})
+						}
+					/>
+					<Switch
 						label={t`Always keep dock panel active`}
-						description={t`When enabled, the dock stays visible on desktop channel pages and the main content area shifts upward to avoid overlap.`}
+						description={
+							AccessibilityStore.useClassicCommunityList
+								? t`Classic community appearance hides the experimental dock panel. Turn it off to use this option.`
+								: t`When enabled, the dock stays visible on desktop channel pages and the main content area shifts upward to avoid overlap.`
+						}
 						value={AccessibilityStore.dockPanelAlwaysActive}
+						disabled={AccessibilityStore.useClassicCommunityList}
 						onChange={(value) => AccessibilityActionCreators.update({dockPanelAlwaysActive: value})}
 					/>
 				</SettingsTabSection>

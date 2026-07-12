@@ -47,10 +47,15 @@
 	border: 1px solid var(--background-header-secondary);
 	box-sizing: border-box;
 	cursor: pointer;
+	background: color-mix(in srgb, var(--background-tertiary) 80%, transparent);
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		border-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .box {
-	border-radius: 3px;
+	border-radius: 0.34rem;
 }
 
 .round {
@@ -58,8 +63,9 @@
 }
 
 .checked {
-	background-color: var(--brand-primary);
-	border: 1px solid var(--brand-primary);
+	background-color: color-mix(in srgb, var(--brand-primary) 88%, var(--background-tertiary) 12%);
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 74%, white 26%);
+	animation: checkboxPop var(--motion-dur-short) var(--motion-ease-smooth) both;
 }
 
 .checkedInverted {
@@ -72,7 +78,7 @@
 }
 
 .focused {
-	box-shadow: none;
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 16%, transparent);
 }
 
 .checkIcon {
@@ -191,4 +197,27 @@
 	width: 100%;
 	height: 100%;
 	cursor: inherit;
+}
+
+.checkbox:active {
+	transform: scale(0.94);
+}
+
+@keyframes checkboxPop {
+	from {
+		transform: scale(0.88);
+	}
+	to {
+		transform: scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.checked {
+		animation: none;
+	}
+
+	.checkbox:active {
+		transform: none;
+	}
 }

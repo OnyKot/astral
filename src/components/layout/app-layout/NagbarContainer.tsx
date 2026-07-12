@@ -94,14 +94,14 @@ export const NagbarContainer: React.FC<NagbarContainerProps> = observer(({nagbar
 						<motion.div
 							key={nagbar.type}
 							layout
-							style={{width: 'min(100%, 52rem)', pointerEvents: 'auto'}}
-							initial={reducedMotion ? {opacity: 0} : {opacity: 0, y: -22, scale: 0.94, filter: 'blur(10px)'}}
-							animate={reducedMotion ? {opacity: 1} : {opacity: 1, y: 0, scale: 1, filter: 'blur(0px)'}}
-							exit={reducedMotion ? {opacity: 0} : {opacity: 0, y: -16, scale: 0.97, filter: 'blur(4px)'}}
+							style={{width: 'min(100%, 52rem)', pointerEvents: 'auto', transformOrigin: 'top center', willChange: 'transform, opacity'}}
+							initial={reducedMotion ? {opacity: 0} : {opacity: 0, y: -10, scale: 0.985}}
+							animate={reducedMotion ? {opacity: 1} : {opacity: 1, y: 0, scale: 1}}
+							exit={reducedMotion ? {opacity: 0} : {opacity: 0, y: -8, scale: 0.99}}
 							transition={
 								reducedMotion
 									? {duration: 0.12}
-									: {type: 'spring', stiffness: 360, damping: 28, mass: 0.72}
+									: {type: 'spring', stiffness: 420, damping: 34, mass: 0.72}
 							}
 						>
 							{content}

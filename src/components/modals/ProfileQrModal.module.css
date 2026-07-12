@@ -1,0 +1,110 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.modalRoot {
+	width: min(420px, 92vw);
+}
+
+.content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 14px;
+	text-align: center;
+}
+
+.identity {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+
+.name {
+	font-size: 1.1rem;
+	font-weight: 800;
+	color: var(--text-primary);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 280px;
+}
+
+.tag {
+	font-size: 0.82rem;
+	color: var(--text-tertiary);
+}
+
+.qrShell {
+	padding: 12px;
+	border-radius: 26px;
+	background:
+		radial-gradient(circle at 25% 0%, color-mix(in srgb, var(--brand-primary) 30%, transparent), transparent 48%),
+		color-mix(in srgb, var(--background-secondary) 78%, var(--background-primary) 22%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+	box-shadow:
+		0 18px 32px rgb(0 0 0 / 0.24),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.qrCanvas {
+	display: block;
+	border-radius: 18px !important;
+}
+
+.qrFallback {
+	width: 224px;
+	height: 224px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 18px;
+	background: color-mix(in srgb, white 94%, var(--brand-primary) 6%);
+	color: var(--brand-primary);
+}
+
+.description {
+	margin: 0;
+	max-width: 300px;
+	font-size: 0.86rem;
+	line-height: 1.35;
+	color: var(--text-secondary);
+}
+
+.linkText {
+	user-select: text;
+	-webkit-user-select: text;
+	width: 100%;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	border-radius: 12px;
+	padding: 9px 10px;
+	background: color-mix(in srgb, var(--background-primary) 78%, var(--background-secondary) 22%);
+	color: var(--text-primary-muted);
+	font-family: var(--font-mono);
+	font-size: 0.76rem;
+	line-height: 1.35;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	cursor: copy;
+}
+
+.linkText:hover {
+	color: var(--text-primary);
+	border-color: color-mix(in srgb, var(--brand-primary) 34%, transparent);
+}

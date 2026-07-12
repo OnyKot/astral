@@ -28,6 +28,10 @@
 	background: color-mix(in srgb, var(--background-floating, var(--background-primary)) 72%, transparent);
 	box-shadow: 0 10px 30px rgb(0 0 0 / 0.22);
 	backdrop-filter: blur(16px) saturate(140%);
+	transition:
+		transform var(--motion-dur-short) var(--motion-ease-smooth),
+		box-shadow var(--motion-dur-short) var(--motion-ease-smooth),
+		background-color var(--motion-dur-short) var(--motion-ease-snap);
 }
 
 .toastMobile {
@@ -42,6 +46,7 @@
 
 .icon {
 	flex-shrink: 0;
+	animation: toastIconPop var(--motion-dur-short) var(--motion-ease-smooth) both;
 }
 
 .iconSuccess {
@@ -91,6 +96,10 @@
 	color: color-mix(in srgb, var(--text-muted) 84%, var(--text-primary) 16%);
 	cursor: pointer;
 	padding: 0;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .closeButton:hover {
@@ -98,7 +107,45 @@
 	background: color-mix(in srgb, var(--background-tertiary) 52%, transparent);
 }
 
+.toast:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 14px 34px rgb(0 0 0 / 0.28);
+}
+
+.closeButton:active {
+	transform: scale(0.94);
+}
+
 .closeIcon {
 	width: 0.75rem;
 	height: 0.75rem;
+}
+
+@keyframes toastIconPop {
+	from {
+		opacity: 0;
+		transform: scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.toast,
+	.closeButton {
+		transition:
+			background-color var(--motion-dur-short) var(--motion-ease-snap),
+			color var(--motion-dur-short) var(--motion-ease-snap);
+	}
+
+	.icon {
+		animation: none;
+	}
+
+	.toast:hover,
+	.closeButton:active {
+		transform: none;
+	}
 }

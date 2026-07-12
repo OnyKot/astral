@@ -184,7 +184,7 @@ export const DMWelcomeSection: React.FC<DMWelcomeSectionProps> = observer(functi
 			<div className={styles.profileSection}>
 				<FocusRing offset={-2}>
 					<button type="button" onClick={openFullProfile} className={styles.avatarButton}>
-						<StatusAwareAvatar user={user} size={80} showOffline={true} />
+						<StatusAwareAvatar user={user} size={mobileLayout.enabled ? 56 : 80} showOffline={true} />
 					</button>
 				</FocusRing>
 

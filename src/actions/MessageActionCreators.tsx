@@ -273,6 +273,15 @@ export const fetchMessages = async (
 	return promise;
 };
 
+export const prefetchMessages = (channelId: string, limit = MAX_MESSAGES_PER_CHANNEL): Promise<Array<Message>> => {
+	const messages = MessageStore.peekMessages(channelId);
+	if (messages?.ready || messages?.loadingMore) {
+		return Promise.resolve([]);
+	}
+
+	return fetchMessages(channelId, null, null, limit);
+};
+
 export const send = async (channelId: string, params: SendMessageParams): Promise<Message> => {
 	const promise = new Promise<Message>((resolve, reject) => {
 		logger.debug(`Enqueueing message for channel ${channelId}`);
@@ -533,6 +542,49 @@ export const forward = async (
 		logger.debug('Successfully forwarded message to all channels');
 	} catch (error) {
 		logger.error('Failed to forward message:', error);
+		throw error;
+	}
+};
+
+export const forwardMany = async (
+	channelIds: Array<string>,
+	messageReferences: Array<{message_id: string; channel_id: string; guild_id?: string | null}>,
+	optionalMessage?: string,
+): Promise<void> => {
+	logger.debug(`Forwarding ${messageReferences.length} messages to ${channelIds.length} channels`);
+
+	if (messageReferences.length === 0) {
+		return;
+	}
+
+	try {
+		for (const channelId of channelIds) {
+			for (const messageReference of messageReferences) {
+				const nonce = SnowflakeUtils.fromTimestamp(Date.now());
+				await send(channelId, {
+					content: '',
+					nonce,
+					messageReference: {
+						message_id: messageReference.message_id,
+						channel_id: messageReference.channel_id,
+						guild_id: messageReference.guild_id || undefined,
+						type: 1,
+					},
+					flags: 1,
+				});
+			}
+
+			if (optionalMessage) {
+				const commentNonce = SnowflakeUtils.fromTimestamp(Date.now() + 1);
+				await send(channelId, {
+					content: optionalMessage,
+					nonce: commentNonce,
+				});
+			}
+		}
+		logger.debug('Successfully forwarded selected messages');
+	} catch (error) {
+		logger.error('Failed to forward selected messages:', error);
 		throw error;
 	}
 };

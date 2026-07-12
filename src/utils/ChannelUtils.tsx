@@ -23,8 +23,10 @@ import {
 	HashIcon,
 	type IconProps,
 	LinkIcon,
+	MicrophoneStageIcon,
 	NotePencilIcon,
 	SpeakerHighIcon,
+	UsersThreeIcon,
 } from '@phosphor-icons/react';
 import {ChannelTypes} from '~/Constants';
 import {NSFWIcon} from '~/components/icons/NSFWIcon';
@@ -33,6 +35,7 @@ import type {ChannelRecord} from '~/records/ChannelRecord';
 import ChannelDisplayNameStore from '~/stores/ChannelDisplayNameStore';
 import UserStore from '~/stores/UserStore';
 import * as NicknameUtils from '~/utils/NicknameUtils';
+import {isBroadcastVoiceChannel} from '~/utils/channelVoiceMode';
 import {compareChannelPosition} from './channelShared';
 
 export const compareChannels = (a: ChannelRecord, b: ChannelRecord): number => compareChannelPosition(a, b);
@@ -44,7 +47,12 @@ export const getIcon = (channel: {type: number; nsfw?: boolean}, props: IconProp
 
 	switch (channel.type) {
 		case ChannelTypes.GUILD_VOICE:
+			if (isBroadcastVoiceChannel(channel)) {
+				return <UsersThreeIcon weight="fill" {...props} />;
+			}
 			return <SpeakerHighIcon weight="fill" {...props} />;
+		case ChannelTypes.GUILD_STAGE:
+			return <UsersThreeIcon weight="fill" {...props} />;
 		case ChannelTypes.GUILD_CATEGORY:
 			return <CaretDownIcon weight="bold" {...props} />;
 		case ChannelTypes.GUILD_LINK:
@@ -61,6 +69,9 @@ export const getName = (channel: ChannelRecord) => {
 	switch (channel.type) {
 		case ChannelTypes.GUILD_VOICE:
 			baseName = i18n._(msg`Voice`);
+			break;
+		case ChannelTypes.GUILD_STAGE:
+			baseName = i18n._(msg`Stage`);
 			break;
 		case ChannelTypes.GUILD_CATEGORY:
 			baseName = i18n._(msg`Category`);

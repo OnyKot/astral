@@ -28,7 +28,6 @@ import {modal} from '~/actions/ModalActionCreators';
 import * as NagbarActionCreators from '~/actions/NagbarActionCreators';
 import * as UnsavedChangesActionCreators from '~/actions/UnsavedChangesActionCreators';
 import {LongPressable} from '~/components/LongPressable';
-import {MobileBottomNav} from '~/components/layout/MobileBottomNav';
 import {ConfirmModal} from '~/components/modals/ConfirmModal';
 import {ClientInfo} from '~/components/modals/components/ClientInfo';
 import {LogoutModal} from '~/components/modals/components/LogoutModal';
@@ -47,9 +46,10 @@ import {
 	type UserSettingsTabType,
 } from '~/components/modals/utils/settingsConstants';
 import {filterSettingsTabsForDeveloperMode} from '~/components/modals/utils/settingsTabFilters';
+import {getPageContentVariants, getPageHeaderVariants, getPageTransition} from '~/utils/motion/MotionPresets';
 import {Button} from '~/components/uikit/Button/Button';
 import {MentionBadgeAnimated} from '~/components/uikit/MentionBadge';
-import {Scroller} from '~/components/uikit/Scroller';
+import {Scroller, type ScrollerHandle} from '~/components/uikit/Scroller';
 import {Spinner} from '~/components/uikit/Spinner';
 import {usePressable} from '~/hooks/usePressable';
 import {usePushSubscriptions} from '~/hooks/usePushSubscriptions';
@@ -238,7 +238,7 @@ const ServiceWorkerUpdateButton = observer(() => {
 		<MobileSettingsActionItem
 			icon={ArrowClockwiseIcon}
 			iconWeight="bold"
-			label={t`Update Service Worker`}
+			label={t`Update service worker`}
 			onClick={handleUpdateServiceWorker}
 			isLoading={isUpdating}
 			showArrow={false}
@@ -246,8 +246,9 @@ const ServiceWorkerUpdateButton = observer(() => {
 	);
 });
 
-const MOBILE_HIDDEN_TAB_TYPES = new Set<UserSettingsTabType>(['keybinds']);
+const MOBILE_HIDDEN_TAB_TYPES = new Set<UserSettingsTabType>(['keybinds', 'music_connections']);
 const MOBILE_CATEGORY_ORDER: Array<SettingsTab['category']> = ['app_settings', 'user_settings', 'developer', 'staff_only'];
+const mobileSettingsScrollPositions = new Map<string, number>();
 
 interface MobileQuickAccessCardProps {
 	tab: SettingsTab;
@@ -285,10 +286,10 @@ const MobileSettingsList = observer(
 		onTabSelect: (tab: string, title: string) => void;
 	}) => {
 		const {t} = useLingui();
+		const scrollerRef = React.useRef<ScrollerHandle | null>(null);
 		const currentUser = UserStore.currentUser;
 		const isDeveloper = DeveloperModeStore.isDeveloper;
 		const nativeAndroid = isNativeAndroidApp();
-		const prefersReducedMotion = AccessibilityStore.useReducedMotion;
 
 		const filteredTabs = React.useMemo(
 			() => filterSettingsTabsForDeveloperMode(groupedTabs, isDeveloper),
@@ -313,12 +314,13 @@ const MobileSettingsList = observer(
 			});
 
 			const preferredOrder: Array<UserSettingsTabType> = nativeAndroid
-				? ['voice_video', 'streaming', 'appearance', 'notifications', 'plutonium', 'chat_settings', 'advanced']
-				: ['voice_video', 'streaming', 'appearance', 'plutonium', 'notifications', 'advanced', 'account_security'];
+				? ['voice_video', 'account_integrations', 'appearance', 'notifications', 'plutonium', 'chat_settings', 'advanced']
+				: ['voice_video', 'account_integrations', 'appearance', 'plutonium', 'notifications', 'advanced', 'account_security'];
 
 			return preferredOrder
 				.map((type) => tabMap.get(type))
-				.filter((tab): tab is SettingsTab => Boolean(tab));
+				.filter((tab): tab is SettingsTab => Boolean(tab))
+				.slice(0, 4);
 		}, [mobileVisibleTabs, nativeAndroid]);
 		const quickAccessTabTypes = React.useMemo(
 			() => new Set(quickAccessTabs.map((tab) => tab.type)),
@@ -332,8 +334,6 @@ const MobileSettingsList = observer(
 						return nativeAndroid
 							? t`Microphone, camera, devices and voice behavior for Android calls.`
 							: t`Microphone, camera, devices and voice behavior.`;
-					case 'streaming':
-						return t`Twitch connection, creator mode and live-session automation.`;
 					case 'notifications':
 						return nativeAndroid
 							? t`Alerts, call shade controls, vibration and Android notification routing.`
@@ -447,8 +447,21 @@ const MobileSettingsList = observer(
 		}, [mobileVisibleTabs, quickAccessTabTypes]);
 		const lastCategoryIndex = categories.length - 1;
 
+		React.useLayoutEffect(() => {
+			const savedPosition = mobileSettingsScrollPositions.get('root') ?? 0;
+			const frame = window.requestAnimationFrame(() => {
+				scrollerRef.current?.scrollTo({to: savedPosition, animate: false});
+			});
+			return () => window.cancelAnimationFrame(frame);
+		}, []);
+
 		return (
-			<Scroller className={styles.scrollerContainer} key="mobile-settings-list-scroller">
+			<Scroller
+				ref={scrollerRef}
+				className={styles.scrollerContainer}
+				key="mobile-settings-list-scroller"
+				onScroll={(event) => mobileSettingsScrollPositions.set('root', event.currentTarget.scrollTop)}
+			>
 				{quickAccessTabs.length > 0 && (
 					<div className={styles.quickAccessSection}>
 						<div className={styles.quickAccessHero}>
@@ -465,39 +478,19 @@ const MobileSettingsList = observer(
 							</div>
 						</div>
 						<div className={styles.quickAccessGrid}>
-							{quickAccessTabs.map((tab, index) => (
-								<motion.div
+							{quickAccessTabs.map((tab) => (
+								<MobileQuickAccessCard
 									key={tab.type}
-									initial={prefersReducedMotion ? {opacity: 1, y: 0} : {opacity: 0, y: 8}}
-									animate={{opacity: 1, y: 0}}
-									transition={
-										prefersReducedMotion
-											? {duration: 0}
-											: {duration: 0.22, delay: index * 0.03, ease: [0.22, 1, 0.36, 1]}
-									}
-								>
-									<MobileQuickAccessCard
-										tab={tab}
-										summary={getQuickAccessSummary(tab.type)}
-										onSelect={() => onTabSelect(tab.type, tab.label)}
-									/>
-								</motion.div>
+									tab={tab}
+									summary={getQuickAccessSummary(tab.type)}
+									onSelect={() => onTabSelect(tab.type, tab.label)}
+								/>
 							))}
 						</div>
 					</div>
 				)}
 				{categories.map(([category, tabs], categoryIndex) => (
-					<motion.div
-						key={category}
-						className={styles.categorySection}
-						initial={prefersReducedMotion ? {opacity: 1, y: 0} : {opacity: 0, y: 10}}
-						animate={{opacity: 1, y: 0}}
-						transition={
-							prefersReducedMotion
-								? {duration: 0}
-								: {duration: 0.24, delay: 0.06 + categoryIndex * 0.04, ease: [0.22, 1, 0.36, 1]}
-						}
-					>
+					<div key={category} className={styles.categorySection}>
 						<h2 className={styles.categoryTitle}>{getCategoryLabel(category as SettingsTab['category'])}</h2>
 						<div className={styles.categoryList}>
 							{tabs.map((tab, index) => {
@@ -506,9 +499,9 @@ const MobileSettingsList = observer(
 								const badge =
 									tab.type === 'gift_inventory' && currentUser?.hasUnreadGiftInventory ? (
 										<MentionBadgeAnimated mentionCount={currentUser.unreadGiftInventoryCount ?? 1} />
-									) : tab.type === 'account_integrations' ? (
-										<span className={styles.betaBadge}>
-											<Trans>Beta</Trans>
+									) : tab.type === 'appearance' ? (
+										<span className={styles.newBadge}>
+											<Trans>New</Trans>
 										</span>
 									) : undefined;
 								return (
@@ -522,7 +515,7 @@ const MobileSettingsList = observer(
 								<MobileSettingsDangerItem icon={SignOutIcon} label={t`Log Out`} onClick={handleLogout} />
 							)}
 						</div>
-					</motion.div>
+					</div>
 				))}
 				{categories.length === 0 && (
 					<div className={styles.categorySection}>
@@ -553,12 +546,12 @@ const MobileSettingsList = observer(
 );
 
 const EDGE_SWIPE_ZONE_PX = 36;
-const EDGE_SWIPE_ACTIVATION_PX = 12;
-const EDGE_SWIPE_TRIGGER_PX = 86;
+const EDGE_SWIPE_ACTIVATION_PX = 18;
+const EDGE_SWIPE_TRIGGER_PX = 92;
 const EDGE_SWIPE_MAX_PX = 180;
-const EDGE_SWIPE_MAX_VERTICAL_DRIFT_PX = 52;
+const EDGE_SWIPE_MAX_VERTICAL_DRIFT_PX = 42;
 const SWIPE_IGNORE_SELECTOR =
-	'a, button, input, textarea, select, label, summary, [role="button"], [role="switch"], [role="textbox"], [contenteditable="true"], [data-settings-swipe-ignore="true"]';
+	'a, button, input, textarea, select, label, summary, video, audio, canvas, [draggable="true"], [role="button"], [role="switch"], [role="slider"], [role="textbox"], [contenteditable="true"], [data-settings-swipe-ignore="true"], [data-swipe-ignore="true"]';
 
 interface MobileContentWithScrollSpyProps {
 	scrollKey: string;
@@ -570,8 +563,24 @@ interface MobileContentWithScrollSpyProps {
 
 const MobileContentWithScrollSpy: React.FC<MobileContentWithScrollSpyProps> = observer(
 	({scrollKey, initialGuildId, initialSubtab, currentTabComponent, hasBottomActions = false}) => {
+		const scrollerRef = React.useRef<ScrollerHandle | null>(null);
+
+		React.useLayoutEffect(() => {
+			const savedPosition = mobileSettingsScrollPositions.get(scrollKey) ?? 0;
+			const frame = window.requestAnimationFrame(() => {
+				scrollerRef.current?.scrollTo({to: savedPosition, animate: false});
+			});
+			return () => window.cancelAnimationFrame(frame);
+		}, [scrollKey]);
+
 		return (
-			<Scroller className={styles.scrollerFlex} key={scrollKey} data-settings-scroll-container>
+			<Scroller
+				ref={scrollerRef}
+				className={styles.scrollerFlex}
+				key={scrollKey}
+				data-settings-scroll-container
+				onScroll={(event) => mobileSettingsScrollPositions.set(scrollKey, event.currentTarget.scrollTop)}
+			>
 				<div className={clsx(styles.contentContainer, hasBottomActions && styles.contentContainerWithBottomActions)}>
 					{currentTabComponent &&
 						React.createElement(currentTabComponent, {
@@ -596,7 +605,10 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 		const swipeGestureRef = React.useRef<{
 			startX: number;
 			startY: number;
-			engaged: boolean;
+			currentX: number;
+			currentY: number;
+			startTs: number;
+			status: 'pending' | 'locked' | 'cancelled';
 		} | null>(null);
 
 		const currentTabId = mobileNav.currentView?.tab || '';
@@ -653,6 +665,24 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 			onBack();
 		}, [checkUnsavedChanges, onBack]);
 
+		React.useEffect(() => {
+			if (mobileNav.isRootView) {
+				return;
+			}
+
+			const handleNativeBack = (event: Event) => {
+				event.preventDefault();
+				event.stopPropagation();
+				(event as Event & {stopImmediatePropagation?: () => void}).stopImmediatePropagation?.();
+				handleBack();
+			};
+
+			window.addEventListener('astral:native-back', handleNativeBack, true);
+			return () => {
+				window.removeEventListener('astral:native-back', handleNativeBack, true);
+			};
+		}, [handleBack, mobileNav.isRootView]);
+
 		const handleTabSelect = React.useCallback((tab: string, title: string) => {
 			if (checkUnsavedChanges()) return;
 			onTabSelect(tab, title);
@@ -685,7 +715,10 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 			swipeGestureRef.current = {
 				startX: touch.clientX,
 				startY: touch.clientY,
-				engaged: false,
+				currentX: touch.clientX,
+				currentY: touch.clientY,
+				startTs: Date.now(),
+				status: 'pending',
 			};
 		}, [mobileNav.isRootView]);
 
@@ -696,10 +729,21 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 			const touch = event.touches[0];
 			const deltaX = touch.clientX - gesture.startX;
 			const deltaY = touch.clientY - gesture.startY;
+			const absDeltaX = Math.abs(deltaX);
+			const absDeltaY = Math.abs(deltaY);
+			gesture.currentX = touch.clientX;
+			gesture.currentY = touch.clientY;
 
-			if (!gesture.engaged) {
-				if (deltaX < 0 || Math.abs(deltaY) > EDGE_SWIPE_MAX_VERTICAL_DRIFT_PX) {
-					resetSwipeBackGesture();
+			if (gesture.status === 'cancelled' || deltaX < 0) {
+				gesture.status = 'cancelled';
+				setSwipeBackOffset(0);
+				return;
+			}
+
+			if (gesture.status === 'pending') {
+				if (absDeltaY >= EDGE_SWIPE_ACTIVATION_PX && absDeltaY >= absDeltaX) {
+					gesture.status = 'cancelled';
+					setSwipeBackOffset(0);
 					return;
 				}
 
@@ -707,12 +751,19 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 					return;
 				}
 
-				if (Math.abs(deltaY) > Math.abs(deltaX) * 0.75) {
-					resetSwipeBackGesture();
+				if (absDeltaX < absDeltaY * 1.6) {
+					gesture.status = 'cancelled';
+					setSwipeBackOffset(0);
 					return;
 				}
 
-				gesture.engaged = true;
+				gesture.status = 'locked';
+			}
+
+			if (absDeltaY > EDGE_SWIPE_MAX_VERTICAL_DRIFT_PX || absDeltaY > absDeltaX * 0.7) {
+				gesture.status = 'cancelled';
+				setSwipeBackOffset(0);
+				return;
 			}
 
 			const nextOffset = Math.min(Math.max(deltaX, 0), EDGE_SWIPE_MAX_PX);
@@ -721,22 +772,28 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 			if (deltaX > 0) {
 				event.preventDefault();
 			}
-		}, [resetSwipeBackGesture]);
+		}, []);
 
 		const handleContentTouchEnd = React.useCallback(() => {
 			const gesture = swipeGestureRef.current;
-			if (!gesture?.engaged) {
+			if (!gesture || gesture.status !== 'locked') {
 				resetSwipeBackGesture();
 				return;
 			}
 
-			const shouldNavigateBack = swipeBackOffset >= EDGE_SWIPE_TRIGGER_PX;
+			const deltaX = gesture.currentX - gesture.startX;
+			const deltaY = Math.abs(gesture.currentY - gesture.startY);
+			const elapsed = Math.max(Date.now() - gesture.startTs, 1);
+			const shouldNavigateBack =
+				deltaY <= EDGE_SWIPE_MAX_VERTICAL_DRIFT_PX &&
+				deltaX >= deltaY * 1.6 &&
+				(deltaX >= EDGE_SWIPE_TRIGGER_PX || (deltaX >= 58 && deltaX / elapsed >= 0.48));
 			resetSwipeBackGesture();
 
 			if (shouldNavigateBack) {
 				handleBack();
 			}
-		}, [handleBack, resetSwipeBackGesture, swipeBackOffset]);
+		}, [handleBack, resetSwipeBackGesture]);
 
 		const showMobileList = mobileNav.isRootView;
 		const showMobileContent = !mobileNav.isRootView;
@@ -757,48 +814,26 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 					}
 				: {}),
 		};
-		const motionTransition = prefersReducedMotion
-			? {duration: 0}
-			: {duration: 0.18, ease: 'easeOut' as const};
+		const motionTransition = getPageTransition(prefersReducedMotion);
 		const headerVariants = React.useMemo(
-			() => ({
-				enter: (direction: MobileNavigationState['direction']) =>
-					prefersReducedMotion
-						? {opacity: 1}
-						: {opacity: 0, x: direction === 'forward' ? 18 : -18},
-				center: {opacity: 1, x: 0},
-				exit: (direction: MobileNavigationState['direction']) =>
-					prefersReducedMotion
-						? {opacity: 1}
-						: {opacity: 0, x: direction === 'forward' ? -12 : 12},
-			}),
+			() => getPageHeaderVariants(prefersReducedMotion),
 			[prefersReducedMotion],
 		);
 		const contentVariants = React.useMemo(
-			() => ({
-				enter: (direction: MobileNavigationState['direction']) =>
-					prefersReducedMotion
-						? {opacity: 1, scale: 1}
-						: {opacity: 0, x: direction === 'forward' ? 22 : -22, scale: 0.992},
-				center: {opacity: 1, x: 0, scale: 1},
-				exit: (direction: MobileNavigationState['direction']) =>
-					prefersReducedMotion
-						? {opacity: 1, scale: 1}
-						: {opacity: 0, x: direction === 'forward' ? -14 : 14, scale: 0.996},
-			}),
+			() => getPageContentVariants(prefersReducedMotion),
 			[prefersReducedMotion],
 		);
 
 		return (
 			<div className={userSettingsStyles.mobileWrapper}>
 				<div className={userSettingsStyles.mobileHeaderContainer}>
-					<AnimatePresence mode="wait" initial={false} custom={mobileNav.direction}>
+					<AnimatePresence mode="sync" initial={false} custom={mobileNav.direction}>
 						{showMobileList && (
 							<motion.div
 								key="mobile-list-header"
 								custom={mobileNav.direction}
 								variants={headerVariants}
-								initial="center"
+								initial={mobileNav.direction === 'backward' ? 'enter' : 'center'}
 								animate="center"
 								exit="exit"
 								transition={motionTransition}
@@ -812,7 +847,7 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 								key={`mobile-content-header-${mobileNav.currentView?.tab}`}
 								custom={mobileNav.direction}
 								variants={headerVariants}
-								initial="enter"
+								initial={mobileNav.direction === 'forward' ? 'enter' : 'center'}
 								animate="center"
 								exit="exit"
 								transition={motionTransition}
@@ -832,18 +867,18 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 					</AnimatePresence>
 				</div>
 				<div className={userSettingsStyles.mobileContentContainer}>
-					<AnimatePresence mode="wait" initial={false} custom={mobileNav.direction}>
+					<AnimatePresence mode="sync" initial={false} custom={mobileNav.direction}>
 						{showMobileList && (
 							<motion.div
 								key="mobile-list-content"
 								custom={mobileNav.direction}
 								variants={contentVariants}
-								initial="center"
+								initial={mobileNav.direction === 'backward' ? 'enter' : 'center'}
 								animate="center"
 								exit="exit"
 								transition={motionTransition}
 								className={userSettingsStyles.mobileContentPane}
-								style={{willChange: 'transform'}}
+								style={{willChange: 'transform, opacity'}}
 							>
 								<MobileSettingsList groupedTabs={groupedSettingsTabs} onTabSelect={handleTabSelect} />
 							</motion.div>
@@ -853,12 +888,12 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 								key={`mobile-content-${mobileNav.currentView?.tab}`}
 								custom={mobileNav.direction}
 								variants={contentVariants}
-								initial="enter"
+								initial={mobileNav.direction === 'forward' ? 'enter' : 'center'}
 								animate="center"
 								exit="exit"
 								transition={motionTransition}
 								className={userSettingsStyles.mobileContentPane}
-								style={{willChange: 'transform'}}
+								style={{willChange: 'transform, opacity'}}
 							>
 								<div
 									style={gestureStageStyle}
@@ -891,7 +926,6 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 						</div>
 					)}
 				</div>
-				<MobileBottomNav />
 			</div>
 		);
 	},

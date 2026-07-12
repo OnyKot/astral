@@ -20,13 +20,17 @@
 import {makeAutoObservable} from 'mobx';
 import {makePersistent} from '~/lib/MobXPersistence';
 import {
+	DEFAULT_CHANNEL_LIST_NAME_EFFECT_PRESET,
 	DEFAULT_PROFILE_ACCENT_EFFECT_PRESET,
+	type ChannelListNameEffectPreset,
 	type ProfileAccentEffectPreset,
+	normalizeChannelListNameEffectPreset,
 	normalizeProfileAccentEffectPreset,
 } from '~/utils/ProfileAccentEffectUtils';
 
 class LocalProfileEffectsStore {
 	accentEffectByUserId: Record<string, ProfileAccentEffectPreset> = {};
+	channelListNameEffectByUserId: Record<string, ChannelListNameEffectPreset> = {};
 
 	constructor() {
 		makeAutoObservable(this, {}, {autoBind: true});
@@ -34,7 +38,7 @@ class LocalProfileEffectsStore {
 	}
 
 	private async initPersistence(): Promise<void> {
-		await makePersistent(this, 'LocalProfileEffectsStore', ['accentEffectByUserId']);
+		await makePersistent(this, 'LocalProfileEffectsStore', ['accentEffectByUserId', 'channelListNameEffectByUserId']);
 	}
 
 	getUserPreset(userId: string): ProfileAccentEffectPreset {
@@ -62,6 +66,33 @@ class LocalProfileEffectsStore {
 		const nextState = {...this.accentEffectByUserId};
 		delete nextState[userId];
 		this.accentEffectByUserId = nextState;
+	}
+
+	getUserChannelListNameEffect(userId: string): ChannelListNameEffectPreset {
+		if (!userId) return DEFAULT_CHANNEL_LIST_NAME_EFFECT_PRESET;
+		return normalizeChannelListNameEffectPreset(this.channelListNameEffectByUserId[userId]);
+	}
+
+	setUserChannelListNameEffect(userId: string, preset: ChannelListNameEffectPreset): void {
+		if (!userId) return;
+
+		const normalizedPreset = normalizeChannelListNameEffectPreset(preset);
+		if (normalizedPreset === DEFAULT_CHANNEL_LIST_NAME_EFFECT_PRESET) {
+			this.clearUserChannelListNameEffect(userId);
+			return;
+		}
+
+		this.channelListNameEffectByUserId = {
+			...this.channelListNameEffectByUserId,
+			[userId]: normalizedPreset,
+		};
+	}
+
+	clearUserChannelListNameEffect(userId: string): void {
+		if (!userId || this.channelListNameEffectByUserId[userId] === undefined) return;
+		const nextState = {...this.channelListNameEffectByUserId};
+		delete nextState[userId];
+		this.channelListNameEffectByUserId = nextState;
 	}
 }
 

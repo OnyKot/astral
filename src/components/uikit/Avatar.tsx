@@ -45,6 +45,8 @@ interface AvatarProps {
 	avatarUrl?: string | null;
 	hoverAvatarUrl?: string | null;
 	guildId?: string | null;
+	isStreaming?: boolean;
+	statusScale?: number;
 }
 
 const AvatarComponent = React.forwardRef<HTMLDivElement, AvatarProps>(
@@ -64,6 +66,8 @@ const AvatarComponent = React.forwardRef<HTMLDivElement, AvatarProps>(
 			avatarUrl: customAvatarUrl,
 			hoverAvatarUrl: customHoverAvatarUrl,
 			guildId,
+			isStreaming = false,
+			statusScale,
 			...props
 		},
 		ref,
@@ -184,6 +188,8 @@ const AvatarComponent = React.forwardRef<HTMLDivElement, AvatarProps>(
 				hoverAvatarUrl={safeHoverAvatarUrl}
 				status={status}
 				isMobileStatus={isMobileStatus}
+				isStreaming={isStreaming}
+				statusScale={statusScale}
 				shouldPlayAnimated={shouldPlayAnimated && isStaticLoaded}
 				isTyping={isTyping}
 				isInCall={isInCall}

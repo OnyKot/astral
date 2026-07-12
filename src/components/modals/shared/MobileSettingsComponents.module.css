@@ -278,3 +278,55 @@
 		color: var(--text-primary);
 	}
 }
+
+@media (max-width: 380px) {
+	.header {
+		height: 3.25rem;
+		padding-inline: 0.65rem;
+	}
+
+	.headerTitle {
+		font-size: 0.9rem;
+		line-height: 1.25rem;
+	}
+
+	.settingsList {
+		padding: 0.7rem 0.62rem;
+	}
+
+	.categoryContainer {
+		margin-bottom: 1rem;
+	}
+
+	.categoryHeader {
+		padding-inline: 0.5rem;
+		font-size: 0.65rem;
+	}
+
+	.tabButton,
+	.dangerButton {
+		gap: 0.65rem;
+		padding: 0.75rem;
+	}
+
+	.tabContent,
+	.dangerContent {
+		min-width: 0;
+	}
+
+	.tabLabel,
+	.dangerLabel {
+		font-size: 0.8rem;
+		line-height: 1.15rem;
+		overflow-wrap: anywhere;
+	}
+
+	.sectionNavScroller {
+		padding: 0.4rem 0.62rem;
+	}
+
+	.sectionNavItem {
+		padding: 0.42rem 0.65rem;
+		font-size: 0.72rem;
+	}
+}

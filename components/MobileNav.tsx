@@ -1,45 +1,53 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { LayoutGrid, MessageSquare, Users } from './Icon';
+import { LayoutGrid, MessageSquare } from './Icon';
 
 interface MobileNavProps {
   activeTab: 'servers' | 'dms' | 'profile';
   setActiveTab: (tab: 'servers' | 'dms' | 'profile') => void;
   lang: 'en' | 'ru';
   isHidden?: boolean;
+  freezeAutoHide?: boolean;
 }
 
-const MobileNav: React.FC<MobileNavProps> = ({ activeTab, setActiveTab, lang, isHidden = false }) => {
+const MobileNav: React.FC<MobileNavProps> = ({
+  activeTab,
+  setActiveTab,
+  lang,
+  isHidden = false,
+  freezeAutoHide = false,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
-  
-  // States for smart hiding
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const scrollStateRef = useRef<{ target: EventTarget | null; top: number; at: number }>({
+    target: null,
+    top: 0,
+    at: 0,
+  });
+
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [isScrollingDown, setIsScrollingDown] = useState(false);
-  const lastScrollY = useRef(0);
-  const touchStartY = useRef(0);
 
   const tabs = ['servers', 'dms', 'profile'] as const;
   const activeIndex = tabs.indexOf(activeTab);
 
-  // --- KEYBOARD DETECTION ---
   useEffect(() => {
     const handleFocus = (e: FocusEvent) => {
-        const target = e.target as HTMLElement;
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-            setIsKeyboardOpen(true);
-        }
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        setIsKeyboardOpen(true);
+      }
     };
     const handleBlur = () => {
-        setIsKeyboardOpen(false);
+      setIsKeyboardOpen(false);
     };
 
-    // Advanced: Visual Viewport resize (reliable for mobile keyboards)
     const handleResize = () => {
-        if (window.visualViewport && window.visualViewport.height < window.innerHeight * 0.75) {
-             setIsKeyboardOpen(true);
-        } else {
-             setIsKeyboardOpen(false);
-        }
+      if (window.visualViewport && window.visualViewport.height < window.innerHeight * 0.75) {
+        setIsKeyboardOpen(true);
+      } else {
+        setIsKeyboardOpen(false);
+      }
     };
 
     window.addEventListener('focusin', handleFocus);
@@ -47,52 +55,85 @@ const MobileNav: React.FC<MobileNavProps> = ({ activeTab, setActiveTab, lang, is
     window.visualViewport?.addEventListener('resize', handleResize);
 
     return () => {
-        window.removeEventListener('focusin', handleFocus);
-        window.removeEventListener('focusout', handleBlur);
-        window.visualViewport?.removeEventListener('resize', handleResize);
+      window.removeEventListener('focusin', handleFocus);
+      window.removeEventListener('focusout', handleBlur);
+      window.visualViewport?.removeEventListener('resize', handleResize);
     };
   }, []);
 
-  // --- SCROLL / SWIPE DETECTION ---
   useEffect(() => {
+    if (freezeAutoHide) {
+      setIsScrollingDown(false);
+      return;
+    }
+
+    const SCROLL_THRESHOLD = 8;
+    const MIN_INTERVAL_MS = 100;
+
+    const handleScroll = (event: Event) => {
+      const rawTarget = event.target;
+      if (!(rawTarget instanceof HTMLElement)) return;
+      const now = Date.now();
+      const top = rawTarget.scrollTop;
+      const prev = scrollStateRef.current;
+      if (prev.target !== rawTarget) {
+        scrollStateRef.current = { target: rawTarget, top, at: now };
+        return;
+      }
+
+      const delta = top - prev.top;
+      if (Math.abs(delta) < SCROLL_THRESHOLD || now - prev.at < MIN_INTERVAL_MS) return;
+      setIsScrollingDown(delta > 0);
+      scrollStateRef.current = { target: rawTarget, top, at: now };
+    };
+
     const handleTouchStart = (e: TouchEvent) => {
-        touchStartY.current = e.touches[0].clientY;
+      if (e.touches.length !== 1) return;
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-        const currentY = e.touches[0].clientY;
-        const diff = currentY - touchStartY.current;
-
-        // If moving finger UP (scrolling down content) -> Hide
-        if (diff < -10) { 
-            setIsScrollingDown(true);
-        } 
-        // If moving finger DOWN (scrolling up content) -> Show
-        else if (diff > 10) {
-            setIsScrollingDown(false);
-        }
+      if (e.touches.length !== 1 || !touchStartRef.current) return;
+      const deltaX = e.touches[0].clientX - touchStartRef.current.x;
+      const deltaY = e.touches[0].clientY - touchStartRef.current.y;
+      if (Math.abs(deltaY) < 16 || Math.abs(deltaY) <= Math.abs(deltaX)) return;
+      setIsScrollingDown(deltaY < 0);
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
     };
 
+    const handleTouchEnd = () => {
+      touchStartRef.current = null;
+    };
+
+    window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('touchstart', handleTouchStart);
     window.addEventListener('touchmove', handleTouchMove);
-    
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
+
     return () => {
-        window.removeEventListener('touchstart', handleTouchStart);
-        window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, []);
+  }, [freezeAutoHide]);
 
-
-  // Sync pill position
   useEffect(() => {
     if (pillRef.current) {
-        pillRef.current.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
-        pillRef.current.style.transform = `translateX(${activeIndex * 100}%)`;
+      pillRef.current.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+      pillRef.current.style.transform = `translateX(${activeIndex * 100}%)`;
     }
   }, [activeIndex]);
 
-  // Determine visibility
-  const shouldHide = isHidden || isKeyboardOpen || isScrollingDown;
+  const shouldHide = isHidden || isKeyboardOpen || (isScrollingDown && !freezeAutoHide);
 
   return (
     <div 

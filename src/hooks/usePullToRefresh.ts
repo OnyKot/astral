@@ -37,9 +37,11 @@ export function usePullToRefresh({
 	const [pullDistance, setPullDistance] = React.useState(0);
 	const [isRefreshing, setIsRefreshing] = React.useState(false);
 	const stateRef = React.useRef<{
+		startX: number;
 		startY: number;
 		engaged: boolean;
 		armed: boolean;
+		lockedAxis: 'undecided' | 'vertical' | 'horizontal';
 	} | null>(null);
 
 	const findScrollable = (el: HTMLElement | null): HTMLElement | null => {
@@ -59,14 +61,43 @@ export function usePullToRefresh({
 		setPullDistance(0);
 	}, []);
 
+	const shouldIgnoreTarget = (target: EventTarget | null): boolean => {
+		if (!(target instanceof HTMLElement)) {
+			return false;
+		}
+
+		return Boolean(
+			target.closest(
+				[
+					'[data-pull-to-refresh-ignore="true"]',
+					'input',
+					'textarea',
+					'select',
+					'button',
+					'a',
+					'[contenteditable="true"]',
+					'[role="textbox"]',
+					'[role="button"]',
+				].join(', '),
+			),
+		);
+	};
+
 	const onTouchStart = React.useCallback(
 		(event: React.TouchEvent) => {
 			if (!enabled || isRefreshing) return;
+			if (shouldIgnoreTarget(event.target)) return;
 			const scroller = findScrollable(event.target as HTMLElement);
 			if (scroller && scroller.scrollTop > 0) return;
 			const touch = event.touches[0];
 			if (!touch) return;
-			stateRef.current = {startY: touch.clientY, engaged: false, armed: false};
+			stateRef.current = {
+				startX: touch.clientX,
+				startY: touch.clientY,
+				engaged: false,
+				armed: false,
+				lockedAxis: 'undecided',
+			};
 		},
 		[enabled, isRefreshing],
 	);
@@ -77,7 +108,29 @@ export function usePullToRefresh({
 			if (!state || isRefreshing) return;
 			const touch = event.touches[0];
 			if (!touch) return;
+			const dx = touch.clientX - state.startX;
 			const delta = touch.clientY - state.startY;
+			const absDx = Math.abs(dx);
+			const absDy = Math.abs(delta);
+
+			if (state.lockedAxis === 'undecided' && (absDx >= 12 || absDy >= 12)) {
+				if (absDx >= absDy * 1.5) {
+					state.lockedAxis = 'horizontal';
+				} else if (absDy >= absDx * 1.35) {
+					state.lockedAxis = 'vertical';
+				} else {
+					return;
+				}
+			}
+
+			if (state.lockedAxis === 'horizontal') {
+				if (state.engaged) {
+					state.engaged = false;
+					setPullDistance(0);
+				}
+				return;
+			}
+
 			if (delta <= 0) {
 				if (state.engaged) {
 					state.engaged = false;
@@ -90,6 +143,7 @@ export function usePullToRefresh({
 				state.engaged = true;
 			}
 			if (state.engaged) {
+				event.preventDefault();
 				setPullDistance(dampened);
 				if (dampened >= threshold && !state.armed) {
 					state.armed = true;

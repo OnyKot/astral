@@ -77,6 +77,38 @@
 	color: var(--text-primary);
 }
 
+.participantNameEffect_rainbow,
+.participantNameEffect_gold,
+.participantNameEffect_neon {
+	background-size: 200% 100%;
+	background-clip: text;
+	-webkit-background-clip: text;
+	color: transparent;
+	animation: participantNameEffectFlow 2.8s linear infinite;
+}
+
+.participantNameEffect_rainbow {
+	background-image: linear-gradient(90deg, #ff4d8d 0%, #ffd166 12.5%, #5eead4 25%, #7c72ff 37.5%, #ff4d8d 50%, #ffd166 62.5%, #5eead4 75%, #7c72ff 87.5%, #ff4d8d 100%);
+}
+
+.participantNameEffect_gold {
+	background-image: linear-gradient(90deg, #8f5f13 0%, #f7c948 12.5%, #fff3a6 25%, #d99a22 37.5%, #8f5f13 50%, #f7c948 62.5%, #fff3a6 75%, #d99a22 87.5%, #8f5f13 100%);
+}
+
+.participantNameEffect_neon {
+	background-image: linear-gradient(90deg, #67e8f9 0%, #a78bfa 12.5%, #f0abfc 25%, #22d3ee 37.5%, #67e8f9 50%, #a78bfa 62.5%, #f0abfc 75%, #22d3ee 87.5%, #67e8f9 100%);
+	text-shadow: 0 0 10px color-mix(in srgb, #67e8f9 36%, transparent);
+}
+
+@keyframes participantNameEffectFlow {
+	from {
+		background-position: 0% 50%;
+	}
+	to {
+		background-position: 200% 50%;
+	}
+}
+
 .deviceCount {
 	flex-shrink: 0;
 	font-size: 0.75rem;
@@ -138,4 +170,12 @@
 
 .flexShrinkZero {
 	flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.participantNameEffect_rainbow,
+	.participantNameEffect_gold,
+	.participantNameEffect_neon {
+		animation: none;
+	}
 }

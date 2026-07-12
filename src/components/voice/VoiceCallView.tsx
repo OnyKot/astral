@@ -33,6 +33,7 @@ import {useLingui} from '@lingui/react/macro';
 import type {TrackReferenceOrPlaceholder} from '@livekit/components-react';
 import {
 	CarouselLayout,
+	isTrackReference,
 	ParticipantContext,
 	TrackRefContext,
 	useConnectionState,
@@ -50,11 +51,12 @@ import {
 	XIcon,
 } from '@phosphor-icons/react';
 import {clsx} from 'clsx';
-import {ConnectionState, type Participant} from 'livekit-client';
+import {ConnectionState, type Participant, Track} from 'livekit-client';
 import {observer} from 'mobx-react-lite';
 import React, {forwardRef, useCallback, useMemo, useRef, useState} from 'react';
+import * as Sentry from '@sentry/react';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
-import {ME} from '~/Constants';
+import {ME, Permissions} from '~/Constants';
 import {ChannelHeaderIcon} from '~/components/channel/ChannelHeader/ChannelHeaderIcon';
 import {InboxButton} from '~/components/channel/ChannelHeader/UtilityButtons';
 import {NativeDragRegion} from '~/components/layout/NativeDragRegion';
@@ -68,11 +70,17 @@ import ContextMenuStore, {isContextMenuNodeTarget} from '~/stores/ContextMenuSto
 import FavoritesStore from '~/stores/FavoritesStore';
 import KeyboardModeStore from '~/stores/KeyboardModeStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
+import PermissionStore from '~/stores/PermissionStore';
 import PopoutStore from '~/stores/PopoutStore';
+import UserStore from '~/stores/UserStore';
 import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
+import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
+import ChannelListLayoutStore from '~/stores/ChannelListLayoutStore';
 import * as ChannelUtils from '~/utils/ChannelUtils';
+import {isBroadcastVoiceChannel} from '~/utils/channelVoiceMode';
 import channelHeaderStyles from '../channel/ChannelHeader.module.css';
 import {useVoiceCallTracksAndLayout} from './useVoiceCallTracksAndLayout';
+import {ReconnectOrbit} from './ReconnectOrbit';
 import styles from './VoiceCallView.module.css';
 import {VoiceControlBar} from './VoiceControlBar';
 import {VoiceGridLayout} from './VoiceGridLayout';
@@ -141,8 +149,54 @@ function useConnectionStateText(connectionState: ConnectionState, t: any) {
 
 function getUserIdFromIdentity(identity: string | undefined): string | null {
 	if (!identity) return null;
-	const match = identity.match(/^user_(\d+)(?:_(.+))?$/);
-	return match ? match[1] : null;
+	if (!identity.startsWith('user_')) return null;
+	const value = identity.slice(5);
+	const delimiterIndex = value.indexOf('_');
+	return delimiterIndex === -1 ? value : value.slice(0, delimiterIndex);
+}
+
+function getVoiceIdentityParts(identity: string | undefined): {userId: string | null; connectionId: string | null} {
+	if (!identity) return {userId: null, connectionId: null};
+	if (!identity.startsWith('user_')) return {userId: null, connectionId: null};
+	const value = identity.slice(5);
+	const delimiterIndex = value.indexOf('_');
+	if (delimiterIndex === -1) {
+		return {userId: value, connectionId: null};
+	}
+	return {
+		userId: value.slice(0, delimiterIndex) || null,
+		connectionId: value.slice(delimiterIndex + 1) || null,
+	};
+}
+
+function VoiceCallCrashFallback({channel, onRetry}: {channel: ChannelRecord; onRetry?: () => void}) {
+	const {t} = useLingui();
+
+	const handleLeaveVoice = useCallback(() => {
+		void MediaEngineStore.disconnectFromVoiceChannel('error');
+	}, []);
+
+	return (
+		<div className={styles.voiceCrashFallback} role="alert">
+			<div className={styles.voiceCrashCard}>
+				<div className={styles.voiceCrashEyebrow}>{t`Voice view recovered`}</div>
+				<h2 className={styles.voiceCrashTitle}>{channel.name ?? t`Voice call`}</h2>
+				<p className={styles.voiceCrashDescription}>
+					{t`The call UI hit a rendering error. Your app stayed open, and you can retry the voice view or leave the call safely.`}
+				</p>
+				<div className={styles.voiceCrashActions}>
+					{onRetry && (
+						<button type="button" className={styles.voiceCrashButtonPrimary} onClick={onRetry}>
+							{t`Try again`}
+						</button>
+					)}
+					<button type="button" className={styles.voiceCrashButton} onClick={handleLeaveVoice}>
+						{t`Leave voice`}
+					</button>
+				</div>
+			</div>
+		</div>
+	);
 }
 
 function useFullscreen(containerRef: React.RefObject<HTMLElement | null>) {
@@ -215,6 +269,7 @@ const VoiceCallViewInner = observer(({channel}: {channel: ChannelRecord}) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	const isMobile = MobileLayoutStore.isMobileLayout();
+	const isChannelSidebarCollapsed = !isMobile && ChannelListLayoutStore.getSidebarCollapsed();
 	const {keyboardModeEnabled} = KeyboardModeStore;
 
 	const [isStatsOpen, setIsStatsOpen] = useState(false);
@@ -254,12 +309,108 @@ const VoiceCallViewInner = observer(({channel}: {channel: ChannelRecord}) => {
 		pinnedParticipantIdentity,
 		hasScreenShare,
 		screenShareTracks,
+		cameraTracksAll,
 		filteredCameraTracks,
 		focusMainTrack,
 		carouselTracks,
 	} = useVoiceCallTracksAndLayout({channel});
 
 	const showParticipantsCarousel = VoiceSettingsStore.getShowParticipantsCarousel();
+	const isBroadcastMode = isBroadcastVoiceChannel(channel) || MediaEngineStore.isVoiceChannelStageLike(channel.id);
+	const canCurrentUserSpeak = PermissionStore.can(Permissions.SPEAK, channel);
+	const isCurrentUserListenerMode = isBroadcastMode && MediaEngineStore.isCurrentUserInBroadcastListenerMode();
+	const participantSnapshots = MediaEngineStore.participants;
+	const guildKey = channel.guildId ?? ME;
+	const voiceStatesInChannel = MediaEngineStore.getAllVoiceStatesInChannel(guildKey, channel.id);
+	const {broadcasterTracks, listenerTracks} = (() => {
+		if (!isBroadcastMode) {
+			return {broadcasterTracks: cameraTracksAll, listenerTracks: [] as Array<TrackReferenceOrPlaceholder>};
+		}
+
+		const trackByIdentity = new Map<string, TrackReferenceOrPlaceholder>();
+		for (const trackRef of cameraTracksAll) {
+			trackByIdentity.set(trackRef.participant.identity, trackRef);
+		}
+		const voiceStatesByUserId = new Map<string, Array<(typeof voiceStatesInChannel)[string]>>();
+		for (const state of Object.values(voiceStatesInChannel)) {
+			if (!state?.user_id) continue;
+			const existingStates = voiceStatesByUserId.get(state.user_id) ?? [];
+			existingStates.push(state);
+			voiceStatesByUserId.set(state.user_id, existingStates);
+		}
+		const resolveFallbackVoiceState = (userId: string | null) => {
+			if (!userId) return null;
+			const states = voiceStatesByUserId.get(userId) ?? [];
+			if (states.length === 0) return null;
+			const statesInCurrentChannel = states.filter((state) => state.channel_id === channel.id);
+			if (statesInCurrentChannel.length === 1) return statesInCurrentChannel[0];
+			if (statesInCurrentChannel.length > 1) {
+				return statesInCurrentChannel.find((state) => state.suppress === true) ?? statesInCurrentChannel[0];
+			}
+			return states.find((state) => state.suppress === true) ?? states[0];
+		};
+
+		const nextBroadcasters: Array<TrackReferenceOrPlaceholder> = [];
+		const nextListeners: Array<TrackReferenceOrPlaceholder> = [];
+		const seenIdentities = new Set<string>();
+
+		for (const participant of participants) {
+			const identity = participant.identity;
+			if (seenIdentities.has(identity)) continue;
+			seenIdentities.add(identity);
+
+			const trackRef =
+				trackByIdentity.get(identity) ??
+				({
+					participant,
+					source: Track.Source.Camera,
+				} as TrackReferenceOrPlaceholder);
+
+			const participantSnapshot = participantSnapshots[identity];
+			const identityParts = getVoiceIdentityParts(identity);
+			const userId = participantSnapshot?.userId ?? identityParts.userId;
+			const connectionId = participantSnapshot?.connectionId ?? identityParts.connectionId;
+			const fallbackVoiceState = resolveFallbackVoiceState(userId);
+			const voiceState = connectionId ? MediaEngineStore.getVoiceStateByConnectionId(connectionId) ?? fallbackVoiceState : fallbackVoiceState;
+			const isCurrentUserTrack = participant.isLocal || userId === UserStore.currentUser?.id;
+			// Stage role source of truth: suppressed users are listeners, unsuppressed users are broadcasters.
+			const isListener =
+				voiceState?.suppress === true ||
+				(isCurrentUserTrack && (isCurrentUserListenerMode || !canCurrentUserSpeak));
+
+			if (isListener) {
+				nextListeners.push(trackRef);
+			} else {
+				nextBroadcasters.push(trackRef);
+			}
+		}
+
+		for (const trackRef of cameraTracksAll) {
+			const identity = trackRef.participant.identity;
+			if (seenIdentities.has(identity)) continue;
+			seenIdentities.add(identity);
+
+			const participantSnapshot = participantSnapshots[identity];
+			const identityParts = getVoiceIdentityParts(identity);
+			const userId = participantSnapshot?.userId ?? identityParts.userId;
+			const connectionId = participantSnapshot?.connectionId ?? identityParts.connectionId;
+			const fallbackVoiceState = resolveFallbackVoiceState(userId);
+			const voiceState = connectionId ? MediaEngineStore.getVoiceStateByConnectionId(connectionId) ?? fallbackVoiceState : fallbackVoiceState;
+			const isCurrentUserTrack = trackRef.participant.isLocal || userId === UserStore.currentUser?.id;
+			// Stage role source of truth: suppressed users are listeners, unsuppressed users are broadcasters.
+			const isListener =
+				voiceState?.suppress === true ||
+				(isCurrentUserTrack && (isCurrentUserListenerMode || !canCurrentUserSpeak));
+
+			if (isListener) {
+				nextListeners.push(trackRef);
+			} else {
+				nextBroadcasters.push(trackRef);
+			}
+		}
+
+		return {broadcasterTracks: nextBroadcasters, listenerTracks: nextListeners};
+	})();
 
 	const {
 		refs: statsRefs,
@@ -279,7 +430,10 @@ const VoiceCallViewInner = observer(({channel}: {channel: ChannelRecord}) => {
 	]);
 	const statsFloatingProps = isMobile ? {} : getStatsFloatingProps();
 
-	const handleBackClick = useCallback(() => window.history.back(), []);
+	const handleMobileBackClick = useCallback(() => window.history.back(), []);
+	const handleRevealChannelList = useCallback(() => {
+		ChannelListLayoutStore.setSidebarCollapsed(false);
+	}, []);
 
 	const handleToggleFavorite = useCallback(() => {
 		if (!channel) return;
@@ -358,6 +512,9 @@ const VoiceCallViewInner = observer(({channel}: {channel: ChannelRecord}) => {
 											(focusMainTrack as TrackReferenceOrPlaceholder).participant.identity === pinnedParticipantIdentity
 										}
 										showFocusIndicator={false}
+										autoWatchScreenShare={
+											(focusMainTrack as TrackReferenceOrPlaceholder).source === Track.Source.ScreenShare
+										}
 									/>
 								</ParticipantContext.Provider>
 							</TrackRefContext.Provider>
@@ -482,15 +639,78 @@ const VoiceCallViewInner = observer(({channel}: {channel: ChannelRecord}) => {
 		);
 	}, [hasScreenShare, isMobile, screenShareTracks, filteredCameraTracks, channel.guildId, channel.id, t]);
 
+	const stageLayoutNode = useMemo(() => {
+		const stageShareTrack = screenShareTracks[0] ?? null;
+		const speakerCountLabel =
+			broadcasterTracks.length === 1 ? t`${broadcasterTracks.length} speaker` : t`${broadcasterTracks.length} speakers`;
+		const listenerCountLabel =
+			listenerTracks.length === 1 ? t`${listenerTracks.length} listener` : t`${listenerTracks.length} listeners`;
+
+		return (
+			<div className={clsx(styles.stageLayout, stageShareTrack && styles.stageLayoutWithShare)}>
+				{stageShareTrack && (
+					<div className={styles.stageShareContainer}>
+						<div className={styles.stageShareHeader}>{t`Live stream`}</div>
+						<div className={styles.stageShareTile}>
+							<TrackRefContext.Provider value={stageShareTrack}>
+								<ParticipantContext.Provider value={stageShareTrack.participant}>
+									<VoiceParticipantTile guildId={channel.guildId} channelId={channel.id} />
+								</ParticipantContext.Provider>
+							</TrackRefContext.Provider>
+						</div>
+					</div>
+				)}
+
+				<div className={clsx(styles.stageSections, stageShareTrack && styles.stageSectionsWithShare)}>
+					<section className={styles.stageSection}>
+						<header className={styles.stageSectionHeader}>
+							<span className={styles.stageSectionTitle}>{t`Broadcasters`}</span>
+							<span className={styles.stageSectionCount}>{speakerCountLabel}</span>
+						</header>
+						<div className={styles.stageSectionBody}>
+							{broadcasterTracks.length > 0 ? (
+								<VoiceGridLayout tracks={broadcasterTracks}>
+									<VoiceParticipantTile guildId={channel.guildId} channelId={channel.id} />
+								</VoiceGridLayout>
+							) : (
+								<div className={styles.stageSectionEmpty}>{t`No broadcasters yet`}</div>
+							)}
+						</div>
+					</section>
+
+					<section className={styles.stageSection}>
+						<header className={styles.stageSectionHeader}>
+							<span className={styles.stageSectionTitle}>{t`Listeners`}</span>
+							<span className={styles.stageSectionCount}>{listenerCountLabel}</span>
+						</header>
+						<div className={styles.stageSectionBody}>
+							{listenerTracks.length > 0 ? (
+								<VoiceGridLayout tracks={listenerTracks}>
+									<VoiceParticipantTile guildId={channel.guildId} channelId={channel.id} />
+								</VoiceGridLayout>
+							) : (
+								<div className={styles.stageSectionEmpty}>{t`No listeners`}</div>
+							)}
+						</div>
+					</section>
+				</div>
+			</div>
+		);
+	}, [broadcasterTracks, channel.guildId, channel.id, listenerTracks, screenShareTracks, t]);
+
 	const mainContentNode = useMemo(() => {
+		if (isBroadcastMode) {
+			return stageLayoutNode;
+		}
+
 		switch (layoutMode) {
 			case 'focus':
 				return focusLayoutNode;
 			default:
 				return gridLayoutNode;
 		}
-	}, [layoutMode, focusLayoutNode, gridLayoutNode]);
-	const mainContentKey = `${layoutMode}:${hasScreenShare ? 'screen' : 'standard'}:${showParticipantsCarousel ? 'carousel' : 'collapsed'}`;
+	}, [focusLayoutNode, gridLayoutNode, isBroadcastMode, layoutMode, stageLayoutNode]);
+	const mainContentKey = `${isBroadcastMode ? 'stage' : layoutMode}:${hasScreenShare ? 'screen' : 'standard'}:${showParticipantsCarousel ? 'carousel' : 'collapsed'}`;
 
 	const statsReferencePropsRaw = getStatsReferenceProps();
 	const {ref: _statsRef, onClick: statsOnClickRaw, ...statsReferenceProps} = statsReferencePropsRaw;
@@ -516,19 +736,36 @@ const VoiceCallViewInner = observer(({channel}: {channel: ChannelRecord}) => {
 					: t`${participantCount} participants in call`}
 			</output>
 
-			<div className={styles.topCallStatusCluster}>
-				<div
-					className={clsx(
-						styles.connectionStatusContainer,
-						connectionState === ConnectionState.Connecting && styles.statusConnecting,
-						connectionState === ConnectionState.Reconnecting && styles.statusReconnecting,
-						connectionState === ConnectionState.Disconnected && styles.statusDisconnected,
-						connectionState === ConnectionState.Connected && styles.statusConnected,
-					)}
-				>
-					<div className={styles.connectionStatusDot} />
-					{connectionStateText}
+			{connectionState === ConnectionState.Reconnecting && (
+				<div className={styles.reconnectOverlay}>
+					<ReconnectOrbit size="large" />
 				</div>
+			)}
+
+			{connectionState === ConnectionState.Connecting && (
+				<div className={styles.connectingOverlay}>
+					<ReconnectOrbit size="large" />
+					<div className={styles.connectingOverlayText}>
+						<strong>{t`Connecting to voice...`}</strong>
+						<span>{t`Preparing microphone and voice server`}</span>
+					</div>
+				</div>
+			)}
+
+			<div className={styles.topCallStatusCluster}>
+				{connectionState !== ConnectionState.Reconnecting && (
+					<div
+						className={clsx(
+							styles.connectionStatusContainer,
+							connectionState === ConnectionState.Connecting && styles.statusConnecting,
+							connectionState === ConnectionState.Disconnected && styles.statusDisconnected,
+							connectionState === ConnectionState.Connected && styles.statusConnected,
+						)}
+					>
+						<div className={styles.connectionStatusDot} />
+						{connectionStateText}
+					</div>
+				)}
 				<div className={styles.participantStatusPill}>
 					<UsersThreeIcon weight="fill" className={styles.participantStatusIcon} />
 					{participantStatusText}
@@ -542,24 +779,26 @@ const VoiceCallViewInner = observer(({channel}: {channel: ChannelRecord}) => {
 							<motion.button
 								type="button"
 								className={channelHeaderStyles.backButton}
-								onClick={handleBackClick}
+								onClick={handleMobileBackClick}
 								{...getButtonMotion(reducedMotion)}
 							>
 								<ArrowLeftIcon className={channelHeaderStyles.backIconBold} weight="bold" />
 							</motion.button>
 						</FocusRing>
-					) : (
+					) : isChannelSidebarCollapsed ? (
 						<FocusRing offset={-2}>
 							<motion.button
 								type="button"
 								className={channelHeaderStyles.backButtonDesktop}
-								onClick={handleBackClick}
+								style={{display: 'flex'}}
+								aria-label={t`Expand channel list`}
+								onClick={handleRevealChannelList}
 								{...getButtonMotion(reducedMotion)}
 							>
 								<ListIcon className={channelHeaderStyles.backIcon} />
 							</motion.button>
 						</FocusRing>
-					)}
+					) : null}
 
 					<div className={channelHeaderStyles.leftContentContainer}>
 						<div className={channelHeaderStyles.channelInfoContainer}>
@@ -648,4 +887,8 @@ const VoiceCallViewInner = observer(({channel}: {channel: ChannelRecord}) => {
 	);
 });
 
-export const VoiceCallView = observer(({channel}: VoiceCallViewProps) => <VoiceCallViewInner channel={channel} />);
+export const VoiceCallView = observer(({channel}: VoiceCallViewProps) => (
+	<Sentry.ErrorBoundary fallback={({resetError}) => <VoiceCallCrashFallback channel={channel} onRetry={resetError} />}>
+		<VoiceCallViewInner channel={channel} />
+	</Sentry.ErrorBoundary>
+));

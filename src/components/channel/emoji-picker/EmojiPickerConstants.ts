@@ -18,6 +18,7 @@
  */
 
 import * as EmojiUtils from '~/utils/EmojiUtils';
+import type {Emoji} from '~/stores/EmojiStore';
 
 export const EMOJI_CLAP = EmojiUtils.fromHexCodePoint('1f44f');
 export const EMOJI_SPRITE_SIZE = 32;
@@ -52,6 +53,8 @@ const SPRITE_SHEET_RESOURCES: Record<string, SpriteSheetVariant> = {
 };
 
 const preloadedSpriteSheetPaths = new Set<string>();
+const preloadedEmojiImageUrls = new Set<string>();
+const MAX_PRELOADED_EMOJI_IMAGE_URLS = 900;
 
 const getSpriteSheetKey = (skinTone?: string): string => {
 	if (!skinTone) {
@@ -116,5 +119,71 @@ export const preloadEmojiSpriteSheets = (skinTone?: string): void => {
 	if (skinTone) {
 		preloadSpriteSheetPath(getSpriteSheetPath(skinTone, options));
 	}
+};
+
+export const getEmojiImageUrl = (emoji: Emoji, skinTone = ''): string | null => {
+	if (emoji.id || emoji.guildId) {
+		return emoji.url ?? null;
+	}
+
+	if (emoji.surrogates && !EmojiUtils.shouldUseNativeEmoji) {
+		const displayEmoji = emoji.hasDiversity && skinTone ? emoji.surrogates + skinTone : emoji.surrogates;
+		return EmojiUtils.getEmojiURL(displayEmoji);
+	}
+
+	return emoji.url ?? null;
+};
+
+const scheduleEmojiImagePreload = (callback: () => void): void => {
+	if (typeof window === 'undefined') {
+		return;
+	}
+
+	const idleWindow = window as Window & {requestIdleCallback?: (callback: () => void, options?: {timeout?: number}) => number};
+	if (idleWindow.requestIdleCallback) {
+		idleWindow.requestIdleCallback(callback, {timeout: 300});
+		return;
+	}
+
+	globalThis.setTimeout(callback, 0);
+};
+
+export const preloadEmojiImageUrls = (urls: ReadonlyArray<string | null | undefined>, limit = 144): void => {
+	if (typeof Image === 'undefined') {
+		return;
+	}
+
+	const pendingUrls: Array<string> = [];
+	for (const url of urls) {
+		if (!url || preloadedEmojiImageUrls.has(url)) {
+			continue;
+		}
+
+		preloadedEmojiImageUrls.add(url);
+		pendingUrls.push(url);
+		if (pendingUrls.length >= limit) {
+			break;
+		}
+	}
+
+	if (pendingUrls.length === 0) {
+		return;
+	}
+
+	while (preloadedEmojiImageUrls.size > MAX_PRELOADED_EMOJI_IMAGE_URLS) {
+		const firstUrl = preloadedEmojiImageUrls.values().next().value;
+		if (typeof firstUrl !== 'string') {
+			break;
+		}
+		preloadedEmojiImageUrls.delete(firstUrl);
+	}
+
+	scheduleEmojiImagePreload(() => {
+		for (const url of pendingUrls) {
+			const image = new Image();
+			image.decoding = 'async';
+			image.src = url;
+		}
+	});
 };
 

@@ -23,9 +23,11 @@ import {observer} from 'mobx-react-lite';
 import React from 'react';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
+import * as PrivateChannelActionCreators from '~/actions/PrivateChannelActionCreators';
 import {DEFAULT_ACCENT_COLOR} from '~/Constants';
 import {CustomStatusDisplay} from '~/components/common/CustomStatusDisplay/CustomStatusDisplay';
 import {MusicActivityDisplay} from '~/components/common/MusicActivityDisplay/MusicActivityDisplay';
+import {SteamNowPlayingBlock} from '~/components/common/SteamNowPlayingBlock/SteamNowPlayingBlock';
 import {CustomStatusModal} from '~/components/modals/CustomStatusModal';
 import {UserProfileModal} from '~/components/modals/UserProfileModal';
 import {UserProfileBadges} from '~/components/popouts/UserProfileBadges';
@@ -45,11 +47,11 @@ import type {ProfileRecord} from '~/records/ProfileRecord';
 import type {UserProfile, UserRecord} from '~/records/UserRecord';
 import AuthenticationStore from '~/stores/AuthenticationStore';
 import GuildStore from '~/stores/GuildStore';
-import LocalProfileEffectsStore from '~/stores/LocalProfileEffectsStore';
 import * as ColorUtils from '~/utils/ColorUtils';
 import * as NicknameUtils from '~/utils/NicknameUtils';
 import * as ProfileDisplayUtils from '~/utils/ProfileDisplayUtils';
 import type {ProfileAccentEffectPreset} from '~/utils/ProfileAccentEffectUtils';
+import {getProfileAccentEffectPreset} from '~/utils/ProfileEffectResolver';
 import {type BadgeSettings, createMockProfile} from '~/utils/ProfileUtils';
 import styles from './ProfilePreview.module.css';
 
@@ -213,7 +215,7 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = observer(
 		const accentColorHex = typeof rawAccentColor === 'number' ? ColorUtils.int2hex(rawAccentColor) : rawAccentColor;
 		const borderColor = accentColorHex || DEFAULT_ACCENT_COLOR;
 		const bannerColor = accentColorHex || DEFAULT_ACCENT_COLOR;
-		const accentEffectPreset = previewAccentEffectPreset ?? LocalProfileEffectsStore.getUserPreset(user.id);
+		const accentEffectPreset = previewAccentEffectPreset ?? getProfileAccentEffectPreset(user);
 
 		const selectedGuild = guildId ? GuildStore.getGuild(guildId) : null;
 
@@ -224,6 +226,17 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = observer(
 		const openCustomStatus = React.useCallback(() => {
 			ModalActionCreators.push(modal(() => <CustomStatusModal />));
 		}, []);
+
+		const handleMessageClick = React.useCallback(async () => {
+			if (isCurrentUser) return;
+
+			try {
+				await PrivateChannelActionCreators.openDMChannel(user.id);
+				ModalActionCreators.pop();
+			} catch (error) {
+				console.error('Failed to open DM from profile preview:', error);
+			}
+		}, [isCurrentUser, user.id]);
 
 		const handlePreviewKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
 			if (event.key === 'Enter' || event.key === ' ') {
@@ -282,6 +295,7 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = observer(
 								/>
 							</div>
 							<MusicActivityDisplay userId={user.id} className={styles.profileMusicActivity} />
+							<SteamNowPlayingBlock userId={user.id} className={styles.profileSteamNowPlaying} />
 							<UserProfileBio profile={mockProfile} onShowMore={openMockProfile} />
 							{showMembershipInfo && (
 								<UserProfileMembershipInfo
@@ -293,13 +307,15 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = observer(
 
 						{showMessageButton && (
 							<ProfileCardFooter>
-								<Tooltip text={t`You can't message yourself`} maxWidth="xl">
+								<Tooltip text={isCurrentUser ? t`You can't message yourself` : t`Send a direct message`} maxWidth="xl">
 									<div className={styles.messageButtonWrapper}>
 										<Button
 											small={true}
 											fitContainer={true}
 											leftIcon={<ChatTeardropIcon className={styles.messageIcon} />}
-											disabled={true}
+											disabled={isCurrentUser}
+											aria-label={isCurrentUser ? t`You can't message yourself` : t`Message ${displayName}`}
+											onClick={() => void handleMessageClick()}
 										>
 											<Trans>Message</Trans>
 										</Button>

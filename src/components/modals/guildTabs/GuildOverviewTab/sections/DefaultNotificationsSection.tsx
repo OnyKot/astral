@@ -63,7 +63,11 @@ export const DefaultNotificationsSection: React.FC<{
 				render={({field}) => (
 					<RadioGroup
 						className={styles.notificationOptions}
-						value={guild.isLargeGuild ? MessageNotifications.ONLY_MENTIONS : field.value}
+						value={
+							guild.isLargeGuild
+								? MessageNotifications.ONLY_MENTIONS
+								: (field.value ?? MessageNotifications.ONLY_MENTIONS)
+						}
 						onChange={field.onChange}
 						disabled={!canManageGuild || guild.isLargeGuild}
 						aria-label={t`Default notification settings`}

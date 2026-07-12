@@ -29,6 +29,7 @@ import {AddFriendsToGroupModal} from '~/components/modals/AddFriendsToGroupModal
 import {EditGroupModal} from '~/components/modals/EditGroupModal';
 import {Button} from '~/components/uikit/Button/Button';
 import type {ChannelRecord} from '~/records/ChannelRecord';
+import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import * as ChannelUtils from '~/utils/ChannelUtils';
 import {MAX_GROUP_DM_RECIPIENTS} from '~/utils/groupDmUtils';
 import styles from './GroupDMWelcomeSection.module.css';
@@ -40,6 +41,7 @@ interface GroupDMWelcomeSectionProps {
 export const GroupDMWelcomeSection: React.FC<GroupDMWelcomeSectionProps> = observer(({channel}) => {
 	const displayName = ChannelUtils.getDMDisplayName(channel);
 	const isGroupDMFull = channel.recipientIds.length + 1 >= MAX_GROUP_DM_RECIPIENTS;
+	const isMobileLayout = MobileLayoutStore.isMobileLayout();
 
 	const handleOpenEditGroup = useCallback(() => {
 		ModalActionCreators.push(modal(() => <EditGroupModal channelId={channel.id} />));
@@ -52,7 +54,7 @@ export const GroupDMWelcomeSection: React.FC<GroupDMWelcomeSectionProps> = obser
 	return (
 		<div className={styles.welcomeSection}>
 			<div className={styles.profileSection}>
-				<GroupDMAvatar channel={channel} size={80} />
+				<GroupDMAvatar channel={channel} size={isMobileLayout ? 56 : 80} />
 
 				<span className={styles.groupName}>{displayName}</span>
 			</div>

@@ -39,16 +39,19 @@
 	max-width: 360px;
 	width: max-content;
 	padding: 8px;
-	background-color: var(--background-primary);
-	border: 1px solid var(--background-modifier-accent);
-	border-radius: 4px;
-	box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+	background: color-mix(in srgb, var(--background-floating) 92%, var(--background-primary) 8%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
+	border-radius: 0.75rem;
+	box-shadow:
+		0 20px 48px rgb(0 0 0 / 0.32),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 5%, transparent);
 	outline: none;
 	box-sizing: border-box;
 	overflow-x: hidden;
 	scrollbar-width: thin;
 	scrollbar-color: var(--background-modifier-accent) transparent;
 	-webkit-app-region: no-drag;
+	animation: contextMenuIn var(--motion-dur-short) var(--motion-ease-smooth) both;
 }
 
 .contextMenu::-webkit-scrollbar {
@@ -78,7 +81,7 @@
 	gap: 12px;
 	padding: 6px 8px;
 	margin: 1px 0;
-	border-radius: 3px;
+	border-radius: 0.48rem;
 	font-size: 14px;
 	font-weight: 500;
 	line-height: 18px;
@@ -87,6 +90,10 @@
 	box-sizing: border-box;
 	min-height: 36px;
 	width: 100%;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .item:has(.itemShortcut) {
@@ -96,6 +103,7 @@
 .item:hover:not(.disabled) {
 	background-color: var(--background-modifier-hover);
 	color: var(--text-primary);
+	transform: translateX(2px);
 }
 
 .item:focus-visible:not(.disabled) {
@@ -359,16 +367,19 @@
 	max-width: 360px;
 	width: max-content;
 	padding: 8px;
-	background-color: var(--background-primary);
-	border: 1px solid var(--background-modifier-accent);
-	border-radius: 4px;
-	box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+	background: color-mix(in srgb, var(--background-floating) 92%, var(--background-primary) 8%);
+	border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
+	border-radius: 0.75rem;
+	box-shadow:
+		0 20px 48px rgb(0 0 0 / 0.32),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 5%, transparent);
 	outline: none;
 	box-sizing: border-box;
 	overflow-x: hidden;
 	scrollbar-width: thin;
 	scrollbar-color: var(--background-modifier-accent) transparent;
 	-webkit-app-region: no-drag;
+	animation: contextMenuIn var(--motion-dur-short) var(--motion-ease-smooth) both;
 }
 
 .submenuPopover::-webkit-scrollbar {
@@ -388,4 +399,32 @@
 
 .submenuPopover::-webkit-scrollbar-thumb:hover {
 	background-color: var(--background-modifier-hover);
+}
+
+@keyframes contextMenuIn {
+	from {
+		opacity: 0;
+		transform: translateY(6px) scale(0.98);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.contextMenu,
+	.submenuPopover {
+		animation: none;
+	}
+
+	.item {
+		transition:
+			background-color var(--motion-dur-short) var(--motion-ease-snap),
+			color var(--motion-dur-short) var(--motion-ease-snap);
+	}
+
+	.item:hover:not(.disabled) {
+		transform: none;
+	}
 }

@@ -36,12 +36,13 @@
 .input {
 	width: 100%;
 	min-height: 3.15rem;
-	border-radius: 1.15rem;
+	border-radius: 0;
 	border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
-	background: color-mix(in srgb, var(--background-floating) 82%, var(--background-primary) 18%);
-	box-shadow:
-		0 14px 26px rgb(8 15 28 / 0.08),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+	border-top-color: transparent;
+	border-right-color: transparent;
+	border-left-color: transparent;
+	background: transparent;
+	box-shadow: none;
 	font-weight: 600;
 }
 
@@ -51,19 +52,18 @@
 
 .inputError {
 	border-color: color-mix(in srgb, var(--status-danger) 70%, transparent);
-	box-shadow:
-		0 14px 26px color-mix(in srgb, var(--status-danger) 10%, transparent),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+	border-top-color: transparent;
+	border-right-color: transparent;
+	border-left-color: transparent;
+	box-shadow: none;
 }
 
 .button {
 	width: 100%;
 	min-height: 3rem;
-	border-radius: 1rem;
-	background: color-mix(in srgb, var(--brand-primary) 90%, var(--background-floating) 10%);
-	box-shadow:
-		0 14px 26px color-mix(in srgb, var(--brand-primary) 24%, transparent),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
+	border-radius: 0.55rem;
+	background: color-mix(in srgb, var(--brand-primary) 88%, var(--background-floating) 12%);
+	box-shadow: none;
 	position: relative;
 	overflow: hidden;
 	transition:
@@ -76,11 +76,9 @@
 	flex-shrink: 0;
 	min-width: 7.75rem;
 	min-height: 2.4rem;
-	border-radius: 0.9rem;
+	border-radius: 0.52rem;
 	background: color-mix(in srgb, var(--brand-primary) 90%, var(--background-floating) 10%);
-	box-shadow:
-		0 12px 22px color-mix(in srgb, var(--brand-primary) 22%, transparent),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
+	box-shadow: none;
 	position: relative;
 	overflow: hidden;
 	transition:
@@ -89,30 +87,11 @@
 		background-color 220ms ease;
 }
 
-.button::before,
-.inlineButton::before {
-	content: '';
-	position: absolute;
-	inset: -1px auto -1px -34%;
-	width: 30%;
-	background: linear-gradient(110deg, transparent, color-mix(in srgb, var(--text-on-brand-primary) 24%, transparent), transparent);
-	transform: translateX(-165%);
-	transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-	pointer-events: none;
-}
-
 .button:hover:not(:disabled),
 .inlineButton:hover:not(:disabled) {
 	background: color-mix(in srgb, var(--brand-primary) 94%, var(--background-floating) 6%);
-	transform: translateY(-1px);
-	box-shadow:
-		0 18px 30px color-mix(in srgb, var(--brand-primary) 30%, transparent),
-		inset 0 1px 0 color-mix(in srgb, var(--text-on-brand-primary) 24%, transparent);
-}
-
-.button:hover:not(:disabled)::before,
-.inlineButton:hover:not(:disabled)::before {
-	transform: translateX(420%);
+	transform: none;
+	box-shadow: none;
 }
 
 .button:active:not(:disabled),
@@ -125,7 +104,7 @@
 	padding: 0.75rem 0.95rem;
 	border-radius: 1rem;
 	border: 1px solid color-mix(in srgb, var(--status-danger) 18%, transparent);
-	background: color-mix(in srgb, var(--status-danger) 8%, transparent);
+	background: transparent;
 	font-size: 0.875rem;
 	font-weight: 600;
 	line-height: 1.3rem;
@@ -137,7 +116,7 @@
 	padding: 0.75rem 0.95rem;
 	border-radius: 1rem;
 	border: 1px solid color-mix(in srgb, var(--status-online) 18%, transparent);
-	background: color-mix(in srgb, var(--status-online) 8%, transparent);
+	background: transparent;
 	font-size: 0.875rem;
 	font-weight: 600;
 	line-height: 1.3rem;

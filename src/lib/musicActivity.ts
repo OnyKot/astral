@@ -17,7 +17,7 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-export type MusicProvider = 'spotify' | 'yandex_music' | 'astral_now_playing';
+export type MusicProvider = 'spotify' | 'yandex_music' | 'astral_now_playing' | 'steam' | (string & {});
 
 export interface MusicActivity {
 	provider: MusicProvider;
@@ -47,6 +47,16 @@ export interface GatewayMusicActivityPayload {
 	updated_at?: number | null;
 }
 
+export const isSteamProvider = (provider: string | null | undefined): boolean => {
+	if (!provider) return false;
+	return provider.trim().toLowerCase().includes('steam');
+};
+
+export const isTwitchProvider = (provider: string | null | undefined): boolean => {
+	if (!provider) return false;
+	return provider.trim().toLowerCase().includes('twitch');
+};
+
 const normalizeArtists = (artists: Array<string>): Array<string> => {
 	return artists.map((artist) => artist.trim()).filter((artist) => artist.length > 0);
 };
@@ -58,8 +68,9 @@ export const normalizeMusicActivity = (activity: MusicActivity | null | undefine
 
 	const title = activity.title.trim();
 	const artists = normalizeArtists(activity.artists);
+	const providerAllowsNoArtists = isSteamProvider(activity.provider) || isTwitchProvider(activity.provider);
 
-	if (!title || artists.length === 0) {
+	if (!title || (!providerAllowsNoArtists && artists.length === 0)) {
 		return null;
 	}
 
@@ -142,4 +153,10 @@ export const musicActivityToKey = (activity: MusicActivity | null | undefined): 
 
 export const formatMusicArtists = (artists: Array<string>): string => {
 	return normalizeArtists(artists).join(', ');
+};
+
+export const isTwitchLiveActivity = (activity: MusicActivity | null | undefined): boolean => {
+	if (!activity) return false;
+	if (!isTwitchProvider(activity.provider)) return false;
+	return activity.isPlaying !== false;
 };

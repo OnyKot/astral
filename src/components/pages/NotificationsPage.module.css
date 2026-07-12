@@ -37,6 +37,13 @@
 	padding-right: 1rem;
 }
 
+.headerTitle {
+	display: flex;
+	align-items: center;
+	gap: 0.65rem;
+	min-width: 0;
+}
+
 .title {
 	font-weight: 600;
 	font-size: 1.125rem;

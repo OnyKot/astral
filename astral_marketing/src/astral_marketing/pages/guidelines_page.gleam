@@ -72,7 +72,7 @@ pub fn render(req: wisp.Request, ctx: Context) -> wisp.Response {
           html.article(
             [
               attribute.class(
-                "marketing-panel policy-prose motion-reveal motion-delay-2 p-6 md:p-10",
+                "marketing-panel policy-prose prose prose-invert p-6 md:p-10 max-w-none",
               ),
             ],
             [markdown_element],

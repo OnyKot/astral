@@ -17,13 +17,13 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {makeAutoObservable} from 'mobx';
+import {makeAutoObservable, runInAction} from 'mobx';
 import {makePersistent} from '~/lib/MobXPersistence';
 
 export type ChannelListFilter = 'all' | 'text' | 'voice';
 
-const SIDEBAR_DEFAULT_PX = 270;
-const SIDEBAR_MIN_PX = 200;
+const SIDEBAR_DEFAULT_PX = 290;
+const SIDEBAR_MIN_PX = 290;
 const SIDEBAR_MAX_PX = 480;
 
 class ChannelListLayoutStore {
@@ -39,6 +39,9 @@ class ChannelListLayoutStore {
 
 	private async initPersistence(): Promise<void> {
 		await makePersistent(this, 'ChannelListLayoutStore', ['sidebarCollapsed', 'compactView', 'filter', 'sidebarWidthPx']);
+		runInAction(() => {
+			this.sidebarWidthPx = this.clamp(this.sidebarWidthPx, SIDEBAR_MIN_PX, SIDEBAR_MAX_PX);
+		});
 	}
 
 	private clamp(value: number, min: number, max: number): number {

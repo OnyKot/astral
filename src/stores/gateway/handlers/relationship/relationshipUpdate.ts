@@ -34,7 +34,8 @@ interface RelationshipPayload {
 export function handleRelationshipUpdate(data: RelationshipPayload, _context: GatewayHandlerContext): void {
 	RelationshipStore.updateRelationship(data as Relationship);
 	MemberSearchStore.handleFriendshipChange(data.id, data.type === RelationshipTypes.FRIEND);
-	MessageStore.handleRelationshipUpdate();
+	// Передаём userId для оптимизации через обратный индекс
+	MessageStore.handleRelationshipUpdate({userId: data.id});
 	QuickSwitcherStore.recomputeIfOpen();
 	NotificationStore.handleRelationshipNotification(data as Relationship);
 }

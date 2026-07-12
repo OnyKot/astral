@@ -27,8 +27,16 @@ import styles from '~/components/uikit/Popout/Popout.module.css';
 import {useAntiShiftFloating} from '~/hooks/useAntiShiftFloating';
 import AccessibilityStore from '~/stores/AccessibilityStore';
 import LayerManager from '~/stores/LayerManager';
+import OverlayStackStore from '~/stores/OverlayStackStore';
 import PopoutStore from '~/stores/PopoutStore';
 import {isScrollbarDragActive} from '~/utils/ScrollbarDragState';
+
+const POPOUT_OPEN_MS = 240;
+const POPOUT_CLOSE_MS = 180;
+const POPOUT_OPEN_EASE = 'cubic-bezier(0.2, 0.82, 0.24, 1)';
+const POPOUT_CLOSE_EASE = 'cubic-bezier(0.28, 0, 0.2, 1)';
+
+const animatedCloseHandlers = new Map<string, () => void>();
 
 type PopoutItemProps = Omit<Popout, 'key'> & {
 	popoutKey: string;
@@ -74,15 +82,22 @@ const PopoutItem: React.FC<PopoutItemProps> = observer(
 		onContentMouseEnter,
 		onContentMouseLeave,
 	}) => {
+		const [isVisible, setIsVisible] = React.useState(true);
+		const [isClosing, setIsClosing] = React.useState(false);
+		const [targetInDOM, setTargetInDOM] = React.useState(true);
+		const hasFocusedInitialRef = React.useRef(false);
+		const closeFallbackTimerRef = React.useRef<number | null>(null);
+		const isActive = isVisible && targetInDOM && !isClosing;
+
 		const {
 			ref: popoutRef,
 			state,
 			style,
-		} = useAntiShiftFloating(target, true, {
+		} = useAntiShiftFloating(target, isActive, {
 			placement: position,
 			offsetMainAxis,
 			offsetCrossAxis,
-			shouldAutoUpdate,
+			shouldAutoUpdate: shouldAutoUpdate && isActive,
 			enableSmartBoundary: true,
 			constrainHeight: true,
 		});
@@ -96,10 +111,73 @@ const PopoutItem: React.FC<PopoutItemProps> = observer(
 		const mergedPopoutRef = useMergeRefs([popoutRef, focusRefs.setFloating]);
 
 		const prefersReducedMotion = AccessibilityStore.useReducedMotion;
+		const shouldAnimate = animationType === 'smooth' && !prefersReducedMotion;
 
-		const [isVisible, setIsVisible] = React.useState(true);
-		const [targetInDOM, setTargetInDOM] = React.useState(true);
-		const hasFocusedInitialRef = React.useRef(false);
+		const finishClose = React.useCallback(() => {
+			if (closeFallbackTimerRef.current != null) {
+				window.clearTimeout(closeFallbackTimerRef.current);
+				closeFallbackTimerRef.current = null;
+			}
+			setIsClosing(false);
+			onClose?.();
+			PopoutActionCreators.close(popoutKey);
+		}, [onClose, popoutKey]);
+
+		const beginClose = React.useCallback(() => {
+			if (!isVisible || isClosing) {
+				return;
+			}
+
+			if (!shouldAnimate) {
+				setIsVisible(false);
+				finishClose();
+				return;
+			}
+
+			setIsClosing(true);
+
+			const node = popoutRef.current;
+			const armCloseTransition = () => {
+				setIsVisible(false);
+
+				if (!node) {
+					finishClose();
+					return;
+				}
+
+				let didFinish = false;
+				const handleTransitionEnd = (event: TransitionEvent) => {
+					if (didFinish || event.target !== node || event.propertyName !== 'opacity') {
+						return;
+					}
+					didFinish = true;
+					node.removeEventListener('transitionend', handleTransitionEnd);
+					finishClose();
+				};
+
+				node.addEventListener('transitionend', handleTransitionEnd);
+				closeFallbackTimerRef.current = window.setTimeout(() => {
+					if (didFinish) {
+						return;
+					}
+					didFinish = true;
+					node.removeEventListener('transitionend', handleTransitionEnd);
+					finishClose();
+				}, POPOUT_CLOSE_MS + 48);
+			};
+
+			requestAnimationFrame(() => {
+				requestAnimationFrame(armCloseTransition);
+			});
+		}, [finishClose, isClosing, isVisible, popoutRef, shouldAnimate]);
+
+		React.useLayoutEffect(() => {
+			return () => {
+				if (closeFallbackTimerRef.current != null) {
+					window.clearTimeout(closeFallbackTimerRef.current);
+				}
+			};
+		}, []);
 
 		React.useLayoutEffect(() => {
 			if (!document.contains(target)) {
@@ -123,48 +201,36 @@ const PopoutItem: React.FC<PopoutItemProps> = observer(
 		}, [state.isReady, isVisible, targetInDOM, popoutRef]);
 
 		const transitionStyles = React.useMemo(() => {
-			const shouldAnimate = animationType === 'smooth' && !prefersReducedMotion;
-			const duration = shouldAnimate ? '220ms' : '0ms';
+			const durationMs = isClosing ? POPOUT_CLOSE_MS : POPOUT_OPEN_MS;
+			const duration = shouldAnimate ? `${durationMs}ms` : '0ms';
 			const isPositioned = animationType === 'none' ? true : state.isReady;
 			const transform = getTransform(shouldAnimate, isVisible, isPositioned, targetInDOM);
-			/*
-			 * Spring-style overshoot via cubic-bezier rather than framer-
-			 * motion so we don't pay JS runtime per popout. The curve sets
-			 * a slight bounce on opening (avatar profile, emoji popouts,
-			 * tooltips on hover) so they feel anchored to the trigger
-			 * instead of mechanically fading in. Opacity uses a softer
-			 * ease-out so the visual hand-off matches.
-			 */
-			const easing = 'cubic-bezier(0.34, 1.36, 0.64, 1)';
+			const easing = isClosing ? POPOUT_CLOSE_EASE : POPOUT_OPEN_EASE;
+			const isAnimating = shouldAnimate && (!isPositioned || isClosing);
 			return {
 				opacity: isVisible && targetInDOM ? 1 : 0,
 				transform,
-				transition: `opacity ${duration} cubic-bezier(0.22, 1, 0.36, 1)${shouldAnimate ? `, transform ${duration} ${easing}` : ''}`,
-				pointerEvents: isPositioned && targetInDOM ? ('auto' as const) : ('none' as const),
+				transition: shouldAnimate ? `opacity ${duration} ${easing}, transform ${duration} ${easing}` : 'none',
+				willChange: isAnimating ? ('transform, opacity' as const) : undefined,
+				pointerEvents: isPositioned && targetInDOM && isVisible ? ('auto' as const) : ('none' as const),
 				display: targetInDOM ? undefined : ('none' as const),
 			};
-		}, [isVisible, state.isReady, animationType, prefersReducedMotion, targetInDOM]);
+		}, [isClosing, isVisible, state.isReady, animationType, shouldAnimate, targetInDOM]);
 
-		const closeSelf = React.useCallback(() => {
-			setIsVisible(false);
-			const closeDuration = animationType === 'smooth' && !prefersReducedMotion ? 250 : 0;
+		const closeSelf = beginClose;
 
-			setTimeout(() => {
-				onClose?.();
-				PopoutActionCreators.close(popoutKey);
-			}, closeDuration);
-		}, [animationType, prefersReducedMotion, onClose, popoutKey]);
+		React.useEffect(() => {
+			animatedCloseHandlers.set(popoutKey, beginClose);
+			return () => {
+				animatedCloseHandlers.delete(popoutKey);
+			};
+		}, [beginClose, popoutKey]);
 
 		React.useEffect(() => {
 			const el = popoutRef.current;
 
 			if (!document.contains(target)) {
-				setIsVisible(false);
-				const closeDuration = animationType === 'smooth' && !prefersReducedMotion ? 250 : 0;
-				setTimeout(() => {
-					onClose?.();
-					PopoutActionCreators.close(popoutKey);
-				}, closeDuration);
+				beginClose();
 				return;
 			}
 
@@ -193,25 +259,14 @@ const PopoutItem: React.FC<PopoutItemProps> = observer(
 						return;
 					}
 
-					setIsVisible(false);
-					const closeDuration = animationType === 'smooth' && !prefersReducedMotion ? 250 : 0;
-
-					setTimeout(() => {
-						onClose?.();
-						PopoutActionCreators.close(popoutKey);
-					}, closeDuration);
+					beginClose();
 				}
 			};
 
 			const observer = new MutationObserver(() => {
 				if (!document.contains(target)) {
 					setTargetInDOM(false);
-					setIsVisible(false);
-					const closeDuration = animationType === 'smooth' && !prefersReducedMotion ? 250 : 0;
-					setTimeout(() => {
-						onClose?.();
-						PopoutActionCreators.close(popoutKey);
-					}, closeDuration);
+					beginClose();
 				}
 			});
 
@@ -226,7 +281,7 @@ const PopoutItem: React.FC<PopoutItemProps> = observer(
 				observer.disconnect();
 				document.removeEventListener('click', handleOutsideClick, true);
 			};
-		}, [popoutKey, target, onCloseRequest, onClose, animationType, prefersReducedMotion, popoutRef]);
+		}, [beginClose, onCloseRequest, popoutRef, target]);
 
 		const handleMouseEnter = React.useCallback(() => {
 			if (hoverMode && onContentMouseEnter) {
@@ -239,6 +294,14 @@ const PopoutItem: React.FC<PopoutItemProps> = observer(
 				onContentMouseLeave();
 			}
 		}, [hoverMode, onContentMouseLeave]);
+
+		const canRender = targetInDOM && (animationType === 'none' || state.isReady || isClosing);
+		const popoutZIndex = React.useMemo(() => {
+			const boostedZIndex = zIndexBoost != null ? 1000 + zIndexBoost : undefined;
+			const modalHost = target.closest('[role="dialog"][aria-modal="true"], .modal-backdrop, .focusLock');
+			if (!modalHost) return boostedZIndex;
+			return Math.max(boostedZIndex ?? 0, OverlayStackStore.peek() + 1);
+		}, [target, zIndexBoost]);
 
 		return (
 			<FloatingFocusManager
@@ -258,9 +321,9 @@ const PopoutItem: React.FC<PopoutItemProps> = observer(
 						onMouseLeave={handleMouseLeave}
 						style={{
 							...style,
-							zIndex: zIndexBoost != null ? 1000 + zIndexBoost : undefined,
+							zIndex: popoutZIndex,
 							...transitionStyles,
-							visibility: state.isReady && isVisible && targetInDOM ? 'visible' : 'hidden',
+							visibility: canRender && (isVisible || isClosing) ? 'visible' : 'hidden',
 						}}
 					>
 						{render({
@@ -322,8 +385,17 @@ export const Popouts: React.FC = observer(() => {
 
 		event.preventDefault();
 		event.stopPropagation();
+
+		if (topPopout) {
+			const animatedClose = animatedCloseHandlers.get(topPopout.key.toString());
+			if (animatedClose) {
+				animatedClose();
+				return;
+			}
+		}
+
 		PopoutActionCreators.closeAll();
-	}, []);
+	}, [topPopout]);
 
 	return (
 		<div className={styles.popouts} data-popouts-root data-overlay-pass-through="true">
@@ -349,12 +421,5 @@ const getTransform = (
 	targetInDOM: boolean,
 ): string => {
 	if (!shouldAnimate) return 'scale(1)';
-	/*
-	 * Drop scale a touch lower (0.94 instead of 0.98) and add a small
-	 * vertical translate so the popout feels like it slides down from
-	 * the avatar/trigger element instead of just scaling in place.
-	 * Combined with the spring cubic-bezier in transitionStyles this
-	 * gives a tactile "pop" without animation library overhead.
-	 */
-	return isVisible && isPositioned && targetInDOM ? 'translateY(0) scale(1)' : 'translateY(-4px) scale(0.94)';
+	return isVisible && isPositioned && targetInDOM ? 'translate3d(0, 0, 0) scale(1)' : 'translate3d(0, -3px, 0) scale(0.99)';
 };

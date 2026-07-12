@@ -17,32 +17,28 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {useLingui} from '@lingui/react/macro';
-import {PlayIcon} from '@phosphor-icons/react';
-import {AnimatePresence, motion} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
 import type {FC} from 'react';
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback} from 'react';
 import {thumbHashToDataURL} from 'thumbhash';
 import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators';
 import * as MediaViewerActionCreators from '~/actions/MediaViewerActionCreators';
+import {MessageAttachmentFlags} from '~/Constants';
 import {deriveDefaultNameFromMessage} from '~/components/channel/embeds/EmbedUtils';
-import {OverlayPlayButton} from '~/components/channel/embeds/media/MediaButtons';
 import {getMediaButtonVisibility} from '~/components/channel/embeds/media/MediaButtonUtils';
 import {MediaContainer} from '~/components/channel/embeds/media/MediaContainer';
 import type {BaseMediaProps} from '~/components/channel/embeds/media/MediaTypes';
 import {NSFWBlurOverlay} from '~/components/channel/embeds/NSFWBlurOverlay';
 import {VideoPlayer} from '~/components/media-player/components/VideoPlayer';
+import {isAudioAttachment, isGifType, isVideoAttachment} from '~/components/channel/messageAttachmentUtils';
 import {MediaContextMenu} from '~/components/uikit/ContextMenu/MediaContextMenu';
 import {useDeleteAttachment} from '~/hooks/useDeleteAttachment';
 import {useMediaFavorite} from '~/hooks/useMediaFavorite';
 import {useNSFWMedia} from '~/hooks/useNSFWMedia';
 import type {MessageAttachment} from '~/records/MessageRecord';
-import DeveloperOptionsStore from '~/stores/DeveloperOptionsStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import {createCalculator} from '~/utils/DimensionUtils';
 import {createSaveHandler} from '~/utils/FileDownloadUtils';
-import * as ImageCacheUtils from '~/utils/ImageCacheUtils';
 import {buildMediaProxyURL} from '~/utils/MediaProxyUtils';
 import styles from './EmbedVideo.module.css';
 
@@ -54,6 +50,22 @@ const videoCalculator = createCalculator({
 	maxWidth: VIDEO_CONFIG.MAX_WIDTH,
 	responsive: true,
 });
+
+const getMediaViewerType = (attachment: MessageAttachment): 'image' | 'gif' | 'gifv' | 'video' | 'audio' => {
+	if (isAudioAttachment(attachment)) return 'audio';
+	if (isVideoAttachment(attachment)) return 'video';
+	if ((attachment.flags & MessageAttachmentFlags.IS_ANIMATED) !== 0 || isGifType(attachment.content_type)) return 'gif';
+	return 'image';
+};
+
+const getMediaViewerDimensions = (attachment: MessageAttachment): {naturalWidth: number; naturalHeight: number} => {
+	if (typeof attachment.width === 'number' && typeof attachment.height === 'number') {
+		return {naturalWidth: attachment.width, naturalHeight: attachment.height};
+	}
+	return isVideoAttachment(attachment)
+		? {naturalWidth: 640, naturalHeight: 360}
+		: {naturalWidth: 0, naturalHeight: 0};
+};
 
 type EmbedVideoProps = BaseMediaProps & {
 	src: string;
@@ -67,51 +79,6 @@ type EmbedVideoProps = BaseMediaProps & {
 	mediaAttachments?: ReadonlyArray<MessageAttachment>;
 	isPreview?: boolean;
 };
-
-const MobileVideoOverlay: FC<{
-	thumbHashURL?: string;
-	posterSrc: string | null;
-	posterLoaded: boolean;
-	onTap: () => void;
-	title?: string;
-}> = observer(({thumbHashURL, posterSrc, posterLoaded, onTap, title}) => {
-	const {t} = useLingui();
-	// Outer element is a <div> (not a <button>) because it contains the real
-	// OverlayPlayButton — which is itself a <button>. Nesting button inside
-	// button is invalid HTML and causes React hydration warnings plus
-	// unpredictable click routing. The div stays click-through-the-thumbnail
-	// via onClick so touch users can tap anywhere on the poster to start
-	// playing; keyboard users still tab straight to the inner Play button.
-	return (
-		<div className={styles.videoOverlay} onClick={onTap}>
-			<AnimatePresence>
-				{thumbHashURL && !posterLoaded && (
-					<motion.img
-						key="placeholder"
-						initial={{opacity: 1}}
-						exit={{opacity: 0}}
-						transition={{duration: 0.2}}
-						src={thumbHashURL}
-						alt={title ? t`Thumbnail for ${title}` : t`Video thumbnail`}
-						className={styles.thumbnailPlaceholder}
-					/>
-				)}
-			</AnimatePresence>
-
-			{posterSrc && posterLoaded && (
-				<img
-					src={posterSrc}
-					alt={title ? t`Thumbnail for ${title}` : t`Video thumbnail`}
-					className={styles.thumbnailPlaceholder}
-				/>
-			)}
-
-			<div className={styles.playButtonWrapper}>
-				<OverlayPlayButton onClick={onTap} icon={<PlayIcon size={28} aria-hidden="true" />} ariaLabel={t`Play video`} />
-			</div>
-		</div>
-	);
-});
 
 const EmbedVideo: FC<EmbedVideoProps> = observer(
 	({
@@ -138,7 +105,6 @@ const EmbedVideo: FC<EmbedVideoProps> = observer(
 		const effectiveSrc = buildMediaProxyURL(src);
 		const isBlob = src.startsWith('blob:');
 		const posterSrc = isBlob ? null : buildMediaProxyURL(src, {format: 'webp'});
-		const [posterLoaded, setPosterLoaded] = useState(posterSrc ? ImageCacheUtils.hasImage(posterSrc) : false);
 
 		const {shouldBlur, gateReason} = useNSFWMedia(nsfw, channelId);
 
@@ -164,6 +130,79 @@ const EmbedVideo: FC<EmbedVideoProps> = observer(
 				createSaveHandler(src, 'video')();
 			},
 			[src],
+		);
+
+		const handleOpenPreview = useCallback(
+			(e: React.MouseEvent) => {
+				e.preventDefault();
+				e.stopPropagation();
+
+				if (mediaAttachments.length > 0) {
+					const currentIndex = mediaAttachments.findIndex((attachment) => attachment.id === attachmentId);
+					const items = mediaAttachments.map((attachment) => {
+						const {naturalWidth, naturalHeight} = getMediaViewerDimensions(attachment);
+						return {
+							src: attachment.proxy_url ?? attachment.url ?? '',
+							originalSrc: attachment.url ?? '',
+							naturalWidth,
+							naturalHeight,
+							type: getMediaViewerType(attachment),
+							contentHash: attachment.content_hash,
+							attachmentId: attachment.id,
+							filename: attachment.filename,
+							fileSize: attachment.size,
+							duration: attachment.duration,
+							expiresAt: attachment.expires_at ?? null,
+							expired: attachment.expired ?? false,
+						};
+					});
+
+					MediaViewerActionCreators.openMediaViewer(items, Math.max(0, currentIndex), {
+						channelId,
+						messageId,
+						message,
+					});
+					return;
+				}
+
+				MediaViewerActionCreators.openMediaViewer(
+					[
+						{
+							src,
+							originalSrc: embedUrl || src,
+							naturalWidth: width,
+							naturalHeight: height,
+							type: 'video',
+							contentHash,
+							attachmentId,
+							embedIndex,
+							filename: title,
+							duration,
+						},
+					],
+					0,
+					{
+						channelId,
+						messageId,
+						message,
+					},
+				);
+			},
+			[
+				attachmentId,
+				channelId,
+				contentHash,
+				duration,
+				embedIndex,
+				embedUrl,
+				height,
+				mediaAttachments,
+				message,
+				messageId,
+				src,
+				title,
+				width,
+			],
 		);
 
 		const handleDeleteClick = useDeleteAttachment(message, attachmentId);
@@ -200,47 +239,6 @@ const EmbedVideo: FC<EmbedVideoProps> = observer(
 		}, [width, height])();
 
 		const aspectRatio = `${dimensions.width} / ${dimensions.height}`;
-
-		useEffect(() => {
-			if (!posterSrc) return;
-			if (DeveloperOptionsStore.forceRenderPlaceholders || DeveloperOptionsStore.forceMediaLoading) {
-				return;
-			}
-
-			ImageCacheUtils.loadImage(
-				posterSrc,
-				() => setPosterLoaded(true),
-				() => setPosterLoaded(false),
-			);
-		}, [posterSrc]);
-
-		const handleMobileTap = useCallback(() => {
-			const currentIndex = mediaAttachments.findIndex((a) => a.id === attachmentId);
-
-			const videoItems = mediaAttachments
-				.filter((att) => att.content_type?.startsWith('video/'))
-				.map((att) => ({
-					src: buildMediaProxyURL(att.proxy_url ?? att.url ?? ''),
-					originalSrc: att.url ?? '',
-					naturalWidth: att.width || 0,
-					naturalHeight: att.height || 0,
-					type: 'video' as const,
-					contentHash: att.content_hash,
-					attachmentId: att.id,
-					embedIndex: undefined,
-					filename: att.filename,
-					fileSize: att.size,
-					duration: att.duration,
-					expiresAt: att.expires_at ?? null,
-					expired: att.expired ?? false,
-				}));
-
-			MediaViewerActionCreators.openMediaViewer(videoItems, currentIndex, {
-				channelId,
-				messageId,
-				message,
-			});
-		}, [channelId, messageId, message, mediaAttachments, attachmentId]);
 
 		const containerStyles: React.CSSProperties = isMobile
 			? {
@@ -289,6 +287,8 @@ const EmbedVideo: FC<EmbedVideoProps> = observer(
 					showFavoriteButton={showFavoriteButton}
 					isFavorited={isFavorited}
 					onFavoriteClick={handleFavoriteClick}
+					showOpenButton={true}
+					onOpenClick={handleOpenPreview}
 					showDownloadButton={showDownloadButton}
 					onDownloadClick={handleDownloadClick}
 					showDeleteButton={showDeleteButton}
@@ -298,12 +298,17 @@ const EmbedVideo: FC<EmbedVideoProps> = observer(
 					renderedHeight={dimensions.height}
 				>
 					<div className={styles.mobileContainer}>
-						<MobileVideoOverlay
-							thumbHashURL={thumbHashUrl}
-							posterSrc={posterSrc}
-							posterLoaded={posterLoaded}
-							onTap={handleMobileTap}
-							title={title}
+						<VideoPlayer
+							src={effectiveSrc}
+							poster={posterSrc || undefined}
+							placeholder={placeholder}
+							duration={duration}
+							width={dimensions.width}
+							height={dimensions.height}
+							preload="metadata"
+							loadBeforePlay={true}
+							isMobile={true}
+							className={styles.videoPlayerBlock}
 						/>
 					</div>
 				</MediaContainer>
@@ -317,6 +322,8 @@ const EmbedVideo: FC<EmbedVideoProps> = observer(
 				showFavoriteButton={showFavoriteButton}
 				isFavorited={isFavorited}
 				onFavoriteClick={handleFavoriteClick}
+				showOpenButton={true}
+				onOpenClick={handleOpenPreview}
 				showDownloadButton={showDownloadButton}
 				onDownloadClick={handleDownloadClick}
 				showDeleteButton={showDeleteButton}

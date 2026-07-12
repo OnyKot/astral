@@ -20,8 +20,8 @@
 import type {RouteConfig} from '~/lib/router';
 import {appRouteTree} from '~/router/routes/appRoutes';
 import {authRouteTree} from '~/router/routes/authRoutes';
-import {homeRoute, notFoundRoute, rootRoute} from '~/router/routes/rootRoutes';
+import {homeRoute, marketingRoute, notFoundRoute, rootRoute} from '~/router/routes/rootRoutes';
 
-const routeTree = rootRoute.addChildren([homeRoute, notFoundRoute, authRouteTree, appRouteTree]);
+const routeTree = rootRoute.addChildren([homeRoute, marketingRoute, notFoundRoute, authRouteTree, appRouteTree]);
 
 export const buildRoutes = (): Array<RouteConfig> => routeTree.build();

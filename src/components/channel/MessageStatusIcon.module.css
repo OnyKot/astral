@@ -1,0 +1,40 @@
+.statusIcon {
+	display: inline-flex;
+	align-items: center;
+	margin-left: 4px;
+	vertical-align: middle;
+	flex-shrink: 0;
+	width: 14px;
+	height: 14px;
+	color: var(--text-primary-muted);
+}
+
+.statusIcon svg {
+	width: 14px;
+	height: 14px;
+}
+
+.sent {
+	color: var(--text-primary-muted);
+	opacity: 0.6;
+}
+
+.read {
+	color: #725dff;
+	opacity: 0.9;
+}
+
+.spinning {
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+
+@media (max-width: 767px), (pointer: coarse) {
+	.statusIcon {
+		display: none;
+	}
+}

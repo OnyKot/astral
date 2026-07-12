@@ -33,7 +33,14 @@ export function webhookUrl(webhookId: string, token: string): string {
 }
 
 export function marketingUrl(path: string): string {
-	return `${RuntimeConfigStore.marketingEndpoint}/${path}`;
+	// Marketing pages are served at the site root (/download, /terms, …).
+	// Older /instance responses still advertise …/marketing as the base —
+	// strip that legacy prefix so in-app links stay canonical.
+	const base = RuntimeConfigStore.marketingEndpoint
+		.replace(/\/+$/, '')
+		.replace(/\/marketing$/i, '');
+	const cleanPath = path.replace(/^\/+/, '');
+	return `${base}/${cleanPath}`;
 }
 
 export function adminUrl(path: string): string {

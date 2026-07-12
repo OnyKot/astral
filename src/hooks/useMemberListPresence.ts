@@ -19,7 +19,7 @@
 
 import {reaction} from 'mobx';
 import {useEffect, useState} from 'react';
-import type {StatusType} from '~/Constants';
+import {isOfflineStatus, type StatusType} from '~/Constants';
 import MemberSidebarStore from '~/stores/MemberSidebarStore';
 import PresenceStore from '~/stores/PresenceStore';
 
@@ -30,16 +30,24 @@ interface UseMemberListPresenceOptions {
 	enabled?: boolean;
 }
 
+function getResolvedMemberListStatus(guildId: string, channelId: string, userId: string, enabled: boolean): StatusType {
+	const globalStatus = PresenceStore.getStatus(userId);
+	const memberListPresence = enabled ? MemberSidebarStore.getPresence(guildId, channelId, userId) : null;
+
+	if (memberListPresence !== null && (!PresenceStore.hasKnownStatus(userId) || isOfflineStatus(globalStatus))) {
+		return memberListPresence;
+	}
+
+	return globalStatus;
+}
+
 export function useMemberListPresence({
 	guildId,
 	channelId,
 	userId,
 	enabled = true,
 }: UseMemberListPresenceOptions): StatusType {
-	const [status, setStatus] = useState(() => {
-		const memberListPresence = enabled ? MemberSidebarStore.getPresence(guildId, channelId, userId) : null;
-		return memberListPresence ?? PresenceStore.getStatus(userId);
-	});
+	const [status, setStatus] = useState(() => getResolvedMemberListStatus(guildId, channelId, userId, enabled));
 
 	useEffect(() => {
 		let disposeMemberListReaction: (() => void) | undefined;
@@ -47,12 +55,8 @@ export function useMemberListPresence({
 		if (enabled) {
 			disposeMemberListReaction = reaction(
 				() => MemberSidebarStore.getPresence(guildId, channelId, userId),
-				(memberListPresence) => {
-					if (memberListPresence !== null) {
-						setStatus(memberListPresence);
-					} else {
-						setStatus(PresenceStore.getStatus(userId));
-					}
+				() => {
+					setStatus(getResolvedMemberListStatus(guildId, channelId, userId, enabled));
 				},
 				{fireImmediately: true},
 			);
@@ -60,15 +64,8 @@ export function useMemberListPresence({
 			setStatus(PresenceStore.getStatus(userId));
 		}
 
-		const unsubscribePresence = PresenceStore.subscribeToUserStatus(userId, (_userId, newStatus) => {
-			if (!enabled) {
-				setStatus(newStatus);
-				return;
-			}
-			setStatus(() => {
-				const memberListPresence = MemberSidebarStore.getPresence(guildId, channelId, userId);
-				return memberListPresence ?? newStatus;
-			});
+		const unsubscribePresence = PresenceStore.subscribeToUserStatus(userId, () => {
+			setStatus(getResolvedMemberListStatus(guildId, channelId, userId, enabled));
 		});
 
 		return () => {

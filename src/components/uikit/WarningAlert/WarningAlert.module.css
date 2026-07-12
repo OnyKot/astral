@@ -26,6 +26,7 @@
 	border-radius: var(--radius-md);
 	background: transparent;
 	color: var(--alert-warning-color);
+	animation: warningAlertSlideIn var(--motion-dur-short) var(--motion-ease-smooth) both;
 }
 
 .alert::before {
@@ -85,4 +86,21 @@
 	flex-wrap: wrap;
 	gap: 0.5rem;
 	margin-top: 0.25rem;
+}
+
+@keyframes warningAlertSlideIn {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.alert {
+		animation: none;
+	}
 }

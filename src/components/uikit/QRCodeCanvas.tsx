@@ -21,13 +21,19 @@ import {observer} from 'mobx-react-lite';
 import qrCode from 'qrcode';
 import React from 'react';
 
-export const QRCodeCanvas = observer(({data}: {data: string}) => {
+interface QRCodeCanvasProps {
+	data: string;
+	size?: number;
+	padding?: number;
+	className?: string;
+}
+
+export const QRCodeCanvas = observer(({data, size = 100, padding = 10, className}: QRCodeCanvasProps) => {
 	const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
 	React.useEffect(() => {
 		const canvas = canvasRef.current;
-		const qrSize = 100;
-		const padding = 10;
+		const qrSize = size;
 		const totalSize = qrSize + padding * 2;
 
 		if (canvas) {
@@ -65,7 +71,7 @@ export const QRCodeCanvas = observer(({data}: {data: string}) => {
 				);
 			}
 		}
-	}, [data]);
+	}, [data, padding, size]);
 
-	return <canvas ref={canvasRef} style={{borderRadius: 10, backgroundColor: 'white'}} />;
+	return <canvas ref={canvasRef} className={className} style={{borderRadius: 10, backgroundColor: 'white'}} />;
 });

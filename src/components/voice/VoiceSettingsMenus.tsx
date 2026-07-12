@@ -45,6 +45,7 @@ import {MenuItemCheckbox} from '~/components/uikit/ContextMenu/MenuItemCheckbox'
 import {MenuItemRadio} from '~/components/uikit/ContextMenu/MenuItemRadio';
 import {MenuItemSlider} from '~/components/uikit/ContextMenu/MenuItemSlider';
 import {MenuItemSubmenu} from '~/components/uikit/ContextMenu/MenuItemSubmenu';
+import KeybindStore from '~/stores/KeybindStore';
 import VoiceCallLayoutStore from '~/stores/VoiceCallLayoutStore';
 import VoicePromptsStore from '~/stores/VoicePromptsStore';
 import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
@@ -65,6 +66,7 @@ export const VoiceAudioSettingsMenu: React.FC<VoiceAudioSettingsMenuProps> = obs
 		const voiceSettings = VoiceSettingsStore;
 		const voiceState = MediaEngineStore.getCurrentUserVoiceState();
 		const isDeafened = voiceState?.self_deaf ?? false;
+		const isPushToTalk = KeybindStore.transmitMode === 'push_to_talk';
 
 		const handleToggleDeafen = React.useCallback((_checked: boolean) => {
 			VoiceStateActionCreators.toggleSelfDeaf(null);
@@ -151,6 +153,17 @@ export const VoiceAudioSettingsMenu: React.FC<VoiceAudioSettingsMenuProps> = obs
 				</MenuGroup>
 
 				<MenuGroup>
+					<MenuItemCheckbox
+						icon={<MicrophoneIcon weight="fill" className={styles.icon} />}
+						checked={isPushToTalk}
+						onChange={(checked) => {
+							KeybindStore.setTransmitMode(checked ? 'push_to_talk' : 'voice_activity');
+							MediaEngineStore.handlePushToTalkModeChange();
+						}}
+					>
+						<Trans>Walkie-Talkie Mode (Push-to-Talk)</Trans>
+					</MenuItemCheckbox>
+
 					<MenuItemCheckbox
 						icon={<SpeakerSimpleSlashIcon weight="fill" className={styles.icon} />}
 						checked={voiceSettings.echoCancellation}

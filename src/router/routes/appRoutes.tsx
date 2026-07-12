@@ -32,6 +32,7 @@ import {StatusChangeBottomSheet} from '~/components/modals/StatusChangeBottomShe
 import {DiscoveryPage} from '~/components/pages/DiscoveryPage';
 import {NotificationsPage} from '~/components/pages/NotificationsPage';
 import PremiumCallbackPage from '~/components/pages/PremiumCallbackPage';
+import {UserPublicProfilePage} from '~/components/pages/UserPublicProfilePage';
 import {YouPage} from '~/components/pages/YouPage';
 import {createRoute, Redirect, useParams} from '~/lib/router';
 import SessionManager from '~/lib/SessionManager';
@@ -107,6 +108,66 @@ const premiumCallbackRoute = createRoute({
 	id: 'premiumCallback',
 	path: Routes.PREMIUM_CALLBACK,
 	component: () => <PremiumCallbackPage />,
+});
+
+const userProfileRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	id: 'userProfile',
+	path: Routes.USER_PROFILE,
+	component: () => {
+		const {userId} = useParams() as {userId: string};
+		return <UserPublicProfilePage userId={userId} />;
+	},
+});
+
+const legacyUserProfileRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	id: 'legacyUserProfile',
+	path: Routes.USER_PROFILE_LEGACY,
+	component: () => {
+		const {userId} = useParams() as {userId: string};
+		return <UserPublicProfilePage userId={userId} />;
+	},
+});
+
+const channelUserProfileRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	id: 'channelUserProfile',
+	path: Routes.CHANNEL_USER_PROFILE,
+	component: () => {
+		const {channelId, userId} = useParams() as {channelId: string; userId: string};
+		return <UserPublicProfilePage userId={userId} channelId={channelId} />;
+	},
+});
+
+const userProfileTrailingSlashRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	id: 'userProfileTrailingSlash',
+	path: `${Routes.USER_PROFILE}/`,
+	component: () => {
+		const {userId} = useParams() as {userId: string};
+		return <UserPublicProfilePage userId={userId} />;
+	},
+});
+
+const legacyUserProfileTrailingSlashRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	id: 'legacyUserProfileTrailingSlash',
+	path: `${Routes.USER_PROFILE_LEGACY}/`,
+	component: () => {
+		const {userId} = useParams() as {userId: string};
+		return <UserPublicProfilePage userId={userId} />;
+	},
+});
+
+const channelUserProfileTrailingSlashRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	id: 'channelUserProfileTrailingSlash',
+	path: `${Routes.CHANNEL_USER_PROFILE}/`,
+	component: () => {
+		const {channelId, userId} = useParams() as {channelId: string; userId: string};
+		return <UserPublicProfilePage userId={userId} channelId={channelId} />;
+	},
 });
 
 const bookmarksRoute = createRoute({
@@ -224,6 +285,12 @@ export const appRouteTree = appLayoutRoute.addChildren([
 	youRoute,
 	premiumCallbackRoute,
 	guildsLayoutRoute.addChildren([
+		userProfileRoute,
+		legacyUserProfileRoute,
+		channelUserProfileRoute,
+		userProfileTrailingSlashRoute,
+		legacyUserProfileTrailingSlashRoute,
+		channelUserProfileTrailingSlashRoute,
 		bookmarksRoute,
 		mentionsRoute,
 		discoveryRoute,

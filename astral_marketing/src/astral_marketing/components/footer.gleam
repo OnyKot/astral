@@ -16,10 +16,8 @@
 //// along with Astral. If not, see <https://www.gnu.org/licenses/>.
 
 import astral_marketing/help_center
-import astral_marketing/i18n
 import astral_marketing/locale
 import astral_marketing/web.{type Context, href}
-import kielet.{gettext as g_}
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
@@ -32,7 +30,6 @@ fn tr(ctx: Context, ru: String, en: String) -> String {
 }
 
 pub fn render(ctx: Context) -> Element(a) {
-  let i18n_ctx = i18n.get_context(ctx.i18n_db, ctx.locale)
   let help_data = help_center.load_help_articles(ctx.locale)
   let bug_article_href =
     help_center.article_href(ctx.locale, help_data, "1447264362996695040")
@@ -40,7 +37,7 @@ pub fn render(ctx: Context) -> Element(a) {
   html.footer(
     [
       attribute.class(
-        "border-t border-white/8 bg-[hsl(var(--background))] px-4 py-20 text-white md:px-8 md:py-24",
+        "marketing-footer border-t border-white/8 bg-[hsl(var(--background))] px-4 py-20 text-white md:px-8 md:py-24",
       ),
     ],
     [
@@ -67,7 +64,7 @@ pub fn render(ctx: Context) -> Element(a) {
               [
                 html.div([], [
                   html.h3([attribute.class("title mb-4 md:mb-6 text-white")], [
-                    html.text(g_(i18n_ctx, "Astral")),
+                    html.text("Astral"),
                   ]),
                   html.ul([attribute.class("space-y-3")], [
                     html.li([], [
@@ -78,7 +75,7 @@ pub fn render(ctx: Context) -> Element(a) {
                             "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
                           ),
                         ],
-                        [html.text(g_(i18n_ctx, "Download"))],
+                        [html.text(tr(ctx, "Скачать", "Download"))],
                       ),
                     ]),
                     html.li([], [
@@ -89,7 +86,7 @@ pub fn render(ctx: Context) -> Element(a) {
                             "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
                           ),
                         ],
-                        [html.text(g_(i18n_ctx, "Help Center"))],
+                        [html.text(tr(ctx, "Помощь", "Help Center"))],
                       ),
                     ]),
                     html.li([], [
@@ -111,7 +108,7 @@ pub fn render(ctx: Context) -> Element(a) {
                             "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
                           ),
                         ],
-                        [html.text(g_(i18n_ctx, "Careers"))],
+                        [html.text(tr(ctx, "Карьера", "Careers"))],
                       ),
                     ]),
                     html.li([], [
@@ -122,14 +119,14 @@ pub fn render(ctx: Context) -> Element(a) {
                             "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
                           ),
                         ],
-                        [html.text(g_(i18n_ctx, "Philosophy"))],
+                        [html.text(tr(ctx, "Философия", "Philosophy"))],
                       ),
                     ]),
                   ]),
                 ]),
                 html.div([], [
                   html.h3([attribute.class("title mb-4 md:mb-6 text-white")], [
-                    html.text(g_(i18n_ctx, "Policies")),
+                    html.text(tr(ctx, "Документы", "Policies")),
                   ]),
                   html.ul([attribute.class("space-y-3")], [
                     html.li([], [
@@ -140,7 +137,7 @@ pub fn render(ctx: Context) -> Element(a) {
                             "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
                           ),
                         ],
-                        [html.text(g_(i18n_ctx, "Terms of Service"))],
+                        [html.text(tr(ctx, "Условия использования", "Terms of Service"))],
                       ),
                     ]),
                     html.li([], [
@@ -151,7 +148,7 @@ pub fn render(ctx: Context) -> Element(a) {
                             "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
                           ),
                         ],
-                        [html.text(g_(i18n_ctx, "Privacy Policy"))],
+                        [html.text(tr(ctx, "Политика конфиденциальности", "Privacy Policy"))],
                       ),
                     ]),
                     html.li([], [
@@ -162,7 +159,7 @@ pub fn render(ctx: Context) -> Element(a) {
                             "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
                           ),
                         ],
-                        [html.text(g_(i18n_ctx, "Community Guidelines"))],
+                        [html.text(tr(ctx, "Правила сообщества", "Community Guidelines"))],
                       ),
                     ]),
                     html.li([], [
@@ -173,7 +170,7 @@ pub fn render(ctx: Context) -> Element(a) {
                             "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
                           ),
                         ],
-                        [html.text(g_(i18n_ctx, "Security Bug Bounty"))],
+                        [html.text(tr(ctx, "Безопасность", "Security Bug Bounty"))],
                       ),
                     ]),
                     html.li([], [
@@ -184,7 +181,7 @@ pub fn render(ctx: Context) -> Element(a) {
                             "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
                           ),
                         ],
-                        [html.text(g_(i18n_ctx, "Company Information"))],
+                        [html.text(tr(ctx, "О проекте", "About Astral"))],
                       ),
                     ]),
                   ]),
@@ -224,7 +221,7 @@ pub fn render(ctx: Context) -> Element(a) {
                             "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
                           ),
                         ],
-                        [html.text(g_(i18n_ctx, "Report a bug"))],
+                        [html.text(tr(ctx, "Сообщить об ошибке", "Report a bug"))],
                       ),
                     ]),
                   ]),
@@ -236,14 +233,12 @@ pub fn render(ctx: Context) -> Element(a) {
         html.div([attribute.class("mt-12 border-t border-zinc-700/70 pt-8")], [
           html.div([attribute.class("flex flex-col gap-2")], [
             html.p([attribute.class("body-sm text-zinc-400")], [
-              html.text(g_(
-                i18n_ctx,
-                "© Astral Platform",
-              )),
+              html.text("© Astral Platform"),
             ]),
             html.p([attribute.class("body-sm text-zinc-400")], [
-              html.text(g_(
-                i18n_ctx,
+              html.text(tr(
+                ctx,
+                "Этот продукт использует GeoLite2 Data, созданные MaxMind и доступные на ",
                 "This product includes GeoLite2 Data created by MaxMind, available from ",
               )),
               html.a(

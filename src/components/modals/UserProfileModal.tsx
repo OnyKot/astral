@@ -28,6 +28,8 @@ import {
 	ClockCounterClockwiseIcon,
 	CopySimpleIcon,
 	DotsThreeIcon,
+	GiftIcon,
+	IdentificationCardIcon,
 	ImageSquareIcon,
 	LinkSimpleIcon,
 	PencilIcon,
@@ -40,6 +42,7 @@ import {
 } from '@phosphor-icons/react';
 
 import {clsx} from 'clsx';
+import {AnimatePresence, motion} from 'framer-motion';
 import {autorun} from 'mobx';
 import {observer} from 'mobx-react-lite';
 import React, {useId} from 'react';
@@ -62,16 +65,23 @@ import {
 import {UserTag} from '~/components/channel/UserTag';
 import {CustomStatusDisplay} from '~/components/common/CustomStatusDisplay/CustomStatusDisplay';
 import {MusicActivityDisplay} from '~/components/common/MusicActivityDisplay/MusicActivityDisplay';
+import {SteamNowPlayingBlock} from '~/components/common/SteamNowPlayingBlock/SteamNowPlayingBlock';
 import {GroupDMAvatar} from '~/components/common/GroupDMAvatar';
 import {CustomStatusModal} from '~/components/modals/CustomStatusModal';
+import {useDesktopSettingsTabDirection} from '~/components/modals/hooks/useDesktopSettingsTabDirection';
 import type {IARContext} from '~/components/modals/IARModal';
 import {IARModal} from '~/components/modals/IARModal';
 import * as Modal from '~/components/modals/Modal';
+import {DesktopSettingsPanelTransition} from '~/components/modals/shared/DesktopSettingsPanelTransition';
 import {UserSettingsModal} from '~/components/modals/UserSettingsModal';
 import {GuildIcon} from '~/components/popouts/GuildIcon';
 import {UserProfileBadges} from '~/components/popouts/UserProfileBadges';
 import {UserProfileDataWarning} from '~/components/popouts/UserProfileDataWarning';
 import {UserProfileBio, UserProfileMembershipInfo, UserProfileRoles} from '~/components/popouts/UserProfileShared';
+import {ProfileLinkCard} from '~/components/profile/ProfileLinkCard';
+import {ProfileIntegrationsBlock} from '~/components/profile/ProfileCard/ProfileIntegrationsBlock';
+import {ProfileStreamingStatusCard} from '~/components/profile/ProfileCard/ProfileStreamingStatusCard';
+import {ProfileQrModal} from '~/components/modals/ProfileQrModal';
 import {Button} from '~/components/uikit/Button/Button';
 import {
 	BlockUserIcon,
@@ -96,6 +106,7 @@ import {Tabs} from '~/components/uikit/Tabs/Tabs';
 import {Tooltip} from '~/components/uikit/Tooltip/Tooltip';
 import {useAutoplayExpandedProfileAnimations} from '~/hooks/useAutoplayExpandedProfileAnimations';
 import {TextareaAutosize} from '~/lib/TextareaAutosize';
+import {isGiftShowcaseCustomStatus} from '~/lib/customStatus';
 import {Routes} from '~/Routes';
 import type {ChannelRecord} from '~/records/ChannelRecord';
 import type {GuildRecord} from '~/records/GuildRecord';
@@ -104,6 +115,7 @@ import type {ProfileRecord} from '~/records/ProfileRecord';
 import {type UserPartial, UserRecord} from '~/records/UserRecord';
 
 import AuthenticationStore from '~/stores/AuthenticationStore';
+import AccessibilityStore from '~/stores/AccessibilityStore';
 import ChannelStore from '~/stores/ChannelStore';
 import type {ContextMenuTargetElement} from '~/stores/ContextMenuStore';
 import ContextMenuStore, {isContextMenuNodeTarget} from '~/stores/ContextMenuStore';
@@ -115,6 +127,7 @@ import MemberPresenceSubscriptionStore from '~/stores/MemberPresenceSubscription
 import MessageStore from '~/stores/MessageStore';
 import ModalStore from '~/stores/ModalStore';
 import PermissionStore from '~/stores/PermissionStore';
+import PresenceStore from '~/stores/PresenceStore';
 import RelationshipStore from '~/stores/RelationshipStore';
 import SelectedChannelStore from '~/stores/SelectedChannelStore';
 import UserNoteStore from '~/stores/UserNoteStore';
@@ -131,6 +144,7 @@ import {createMockProfile} from '~/utils/ProfileUtils';
 import * as RelationshipActionUtils from '~/utils/RelationshipActionUtils';
 import * as RouterUtils from '~/utils/RouterUtils';
 import {createUserModalLink} from '~/utils/DeepLinkUtils';
+import {getScalePopMotion} from '~/utils/motion/MotionPresets';
 
 import modalRootStyles from './Modal.module.css';
 import userProfileModalStyles from './UserProfileModal.module.css';
@@ -226,6 +240,7 @@ const UserInfo: React.FC<UserInfoProps> = observer(
 							/>
 						</div>
 						<MusicActivityDisplay userId={user.id} className={userProfileModalStyles.musicActivityRow} />
+						<SteamNowPlayingBlock userId={user.id} className={userProfileModalStyles.steamNowPlayingRow} />
 					</div>
 				</div>
 			</div>
@@ -356,6 +371,16 @@ const ProfileContent: React.FC<ProfileContentProps> = observer(({profile, user, 
 	);
 	const directDmMessages = directDmChannel ? MessageStore.getMessages(directDmChannel.id).toArray() : [];
 	const mediaPreviewItems: Array<ProfileMediaPreviewItem> = [];
+	const profileGuildId = profile?.guildId ?? undefined;
+	const scopedChannelId = profileGuildId ? SelectedChannelStore.selectedChannelIds.get(profileGuildId) : undefined;
+	const profileLinkChannelId = scopedChannelId ?? SelectedChannelStore.currentChannelId ?? undefined;
+	const customStatus = PresenceStore.getCustomStatus(user.id);
+	const showGiftShowcase = isGiftShowcaseCustomStatus(customStatus);
+	const isCurrentUserProfile = user.id === currentUserId;
+
+	const handleOpenGiftInventory = () => {
+		ModalActionCreators.push(modal(() => <UserSettingsModal initialTab="gift_inventory" />));
+	};
 
 	for (let index = directDmMessages.length - 1; index >= 0; index -= 1) {
 		const message = directDmMessages[index];
@@ -393,6 +418,29 @@ const ProfileContent: React.FC<ProfileContentProps> = observer(({profile, user, 
 					memberRoles={[...memberRoles]}
 					canManageRoles={canManageRoles}
 				/>
+				<ProfileIntegrationsBlock userId={user.id} compact={true} />
+				<ProfileStreamingStatusCard userId={user.id} compact={true} />
+				<ProfileLinkCard user={user} guildId={profileGuildId} channelId={profileLinkChannelId} />
+				{showGiftShowcase && (
+					<div className={userProfileModalStyles.giftShowcaseCard}>
+						<div className={userProfileModalStyles.giftShowcaseIcon}>
+							<GiftIcon weight="fill" />
+						</div>
+						<div className={userProfileModalStyles.giftShowcaseText}>
+							<div className={userProfileModalStyles.giftShowcaseTitle}>
+								<Trans>Gift showcase</Trans>
+							</div>
+							<p className={userProfileModalStyles.giftShowcaseDescription}>
+								<Trans>This profile is highlighting gifts. Open the profile link or send a gift to keep the showcase glowing.</Trans>
+							</p>
+						</div>
+						{isCurrentUserProfile && (
+							<Button variant="secondary" small={true} onClick={handleOpenGiftInventory}>
+								<Trans>Open gifts</Trans>
+							</Button>
+						)}
+					</div>
+				)}
 				<UserNoteEditor userId={user.id} initialNote={userNote} autoFocus={autoFocusNote} noteRef={noteRef} />
 				<div className={userProfileModalStyles.mediaPreviewSection}>
 					<h3 className={userProfileModalStyles.mediaPreviewTitle}>
@@ -784,6 +832,18 @@ const ProfileModalContent: React.FC<ProfileModalContentProps> = observer(
 			}
 		}, [activeTab, autoFocusNote, noteRef, profile, renderMutualTabContent, user, userNote]);
 
+		const prefersReducedMotion = AccessibilityStore.useReducedMotion;
+		const panelIdentity = activeTab === 'overview' ? 'overview-root' : `mutual-${mutualView}`;
+		const tabOrder = React.useMemo(() => {
+			const order = ['overview-root'];
+			if (showMutualFriendsTab) {
+				order.push('mutual-mutual_friends');
+			}
+			order.push('mutual-mutual_communities', 'mutual-mutual_groups');
+			return order;
+		}, [showMutualFriendsTab]);
+		const direction = useDesktopSettingsTabDirection(panelIdentity, tabOrder);
+
 		const reactId = useId();
 		const safeId = reactId.replace(/[^a-zA-Z0-9_-]/g, '');
 		const maskId = `uid_${safeId}`;
@@ -869,8 +929,15 @@ const ProfileModalContent: React.FC<ProfileModalContentProps> = observer(
 					)}
 
 					<div className={userProfileModalStyles.profileContentWrapper}>
-						<Scroller className={userProfileModalStyles.scrollerFullHeight} key="user-profile-modal-content-scroller">
-							{renderActiveTabContent()}
+						<Scroller className={userProfileModalStyles.scrollerFullHeight}>
+							<DesktopSettingsPanelTransition
+								panelKey={panelIdentity}
+								direction={direction}
+								reducedMotion={prefersReducedMotion}
+								className={userProfileModalStyles.profileTabTransition}
+							>
+								{renderActiveTabContent()}
+							</DesktopSettingsPanelTransition>
 						</Scroller>
 					</div>
 				</div>
@@ -1200,14 +1267,25 @@ export const UserProfileModal: UserProfileModalComponent = observer(
 			TextCopyActionCreators.copy(i18n, displayUser.id, true);
 		};
 
-		const handleCopyProfileLink = async () => {
+		const getProfileLinkContext = () => {
 			const scopedChannelId = guildId ? SelectedChannelStore.selectedChannelIds.get(guildId) : undefined;
 			const channelId = scopedChannelId ?? SelectedChannelStore.currentChannelId ?? undefined;
+
+			return {channelId};
+		};
+
+		const handleCopyProfileLink = async () => {
+			const {channelId} = getProfileLinkContext();
 			const link = await createUserModalLink(displayUser.id, {
 				channelId,
 				guildId,
 			});
 			TextCopyActionCreators.copy(i18n, link, true);
+		};
+
+		const handleShowProfileQr = () => {
+			const {channelId} = getProfileLinkContext();
+			ModalActionCreators.push(modal(() => <ProfileQrModal user={displayUser} guildId={guildId} channelId={channelId} />));
 		};
 
 		const handleMoreOptionsPointerDown = (event: React.PointerEvent) => {
@@ -1324,6 +1402,15 @@ export const UserProfileModal: UserProfileModalComponent = observer(
 						>
 							{t`Copy Profile Link`}
 						</MenuItem>
+						<MenuItem
+							icon={<IdentificationCardIcon size={16} weight="bold" />}
+							onClick={() => {
+								handleShowProfileQr();
+								props.onClose();
+							}}
+						>
+							{t`Show Profile QR`}
+						</MenuItem>
 					</MenuGroup>
 					{!isCurrentUser && relationshipType === RelationshipTypes.FRIEND && (
 						<MenuGroup>
@@ -1408,6 +1495,17 @@ export const UserProfileModal: UserProfileModalComponent = observer(
 								/>
 							</div>
 						</Tooltip>
+						<Tooltip text={t`Show Profile QR`} maxWidth="xl">
+							<div>
+								<Button
+									small={true}
+									square={true}
+									variant="secondary"
+									icon={<IdentificationCardIcon className={userProfileModalStyles.buttonIcon} weight="bold" />}
+									onClick={handleShowProfileQr}
+								/>
+							</div>
+						</Tooltip>
 					</div>
 				);
 			}
@@ -1441,6 +1539,17 @@ export const UserProfileModal: UserProfileModalComponent = observer(
 									variant="secondary"
 									icon={<LinkSimpleIcon className={userProfileModalStyles.buttonIcon} weight="bold" />}
 									onClick={handleCopyProfileLink}
+								/>
+							</div>
+						</Tooltip>
+						<Tooltip text={t`Show Profile QR`} maxWidth="xl">
+							<div>
+								<Button
+									small={true}
+									square={true}
+									variant="secondary"
+									icon={<IdentificationCardIcon className={userProfileModalStyles.buttonIcon} weight="bold" />}
+									onClick={handleShowProfileQr}
 								/>
 							</div>
 						</Tooltip>
@@ -1576,6 +1685,17 @@ export const UserProfileModal: UserProfileModalComponent = observer(
 							/>
 						</div>
 					</Tooltip>
+					<Tooltip text={t`Show Profile QR`} maxWidth="xl">
+						<div>
+							<Button
+								small={true}
+								square={true}
+								variant="secondary"
+								icon={<IdentificationCardIcon className={userProfileModalStyles.buttonIcon} weight="bold" />}
+								onClick={handleShowProfileQr}
+							/>
+						</div>
+					</Tooltip>
 					{renderPrimaryActionButton()}
 					<Button
 						ref={moreOptionsButtonRef}
@@ -1596,6 +1716,8 @@ export const UserProfileModal: UserProfileModalComponent = observer(
 		const accentColorHex = typeof rawAccentColor === 'number' ? ColorUtils.int2hex(rawAccentColor) : rawAccentColor;
 		const borderColor = accentColorHex || DEFAULT_ACCENT_COLOR;
 		const accentEffectPreset = LocalProfileEffectsStore.getUserPreset(displayUser.id);
+		const prefersReducedMotion = AccessibilityStore.useReducedMotion;
+		const profileMotion = React.useMemo(() => getScalePopMotion(prefersReducedMotion), [prefersReducedMotion]);
 
 		return (
 			<Modal.Root
@@ -1609,23 +1731,41 @@ export const UserProfileModal: UserProfileModalComponent = observer(
 					data-accent-effect={accentEffectPreset}
 					style={{borderColor, '--profile-accent-base': borderColor} as React.CSSProperties}
 				>
-					{shouldShowSpinner ? (
-						<div className={userProfileModalStyles.loadingScreen}>
-							<Spinner size="large" />
-						</div>
-					) : (
-						<ProfileModalContent
-							key={displayUser.id}
-							profile={resolvedProfile}
-							user={displayUser}
-							userNote={userNote}
-							autoFocusNote={autoFocusNote}
-							noteRef={noteRef}
-							renderActionButtons={renderActionButtons}
-							warningIndicator={shouldShowProfileDataWarning ? <UserProfileDataWarning /> : undefined}
-							previewOverrides={previewOverrides}
-						/>
-					)}
+					<AnimatePresence mode="wait" initial={false}>
+						{shouldShowSpinner ? (
+							<motion.div
+								key="profile-modal-loading"
+								className={userProfileModalStyles.loadingScreen}
+								initial={{opacity: 0}}
+								animate={{opacity: 1}}
+								exit={{opacity: 0}}
+								transition={prefersReducedMotion ? {duration: 0} : {duration: 0.16, ease: [0.22, 1, 0.36, 1]}}
+							>
+								<Spinner size="large" />
+							</motion.div>
+						) : (
+							<motion.div
+								key={`profile-modal-content-${displayUser.id}`}
+								initial={profileMotion.initial}
+								animate={profileMotion.animate}
+								exit={profileMotion.exit}
+								transition={profileMotion.transition}
+								className={userProfileModalStyles.profileModalContentMotion}
+							>
+								<ProfileModalContent
+									profile={resolvedProfile}
+									user={displayUser}
+									userNote={userNote}
+									autoFocusNote={autoFocusNote}
+									noteRef={noteRef}
+									renderActionButtons={renderActionButtons}
+									warningIndicator={shouldShowProfileDataWarning ? <UserProfileDataWarning /> : undefined}
+									previewOverrides={previewOverrides}
+									accentEffectPreset={accentEffectPreset}
+								/>
+							</motion.div>
+						)}
+					</AnimatePresence>
 				</div>
 			</Modal.Root>
 		);

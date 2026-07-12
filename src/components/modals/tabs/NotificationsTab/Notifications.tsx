@@ -89,7 +89,7 @@ export const Notifications: FC<NotificationsProps> = observer(
 			? t`Enable Desktop Notifications`
 			: isAndroidApp
 				? t`Enable Android Notifications`
-				: t`Enable Browser Notifications`;
+				: t`Push Notifications`;
 
 		const notificationsToggleDescription = isDesktop()
 			? t`Uses the OS notification center. For per-channel/per-community controls, right-click a community icon and open Notification Settings.`

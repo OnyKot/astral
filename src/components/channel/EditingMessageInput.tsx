@@ -85,6 +85,7 @@ export const EditingMessageInput = observer(
 			previousValueRef,
 			displayToActual,
 			insertSegment,
+			replaceWithSegment,
 			handleTextChange,
 		} = useTextareaSegments();
 		const handleTextareaKeyDown = React.useCallback(
@@ -132,7 +133,7 @@ export const EditingMessageInput = observer(
 		const {handleEmojiSelect} = useTextareaEmojiPicker({
 			setValue,
 			textareaRef,
-			insertSegment,
+			replaceWithSegment,
 			previousValueRef,
 			allowUnicodeEmojiSelection: true,
 		});

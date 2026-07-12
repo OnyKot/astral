@@ -23,7 +23,7 @@ import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import * as EmojiPickerActionCreators from '~/actions/EmojiPickerActionCreators';
 import GuildStore from '~/stores/GuildStore';
-import {shouldUseNativeEmoji} from '~/utils/EmojiUtils';
+import {applyEmojiVisualNormalization, shouldUseNativeEmoji} from '~/utils/EmojiUtils';
 import {type AutocompleteOption, isEmoji, isMeme, isSticker} from './Autocomplete';
 import styles from './AutocompleteEmoji.module.css';
 import {AutocompleteItem} from './AutocompleteItem';
@@ -84,6 +84,12 @@ export const AutocompleteEmoji = observer(
 												className={styles.emojiIcon}
 												src={option.emoji.url ?? ''}
 												alt={option.emoji.name}
+												crossOrigin={isUnicodeEmoji ? 'anonymous' : undefined}
+												onLoad={
+													isUnicodeEmoji
+														? (event) => applyEmojiVisualNormalization(event.currentTarget)
+														: undefined
+												}
 											/>
 										)
 									}

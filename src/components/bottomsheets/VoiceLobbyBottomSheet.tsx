@@ -35,6 +35,7 @@ import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import * as VoiceSettingsActionCreators from '~/actions/VoiceSettingsActionCreators';
 import * as VoiceStateActionCreators from '~/actions/VoiceStateActionCreators';
+import {Permissions} from '~/Constants';
 import {UserSettingsModal} from '~/components/modals/UserSettingsModal';
 import {BottomSheet} from '~/components/uikit/BottomSheet/BottomSheet';
 import {Button} from '~/components/uikit/Button/Button';
@@ -44,10 +45,12 @@ import type {ChannelRecord} from '~/records/ChannelRecord';
 import type {GuildRecord} from '~/records/GuildRecord';
 import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
+import PermissionStore from '~/stores/PermissionStore';
 import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import {navigateToWithMobileHistory} from '~/utils/MobileNavigation';
 import {hasDeviceLabels, resolveEffectiveDeviceId} from '~/utils/VoiceDeviceManager';
+import {isBroadcastVoiceChannel} from '~/utils/channelVoiceMode';
 import styles from './VoiceLobbyBottomSheet.module.css';
 
 interface VoiceLobbyBottomSheetProps {
@@ -86,6 +89,10 @@ export const VoiceLobbyBottomSheet = observer(function VoiceLobbyBottomSheet({
 	const isConnecting = isInThisChannel && isConnectingGlobal && !isConnectedGlobal;
 	const isMuted = voiceState ? voiceState.self_mute : localSelfMute;
 	const isDeafened = voiceState ? voiceState.self_deaf : localSelfDeaf;
+	const canSpeakInChannel = PermissionStore.can(Permissions.SPEAK, channel);
+	const isBroadcastMode = isBroadcastVoiceChannel(channel) || MediaEngineStore.isVoiceChannelStageLike(channel.id);
+	const isSuppressedListener = isBroadcastMode && MediaEngineStore.isCurrentUserInBroadcastListenerMode();
+	const isStageListenerLocked = isBroadcastMode && (isSuppressedListener || !canSpeakInChannel);
 	const inputHasLabels = hasDeviceLabels(inputDevices);
 	const outputHasLabels = hasDeviceLabels(outputDevices);
 	const effectiveInputDeviceId = resolveEffectiveDeviceId(voiceSettings.inputDeviceId, inputDevices) ?? 'default';
@@ -188,7 +195,7 @@ export const VoiceLobbyBottomSheet = observer(function VoiceLobbyBottomSheet({
 				</div>
 
 				<div className={styles.actionButtons}>
-					<button type="button" className={styles.actionButton} onClick={handleToggleMute}>
+					<button type="button" className={styles.actionButton} onClick={handleToggleMute} disabled={isStageListenerLocked}>
 						<div
 							className={clsx(styles.iconContainer, isMuted ? styles.iconContainerDanger : styles.iconContainerBrand)}
 						>
@@ -198,7 +205,7 @@ export const VoiceLobbyBottomSheet = observer(function VoiceLobbyBottomSheet({
 								<MicrophoneIcon weight="fill" className={styles.actionIcon} size={24} />
 							)}
 						</div>
-						<span className={styles.actionText}>{isMuted ? t`Unmute` : t`Mute`}</span>
+						<span className={styles.actionText}>{isStageListenerLocked ? t`Join stage to speak` : isMuted ? t`Unmute` : t`Mute`}</span>
 					</button>
 
 					<button type="button" className={styles.actionButton} onClick={handleToggleDeafen}>

@@ -39,7 +39,14 @@ interface SearchInputRef {
 	current: HTMLInputElement | null;
 }
 
-export const useSearchInputAutofocus = (inputRef: SearchInputRef) => {
+interface SearchInputAutofocusOptions {
+	initialFocus?: boolean;
+}
+
+export const useSearchInputAutofocus = (
+	inputRef: SearchInputRef,
+	{initialFocus = true}: SearchInputAutofocusOptions = {},
+) => {
 	React.useEffect(() => {
 		const shouldBlockDueToModal = (): boolean => {
 			if (!ModalStore.hasModalOpen()) {
@@ -49,7 +56,7 @@ export const useSearchInputAutofocus = (inputRef: SearchInputRef) => {
 			return !isElementInsideModal(input);
 		};
 
-		if (!shouldBlockDueToModal()) {
+		if (initialFocus && !shouldBlockDueToModal()) {
 			inputRef.current?.focus({preventScroll: true});
 		}
 
@@ -81,5 +88,5 @@ export const useSearchInputAutofocus = (inputRef: SearchInputRef) => {
 
 		document.addEventListener('keydown', handleGlobalKeyDown);
 		return () => document.removeEventListener('keydown', handleGlobalKeyDown);
-	}, [inputRef]);
+	}, [inputRef, initialFocus]);
 };

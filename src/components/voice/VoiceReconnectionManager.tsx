@@ -49,8 +49,7 @@ const AutoReconnectHandler = observer(() => {
 			setTimeout(() => {
 				const stillShouldReconnect = MediaEngineStore.getShouldReconnect();
 				if (stillShouldReconnect) {
-					MediaEngineStore.connectToVoiceChannel(lastChannel.guildId, lastChannel.channelId);
-					MediaEngineStore.markReconnectionAttempted();
+					void MediaEngineStore.connectToVoiceChannel(lastChannel.guildId, lastChannel.channelId);
 				} else {
 					logger.info('Reconnection was cancelled, skipping');
 				}

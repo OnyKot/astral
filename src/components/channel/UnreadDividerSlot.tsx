@@ -18,7 +18,9 @@
  */
 
 import {Trans} from '@lingui/react/macro';
+import {AnimatePresence, motion} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
+import {entrance} from '~/lib/motion/effects';
 import dividerStyles from './Divider.module.css';
 import styles from './Messages.module.css';
 
@@ -38,6 +40,10 @@ export const UnreadDividerSlot = observer(function UnreadDividerSlot(props: Unre
 	 * as a polite live region with a real label so the divider is
 	 * announced once when it appears (and only when visible — the
 	 * hidden placeholder branch stays aria-hidden).
+	 *
+	 * The "New" badge pops in with a bouncy spring (physics, not linear)
+	 * so the unread boundary feels like it physically materializes rather
+	 * than snapping in.
 	 */
 	return (
 		<div
@@ -52,9 +58,17 @@ export const UnreadDividerSlot = observer(function UnreadDividerSlot(props: Unre
 		>
 			<div className={dividerStyles.unreadContainer}>
 				<div className={dividerStyles.unreadLine} />
-				<span className={dividerStyles.unreadBadge}>
-					<Trans>New</Trans>
-				</span>
+				<AnimatePresence>
+					{props.visible && (
+						<motion.span
+							key="unread-badge"
+							className={dividerStyles.unreadBadge}
+							{...entrance('springPop')}
+						>
+							<Trans>New</Trans>
+						</motion.span>
+					)}
+				</AnimatePresence>
 			</div>
 		</div>
 	);

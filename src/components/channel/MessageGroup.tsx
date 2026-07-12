@@ -18,12 +18,13 @@
  */
 
 import {observer} from 'mobx-react-lite';
-import type React from 'react';
-import {Fragment} from 'react';
+import React, {Fragment} from 'react';
 import type {ChannelRecord} from '~/records/ChannelRecord';
 import type {MessageRecord} from '~/records/MessageRecord';
 import {Message} from './Message';
 import {UnreadDividerSlot} from './UnreadDividerSlot';
+
+const getStableMessageKey = (message: MessageRecord): string => message.nonce ?? message.id;
 
 interface MessageGroupProps {
 	messages: Array<MessageRecord>;
@@ -37,47 +38,62 @@ interface MessageGroupProps {
 	idPrefix?: string;
 }
 
-export const MessageGroup: React.FC<MessageGroupProps> = observer((props) => {
-	const {
-		messages,
-		channel,
-		onEdit,
-		jumpSequenceId,
-		highlightedMessageId,
-		messageDisplayCompact = false,
-		getUnreadDividerVisibility,
-		idPrefix,
-	} = props;
+export const MessageGroup: React.FC<MessageGroupProps> = React.memo(
+	observer((props) => {
+		const {
+			messages,
+			channel,
+			onEdit,
+			jumpSequenceId,
+			highlightedMessageId,
+			messageDisplayCompact = false,
+			getUnreadDividerVisibility,
+			idPrefix,
+		} = props;
 
-	const groupId = messages[0]?.id;
+		const groupId = messages[0]?.id;
 
-	return (
-		<div data-jump-sequence-id={jumpSequenceId} data-group-id={groupId} role="group" aria-label="Message group">
-			{messages.map((message, index) => {
-				const prevMessage = messages[index - 1];
-				const isGroupStart = index === 0;
+		return (
+			<div
+				data-jump-sequence-id={jumpSequenceId}
+				data-group-id={groupId}
+				role="group"
+				aria-label="Message group">
+				{messages.map((message, index) => {
+					const prevMessage = messages[index - 1];
+					const isGroupStart = index === 0;
 
-				return (
-					<Fragment key={message.id}>
-						{getUnreadDividerVisibility && (
-							<UnreadDividerSlot beforeId={message.id} visible={getUnreadDividerVisibility(message.id, 'before')} />
-						)}
+					return (
+						<Fragment key={getStableMessageKey(message)}>
+							{getUnreadDividerVisibility && (
+								<UnreadDividerSlot beforeId={message.id} visible={getUnreadDividerVisibility(message.id, 'before')} />
+							)}
 
-						<div data-message-index={index} data-message-id={message.id} data-is-group-start={isGroupStart}>
-							<Message
-								channel={channel}
-								message={message}
-								prevMessage={prevMessage}
-								onEdit={onEdit}
-								shouldGroup={!isGroupStart}
-								isJumpTarget={highlightedMessageId === message.id}
-								compact={messageDisplayCompact}
-								idPrefix={idPrefix}
-							/>
-						</div>
-					</Fragment>
-				);
-			})}
-		</div>
-	);
-});
+							<div data-message-index={index} data-message-id={message.id} data-is-group-start={isGroupStart}>
+								<Message
+									channel={channel}
+									message={message}
+									prevMessage={prevMessage}
+									onEdit={onEdit}
+									shouldGroup={!isGroupStart}
+									isJumpTarget={highlightedMessageId === message.id}
+									compact={messageDisplayCompact}
+									idPrefix={idPrefix}
+								/>
+							</div>
+						</Fragment>
+					);
+				})}
+			</div>
+		);
+	}),
+	(prevProps, nextProps) => {
+		// Only re-render if messages array changed or critical props changed
+		if (prevProps.messages !== nextProps.messages) return false;
+		if (prevProps.channel !== nextProps.channel) return false;
+		if (prevProps.highlightedMessageId !== nextProps.highlightedMessageId) return false;
+		if (prevProps.messageDisplayCompact !== nextProps.messageDisplayCompact) return false;
+		if (prevProps.jumpSequenceId !== nextProps.jumpSequenceId) return false;
+		return true;
+	}
+);

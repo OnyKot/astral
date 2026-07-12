@@ -29,7 +29,7 @@ import {ConfirmModal} from '~/components/modals/ConfirmModal';
 import {HttpError} from '~/lib/HttpClient';
 import {Logger} from '~/lib/Logger';
 import {getStoredReferralCode} from '~/utils/ReferralUtils';
-import {isNativeApp, openExternalUrl} from '~/utils/NativeUtils';
+import {openExternalUrl} from '~/utils/NativeUtils';
 
 const logger = new Logger('useCheckoutActions');
 
@@ -118,7 +118,7 @@ export const useCheckoutActions = (priceIds: PriceIds | null, isGiftSubscription
 				const checkoutUrl = await PremiumActionCreators.createCheckoutSession(priceId, isGift, getStoredReferralCode());
 				const isWataHostedCheckout = isWataHostedCheckoutUrl(checkoutUrl);
 
-				if (isWataHostedCheckout && !isNativeApp()) {
+				if (isWataHostedCheckout) {
 					await openWataHostedCheckout(checkoutUrl);
 				} else if (mobileEnabled) {
 					ModalActionCreators.push(

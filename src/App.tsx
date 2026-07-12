@@ -74,6 +74,7 @@ import LayerManager from '~/stores/LayerManager';
 
 import {ensureAutostartDefaultEnabled} from '~/utils/AutostartUtils';
 import {startDeepLinkHandling} from '~/utils/DeepLinkUtils';
+import {isLowEndMobileExperience} from '~/utils/mobileExperience';
 import {attachExternalLinkInterceptor, getElectronAPI, getNativePlatform} from '~/utils/NativeUtils';
 import {getChatBackgroundAsset} from '~/constants/chatBackgrounds';
 
@@ -260,6 +261,19 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 
 	React.useEffect(() => {
 		const root = document.documentElement;
+		const updateMobileLiteMode = () => {
+			root.classList.toggle('mobile-lite', isLowEndMobileExperience());
+		};
+		updateMobileLiteMode();
+		window.addEventListener('resize', updateMobileLiteMode);
+		return () => {
+			window.removeEventListener('resize', updateMobileLiteMode);
+			root.classList.remove('mobile-lite');
+		};
+	}, []);
+
+	React.useEffect(() => {
+		const root = document.documentElement;
 		const shouldHideSensitive = streamModeEnabled && hideSensitiveOverlay;
 		const twitchLive = showTwitchPresence && Boolean(twitchLiveState?.isLive);
 		root.classList.toggle('stream-mode', streamModeEnabled);
@@ -410,6 +424,28 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 		}
 
 		let resumeTimer: ReturnType<typeof setTimeout> | null = null;
+		let deferredVoiceResumeTimer: ReturnType<typeof setTimeout> | null = null;
+
+		const tryResumeVoiceSession = () => {
+			if (!ConnectionStore.isConnected || ConnectionStore.isConnecting) {
+				return;
+			}
+
+			if (MediaEngineStore.connected || MediaEngineStore.connecting) {
+				return;
+			}
+
+			if (!MediaEngineStore.getShouldReconnect()) {
+				return;
+			}
+
+			const lastConnected = MediaEngineStore.getLastConnectedChannel();
+			if (!lastConnected) {
+				return;
+			}
+
+			void MediaEngineStore.connectToVoiceChannel(lastConnected.guildId, lastConnected.channelId);
+		};
 
 		const triggerNativeResumeRecovery = () => {
 			if (document.hidden) {
@@ -431,10 +467,19 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 
 				if (!ConnectionStore.isConnected && !ConnectionStore.isConnecting) {
 					void ConnectionStore.startSession(token);
-					return;
+				} else {
+					ConnectionStore.socket?.handleNetworkStatusChange(navigator.onLine);
 				}
 
-				ConnectionStore.socket?.handleNetworkStatusChange(navigator.onLine);
+				tryResumeVoiceSession();
+
+				if (deferredVoiceResumeTimer) {
+					clearTimeout(deferredVoiceResumeTimer);
+				}
+				deferredVoiceResumeTimer = setTimeout(() => {
+					deferredVoiceResumeTimer = null;
+					tryResumeVoiceSession();
+				}, 900);
 			}, 250);
 		};
 
@@ -446,6 +491,9 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 			document.removeEventListener('visibilitychange', triggerNativeResumeRecovery);
 			if (resumeTimer) {
 				clearTimeout(resumeTimer);
+			}
+			if (deferredVoiceResumeTimer) {
+				clearTimeout(deferredVoiceResumeTimer);
 			}
 		};
 	}, [isNativeMobilePlatform]);
@@ -498,22 +546,37 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 	}, [isMobileWebBrowser]);
 
 	React.useEffect(() => {
-		if (!isNativeMobilePlatform) {
+		if (!isNativeMobilePlatform && !isMobileWebBrowser) {
 			return;
 		}
 
 		const root = document.documentElement;
 		const viewport = window.visualViewport;
+		let viewportSyncFrame: number | null = null;
 
-		const syncViewportInsets = () => {
+		const flushViewportInsets = () => {
+			viewportSyncFrame = null;
 			if (!window.visualViewport) {
 				root.style.setProperty('--android-virtual-frame-bottom', '0px');
+				root.style.setProperty('--mobile-keyboard-inset', '0px');
 				return;
 			}
 
 			const visibleBottom = window.visualViewport.height + window.visualViewport.offsetTop;
 			const keyboardInset = Math.max(0, Math.round(window.innerHeight - visibleBottom));
 			root.style.setProperty('--android-virtual-frame-bottom', `${keyboardInset}px`);
+			if (keyboardInset >= 120) {
+				delete root.dataset.keyboardInsetBridge;
+				root.style.setProperty('--mobile-keyboard-inset', `${keyboardInset}px`);
+				root.style.setProperty('--mobile-expression-picker-height', `${keyboardInset}px`);
+			} else if (root.dataset.keyboardInsetBridge !== 'true') {
+				root.style.setProperty('--mobile-keyboard-inset', '0px');
+			}
+		};
+
+		const syncViewportInsets = () => {
+			if (viewportSyncFrame != null) return;
+			viewportSyncFrame = window.requestAnimationFrame(flushViewportInsets);
 		};
 
 		syncViewportInsets();
@@ -525,9 +588,14 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 			viewport?.removeEventListener('resize', syncViewportInsets);
 			viewport?.removeEventListener('scroll', syncViewportInsets);
 			window.removeEventListener('orientationchange', syncViewportInsets);
+			if (viewportSyncFrame != null) {
+				window.cancelAnimationFrame(viewportSyncFrame);
+			}
 			root.style.setProperty('--android-virtual-frame-bottom', '0px');
+			root.style.setProperty('--mobile-keyboard-inset', '0px');
+			delete root.dataset.keyboardInsetBridge;
 		};
-	}, [isNativeMobilePlatform]);
+	}, [isMobileWebBrowser, isNativeMobilePlatform]);
 
 	React.useEffect(() => {
 		if (!isNativeMobilePlatform) {
@@ -537,6 +605,14 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 		const handleNativeBack = (event: Event) => {
 			if (LayerManager.closeTopLayer()) {
 				event.preventDefault();
+				event.stopPropagation();
+				return;
+			}
+
+			if (window.history.length > 1) {
+				event.preventDefault();
+				event.stopPropagation();
+				window.history.back();
 			}
 		};
 
@@ -553,6 +629,7 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 			`platform-${platform}`,
 			isNativeDesktopNonMac ? 'platform-native-desktop' : null,
 			isNativeMobilePlatform ? 'platform-native-mobile' : null,
+			isMobileWebBrowser ? 'platform-mobile-browser' : null,
 			isAndroidWebViewShell ? 'platform-android-webview-shell' : null,
 		].filter((value): value is string => value !== null);
 
@@ -561,7 +638,7 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 		return () => {
 			htmlNode.classList.remove(...platformClasses);
 		};
-	}, [isAndroidWebViewShell, isNative, isNativeDesktopNonMac, isNativeMobilePlatform, platform]);
+	}, [isAndroidWebViewShell, isMobileWebBrowser, isNative, isNativeDesktopNonMac, isNativeMobilePlatform, platform]);
 
 	React.useEffect(() => {
 		if (isNative) {
@@ -718,11 +795,7 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 			'theme-system',
 		];
 
-		// Enable the `.theme-transitioning` class on <html> only when the
-		// theme is actually changing (not on mount, not when unrelated
-		// deps like saturationFactor / fontSize trigger this effect).
-		// This keeps transitions scoped to real theme swaps so they don't
-		// bleed into hover/focus animations elsewhere.
+		// Only theme changes should toggle transition class.
 		const previousTheme = previousEffectiveThemeRef.current;
 		const isThemeSwitch = previousTheme !== null && previousTheme !== effectiveTheme;
 		previousEffectiveThemeRef.current = effectiveTheme;
@@ -732,11 +805,22 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 			htmlNode.classList.add('theme-transitioning');
 			transitionTimer = window.setTimeout(() => {
 				htmlNode.classList.remove('theme-transitioning');
-			}, 450);
+			}, 140);
 		}
 
 		htmlNode.classList.remove(...themeClasses);
 		htmlNode.classList.add(`theme-${effectiveTheme}`);
+
+		return () => {
+			if (transitionTimer !== undefined) {
+				window.clearTimeout(transitionTimer);
+			}
+			htmlNode.classList.remove('theme-transitioning');
+		};
+	}, [effectiveTheme]);
+
+	React.useEffect(() => {
+		const htmlNode = document.documentElement;
 		htmlNode.style.setProperty('--saturation-factor', saturationFactor.toString());
 		htmlNode.style.setProperty('--user-select', enableTextSelection ? 'auto' : 'none');
 		htmlNode.style.setProperty('--font-size', `${fontSize}px`);
@@ -748,15 +832,7 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 		} else {
 			htmlNode.style.removeProperty('--link-decoration');
 		}
-
-		return () => {
-			if (transitionTimer !== undefined) {
-				window.clearTimeout(transitionTimer);
-			}
-			htmlNode.classList.remove('theme-transitioning');
-		};
 	}, [
-		effectiveTheme,
 		saturationFactor,
 		alwaysUnderlineLinks,
 		enableTextSelection,
@@ -792,7 +868,7 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 			<SVGMasks />
 			<RoomContext.Provider value={room ?? undefined}>
 				{room && <RoomAudioRenderer />}
-				<div ref={ringsContainerRef} className={styles.appContainer}>
+				<div ref={ringsContainerRef} className={styles.appContainer} data-theme-transition="surface">
 					<FocusRingScope containerRef={ringsContainerRef}>
 						<NativeTrafficLightsBackdrop variant={layoutVariant} />
 						{showNativeTitlebar && <NativeTitlebar platform={platform} />}

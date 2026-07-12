@@ -26,7 +26,7 @@ import * as MessageActionCreators from '~/actions/MessageActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
-import {ChannelTypes} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType} from '~/Constants';
 import {MessageForwardFailedModal} from '~/components/alerts/MessageForwardFailedModal';
 import {Autocomplete} from '~/components/channel/Autocomplete';
 import {MessageCharacterCounter} from '~/components/channel/MessageCharacterCounter';
@@ -62,10 +62,21 @@ import {StatusAwareAvatar} from '../uikit/StatusAwareAvatar';
 import modalStyles from './ForwardModal.module.css';
 const modalStylesRecord = modalStyles as Record<string, string>;
 
-export const ForwardModal = observer(({message}: {message: MessageRecord}) => {
+interface ForwardModalProps {
+	message?: MessageRecord;
+	messages?: Array<MessageRecord>;
+	onForwarded?: () => void;
+}
+
+export const ForwardModal = observer(({message, messages, onForwarded}: ForwardModalProps) => {
 	const {t} = useLingui();
+	const messagesToForward = React.useMemo(() => {
+		if (messages?.length) return messages;
+		return message ? [message] : [];
+	}, [message, messages]);
+	const firstMessage = messagesToForward[0];
 	const {filteredChannels, handleToggleChannel, isChannelDisabled, searchQuery, selectedChannelIds, setSearchQuery} =
-		useForwardChannelSelection({excludedChannelId: message.channelId});
+		useForwardChannelSelection({excludedChannelId: firstMessage?.channelId});
 	const [optionalMessage, setOptionalMessage] = React.useState('');
 	const [isForwarding, setIsForwarding] = React.useState(false);
 	const [expressionPickerOpen, setExpressionPickerOpen] = React.useState(false);
@@ -75,15 +86,21 @@ export const ForwardModal = observer(({message}: {message: MessageRecord}) => {
 	const mobileLayout = MobileLayoutStore;
 	const isMobileForwarding = mobileLayout.enabled && isForwarding;
 
-	const {segmentManagerRef, previousValueRef, displayToActual, insertSegment, handleTextChange} = useTextareaSegments();
+	const {
+		segmentManagerRef,
+		previousValueRef,
+		displayToActual,
+		replaceWithSegment,
+		handleTextChange,
+	} = useTextareaSegments();
 	const {handleEmojiSelect} = useTextareaEmojiPicker({
 		setValue: setOptionalMessage,
 		textareaRef,
-		insertSegment,
+		replaceWithSegment,
 		previousValueRef,
 	});
 
-	const channel = ChannelStore.getChannel(message.channelId)!;
+	const channel = firstMessage ? ChannelStore.getChannel(firstMessage.channelId) : null;
 	const {
 		autocompleteQuery,
 		autocompleteOptions,
@@ -94,7 +111,7 @@ export const ForwardModal = observer(({message}: {message: MessageRecord}) => {
 		onCursorMove,
 		handleSelect,
 	} = useTextareaAutocomplete({
-		channel,
+		channel: channel!,
 		value: optionalMessage,
 		setValue: setOptionalMessage,
 		textareaRef,
@@ -103,7 +120,7 @@ export const ForwardModal = observer(({message}: {message: MessageRecord}) => {
 	});
 
 	useTextareaPaste({
-		channel,
+		channel: channel!,
 		textareaRef,
 		segmentManagerRef,
 		setValue: setOptionalMessage,
@@ -111,24 +128,27 @@ export const ForwardModal = observer(({message}: {message: MessageRecord}) => {
 	});
 
 	const handleForward = async () => {
-		if (selectedChannelIds.size === 0 || isForwarding) return;
+		if (selectedChannelIds.size === 0 || isForwarding || !channel || messagesToForward.length === 0) return;
 
 		setIsForwarding(true);
 		try {
 			const actualMessage = optionalMessage.trim() ? displayToActual(optionalMessage) : undefined;
-			await MessageActionCreators.forward(
-				Array.from(selectedChannelIds),
-				{
-					message_id: message.id,
-					channel_id: message.channelId,
-					guild_id: channel.guildId,
-				},
-				actualMessage,
-			);
+			const references = messagesToForward.map((selectedMessage) => ({
+				message_id: selectedMessage.id,
+				channel_id: selectedMessage.channelId,
+				guild_id: selectedMessage.guildId ?? ChannelStore.getChannel(selectedMessage.channelId)?.guildId,
+			}));
+
+			if (references.length === 1) {
+				await MessageActionCreators.forward(Array.from(selectedChannelIds), references[0], actualMessage);
+			} else {
+				await MessageActionCreators.forwardMany(Array.from(selectedChannelIds), references, actualMessage);
+			}
 			ToastActionCreators.createToast({
 				type: 'success',
-				children: <Trans>Message forwarded</Trans>,
+				children: references.length === 1 ? <Trans>Message forwarded</Trans> : <Trans>Messages forwarded</Trans>,
 			});
+			onForwarded?.();
 			ModalActionCreators.pop();
 
 			if (selectedChannelIds.size === 1) {
@@ -173,7 +193,7 @@ export const ForwardModal = observer(({message}: {message: MessageRecord}) => {
 				</div>
 			);
 		}
-		if (ch.type === ChannelTypes.GUILD_VOICE) {
+		if (isGuildRtcChannelType(ch.type)) {
 			return <SpeakerHighIcon className={selectorStyles.itemIcon} weight="fill" size={iconSize} />;
 		}
 		return <HashIcon className={selectorStyles.itemIcon} weight="bold" size={iconSize} />;
@@ -181,7 +201,7 @@ export const ForwardModal = observer(({message}: {message: MessageRecord}) => {
 
 	return (
 		<Modal.Root size="small" centered className={clsx(isMobileForwarding && modalStylesRecord.mobileForwardingRoot)}>
-			<Modal.Header title={t`Forward Message`}>
+			<Modal.Header title={messagesToForward.length === 1 ? t`Forward Message` : t`Forward Messages`}>
 				<div className={selectorStyles.headerSearch}>
 					<Input
 						type="text"
@@ -331,7 +351,7 @@ export const ForwardModal = observer(({message}: {message: MessageRecord}) => {
 								returnFocusRef={textareaRef}
 								render={({onClose}) => (
 									<ExpressionPickerPopout
-										channelId={message.channelId}
+										channelId={firstMessage!.channelId}
 										onEmojiSelect={(emoji) => {
 											handleEmojiSelect(emoji);
 											onClose();
@@ -378,7 +398,7 @@ export const ForwardModal = observer(({message}: {message: MessageRecord}) => {
 				<ExpressionPickerSheet
 					isOpen={expressionPickerOpen}
 					onClose={() => setExpressionPickerOpen(false)}
-					channelId={message.channelId}
+					channelId={firstMessage!.channelId}
 					onEmojiSelect={handleEmojiSelect}
 					visibleTabs={['emojis']}
 					selectedTab="emojis"

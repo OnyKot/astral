@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
-import { Send, Hash, Plus, Smile, Pin, Menu, Zap, Reply, Copy, CornerDownRight } from './Icon';
+import { Send, Hash, Plus, Smile, Pin, Menu, Zap, Reply, Copy, CornerDownRight, Phone, Video, ChevronLeft, Mic } from './Icon';
 import { Message, User } from '../types';
 import { translations } from '../translations';
 
@@ -48,7 +48,9 @@ const ChatChannel: React.FC<ChatChannelProps> = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const touchStartX = useRef<number | null>(null);
+  const [isMobileLayout, setIsMobileLayout] = useState(() => (
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  ));
   const t = translations[lang];
   const isRu = lang === 'ru';
   const pinnedMessages = messages.filter((message) => message.isPinned && message.senderId !== 'sys');
@@ -56,6 +58,12 @@ const ChatChannel: React.FC<ChatChannelProps> = ({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    const syncLayout = () => setIsMobileLayout(window.innerWidth < 768);
+    window.addEventListener('resize', syncLayout);
+    return () => window.removeEventListener('resize', syncLayout);
+  }, []);
 
   useEffect(() => {
     if (!isEmojiPickerOpen) return;
@@ -103,20 +111,6 @@ const ChatChannel: React.FC<ChatChannelProps> = ({
       e.preventDefault();
       handleSend();
     }
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchEndX - touchStartX.current;
-    if (diff > 50 && onToggleSidebar) {
-      onToggleSidebar();
-    }
-    touchStartX.current = null;
   };
 
   const sendImageAsMessage = async (file: File) => {
@@ -187,35 +181,39 @@ const ChatChannel: React.FC<ChatChannelProps> = ({
   return (
     <div
       className={`flex flex-col h-full relative ${isOverlay ? 'bg-transparent' : 'bg-[#050505]'}`}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
     >
       {!isOverlay && (
-        <div className="h-14 shrink-0 border-b border-white/5 flex items-center px-4 justify-between bg-black/60 backdrop-blur-md sticky top-0 z-10">
-          <div className="flex items-center gap-3">
+        <div className="h-16 shrink-0 flex items-center px-4 justify-between bg-black/55 backdrop-blur-md sticky top-0 z-10">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={onToggleSidebar}
               className="md:hidden p-2 -ml-2 text-zinc-400 hover:text-white active:scale-90 transition-transform"
             >
-              <Menu size={20} />
+              <ChevronLeft size={20} />
             </button>
 
-            <div className="flex items-center gap-2.5">
-              <Hash size={20} className="text-zinc-500" />
-              <span className="font-bold text-white tracking-tight truncate max-w-[200px]">{channelName}</span>
-              <span className="hidden md:inline-block px-1.5 py-0.5 rounded bg-zinc-800 text-[10px] text-zinc-400 font-mono">TEXT</span>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+              {channelName.slice(0, 1).toUpperCase()}
+            </div>
+
+            <div className="min-w-0">
+              <div className="font-bold text-white tracking-tight truncate max-w-[220px]">{channelName}</div>
+              <div className="text-xs text-zinc-400">{isRu ? 'Онлайн' : 'Online now'}</div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button className="text-zinc-500 hover:text-white transition-colors">
-              <Pin size={20} />
+          <div className="flex items-center gap-2">
+            <button className="w-9 h-9 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center">
+              <Phone size={18} />
+            </button>
+            <button className="w-9 h-9 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center">
+              <Video size={18} />
             </button>
           </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-4 py-3 md:p-4 custom-scrollbar">
         {pinnedMessages.length > 0 && (
           <div className="mb-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3">
             <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-indigo-300">
@@ -250,7 +248,7 @@ const ChatChannel: React.FC<ChatChannelProps> = ({
           </div>
         )}
 
-        <div className="flex flex-col justify-end min-h-0 space-y-0.5">
+        <div className="flex flex-col justify-end min-h-0 space-y-2 md:space-y-0.5">
           {messages.map((msg, idx) => {
             const isSystem = msg.senderId === 'sys';
             const showHeader = !isSystem && (idx === 0 || messages[idx - 1].senderId !== msg.senderId || (msg.timestamp - messages[idx - 1].timestamp > 60000));
@@ -269,6 +267,45 @@ const ChatChannel: React.FC<ChatChannelProps> = ({
                     <span className="text-zinc-600">[{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]</span>
                   </div>
                   <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                </div>
+              );
+            }
+
+            if (isMobileLayout) {
+              const isOwnMessage = msg.senderId === currentUser.id;
+              const timestampLabel = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              return (
+                <div key={msg.id} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                  <div className="max-w-[84%]">
+                    {textPayload && (
+                      <div
+                        className={`rounded-[22px] px-4 py-3 text-[16px] leading-[1.45] break-words whitespace-pre-wrap ${
+                          isOwnMessage
+                            ? 'bg-indigo-600 text-white rounded-br-md'
+                            : 'bg-white/10 text-zinc-100 rounded-bl-md'
+                        }`}
+                      >
+                        {textPayload}
+                      </div>
+                    )}
+                    {imagePayload && (
+                      <img
+                        src={imagePayload}
+                        alt="upload"
+                        loading="lazy"
+                        className={`max-w-[280px] w-full max-h-[320px] rounded-[22px] border border-white/10 object-cover ${
+                          isOwnMessage ? 'rounded-br-md' : 'rounded-bl-md'
+                        }`}
+                      />
+                    )}
+                    <div
+                      className={`mt-1 text-[11px] text-zinc-500 ${
+                        isOwnMessage ? 'text-right pr-1' : 'pl-1'
+                      }`}
+                    >
+                      {timestampLabel}
+                    </div>
+                  </div>
                 </div>
               );
             }
@@ -363,7 +400,7 @@ const ChatChannel: React.FC<ChatChannelProps> = ({
         <div ref={bottomRef} className="h-2" />
       </div>
 
-      <div className={`px-4 pt-2 z-20 ${isOverlay ? 'pb-8' : 'pb-24 md:pb-6'}`}>
+      <div className={`px-4 pt-2 z-20 ${isOverlay ? 'pb-8' : 'pb-[6.4rem] md:pb-6'}`}>
         <div
           ref={composerRef}
           className="relative group"
@@ -398,7 +435,7 @@ const ChatChannel: React.FC<ChatChannelProps> = ({
 
           <form
             onSubmit={handleSend}
-            className={`flex items-center gap-2 bg-[#18181b]/50 backdrop-blur-xl p-2 pr-3 rounded-[20px] border focus-within:border-indigo-500/50 focus-within:bg-[#18181b] transition-all duration-300 shadow-lg ${
+            className={`flex items-center gap-2 bg-[#18181b]/70 backdrop-blur-xl p-2 pl-3 pr-2 rounded-full border focus-within:border-indigo-500/50 focus-within:bg-[#18181b] transition-all duration-300 shadow-lg ${
               isDragOverComposer ? 'border-indigo-400 bg-[#1a1a22]' : 'border-white/10'
             }`}
           >
@@ -407,7 +444,7 @@ const ChatChannel: React.FC<ChatChannelProps> = ({
               className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-colors rounded-full hover:bg-white/10"
               onClick={() => imageInputRef.current?.click()}
             >
-              <Plus size={18} className="bg-zinc-700 rounded-full text-black p-0.5" />
+              <Plus size={17} />
             </button>
 
             <input
@@ -422,21 +459,22 @@ const ChatChannel: React.FC<ChatChannelProps> = ({
             <div className="flex items-center gap-1">
               {!inputValue.trim() && (
                 <>
-                  <button type="button" className="p-2 text-zinc-400 hover:text-white transition-colors"><Zap size={18} /></button>
+                  <button type="button" className="p-2 text-zinc-400 hover:text-white transition-colors"><Smile size={17} /></button>
                   <button
                     type="button"
                     className={`p-2 transition-colors ${isEmojiPickerOpen ? 'text-white' : 'text-zinc-400 hover:text-white'}`}
                     onClick={() => setIsEmojiPickerOpen((prev) => !prev)}
                   >
-                    <Smile size={18} />
+                    <Zap size={17} />
                   </button>
+                  <button type="button" className="p-2 text-zinc-400 hover:text-white transition-colors"><Mic size={17} /></button>
                 </>
               )}
 
               {inputValue.trim() && (
                 <button
                   type="submit"
-                  className="p-2 rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 animate-in zoom-in duration-200 hover:scale-105 active:scale-95"
+                  className="w-10 h-10 rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 animate-in zoom-in duration-200 hover:scale-105 active:scale-95 flex items-center justify-center"
                 >
                   <Send size={16} fill="white" />
                 </button>

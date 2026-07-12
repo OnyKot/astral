@@ -219,6 +219,23 @@
 	}
 }
 
+@media (max-width: 560px) {
+	.card {
+		overflow: hidden;
+		border-radius: 1rem;
+		padding-top: 2rem;
+	}
+
+	.popularBadge {
+		top: 0.45rem;
+		box-shadow: none;
+	}
+
+	.soldOutBadge {
+		top: 0.5rem;
+	}
+}
+
 .cardPriceDefault {
 	composes: cardPrice;
 	color: rgb(248 245 255);

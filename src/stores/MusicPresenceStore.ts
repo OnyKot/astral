@@ -18,7 +18,6 @@
  */
 
 import {makeAutoObservable, reaction, runInAction} from 'mobx';
-import Config from '~/Config';
 import AppStorage from '~/lib/AppStorage';
 import {
 	type MusicActivity,
@@ -284,7 +283,7 @@ class MusicPresenceStore {
 	}
 
 	get spotifyClientId(): string | null {
-		return RuntimeConfigStore.spotifyClientId || Config.PUBLIC_SPOTIFY_CLIENT_ID || null;
+		return RuntimeConfigStore.spotifyClientId || null;
 	}
 
 	get spotifyAvailable(): boolean {

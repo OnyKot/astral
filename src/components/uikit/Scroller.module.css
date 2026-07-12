@@ -43,6 +43,7 @@
 	scrollbar-width: thin;
 	scrollbar-color: var(--scrollbar-thumb-bg) var(--scrollbar-track-bg, transparent);
 	margin-inline-end: calc(var(--scroller-track-size) * -1);
+	touch-action: pan-y;
 }
 
 .scroller::-webkit-scrollbar {
@@ -140,6 +141,7 @@
 .horizontal .scroller {
 	overscroll-behavior-x: contain;
 	overscroll-behavior-y: none;
+	touch-action: pan-x;
 }
 
 .noScrollbarReserve {

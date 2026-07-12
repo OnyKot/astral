@@ -34,7 +34,9 @@ import GuildMemberLayoutStore from '~/stores/GuildMemberLayoutStore';
 import SettingsSidebarStore from '~/stores/SettingsSidebarStore';
 import {SettingsModalHeader} from '../components/SettingsModalHeader';
 import styles from '../GuildSettingsModal.module.css';
+import {useDesktopSettingsTabDirection} from '../hooks/useDesktopSettingsTabDirection';
 import {useUnsavedChangesFlash} from '../hooks/useUnsavedChangesFlash';
+import {DesktopSettingsPanelTransition} from '../shared/DesktopSettingsPanelTransition';
 import {
 	SettingsModalDesktopContent,
 	SettingsModalDesktopScroll,
@@ -122,6 +124,11 @@ export const DesktopGuildSettingsView: React.FC<DesktopGuildSettingsViewProps> =
 					return baseKey;
 			}
 		}, [guild.id, selectedTab, emojiLayout, stickerViewMode, memberViewMode]);
+		const tabOrder = React.useMemo(
+			() => Object.values(groupedSettingsTabs).flat().map((tab) => tab.type),
+			[groupedSettingsTabs],
+		);
+		const direction = useDesktopSettingsTabDirection(selectedTab, tabOrder);
 
 		return (
 			<>
@@ -219,7 +226,13 @@ export const DesktopGuildSettingsView: React.FC<DesktopGuildSettingsViewProps> =
 						onClose={handleClose}
 					/>
 					<SettingsModalDesktopScroll scrollKey={scrollKey}>
-						{currentTab && <currentTab.component guildId={guild.id} />}
+						<DesktopSettingsPanelTransition
+							panelKey={scrollKey}
+							direction={direction}
+							reducedMotion={prefersReducedMotion}
+						>
+							{currentTab && <currentTab.component guildId={guild.id} />}
+						</DesktopSettingsPanelTransition>
 					</SettingsModalDesktopScroll>
 				</SettingsModalDesktopContent>
 			</>

@@ -28,6 +28,7 @@
 export const COMPONENT_TYPE_ACTION_ROW = 1;
 export const COMPONENT_TYPE_BUTTON = 2;
 export const COMPONENT_TYPE_STRING_SELECT = 3;
+export const COMPONENT_TYPE_STORY_PREVIEW = 100;
 
 export const BUTTON_STYLE_PRIMARY = 1;
 export const BUTTON_STYLE_SECONDARY = 2;
@@ -71,7 +72,41 @@ export interface StringSelectComponent {
 	disabled?: boolean;
 }
 
-export type RowChildComponent = ButtonComponent | StringSelectComponent;
+export interface StoryPreviewComponent {
+	type: 100;
+	kind: 'story_preview';
+	author_name: string;
+	summary: string;
+	media_url?: string | null;
+	comment?: string | null;
+	is_video?: boolean;
+	story_id?: string | null;
+	user_id?: string | null;
+	text?: string | null;
+	background?: string | null;
+	text_align?: 'left' | 'center' | 'right' | null;
+	text_tone?: 'light' | 'dark' | 'accent' | null;
+	emojis?: Array<{
+		id: string;
+		name: string;
+		url?: string;
+		native?: string;
+		transform?: {
+			x?: number;
+			y?: number;
+			scale?: number;
+			rotate?: number;
+		};
+	}> | null;
+	drawings?: Array<{
+		id: string;
+		color: string;
+		width: number;
+		points: Array<{x: number; y: number}>;
+	}> | null;
+}
+
+export type RowChildComponent = ButtonComponent | StringSelectComponent | StoryPreviewComponent;
 
 export interface MessageActionRow {
 	type: 1;

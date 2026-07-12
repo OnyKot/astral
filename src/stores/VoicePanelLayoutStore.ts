@@ -218,8 +218,15 @@ class VoicePanelLayoutStore {
 	}
 
 	clampToViewport(): void {
-		this.setSize(this.widthPx, this.heightPx);
-		this.snapToDock();
+		this.widthPx = this.clamp(Math.round(this.widthPx), MIN_WIDTH_PX, Math.min(MAX_WIDTH_PX, this.viewport().width - VIEWPORT_MARGIN_PX * 2));
+		this.heightPx = this.clamp(Math.round(this.heightPx), MIN_HEIGHT_PX, Math.min(MAX_HEIGHT_PX, this.viewport().height - VIEWPORT_MARGIN_PX * 2));
+
+		if (this.pinned) {
+			this.applyPinnedPosition();
+			return;
+		}
+
+		this.setPosition(this.xPx, this.yPx);
 	}
 }
 

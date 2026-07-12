@@ -20,10 +20,11 @@
 import type {I18n} from '@lingui/core';
 import {msg} from '@lingui/core/macro';
 import type {Participant, Room, ScreenShareCaptureOptions, TrackPublishOptions} from 'livekit-client';
-import {computed, makeObservable} from 'mobx';
+import {computed, makeObservable, observable} from 'mobx';
 import * as SoundActionCreators from '~/actions/SoundActionCreators';
+import {screenSharePreviewUploader} from '~/lib/ScreenSharePreviewUploader';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
-import {ChannelTypes, type GatewayErrorCode, GatewayErrorCodes} from '~/Constants';
+import {ChannelTypes, ME, type GatewayErrorCode, GatewayErrorCodes} from '~/Constants';
 import type {GatewayErrorData} from '~/lib/GatewaySocket';
 import {Logger} from '~/lib/Logger';
 import {voiceStatsDB} from '~/lib/VoiceStatsDB';
@@ -41,6 +42,7 @@ import MediaPermissionStore from '~/stores/MediaPermissionStore';
 import UserStore from '~/stores/UserStore';
 import VoiceDevicePermissionStore from '~/stores/voice/VoiceDevicePermissionStore';
 import {SoundType} from '~/utils/SoundUtils';
+import {isBroadcastVoiceChannel} from '~/utils/channelVoiceMode';
 import {
 	checkChannelLimit,
 	disconnectOtherCurrentUserVoiceConnections,
@@ -49,6 +51,8 @@ import {
 } from './VoiceChannelConnector';
 import type {VoiceServerUpdateData} from './VoiceConnectionManager';
 import VoiceConnectionManager from './VoiceConnectionManager';
+import VoiceActivityManager from './VoiceActivityManager';
+import {clearVoiceSession, consumeResumableVoiceSession, saveVoiceSession, touchVoiceSession} from './VoiceSessionResume';
 import VoiceMediaManager from './VoiceMediaManager';
 import type {LivekitParticipantSnapshot} from './VoiceParticipantManager';
 import VoiceParticipantManager from './VoiceParticipantManager';
@@ -69,8 +73,12 @@ class MediaEngineFacade {
 	private afkIntervalId: ReturnType<typeof setInterval> | null = null;
 	private serverDisconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
 	private voiceStateSync = new VoiceStateSyncManager();
+	private pendingSuppressOnConnect: boolean | null = null;
+	private pendingSuppressSyncAttempts = 0;
+	private preferredBroadcastRole: 'listener' | 'speaker' | null = null;
 	private i18n: I18n | null = null;
-	private readonly duplicateConnectionDisconnectTimestamps = new Map<string, number>();
+	private voiceResumeAttempted = false;
+	evictingStaleSession = false;
 
 	constructor() {
 		this.statsManager = new VoiceStatsManager();
@@ -89,9 +97,16 @@ class MediaEngineFacade {
 			voiceStats: computed,
 			displayLatency: computed,
 			estimatedLatency: computed,
+			evictingStaleSession: observable,
 		});
 
 		(window as typeof window & {_mediaEngineStore?: MediaEngineFacade})._mediaEngineStore = this;
+		VoiceConnectionManager.setAutoReconnectHandler(() => {
+			const lastChannel = this.getLastConnectedChannel();
+			if (lastChannel) {
+				void this.connectToVoiceChannel(lastChannel.guildId, lastChannel.channelId);
+			}
+		});
 		logger.debug('MediaEngineFacade initialized');
 	}
 
@@ -144,7 +159,16 @@ class MediaEngineFacade {
 		return this.statsManager.displayLatency;
 	}
 
-	async connectToVoiceChannel(guildId: string | null, channelId: string): Promise<void> {
+	async connectToVoiceChannel(
+		guildId: string | null,
+		channelId: string,
+		options?: {joinAsListener?: boolean; joinAsSpeaker?: boolean},
+	): Promise<void> {
+		const targetChannel = ChannelStore.getChannel(channelId);
+		const targetIsBroadcast = Boolean(
+			targetChannel && (isBroadcastVoiceChannel(targetChannel) || options?.joinAsListener === true || options?.joinAsSpeaker === true),
+		);
+
 		const currentUserId = AuthenticationStore.currentUserId;
 		const isTimedOut =
 			guildId && currentUserId ? (GuildMemberStore.getMember(guildId, currentUserId)?.isTimedOut() ?? false) : false;
@@ -199,6 +223,21 @@ class MediaEngineFacade {
 
 		if (alreadyInRequestedVoiceChannel) {
 			disconnectOtherCurrentUserVoiceConnections();
+			if (options?.joinAsListener === true || options?.joinAsSpeaker === true) {
+				const suppress = options.joinAsListener === true;
+				this.preferredBroadcastRole = suppress ? 'listener' : 'speaker';
+				if (suppress) {
+					LocalVoiceStateStore.updateSelfMute(true);
+					void this.setCameraEnabled(false).catch(() => {});
+					void this.setScreenShareEnabled(false).catch(() => {});
+				}
+				this.syncLocalVoiceStateWithServer({
+					suppress,
+					self_mute: suppress ? true : undefined,
+					self_video: suppress ? false : undefined,
+					self_stream: suppress ? false : undefined,
+				});
+			}
 			logger.debug('[connectToVoiceChannel] Already in requested voice channel, skipping duplicate join', {
 				guildId,
 				channelId,
@@ -208,7 +247,27 @@ class MediaEngineFacade {
 		}
 
 		this.voiceStateSync.reset();
+		if (!targetIsBroadcast) {
+			this.preferredBroadcastRole = null;
+		} else if (options?.joinAsListener === true) {
+			this.preferredBroadcastRole = 'listener';
+		} else if (options?.joinAsSpeaker === true) {
+			this.preferredBroadcastRole = 'speaker';
+		}
 		disconnectOtherCurrentUserVoiceConnections();
+		if (options?.joinAsListener === true) {
+			this.pendingSuppressOnConnect = true;
+			this.pendingSuppressSyncAttempts = 0;
+		} else if (options?.joinAsSpeaker === true) {
+			this.pendingSuppressOnConnect = false;
+			this.pendingSuppressSyncAttempts = 0;
+		} else {
+			this.pendingSuppressOnConnect = null;
+			this.pendingSuppressSyncAttempts = 0;
+		}
+		if (options?.joinAsListener === true) {
+			LocalVoiceStateStore.updateSelfMute(true);
+		}
 
 		if (VoiceConnectionManager.connected || VoiceConnectionManager.connecting) {
 			if (VoiceConnectionManager.channelId !== channelId || VoiceConnectionManager.guildId !== guildId) {
@@ -217,7 +276,15 @@ class MediaEngineFacade {
 		}
 
 		VoiceConnectionManager.startConnection(guildId, channelId);
-		sendVoiceStateConnect(guildId, channelId);
+		sendVoiceStateConnect(guildId, channelId, {
+			suppress:
+				options?.joinAsListener === true
+					? true
+					: options?.joinAsSpeaker === true
+						? false
+						: undefined,
+			self_mute: options?.joinAsListener === true ? true : undefined,
+		});
 	}
 
 	async disconnectFromVoiceChannel(reason: 'user' | 'error' | 'server' = 'user'): Promise<void> {
@@ -226,6 +293,12 @@ class MediaEngineFacade {
 		}
 		const {guildId, connectionId, connected, connecting, channelId} = VoiceConnectionManager.connectionState;
 		if (!connected && !connecting && !channelId) return;
+
+		// Only a transient 'error' keeps the resume record alive so a reload can
+		// rejoin; an explicit user leave or a server-forced disconnect clears it.
+		if (reason === 'user' || reason === 'server') {
+			clearVoiceSession();
+		}
 
 		this.stopTracking();
 
@@ -242,6 +315,9 @@ class MediaEngineFacade {
 		VoiceMediaManager.resetStreamTracking();
 		VoiceParticipantManager.clear();
 		this.voiceStateSync.reset();
+		this.preferredBroadcastRole = null;
+		this.pendingSuppressOnConnect = null;
+		this.pendingSuppressSyncAttempts = 0;
 		VoiceConnectionManager.disconnectFromVoiceChannel(reason);
 		if (connectionId) {
 			CallMediaPrefsStore.clearForCall(connectionId);
@@ -256,6 +332,9 @@ class MediaEngineFacade {
 			bindRoomEvents(room, attemptId, guildId, channelId, {
 				onConnected: async () => this.startTracking(room),
 				onDisconnected: () => this.stopTracking(),
+				onUnexpectedDisconnect: () => {
+					void this.handleUnexpectedLiveKitDisconnect();
+				},
 				onReconnecting: () => {
 					this.statsManager.stopLatencyTracking();
 					this.statsManager.stopStatsTracking();
@@ -268,8 +347,51 @@ class MediaEngineFacade {
 		});
 	}
 
+	private async handleUnexpectedLiveKitDisconnect(): Promise<void> {
+		logger.warn('[handleUnexpectedLiveKitDisconnect] LiveKit disconnected unexpectedly');
+		await this.disconnectFromVoiceChannel('error');
+		VoiceConnectionManager.requestAutoReconnect();
+	}
+
 	handleConnectionOpen(guilds: Array<GuildReadyData>): void {
 		VoiceStateManager.handleConnectionOpen(guilds);
+		this.maybeResumeVoiceSession();
+	}
+
+	/*
+	 * After a page reload, rejoin the voice channel the user was in. Runs once
+	 * per page load on the first gateway READY (later reconnects are handled by
+	 * the in-page reconnect manager and must not re-trigger this). The persisted
+	 * session is consumed (cleared) on read, and only honoured if it is recent.
+	 */
+	private maybeResumeVoiceSession(): void {
+		if (this.voiceResumeAttempted) return;
+		this.voiceResumeAttempted = true;
+
+		const session = consumeResumableVoiceSession();
+		if (!session) return;
+
+		if (VoiceConnectionManager.connected || VoiceConnectionManager.connecting) return;
+
+		logger.info('[maybeResumeVoiceSession] Rejoining voice after reload', {
+			guildId: session.guildId,
+			channelId: session.channelId,
+		});
+
+		// Defer so the READY handler finishes populating guild/channel stores and
+		// we don't reenter connection logic mid-dispatch.
+		setTimeout(() => {
+			if (VoiceConnectionManager.connected || VoiceConnectionManager.connecting) return;
+			if (!ConnectionStore.socket) return;
+			const channel = ChannelStore.getChannel(session.channelId);
+			if (!channel) {
+				logger.info('[maybeResumeVoiceSession] Channel no longer available, skipping resume');
+				return;
+			}
+			void this.connectToVoiceChannel(session.guildId, session.channelId).catch((error) => {
+				logger.warn('[maybeResumeVoiceSession] Failed to rejoin voice after reload', {error});
+			});
+		}, 0);
 	}
 	handleGuildCreate(guild: GuildReadyData): void {
 		VoiceStateManager.handleGuildCreate(guild);
@@ -283,10 +405,63 @@ class MediaEngineFacade {
 	handleGatewayVoiceStateUpdate(guildId: string | null, voiceState: VoiceState): void {
 		VoiceStateManager.handleGatewayVoiceStateUpdate(guildId, voiceState);
 		const user = UserStore.getCurrentUser();
-		const isLocalUser =
-			user && voiceState.user_id === user.id && voiceState.connection_id === VoiceConnectionManager.connectionId;
+		const isLocalConnection =
+			!VoiceConnectionManager.connectionId || voiceState.connection_id === VoiceConnectionManager.connectionId;
+		const isLocalUser = user && voiceState.user_id === user.id && isLocalConnection;
 
 		if (isLocalUser) {
+			const connectedChannel = VoiceConnectionManager.channelId
+				? ChannelStore.getChannel(VoiceConnectionManager.channelId)
+				: null;
+			const isBroadcastConnection = Boolean(
+				connectedChannel && (isBroadcastVoiceChannel(connectedChannel) || this.isVoiceChannelStageLike(connectedChannel.id)),
+			);
+			const desiredSuppressFromPreferredRole =
+				isBroadcastConnection && this.preferredBroadcastRole
+					? this.preferredBroadcastRole === 'listener'
+					: null;
+
+			if (
+				this.pendingSuppressOnConnect !== null &&
+				voiceState.channel_id &&
+				voiceState.connection_id === VoiceConnectionManager.connectionId
+			) {
+				if (voiceState.suppress === this.pendingSuppressOnConnect) {
+					this.pendingSuppressOnConnect = null;
+					this.pendingSuppressSyncAttempts = 0;
+				} else if (this.pendingSuppressSyncAttempts < 3) {
+					this.pendingSuppressSyncAttempts += 1;
+					this.syncLocalVoiceStateWithServer({
+						suppress: this.pendingSuppressOnConnect,
+						self_mute: this.pendingSuppressOnConnect ? true : undefined,
+					});
+				} else {
+					this.pendingSuppressOnConnect = null;
+					this.pendingSuppressSyncAttempts = 0;
+				}
+			}
+
+			if (
+				desiredSuppressFromPreferredRole !== null &&
+				voiceState.channel_id &&
+				voiceState.connection_id === VoiceConnectionManager.connectionId &&
+				voiceState.suppress !== desiredSuppressFromPreferredRole &&
+				this.pendingSuppressSyncAttempts < 10
+			) {
+				this.pendingSuppressSyncAttempts += 1;
+				this.syncLocalVoiceStateWithServer({
+					suppress: desiredSuppressFromPreferredRole,
+					self_mute: desiredSuppressFromPreferredRole ? true : undefined,
+				});
+			} else if (
+				desiredSuppressFromPreferredRole !== null &&
+				voiceState.channel_id &&
+				voiceState.connection_id === VoiceConnectionManager.connectionId &&
+				voiceState.suppress === desiredSuppressFromPreferredRole
+			) {
+				this.pendingSuppressSyncAttempts = 0;
+			}
+
 			const serverPayload =
 				voiceState.channel_id && voiceState.connection_id
 					? {
@@ -298,10 +473,28 @@ class MediaEngineFacade {
 							self_video: voiceState.self_video,
 							self_stream: voiceState.self_stream,
 							viewer_stream_key: voiceState.viewer_stream_key ?? null,
+							suppress: voiceState.suppress,
 						}
 					: null;
 			this.voiceStateSync.confirmServerState(serverPayload);
 			if (voiceState.channel_id === null && (VoiceConnectionManager.connected || VoiceConnectionManager.connecting)) {
+				const currentUserId = UserStore.getCurrentUser()?.id ?? null;
+				const currentConnectionId = VoiceConnectionManager.connectionId;
+				const isCurrentUser = Boolean(currentUserId && voiceState.user_id === currentUserId);
+				const isCurrentConnection =
+					Boolean(voiceState.connection_id && voiceState.connection_id === currentConnectionId) ||
+					(!voiceState.connection_id && !currentConnectionId);
+
+				if (!isCurrentUser || !isCurrentConnection) {
+					logger.debug('[handleGatewayVoiceStateUpdate] Ignoring stale voice disconnect', {
+						voiceStateConnectionId: voiceState.connection_id,
+						currentConnectionId,
+						voiceStateUserId: voiceState.user_id,
+						currentUserId,
+					});
+					return;
+				}
+
 				if (voiceState.move_channel_id) {
 					this.scheduleServerDisconnectIfConnectionStaysStale(voiceState.connection_id);
 				} else {
@@ -343,6 +536,7 @@ class MediaEngineFacade {
 		self_mute?: boolean;
 		self_deaf?: boolean;
 		viewer_stream_key?: string | null;
+		suppress?: boolean;
 	}): void {
 		LocalVoiceStateStore.ensurePermissionMute();
 		const {guildId, channelId, connectionId} = VoiceConnectionManager.connectionState;
@@ -350,25 +544,49 @@ class MediaEngineFacade {
 
 		const devicePermission = VoiceDevicePermissionStore.getState().permissionStatus;
 		const micGranted = MediaPermissionStore.isMicrophoneGranted() || devicePermission === 'granted';
+		const channel = ChannelStore.getChannel(channelId);
+		const forcedSuppressFromPreferredRole =
+			channel && this.isVoiceChannelStageLike(channelId) && this.preferredBroadcastRole
+				? this.preferredBroadcastRole === 'listener'
+				: null;
+		const suppress =
+			forcedSuppressFromPreferredRole ?? partial?.suppress ?? this.getVoiceStateByConnectionId(connectionId)?.suppress;
+		const selfMuteValue =
+			suppress === true
+				? true
+				: micGranted && partial?.self_mute !== undefined
+					? partial.self_mute
+					: micGranted
+						? LocalVoiceStateStore.getSelfMute()
+						: true;
+		const selfVideoValue = suppress === true ? false : (partial?.self_video ?? LocalVoiceStateStore.getSelfVideo());
+		const selfStreamValue = suppress === true ? false : (partial?.self_stream ?? LocalVoiceStateStore.getSelfStream());
 
 		const payload: VoiceStateSyncPayload = {
 			guild_id: guildId,
 			channel_id: channelId,
 			connection_id: connectionId,
-			self_mute:
-				micGranted && partial?.self_mute !== undefined
-					? partial.self_mute
-					: micGranted
-						? LocalVoiceStateStore.getSelfMute()
-						: true,
+			self_mute: selfMuteValue,
 			self_deaf: partial?.self_deaf ?? LocalVoiceStateStore.getSelfDeaf(),
-			self_video: partial?.self_video ?? LocalVoiceStateStore.getSelfVideo(),
-			self_stream: partial?.self_stream ?? LocalVoiceStateStore.getSelfStream(),
+			self_video: selfVideoValue,
+			self_stream: selfStreamValue,
 			viewer_stream_key: partial?.viewer_stream_key ?? LocalVoiceStateStore.getViewerStreamKey(),
+			suppress,
 		};
 
 		if (!micGranted && !LocalVoiceStateStore.getSelfMute()) {
 			LocalVoiceStateStore.updateSelfMute(true);
+		}
+		if (suppress === true) {
+			if (!LocalVoiceStateStore.getSelfMute()) {
+				LocalVoiceStateStore.updateSelfMute(true);
+			}
+			if (LocalVoiceStateStore.getSelfVideo()) {
+				LocalVoiceStateStore.updateSelfVideo(false);
+			}
+			if (LocalVoiceStateStore.getSelfStream()) {
+				LocalVoiceStateStore.updateSelfStream(false);
+			}
 		}
 
 		this.voiceStateSync.requestState(payload);
@@ -382,10 +600,12 @@ class MediaEngineFacade {
 	}
 	upsertParticipant(participant: Participant): void {
 		VoiceParticipantManager.upsertParticipant(participant);
-		this.enforceSingleConnectionForCurrentUser();
 	}
 
 	async setCameraEnabled(enabled: boolean, options?: {deviceId?: string; sendUpdate?: boolean}): Promise<void> {
+		if (enabled && this.isCurrentUserStageListener()) {
+			return;
+		}
 		await VoiceMediaManager.setCameraEnabled(enabled, options);
 	}
 	async setScreenShareEnabled(
@@ -393,7 +613,22 @@ class MediaEngineFacade {
 		options?: ScreenShareCaptureOptions & {sendUpdate?: boolean},
 		publishOptions?: TrackPublishOptions,
 	): Promise<void> {
+		if (enabled && this.isCurrentUserStageListener()) {
+			return;
+		}
 		await VoiceMediaManager.setScreenShareEnabled(enabled, options, publishOptions);
+
+		// Start/stop preview uploader
+		if (enabled) {
+			const room = this.room;
+			const channelId = this.channelId;
+			const streamKey = LocalVoiceStateStore.getViewerStreamKey();
+			if (room && channelId && streamKey) {
+				screenSharePreviewUploader.start(streamKey, channelId, room);
+			}
+		} else {
+			screenSharePreviewUploader.stop();
+		}
 	}
 	applyLocalAudioPreferencesForUser(userId: string): void {
 		VoiceMediaManager.applyLocalAudioPreferencesForUser(userId, this.room);
@@ -412,15 +647,88 @@ class MediaEngineFacade {
 	}
 	handlePushToTalkModeChange(): void {
 		VoiceMediaManager.handlePushToTalkModeChange(this.room, () => this.getCurrentUserVoiceState());
+		VoiceActivityManager.refresh();
 	}
 	getMuteReason(voiceState: VoiceState | null): 'guild' | 'push_to_talk' | 'self' | null {
 		return VoiceMediaManager.getMuteReason(voiceState);
 	}
+
+	setPreferredBroadcastRole(role: 'listener' | 'speaker' | null): void {
+		this.preferredBroadcastRole = role;
+	}
+
+	isVoiceChannelStageLike(channelId?: string | null): boolean {
+		const targetChannelId = channelId ?? VoiceConnectionManager.channelId;
+		if (!targetChannelId) return false;
+
+		const channel = ChannelStore.getChannel(targetChannelId);
+		if (!channel || !this.isGuildRtcChannel(channel)) {
+			return false;
+		}
+
+		if (channel && isBroadcastVoiceChannel(channel)) {
+			return true;
+		}
+
+		const isCurrentConnection = VoiceConnectionManager.channelId === targetChannelId;
+		if (isCurrentConnection && (this.preferredBroadcastRole !== null || this.pendingSuppressOnConnect !== null)) {
+			return true;
+		}
+
+		const connectionId = isCurrentConnection ? VoiceConnectionManager.connectionId : null;
+		if (connectionId) {
+			const voiceState = VoiceStateManager.getVoiceStateByConnectionId(connectionId);
+			if (voiceState?.suppress === true) {
+				return true;
+			}
+		}
+
+		const guildKey = channel.guildId ?? ME;
+		const states = VoiceStateManager.getAllVoiceStatesInChannel(guildKey, targetChannelId);
+		return Object.values(states).some((state) => state?.suppress === true);
+	}
+
 	async toggleCameraFromKeybind(): Promise<void> {
+		if (this.isCurrentUserInBroadcastListenerMode()) {
+			return;
+		}
 		await VoiceMediaManager.toggleCameraFromKeybind();
 	}
 	async toggleScreenShareFromKeybind(): Promise<void> {
+		if (this.isCurrentUserInBroadcastListenerMode()) {
+			return;
+		}
 		await VoiceMediaManager.toggleScreenShareFromKeybind();
+	}
+
+	isCurrentUserInBroadcastListenerMode(): boolean {
+		const channelId = VoiceConnectionManager.channelId;
+		if (!channelId) return false;
+		const channel = ChannelStore.getChannel(channelId);
+		if (!channel || !this.isGuildRtcChannel(channel)) {
+			return false;
+		}
+
+		if (this.preferredBroadcastRole === 'listener') {
+			return true;
+		}
+
+		const connectionId = VoiceConnectionManager.connectionId;
+		if (!connectionId) {
+			return this.pendingSuppressOnConnect === true;
+		}
+
+		const voiceState = VoiceStateManager.getVoiceStateByConnectionId(connectionId);
+		if (voiceState?.suppress === true) {
+			return true;
+		}
+
+		return this.pendingSuppressOnConnect === true;
+	}
+
+	private isGuildRtcChannel(channel: {guildId?: string; type: number}): boolean {
+		if (!channel.guildId) return false;
+		return channel.type === ChannelTypes.GUILD_VOICE || channel.type === ChannelTypes.GUILD_STAGE;
 	}
 
 	private startTracking(roomOverride?: Room | null): void {
@@ -436,6 +744,11 @@ class MediaEngineFacade {
 		VoiceSubscriptionManager.setRoom(room);
 		VoicePermissionManager.initializeSubscriptions(room);
 		this.startAfkTracking();
+		VoiceActivityManager.refresh();
+		const connectedChannelId = VoiceConnectionManager.channelId;
+		if (connectedChannelId) {
+			saveVoiceSession({guildId: VoiceConnectionManager.guildId, channelId: connectedChannelId});
+		}
 		logger.info('[startTracking] All tracking started');
 	}
 
@@ -444,6 +757,8 @@ class MediaEngineFacade {
 		this.statsManager.stopStatsTracking();
 		VoiceSubscriptionManager.cleanup();
 		this.stopAfkTracking();
+		VoiceActivityManager.stop();
+		screenSharePreviewUploader.stop();
 		logger.info('[stopTracking] All tracking stopped');
 	}
 
@@ -471,43 +786,13 @@ class MediaEngineFacade {
 		}
 	}
 
-	private enforceSingleConnectionForCurrentUser(): void {
-		const currentUser = UserStore.getCurrentUser();
-		const currentConnectionId = VoiceConnectionManager.connectionId;
-		const currentChannelId = VoiceConnectionManager.channelId;
-		if (!currentUser || !currentConnectionId || !currentChannelId) {
-			return;
-		}
-
-		const guildId = VoiceConnectionManager.guildId;
-		const now = Date.now();
-		const allParticipants = Object.values(VoiceParticipantManager.participants);
-		for (const participant of allParticipants) {
-			if (participant.userId !== currentUser.id) continue;
-			if (!participant.connectionId || participant.connectionId === currentConnectionId) continue;
-
-			const cooldownKey = `${guildId ?? 'dm'}:${participant.connectionId}`;
-			const lastSentAt = this.duplicateConnectionDisconnectTimestamps.get(cooldownKey) ?? 0;
-			if (now - lastSentAt < 5000) continue;
-
-			this.duplicateConnectionDisconnectTimestamps.set(cooldownKey, now);
-			sendVoiceStateDisconnect(guildId, participant.connectionId);
-		}
-
-		if (this.duplicateConnectionDisconnectTimestamps.size > 64) {
-			for (const [key, ts] of this.duplicateConnectionDisconnectTimestamps.entries()) {
-				if (now - ts > 60000) {
-					this.duplicateConnectionDisconnectTimestamps.delete(key);
-				}
-			}
-		}
-	}
-
 	private startAfkTracking(): void {
 		this.stopAfkTracking();
 		this.afkIntervalId = setInterval(() => {
-			if (!VoiceConnectionManager.connected || !VoiceConnectionManager.guildId || !VoiceConnectionManager.channelId)
-				return;
+			if (!VoiceConnectionManager.connected || !VoiceConnectionManager.channelId) return;
+			// Heartbeat so an ongoing call remains resumable across a page reload.
+			touchVoiceSession();
+			if (!VoiceConnectionManager.guildId) return;
 			if (!IdleStore.isIdle()) return;
 			const idleSince = IdleStore.getIdleSince();
 			if (!idleSince) return;
@@ -536,17 +821,24 @@ class MediaEngineFacade {
 		await this.connectToVoiceChannel(guildId, guild.afkChannelId);
 	}
 
-	getLastConnectedChannel(): {guildId: string; channelId: string} | null {
+	getLastConnectedChannel(): {guildId: string | null; channelId: string} | null {
 		return VoiceConnectionManager.lastConnectedChannel;
 	}
 	getShouldReconnect(): boolean {
 		return VoiceConnectionManager.shouldAutoReconnect;
+	}
+	get reconnectAttempts(): number {
+		return VoiceConnectionManager.reconnectAttempts;
+	}
+	get reconnecting(): boolean {
+		return VoiceConnectionManager.reconnecting;
 	}
 	markReconnectionAttempted(): void {
 		VoiceConnectionManager.markReconnectionAttempted();
 	}
 
 	handleLogout(): void {
+		clearVoiceSession();
 		this.clearPendingServerDisconnect();
 		this.stopTracking();
 		VoiceConnectionManager.cleanup();
@@ -557,6 +849,9 @@ class MediaEngineFacade {
 		LocalVoiceStateStore.updateSelfVideo(false);
 		LocalVoiceStateStore.updateSelfStream(false);
 		this.voiceStateSync.reset();
+		this.preferredBroadcastRole = null;
+		this.pendingSuppressOnConnect = null;
+		this.pendingSuppressSyncAttempts = 0;
 		voiceStatsDB.clear().catch(() => {});
 		logger.info('[handleLogout] Cleanup complete');
 	}
@@ -598,27 +893,28 @@ class MediaEngineFacade {
 				logger.info('[handleGatewayError] Permission denied, channel full, or timeout while connecting, aborting');
 				VoiceConnectionManager.abortConnection();
 			}
-			if (error.code === GatewayErrorCodes.VOICE_MEMBER_TIMED_OUT) {
-				if (!this.i18n) {
-					throw new Error('MediaEngineFacade: i18n not initialized');
+			if (this.i18n) {
+				const messages: Partial<Record<GatewayErrorCode, string>> = {
+					[GatewayErrorCodes.VOICE_MEMBER_TIMED_OUT]: this.i18n._(msg`You can't join while you're on timeout.`),
+					[GatewayErrorCodes.VOICE_UNCLAIMED_ACCOUNT]: this.i18n._(msg`Claim your account to join this voice channel.`),
+					[GatewayErrorCodes.VOICE_PERMISSION_DENIED]: this.i18n._(msg`You don't have permission to join this voice channel.`),
+					[GatewayErrorCodes.VOICE_CHANNEL_FULL]: this.i18n._(msg`This voice channel is full.`),
+				};
+				const message = messages[error.code];
+				if (message) {
+					ToastActionCreators.createToast({type: 'error', children: message});
 				}
-				ToastActionCreators.createToast({
-					type: 'error',
-					children: this.i18n._(msg`You can't join while you're on timeout.`),
-				});
-			} else if (error.code === GatewayErrorCodes.VOICE_UNCLAIMED_ACCOUNT) {
-				if (!this.i18n) {
-					throw new Error('MediaEngineFacade: i18n not initialized');
-				}
-				ToastActionCreators.createToast({
-					type: 'error',
-					children: this.i18n._(msg`Claim your account to join this voice channel.`),
-				});
 			}
 		} else if (error.code === GatewayErrorCodes.VOICE_TOKEN_FAILED) {
 			if (VoiceConnectionManager.connecting) {
 				logger.info('[handleGatewayError] Token failed while connecting, aborting');
 				VoiceConnectionManager.abortConnection();
+			}
+			if (this.i18n) {
+				ToastActionCreators.createToast({
+					type: 'error',
+					children: this.i18n._(msg`Failed to connect to voice. Please try again.`),
+				});
 			}
 		}
 	}
@@ -634,6 +930,13 @@ class MediaEngineFacade {
 		VoiceStateManager.clearAllVoiceStates();
 		VoiceParticipantManager.clear();
 		this.voiceStateSync.reset();
+		this.preferredBroadcastRole = null;
+		this.pendingSuppressOnConnect = null;
+		this.pendingSuppressSyncAttempts = 0;
+	}
+
+	private isCurrentUserStageListener(): boolean {
+		return this.isCurrentUserInBroadcastListenerMode();
 	}
 
 	reset(): void {
@@ -645,6 +948,9 @@ class MediaEngineFacade {
 		VoiceMediaManager.resetStreamTracking();
 		VoiceParticipantManager.clear();
 		this.voiceStateSync.reset();
+		this.preferredBroadcastRole = null;
+		this.pendingSuppressOnConnect = null;
+		this.pendingSuppressSyncAttempts = 0;
 	}
 }
 

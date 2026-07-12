@@ -17,14 +17,14 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {ChannelTypes} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType} from '~/Constants';
 import type {ChannelRecord} from '~/records/ChannelRecord';
 import * as ChannelUtils from '~/utils/ChannelUtils';
 
 export const isTextChannel = (ch: ChannelRecord) =>
 	ch.type === ChannelTypes.GUILD_TEXT || ch.type === ChannelTypes.GUILD_LINK;
 
-const isVoiceChannel = (ch: ChannelRecord) => ch.type === ChannelTypes.GUILD_VOICE;
+const isVoiceChannel = (ch: ChannelRecord) => isGuildRtcChannelType(ch.type);
 
 export const isCategory = (ch: ChannelRecord) => ch.type === ChannelTypes.GUILD_CATEGORY;
 

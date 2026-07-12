@@ -23,7 +23,9 @@
 	gap: 0.75rem;
 	padding: 0.75rem 1rem;
 	text-align: left;
-	transition: background-color 0.15s;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 	cursor: pointer;
 	background-color: var(--background-secondary-alt);
 	border-radius: 0;
@@ -130,6 +132,7 @@
 .mainScroller {
 	flex: 1;
 	min-height: 0;
+	overscroll-behavior: contain;
 }
 
 .headerActions {
@@ -146,7 +149,9 @@
 	border-radius: 9999px;
 	background-color: var(--background-tertiary);
 	color: var(--text-primary);
-	transition: background-color 0.15s;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 	cursor: pointer;
 }
 
@@ -249,7 +254,10 @@
 	line-height: 1.25rem;
 	color: var(--text-tertiary);
 	text-align: center;
-	transition: all 0.15s;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 	cursor: pointer;
 }
 
@@ -304,7 +312,7 @@
 	line-height: 1.25rem;
 	color: var(--text-primary);
 	text-align: left;
-	transition: background-color 0.15s;
+	transition: background-color var(--motion-dur-short) var(--motion-ease-snap);
 	cursor: pointer;
 }
 
@@ -331,7 +339,7 @@
 	font-size: 0.875rem;
 	line-height: 1.25rem;
 	color: var(--text-secondary);
-	transition: opacity 0.15s;
+	transition: opacity var(--motion-dur-short) var(--motion-ease-snap);
 }
 
 .topicMarkup:active {
@@ -346,7 +354,14 @@
 }
 
 .tabBarContainer {
+	position: sticky;
+	top: 0;
+	z-index: 3;
 	display: flex;
+	background: color-mix(in srgb, var(--background-secondary) 94%, var(--background-floating) 6%);
+	backdrop-filter: blur(14px) saturate(120%);
+	-webkit-backdrop-filter: blur(14px) saturate(120%);
+	border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
 }
 
 .tabButton {
@@ -360,7 +375,12 @@
 	font-weight: 500;
 	font-size: 1rem;
 	line-height: 1.5rem;
-	transition: color 0.15s;
+	transition:
+		color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+		background-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+		transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+		border-color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+	touch-action: manipulation;
 }
 
 .tabButtonActive {
@@ -374,6 +394,11 @@
 .tabButtonInactive {
 	color: var(--text-tertiary);
 	cursor: pointer;
+}
+
+.tabButton:active {
+	transform: scale(0.98);
+	background: color-mix(in srgb, var(--background-modifier-hover) 64%, transparent);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -394,7 +419,7 @@
 	gap: 0.75rem;
 	padding: 1rem;
 	text-align: left;
-	transition: background-color 0.15s;
+	transition: background-color var(--motion-dur-short) var(--motion-ease-snap);
 	cursor: pointer;
 }
 
@@ -531,9 +556,17 @@
 }
 
 .topicExpandButton {
-	margin-top: 0.125rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	margin-top: -0.25rem;
 	flex-shrink: 0;
-	transition: opacity 0.15s;
+	border-radius: 999px;
+	background: var(--background-secondary-alt);
+	color: var(--text-primary);
+	transition: opacity var(--motion-dur-short) var(--motion-ease-snap);
 	cursor: pointer;
 }
 
@@ -544,16 +577,21 @@
 .contentArea {
 	display: flex;
 	flex-direction: column;
+	min-height: 0;
+	animation: sheetContentIn 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .membersTabContent {
 	display: flex;
 	flex-direction: column;
+	min-height: 0;
 }
 
 .pinsTabContent {
 	display: flex;
 	flex-direction: column;
+	min-height: 0;
+	animation: sheetContentIn 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .dmMembersContainer {
@@ -624,12 +662,45 @@
 	gap: 0.75rem;
 	padding: 1rem;
 	text-align: left;
-	transition: background-color 0.15s;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 	cursor: pointer;
+	touch-action: manipulation;
+}
+
+.memberItemButton:hover {
+	background-color: var(--background-modifier-hover);
+	transform: translateX(2px);
 }
 
 .memberItemButton:active {
 	background-color: var(--background-modifier-hover);
+	transform: scale(0.99);
+}
+
+@keyframes sheetContentIn {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.contentArea,
+	.pinsTabContent {
+		animation: none;
+	}
+
+	.tabButton,
+	.memberItemButton {
+		transition: none;
+	}
 }
 
 :global(.theme-light) .memberListItem,
@@ -723,7 +794,7 @@
 	padding: 1rem;
 	text-align: left;
 	color: var(--text-primary);
-	transition: background-color 0.15s;
+	transition: background-color var(--motion-dur-short) var(--motion-ease-snap);
 	cursor: pointer;
 }
 

@@ -137,6 +137,7 @@ export const DMListItem = observer(
 				<LongPressable
 					className={clsx(guildStyles.dmListItem, className, isMuted && styles.muted)}
 					onLongPress={handleLongPress}
+					data-dm-item={isGroupDM ? 'group' : 'direct'}
 					data-scroll-indicator={dmScrollSeverity}
 					data-scroll-id={dmScrollId}
 				>
@@ -208,7 +209,7 @@ export const DMListItem = observer(
 									<MentionBadgeAnimated mentionCount={mentionCount} size="small" />
 								</div>
 
-								{voiceCallActive && <VoiceBadge />}
+								{voiceCallActive && mentionCount === 0 && <VoiceBadge />}
 
 								{!isGroupDM && recipient?.bot && (
 									<div className={styles.userTagWrapper}>

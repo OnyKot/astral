@@ -1,0 +1,205 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.container {
+	position: relative;
+	display: flex;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	flex-direction: column;
+	overflow: hidden;
+	background:
+		radial-gradient(100% 60% at 12% 0%, color-mix(in srgb, var(--brand-primary) 16%, transparent), transparent 70%),
+		linear-gradient(180deg, var(--background-secondary), var(--background-primary));
+}
+
+.mobileMenuButtonWrap {
+	position: absolute;
+	top: calc(0.8rem + var(--safe-area-top, 0px));
+	left: max(0.8rem, var(--safe-area-left, 0px));
+	z-index: 4;
+}
+
+.mobileMenuButton {
+	background: color-mix(in srgb, var(--background-floating) 84%, var(--background-primary) 16%);
+	box-shadow: 0 8px 20px rgb(0 0 0 / 0.18);
+}
+
+.pageContent {
+	padding-bottom: calc(56px + var(--safe-area-bottom, 0px) + 1rem);
+}
+
+.banner {
+	position: relative;
+	height: clamp(188px, 34vh, 260px);
+	width: 100%;
+	overflow: hidden;
+}
+
+.banner::after {
+	content: '';
+	position: absolute;
+	inset: auto 0 0;
+	height: 48%;
+	background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--background-primary) 90%, transparent));
+	pointer-events: none;
+}
+
+.bannerImage {
+	height: 100%;
+	width: 100%;
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+
+.bannerDefault {
+	height: 100%;
+	width: 100%;
+	background:
+		radial-gradient(circle at 8% 12%, color-mix(in srgb, var(--text-primary) 16%, transparent), transparent 42%),
+		radial-gradient(circle at 82% 18%, color-mix(in srgb, var(--brand-primary) 34%, transparent), transparent 42%),
+		linear-gradient(140deg, color-mix(in srgb, var(--brand-primary) 72%, #19222f 28%), color-mix(in srgb, var(--brand-primary) 56%, #10151d 44%));
+}
+
+.profileCard {
+	position: relative;
+	width: min(100% - 1.2rem, 44rem);
+	margin: -2.9rem auto 0;
+	border-radius: 1.15rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--background-floating) 14%, var(--background-primary) 86%), color-mix(in srgb, var(--background-secondary) 16%, var(--background-primary) 84%));
+	box-shadow: 0 20px 42px rgb(0 0 0 / 0.26);
+}
+
+.avatarWrap {
+	position: absolute;
+	left: 50%;
+	top: -46px;
+	transform: translateX(-50%);
+	border: 4px solid var(--background-primary);
+	border-radius: 999px;
+	background: var(--background-primary);
+}
+
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.9rem;
+	padding: 3.5rem 1rem 1rem;
+}
+
+.userInfo {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 0.35rem;
+}
+
+.nameRow {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0.45rem;
+}
+
+.displayName {
+	font-size: clamp(1.35rem, 4vw, 1.8rem);
+	line-height: 1.1;
+	font-weight: 800;
+	letter-spacing: -0.01em;
+	color: var(--text-primary);
+	word-break: break-word;
+}
+
+.badges {
+	display: inline-flex;
+	align-items: center;
+}
+
+.tag {
+	font-size: 0.92rem;
+	color: var(--text-tertiary);
+	font-weight: 600;
+}
+
+.statusRow {
+	min-height: 1.35rem;
+}
+
+.statusText {
+	color: var(--text-secondary);
+	font-size: 0.92rem;
+}
+
+.activityRow {
+	width: 100%;
+}
+
+.actions {
+	display: flex;
+	justify-content: center;
+}
+
+.loadingRow {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.45rem;
+	font-size: 0.86rem;
+	color: var(--text-secondary);
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.sectionTitle {
+	font-size: 0.78rem;
+	font-weight: 800;
+	letter-spacing: 0.055em;
+	text-transform: uppercase;
+	color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+	.banner {
+		height: clamp(136px, 28vh, 200px);
+	}
+
+	.bannerImage {
+		background-position: center top;
+	}
+
+	.profileCard {
+		width: min(100% - 0.9rem, 36rem);
+		margin-top: -2.25rem;
+	}
+
+	.content {
+		padding: 3.45rem 0.82rem 0.82rem;
+		gap: 0.8rem;
+	}
+}

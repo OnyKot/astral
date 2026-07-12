@@ -41,9 +41,20 @@
 }
 
 @media (pointer: coarse) {
-	.mediaContainer:hover .mediaHoverAction {
-		opacity: 0;
-		pointer-events: none;
+	.mediaHoverAction {
+		top: 0.45rem;
+		right: 0.45rem;
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	.actionButton {
+		height: 2.2rem;
+		width: 2.2rem;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--background-primary) 82%, transparent);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
 	}
 }
 

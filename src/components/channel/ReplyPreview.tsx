@@ -36,6 +36,7 @@ import markupStyles from '~/styles/Markup.module.css';
 import styles from '~/styles/Message.module.css';
 import {goToMessage} from '~/utils/MessageNavigator';
 import * as NicknameUtils from '~/utils/NicknameUtils';
+import {parseForwardedStoryPreview, parseForwardedStoryPreviewFromComponents} from '~/utils/StoryForwardPayload';
 
 export const ReplyPreview = observer(
 	({message, channelId, animateEmoji}: {message: MessageRecord; channelId: string; animateEmoji: boolean}) => {
@@ -48,6 +49,12 @@ export const ReplyPreview = observer(
 
 		const guildId = ChannelStore.getChannel(channelId)!.guildId;
 		const messageDisplayCompact = UserSettingsStore.getMessageDisplayCompact();
+		const forwardedStoryPreview = React.useMemo(
+			() =>
+				parseForwardedStoryPreview(referencedMessage?.content) ||
+				parseForwardedStoryPreviewFromComponents(referencedMessage?.components),
+			[referencedMessage?.content, referencedMessage?.components],
+		);
 
 		const jumpToRepliedMessage = React.useCallback(() => {
 			if (message.messageReference?.message_id) {
@@ -130,7 +137,11 @@ export const ReplyPreview = observer(
 							}
 						}}
 					>
-						{referencedMessage.content ? (
+						{forwardedStoryPreview ? (
+							<span className={clsx(styles.repliedTextContent, styles.repliedItalic)}>
+								{t`Story preview`}
+							</span>
+						) : referencedMessage.content ? (
 							<span className={clsx(styles.repliedTextContent, markupStyles.markup)}>
 								<SafeMarkdown
 									content={referencedMessage.content}

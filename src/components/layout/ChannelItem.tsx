@@ -37,7 +37,7 @@ import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
 
-import {ChannelTypes, Permissions} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType, Permissions} from '~/Constants';
 
 import {ChannelBottomSheet} from '~/components/bottomsheets/ChannelBottomSheet';
 import {VoiceLobbyBottomSheet} from '~/components/bottomsheets/VoiceLobbyBottomSheet';
@@ -87,6 +87,7 @@ import {stopPropagationOnEnterSpace} from '~/utils/KeyboardUtils';
 import {openExternalUrl} from '~/utils/NativeUtils';
 import * as PermissionUtils from '~/utils/PermissionUtils';
 import * as RouterUtils from '~/utils/RouterUtils';
+import {isBroadcastVoiceChannel} from '~/utils/channelVoiceMode';
 
 import styles from './ChannelItem.module.css';
 import {ChannelItemIcon} from './ChannelItemIcon';
@@ -108,39 +109,6 @@ export interface ChannelItemCoreProps {
 
 type ScreenSharePublication = LocalTrackPublication | RemoteTrackPublication;
 
-const waitForFirstVideoFrame = (video: HTMLVideoElement, timeoutMs = 2000): Promise<boolean> => {
-	return new Promise((resolve) => {
-		if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0 && video.videoHeight > 0) {
-			resolve(true);
-			return;
-		}
-
-		let resolved = false;
-		let timeoutId: number | null = null;
-		const finish = (ok: boolean) => {
-			if (resolved) return;
-			resolved = true;
-			if (timeoutId !== null) {
-				window.clearTimeout(timeoutId);
-			}
-			video.removeEventListener('loadeddata', onLoadedData);
-			video.removeEventListener('canplay', onLoadedData);
-			video.removeEventListener('resize', onLoadedData);
-			resolve(ok);
-		};
-		const onLoadedData = () => {
-			if (video.videoWidth > 0 && video.videoHeight > 0) {
-				finish(true);
-			}
-		};
-
-		video.addEventListener('loadeddata', onLoadedData);
-		video.addEventListener('canplay', onLoadedData);
-		video.addEventListener('resize', onLoadedData);
-		timeoutId = window.setTimeout(() => finish(false), timeoutMs);
-	});
-};
-
 const findScreenSharePublication = (participant: LocalParticipant | RemoteParticipant): ScreenSharePublication | null => {
 	for (const publication of participant.videoTrackPublications.values()) {
 		if (publication.source === Track.Source.ScreenShare) {
@@ -148,67 +116,6 @@ const findScreenSharePublication = (participant: LocalParticipant | RemotePartic
 		}
 	}
 	return null;
-};
-
-const captureFirstFrameFromLiveKitPublication = async (publication: ScreenSharePublication): Promise<string | null> => {
-	const remotePublication = publication as RemoteTrackPublication;
-	if (!publication.track && typeof remotePublication.setSubscribed === 'function') {
-		try {
-			remotePublication.setSubscribed(true);
-		} catch {}
-	}
-
-	let liveTrack = publication.track;
-	if (!liveTrack) {
-		await new Promise((resolve) => window.setTimeout(resolve, 180));
-		liveTrack = publication.track;
-	}
-	if (!liveTrack || typeof liveTrack.attach !== 'function' || typeof liveTrack.detach !== 'function') {
-		return null;
-	}
-
-	const attached = liveTrack.attach();
-	const video = attached instanceof HTMLVideoElement ? attached : null;
-	if (!video) {
-		try {
-			liveTrack.detach(attached);
-		} catch {}
-		return null;
-	}
-
-	video.muted = true;
-	video.autoplay = true;
-	video.playsInline = true;
-	void video.play().catch(() => {});
-
-	const hasFrame = await waitForFirstVideoFrame(video);
-	if (!hasFrame || video.videoWidth <= 0 || video.videoHeight <= 0) {
-		try {
-			liveTrack.detach(video);
-		} catch {}
-		video.remove();
-		return null;
-	}
-
-	const canvas = document.createElement('canvas');
-	canvas.width = video.videoWidth;
-	canvas.height = video.videoHeight;
-	const ctx = canvas.getContext('2d');
-	if (!ctx) {
-		try {
-			liveTrack.detach(video);
-		} catch {}
-		video.remove();
-		return null;
-	}
-
-	ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-	const frameDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-	try {
-		liveTrack.detach(video);
-	} catch {}
-	video.remove();
-	return frameDataUrl;
 };
 
 export const ChannelItemCore: React.FC<ChannelItemCoreProps> = observer(
@@ -281,11 +188,11 @@ export const ChannelItem = observer(
 		const isChannelNameOverflowing = useTextOverflow(channelNameRef);
 
 		const channelIsCategory = isCategory(channel);
-		const channelIsVoice = channel.type === ChannelTypes.GUILD_VOICE;
+		const channelIsVoice = isGuildRtcChannelType(channel.type);
 		const channelIsText = isTextChannel(channel);
 		const resolvedCategoryUnreadCount = channelIsCategory ? Math.max(0, categoryUnreadCount ?? 0) : 0;
 		const draggingChannel = activeDragItem?.type === DND_TYPES.CHANNEL ? activeDragItem : null;
-		const isVoiceDragActive = draggingChannel?.channelType === ChannelTypes.GUILD_VOICE;
+		const isVoiceDragActive = draggingChannel ? isGuildRtcChannelType(draggingChannel.channelType) : false;
 		const shouldDimForVoiceDrag = Boolean(isVoiceDragActive && channelIsText && channel.parentId !== null);
 		const location = useLocation();
 		const channelPath = `/channels/${guild.id}/${channel.id}`;
@@ -303,9 +210,8 @@ export const ChannelItem = observer(
 		const [menuOpen, setMenuOpen] = useState(false);
 		const [voiceLobbyOpen, setVoiceLobbyOpen] = useState(false);
 		const [isVoiceHovered, setIsVoiceHovered] = useState(false);
-		const [streamPreviewUrl, setStreamPreviewUrl] = useState<string | null>(null);
-		const [streamPreviewLoading, setStreamPreviewLoading] = useState(false);
 		const [streamPreviewPosition, setStreamPreviewPosition] = useState<{left: number; top: number} | null>(null);
+		const streamPreviewVideoRef = React.useRef<HTMLVideoElement | null>(null);
 		const lastClickTime = React.useRef<number>(0);
 		const voiceChannelJoinRequiresDoubleClick = AccessibilityStore.voiceChannelJoinRequiresDoubleClick;
 		const [isFocused, setIsFocused] = useState(false);
@@ -327,7 +233,7 @@ export const ChannelItem = observer(
 					: undefined;
 
 		const isVoiceSelected =
-			channel.type === ChannelTypes.GUILD_VOICE &&
+			channelIsVoice &&
 			connectedVoiceGuildId === guild.id &&
 			connectedVoiceChannelId === channel.id;
 		const isSelected = isVoiceSelected || location.pathname.startsWith(channelPath) || selectedChannelId === channel.id;
@@ -406,10 +312,10 @@ export const ChannelItem = observer(
 					if (item.id === channel.id) return false;
 					if (item.type === DND_TYPES.VOICE_PARTICIPANT) return channelIsVoice;
 					if (item.type === DND_TYPES.CHANNEL) {
-						if (item.channelType === ChannelTypes.GUILD_VOICE) {
+						if (isGuildRtcChannelType(item.channelType)) {
 							if (!channelIsCategory && !channelIsVoice && !channelIsText) return false;
 						}
-						if (item.channelType !== ChannelTypes.GUILD_VOICE && channelIsVoice) return false;
+						if (!isGuildRtcChannelType(item.channelType) && channelIsVoice) return false;
 					}
 					if (item.type === DND_TYPES.CATEGORY && channel.parentId !== null && !channelIsCategory) return false;
 					return true;
@@ -509,50 +415,36 @@ export const ChannelItem = observer(
 		}, []);
 
 		React.useEffect(() => {
-			if (!shouldShowStreamPreview || !streamerParticipantIdentity || !room) {
-				setStreamPreviewLoading(false);
-				setStreamPreviewUrl(null);
+			const video = streamPreviewVideoRef.current;
+			if (!shouldShowStreamPreview || !streamerParticipantIdentity || !room || !video) {
 				return;
 			}
 
-			let cancelled = false;
-			setStreamPreviewLoading(true);
-			setStreamPreviewUrl(null);
+			const participant =
+				room.localParticipant?.identity === streamerParticipantIdentity
+					? room.localParticipant
+					: (room.remoteParticipants.get(streamerParticipantIdentity) ?? null);
+			if (!participant) return;
 
-			const resolveParticipant = (): LocalParticipant | RemoteParticipant | null => {
-				if (room.localParticipant?.identity === streamerParticipantIdentity) {
-					return room.localParticipant;
-				}
-				return room.remoteParticipants.get(streamerParticipantIdentity) ?? null;
-			};
+			const publication = findScreenSharePublication(participant);
+			if (!publication) return;
 
-			void (async () => {
-				const participant = resolveParticipant();
-				if (!participant) {
-					if (!cancelled) {
-						setStreamPreviewLoading(false);
-					}
-					return;
-				}
+			const remotePublication = publication as RemoteTrackPublication;
+			if (!publication.track && typeof remotePublication.setSubscribed === 'function') {
+				try { remotePublication.setSubscribed(true); } catch {}
+			}
 
-				const publication = findScreenSharePublication(participant);
-				if (!publication) {
-					if (!cancelled) {
-						setStreamPreviewLoading(false);
-					}
-					return;
-				}
+			const track = publication.track;
+			if (!track || typeof track.attach !== 'function') return;
 
-				const frame = await captureFirstFrameFromLiveKitPublication(publication);
-				if (cancelled) return;
-				setStreamPreviewUrl(frame);
-				setStreamPreviewLoading(false);
-			})();
+			track.attach(video);
+			video.muted = true;
+			void video.play().catch(() => {});
 
 			return () => {
-				cancelled = true;
+				try { track.detach(video); } catch {}
 			};
-		}, [room, shouldShowStreamPreview, streamerParticipantIdentity]);
+		}, [room, shouldShowStreamPreview, streamerParticipantIdentity, streamPreviewVideoRef.current]);
 
 		React.useEffect(() => {
 			const node = elementRef.current;
@@ -597,14 +489,14 @@ export const ChannelItem = observer(
 		}, [shouldShowStreamPreview]);
 
 		const handleSelect = useCallback(() => {
-			if (channel.type === ChannelTypes.GUILD_VOICE && isCurrentUserTimedOut) {
+			if (channelIsVoice && isCurrentUserTimedOut) {
 				ToastActionCreators.createToast({
 					type: 'error',
 					children: t`You can't join while you're on timeout.`,
 				});
 				return;
 			}
-			if (channel.type === ChannelTypes.GUILD_VOICE && voiceBlockedForUnclaimed) {
+			if (channelIsVoice && voiceBlockedForUnclaimed) {
 				ToastActionCreators.createToast({
 					type: 'error',
 					children: t`Claim your account to join this voice channel.`,
@@ -629,7 +521,16 @@ export const ChannelItem = observer(
 				} catch {}
 				return;
 			}
-			if (channel.type === ChannelTypes.GUILD_VOICE) {
+			if (channelIsVoice) {
+				const isBroadcastChannel = isBroadcastVoiceChannel(channel);
+				if (isBroadcastChannel) {
+					RouterUtils.transitionTo(channelPath);
+					if (MobileLayoutStore.isMobileLayout()) {
+						LayoutActionCreators.updateMobileLayoutState(false, true);
+					}
+					return;
+				}
+
 				if (isMobileLayout) {
 					RouterUtils.transitionTo(channelPath);
 					void MediaEngineStore.connectToVoiceChannel(guild.id, channel.id);
@@ -712,7 +613,7 @@ export const ChannelItem = observer(
 		const shouldShowSelectedState =
 			!channelIsCategory &&
 			isSelected &&
-			(channel.type !== ChannelTypes.GUILD_VOICE || location.pathname.startsWith(channelPath));
+			(!channelIsVoice || location.pathname.startsWith(channelPath));
 
 		const hasMountedRef = React.useRef(false);
 
@@ -748,7 +649,7 @@ export const ChannelItem = observer(
 					shouldShowSelectedState && isHighlight && styles.channelItemSelectedWithUnread,
 					!channelIsCategory &&
 						(!isSelected ||
-							(channel.type === ChannelTypes.GUILD_VOICE && !location.pathname.startsWith(channelPath))) &&
+							(channelIsVoice && !location.pathname.startsWith(channelPath))) &&
 						styles.channelItemHoverable,
 					isOver && styles.channelItemOver,
 					isParticipantDragActive &&
@@ -793,7 +694,7 @@ export const ChannelItem = observer(
 									styles.channelItemIcon,
 									shouldShowSelectedState || (isHighlight && isSelected)
 										? styles.channelItemIconSelected
-										: isVoiceSelected && channel.type === ChannelTypes.GUILD_VOICE
+										: isVoiceSelected && channelIsVoice
 											? styles.channelItemHighlight
 											: isHighlight && !isSelected
 												? styles.channelItemIconHighlight
@@ -828,7 +729,7 @@ export const ChannelItem = observer(
 				)}
 				{!isDraggingAnything && !sidebarCollapsed && (
 					<div className={styles.channelItemActions}>
-						{!channelIsCategory && channel.type !== ChannelTypes.GUILD_VOICE && (
+						{!channelIsCategory && !channelIsVoice && (
 							<>
 								{typingUsers.length > 0 &&
 									channelTypingIndicatorMode !== ChannelTypingIndicatorMode.HIDDEN &&
@@ -926,11 +827,13 @@ export const ChannelItem = observer(
 								<span className={styles.streamPreviewTitle}>{streamerUser?.displayName ?? streamerUser?.username}</span>
 							</div>
 							<div className={styles.streamPreviewViewport}>
-								{streamPreviewUrl ? (
-									<img src={streamPreviewUrl} alt="" className={styles.streamPreviewImage} />
-								) : (
-									<span className={styles.streamPreviewFallback}>{streamPreviewLoading ? t`Loading...` : t`No preview yet`}</span>
-								)}
+								<video
+									ref={streamPreviewVideoRef}
+									className={styles.streamPreviewImage}
+									muted
+									autoPlay
+									playsInline
+								/>
 							</div>
 						</div>,
 						document.body,
@@ -948,7 +851,7 @@ export const ChannelItem = observer(
 				{isMobileLayout && menuOpen && (
 					<ChannelBottomSheet isOpen onClose={() => setMenuOpen(false)} channel={channel} guild={guild} />
 				)}
-				{isMobileLayout && voiceLobbyOpen && channel.type === ChannelTypes.GUILD_VOICE && (
+				{isMobileLayout && voiceLobbyOpen && channelIsVoice && (
 					<VoiceLobbyBottomSheet
 						isOpen
 						onClose={() => setVoiceLobbyOpen(false)}

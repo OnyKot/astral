@@ -28,7 +28,7 @@ import type {ChannelRtcRegion} from '~/actions/ChannelActionCreators';
 import * as ChannelActionCreators from '~/actions/ChannelActionCreators';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
 import * as UnsavedChangesActionCreators from '~/actions/UnsavedChangesActionCreators';
-import {ChannelTypes, Permissions} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType, Permissions} from '~/Constants';
 import {Autocomplete} from '~/components/channel/Autocomplete';
 import {Form} from '~/components/form/Form';
 import {Input, Textarea} from '~/components/form/Input';
@@ -134,7 +134,7 @@ const ChannelOverviewTab: React.FC<{channelId: string}> = observer(({channelId})
 	const guildId = channel?.guildId ?? null;
 	const canUpdateRtcRegion =
 		guildId !== null ? PermissionStore.can(Permissions.UPDATE_RTC_REGION, {guildId, channelId}) : false;
-	const isVoiceChannel = channel?.type === ChannelTypes.GUILD_VOICE;
+	const isVoiceChannel = channel ? isGuildRtcChannelType(channel.type) : false;
 	const [rtcRegions, setRtcRegions] = React.useState<Array<ChannelRtcRegion>>([]);
 	const [isLoadingRegions, setIsLoadingRegions] = React.useState(false);
 
@@ -247,8 +247,14 @@ const ChannelOverviewTab: React.FC<{channelId: string}> = observer(({channelId})
 	}, [form]);
 
 	const topicTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
-	const {segmentManagerRef, previousValueRef, displayToActual, insertSegment, handleTextChange, clearSegments} =
-		useTextareaSegments();
+	const {
+		segmentManagerRef,
+		previousValueRef,
+		displayToActual,
+		replaceWithSegment,
+		handleTextChange,
+		clearSegments,
+	} = useTextareaSegments();
 	const [topicValue, setTopicValue] = React.useState('');
 	const [isTopicInitialized, setIsTopicInitialized] = React.useState(false);
 	const originalTopicRef = React.useRef('');
@@ -259,7 +265,7 @@ const ChannelOverviewTab: React.FC<{channelId: string}> = observer(({channelId})
 	const {handleEmojiSelect: insertTopicEmoji} = useTextareaEmojiPicker({
 		setValue: setTopicValue,
 		textareaRef: topicTextareaRef,
-		insertSegment,
+		replaceWithSegment,
 		previousValueRef,
 		channelId,
 	});
@@ -354,7 +360,7 @@ const ChannelOverviewTab: React.FC<{channelId: string}> = observer(({channelId})
 				updateData.topic = data.topic;
 				updateData.rate_limit_per_user = data.slowmode;
 				updateData.nsfw = data.nsfw;
-			} else if (channel.type === ChannelTypes.GUILD_VOICE) {
+			} else if (isGuildRtcChannelType(channel.type)) {
 				updateData.bitrate = (data.bitrate ?? 64) * 1000;
 				updateData.user_limit = data.user_limit;
 				updateData.rtc_region = data.rtc_region ?? null;
@@ -428,7 +434,7 @@ const ChannelOverviewTab: React.FC<{channelId: string}> = observer(({channelId})
 	if (!channel) return null;
 
 	const isTextChannel = channel.type === ChannelTypes.GUILD_TEXT;
-	const isGuildVoiceChannel = channel.type === ChannelTypes.GUILD_VOICE;
+	const isGuildVoiceChannel = isGuildRtcChannelType(channel.type);
 	const isCategory = channel.type === ChannelTypes.GUILD_CATEGORY;
 	const isLinkChannel = channel.type === ChannelTypes.GUILD_LINK;
 
@@ -523,7 +529,8 @@ const ChannelOverviewTab: React.FC<{channelId: string}> = observer(({channelId})
 									) : (
 										<Popout
 											position="bottom-end"
-											animationType="none"
+											animationType="smooth"
+											zIndexBoost={200}
 											offsetMainAxis={8}
 											offsetCrossAxis={-32}
 											onOpen={() => setTopicExpressionPickerOpen(true)}

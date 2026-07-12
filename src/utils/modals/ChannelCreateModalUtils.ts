@@ -17,10 +17,12 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
+import type {MessageDescriptor} from '@lingui/core';
+import {msg} from '@lingui/core/macro';
 import * as ChannelActionCreators from '~/actions/ChannelActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {selectChannel} from '~/actions/NavigationActionCreators';
-import {ChannelTypes} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType, Permissions} from '~/Constants';
 import {Routes} from '~/Routes';
 import * as RouterUtils from '~/utils/RouterUtils';
 
@@ -32,40 +34,88 @@ export interface FormInputs {
 
 export interface ChannelTypeOption {
 	value: number;
-	name: string;
-	desc: string;
+	name: MessageDescriptor;
+	desc: MessageDescriptor;
 }
+
+/*
+ * Frontend-only template value used by the create-channel modal.
+ * It maps to a dedicated stage channel with listener-first permissions.
+ */
+export const EVENT_CHANNEL_TEMPLATE_TYPE = -1;
 
 export const channelTypeOptions: Array<ChannelTypeOption> = [
 	{
 		value: ChannelTypes.GUILD_TEXT,
-		name: 'Text Channel',
-		desc: 'Send messages, images, GIFs, and emoji',
+		name: msg`Text Channel`,
+		desc: msg`Send messages, images, GIFs, and emoji`,
 	},
 	{
 		value: ChannelTypes.GUILD_VOICE,
-		name: 'Voice Channel',
-		desc: 'Hang out together with voice, video, and screen share',
+		name: msg`Voice Channel`,
+		desc: msg`Hang out together with voice, video, and screen share`,
+	},
+	{
+		value: EVENT_CHANNEL_TEMPLATE_TYPE,
+		name: msg`Stage Channel`,
+		desc: msg`Host an event in your community. Members join as listeners until added to broadcasters.`,
 	},
 	{
 		value: ChannelTypes.GUILD_LINK,
-		name: 'Link Channel',
-		desc: 'Quick access to an external website or resource',
+		name: msg`Link Channel`,
+		desc: msg`Quick access to an external website or resource`,
 	},
 ];
 
+const addListenerFirstSpeakPolicy = async (
+	guildId: string,
+	channel: {
+		id: string;
+		permission_overwrites?: ReadonlyArray<Readonly<{id: string; type: number; allow: string; deny: string}>>;
+	},
+) => {
+	const existingOverwrites = Array.isArray(channel.permission_overwrites) ? channel.permission_overwrites : [];
+	const everyoneOverwrite = existingOverwrites.find((overwrite) => overwrite.id === guildId && overwrite.type === 0);
+	const nextEveryoneAllow = (BigInt(everyoneOverwrite?.allow ?? '0') & ~Permissions.SPEAK).toString();
+	const nextEveryoneDeny = (BigInt(everyoneOverwrite?.deny ?? '0') | Permissions.SPEAK).toString();
+
+	const nextPermissionOverwrites = existingOverwrites
+		.filter((overwrite) => !(overwrite.id === guildId && overwrite.type === 0))
+		.map((overwrite) => ({
+			id: overwrite.id,
+			type: overwrite.type as 0 | 1,
+			allow: overwrite.allow,
+			deny: overwrite.deny,
+		}));
+
+	nextPermissionOverwrites.push({
+		id: guildId,
+		type: 0,
+		allow: nextEveryoneAllow,
+		deny: nextEveryoneDeny,
+	});
+
+	await ChannelActionCreators.updatePermissionOverwrites(channel.id, nextPermissionOverwrites);
+};
+
 export const createChannel = async (guildId: string, data: FormInputs, parentId?: string): Promise<void> => {
-	const channelType = Number(data.type);
+	const selectedType = Number(data.type);
+	const isEventTemplate = selectedType === EVENT_CHANNEL_TEMPLATE_TYPE;
+	const channelType = isEventTemplate ? ChannelTypes.GUILD_STAGE : selectedType;
 	const channel = await ChannelActionCreators.create(guildId, {
 		name: data.name,
 		url: data.url,
 		type: channelType,
 		parent_id: parentId || null,
-		bitrate: channelType === ChannelTypes.GUILD_VOICE ? 64000 : null,
-		user_limit: channelType === ChannelTypes.GUILD_VOICE ? 0 : null,
+		bitrate: isGuildRtcChannelType(channelType) ? 64000 : null,
+		user_limit: isGuildRtcChannelType(channelType) ? 0 : null,
 	});
 
-	if (channel.type === ChannelTypes.GUILD_TEXT || channel.type === ChannelTypes.GUILD_VOICE) {
+	if (isEventTemplate) {
+		await addListenerFirstSpeakPolicy(guildId, channel);
+	}
+
+	if (channel.type === ChannelTypes.GUILD_TEXT || isGuildRtcChannelType(channel.type)) {
 		setTimeout(() => {
 			RouterUtils.transitionTo(Routes.guildChannel(guildId, channel.id));
 			selectChannel(guildId, channel.id);

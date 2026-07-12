@@ -33,6 +33,12 @@ import {
 import DeveloperOptionsStore from '~/stores/DeveloperOptionsStore';
 import RuntimeConfigStore from '~/stores/RuntimeConfigStore';
 import {getAttachmentMaxSize} from '~/utils/AttachmentUtils';
+import {
+	normalizeChannelListNameEffectPreset,
+	normalizeProfileAccentEffectPreset,
+	type ChannelListNameEffectPreset,
+	type ProfileAccentEffectPreset,
+} from '~/utils/ProfileAccentEffectUtils';
 import * as SnowflakeUtils from '~/utils/SnowflakeUtils';
 
 export type BackupCode = Readonly<{
@@ -46,6 +52,8 @@ export type UserProfile = Readonly<{
 	banner_color?: number | null;
 	pronouns: string | null;
 	accent_color: string | null;
+	profile_accent_effect?: string | null;
+	channel_list_name_effect?: string | null;
 }>;
 
 export type UserPartial = Readonly<{
@@ -58,6 +66,8 @@ export type UserPartial = Readonly<{
 	bot?: boolean;
 	system?: boolean;
 	flags: number;
+	profile_accent_effect?: string | null;
+	channel_list_name_effect?: string | null;
 }>;
 
 export type RequiredAction =
@@ -131,6 +141,8 @@ export class UserRecord {
 	readonly bannerColor?: number | null;
 	readonly pronouns?: string | null;
 	readonly accentColor?: string | null;
+	readonly profileAccentEffect?: ProfileAccentEffectPreset;
+	readonly channelListNameEffect?: ChannelListNameEffectPreset;
 	readonly mfaEnabled?: boolean;
 	readonly phone?: string | null;
 	readonly authenticatorTypes?: Array<number>;
@@ -175,6 +187,10 @@ export class UserRecord {
 		if ('banner_color' in user) this.bannerColor = user.banner_color;
 		if ('pronouns' in user) this.pronouns = user.pronouns;
 		if ('accent_color' in user) this.accentColor = user.accent_color;
+		if ('profile_accent_effect' in user)
+			this.profileAccentEffect = normalizeProfileAccentEffectPreset(user.profile_accent_effect);
+		if ('channel_list_name_effect' in user)
+			this.channelListNameEffect = normalizeChannelListNameEffectPreset(user.channel_list_name_effect);
 		if ('mfa_enabled' in user) this.mfaEnabled = user.mfa_enabled;
 		if ('phone' in user) this.phone = user.phone;
 		if ('authenticator_types' in user) this.authenticatorTypes = user.authenticator_types;
@@ -360,6 +376,22 @@ export class UserRecord {
 								: this.accentColor,
 					}
 				: {}),
+			...(this.profileAccentEffect !== undefined || 'profile_accent_effect' in updates
+				? {
+						profile_accent_effect:
+							'profile_accent_effect' in updates && updates.profile_accent_effect !== undefined
+								? normalizeProfileAccentEffectPreset(updates.profile_accent_effect)
+								: this.profileAccentEffect,
+					}
+				: {}),
+			...(this.channelListNameEffect !== undefined || 'channel_list_name_effect' in updates
+				? {
+						channel_list_name_effect:
+							'channel_list_name_effect' in updates && updates.channel_list_name_effect !== undefined
+								? normalizeChannelListNameEffectPreset(updates.channel_list_name_effect)
+								: this.channelListNameEffect,
+					}
+				: {}),
 			...(this.mfaEnabled !== undefined || updates.mfa_enabled !== undefined
 				? {mfa_enabled: updates.mfa_enabled ?? this.mfaEnabled}
 				: {}),
@@ -525,6 +557,8 @@ export class UserRecord {
 			this.banner === other.banner &&
 			this.bannerColor === other.bannerColor &&
 			this.pronouns === other.pronouns &&
+			this.profileAccentEffect === other.profileAccentEffect &&
+			this.channelListNameEffect === other.channelListNameEffect &&
 			this.mfaEnabled === other.mfaEnabled &&
 			this.phone === other.phone &&
 			JSON.stringify(this.authenticatorTypes) === JSON.stringify(other.authenticatorTypes) &&
@@ -575,6 +609,8 @@ export class UserRecord {
 			bot: this.bot,
 			system: this.system,
 			flags: this.flags,
+			...(this.profileAccentEffect !== undefined ? {profile_accent_effect: this.profileAccentEffect} : {}),
+			...(this.channelListNameEffect !== undefined ? {channel_list_name_effect: this.channelListNameEffect} : {}),
 		};
 
 		const privateFields: Partial<UserPrivate> = {
@@ -585,6 +621,8 @@ export class UserRecord {
 			...(this.bannerColor !== undefined ? {banner_color: this.bannerColor} : {}),
 			...(this.pronouns !== undefined ? {pronouns: this.pronouns} : {}),
 			...(this.accentColor !== undefined ? {accent_color: this.accentColor} : {}),
+			...(this.profileAccentEffect !== undefined ? {profile_accent_effect: this.profileAccentEffect} : {}),
+			...(this.channelListNameEffect !== undefined ? {channel_list_name_effect: this.channelListNameEffect} : {}),
 			...(this.mfaEnabled !== undefined ? {mfa_enabled: this.mfaEnabled} : {}),
 			...(this.phone !== undefined ? {phone: this.phone} : {}),
 			...(this.authenticatorTypes !== undefined ? {authenticator_types: this.authenticatorTypes} : {}),

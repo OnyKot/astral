@@ -101,3 +101,26 @@
 	font-size: 13px;
 	color: var(--text-tertiary);
 }
+
+@media (max-width: 767px) {
+	.nameRow {
+		flex-wrap: wrap;
+		min-width: 0;
+	}
+
+	.nameButton {
+		max-width: 100%;
+		font-size: 1.1rem;
+	}
+
+	.badgeContainer {
+		display: inline-flex;
+		max-width: 100%;
+		overflow-x: auto;
+	}
+
+	.usernameRow {
+		flex-wrap: wrap;
+		overflow: visible;
+	}
+}

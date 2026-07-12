@@ -59,7 +59,7 @@ export const GifPickerView = observer(({onClose}: GifPickerProps = {}) => {
 	const scrollerRef = React.useRef<ScrollerHandle>(null);
 	const searchInputRef = React.useRef<HTMLInputElement>(null);
 
-	useSearchInputAutofocus(searchInputRef);
+	useSearchInputAutofocus(searchInputRef, {initialFocus: !isMobileLayout});
 
 	const {viewportSize, scrollTop, handleScroll, handleResize, scrollToTop} = useScrollerViewport(scrollerRef);
 

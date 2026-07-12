@@ -20,12 +20,19 @@
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import type {GatewayHandlerContext} from '../index';
 
+interface IceServer {
+	urls: Array<string>;
+	username?: string;
+	credential?: string;
+}
+
 interface VoiceServerUpdatePayload {
 	token: string;
 	endpoint: string;
 	connection_id: string;
 	guild_id?: string;
 	channel_id?: string;
+	ice_servers?: Array<IceServer>;
 }
 
 export function handleVoiceServerUpdate(data: VoiceServerUpdatePayload, _context: GatewayHandlerContext): void {
@@ -35,5 +42,6 @@ export function handleVoiceServerUpdate(data: VoiceServerUpdatePayload, _context
 		connection_id: data.connection_id,
 		guild_id: data.guild_id,
 		channel_id: data.channel_id,
+		ice_servers: data.ice_servers,
 	});
 }

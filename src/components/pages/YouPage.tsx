@@ -18,7 +18,8 @@
  */
 
 import {Trans, useLingui} from '@lingui/react/macro';
-import {GiftIcon, GearIcon, ImageSquareIcon, NotePencilIcon, PencilIcon, PlayCircleIcon, WaveformIcon} from '@phosphor-icons/react';
+import {GiftIcon, GearIcon, NotePencilIcon, PencilIcon} from '@phosphor-icons/react';
+import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
 import type {GiftMetadata} from '~/actions/GiftActionCreators';
@@ -26,22 +27,29 @@ import * as GiftActionCreators from '~/actions/GiftActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import * as PremiumModalActionCreators from '~/actions/PremiumModalActionCreators';
+import {getStatusTypeLabel, StatusTypes} from '~/Constants';
 import {CustomStatusDisplay} from '~/components/common/CustomStatusDisplay/CustomStatusDisplay';
+import {MobileNavigationMenuButton} from '~/components/layout/MobileNavigationDrawer';
 import {NoteEditSheet} from '~/components/modals/NoteEditSheet';
+import {StatusChangeBottomSheet} from '~/components/modals/StatusChangeBottomSheet';
 import {UserSettingsModal} from '~/components/modals/UserSettingsModal';
 import {UserProfileBadges} from '~/components/popouts/UserProfileBadges';
 import {UserProfileBio, UserProfileMembershipInfo} from '~/components/popouts/UserProfileShared';
+import {ProfileIntegrationsBlock} from '~/components/profile/ProfileCard/ProfileIntegrationsBlock';
+import {ProfileStreamingStatusCard} from '~/components/profile/ProfileCard/ProfileStreamingStatusCard';
 import {Scroller} from '~/components/uikit/Scroller';
-import {Spinner} from '~/components/uikit/Spinner';
 import {StatusAwareAvatar} from '~/components/uikit/StatusAwareAvatar';
+import {StatusIndicator} from '~/components/uikit/StatusIndicator';
 import {normalizeCustomStatus} from '~/lib/customStatus';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import PresenceStore from '~/stores/PresenceStore';
+import TwitchIntegrationStore from '~/stores/TwitchIntegrationStore';
 import UserNoteStore from '~/stores/UserNoteStore';
 import UserStore from '~/stores/UserStore';
 import * as AvatarUtils from '~/utils/AvatarUtils';
 import {getFormattedShortDate} from '~/utils/DateUtils';
 import {getGiftDurationText} from '~/utils/giftUtils';
+import * as NicknameUtils from '~/utils/NicknameUtils';
 import {createMockProfile} from '~/utils/ProfileUtils';
 import styles from './YouPage.module.css';
 
@@ -54,8 +62,10 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 	const user = UserStore.currentUser;
 	const userNote = user ? UserNoteStore.getUserNote(user.id) : '';
 	const [noteSheetOpen, setNoteSheetOpen] = React.useState(false);
+	const [statusSheetOpen, setStatusSheetOpen] = React.useState(false);
 	const [giftPreview, setGiftPreview] = React.useState<Array<GiftMetadata>>([]);
 	const [giftsLoading, setGiftsLoading] = React.useState(false);
+	const giftSkeletonRows = React.useMemo(() => ['skeleton-1', 'skeleton-2'], []);
 
 	const handleSettings = () => {
 		ModalActionCreators.push(modal(() => <UserSettingsModal />));
@@ -81,10 +91,20 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 
 	const hasCustomStatus = Boolean(normalizedCustomStatus);
 	const isMobileLayout = MobileLayoutStore.isMobileLayout();
+	const currentStatus = user ? PresenceStore.getStatus(user.id) : StatusTypes.ONLINE;
+	const currentUserId = user?.id;
+	const twitchConnection = TwitchIntegrationStore.connection;
+	const twitchLiveState = TwitchIntegrationStore.liveState;
+	const shouldShowStreamingCard =
+		currentUserId != null &&
+		Boolean(twitchConnection) &&
+		Boolean(twitchLiveState?.isLive) &&
+		(twitchLiveState?.creatorUserId === currentUserId || twitchLiveState?.login === twitchConnection?.login);
 
 	React.useEffect(() => {
-		if (!user?.isClaimed()) {
+		if (isMobileLayout || !user?.isClaimed()) {
 			setGiftPreview([]);
+			setGiftsLoading(false);
 			return;
 		}
 
@@ -107,11 +127,12 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 		return () => {
 			cancelled = true;
 		};
-	}, [user]);
+	}, [isMobileLayout, user]);
 
 	if (!user || !profile) return null;
 
 	const bannerUrl = user.banner ? AvatarUtils.getUserBannerURL({id: user.id, banner: user.banner}, true) : null;
+	const displayName = NicknameUtils.getNickname(user);
 
 	return (
 		<>
@@ -134,6 +155,11 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 									</button>
 								</div>
 							)}
+							{isMobileLayout && (
+								<div className={styles.mobileMenuButtonWrap}>
+									<MobileNavigationMenuButton className={styles.mobileMenuButton} />
+								</div>
+							)}
 						</div>
 
 						<div className={styles.profile}>
@@ -144,7 +170,7 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 							<div className={styles.content}>
 								<div className={styles.userInfo}>
 									<div className={styles.usernameRow}>
-										<span className={styles.username}>{user.username}</span>
+										<span className={styles.username}>{displayName}</span>
 										<div className={styles.badgesWrapper}>
 											<UserProfileBadges user={user} profile={profile} isModal={true} isMobile={true} />
 										</div>
@@ -154,18 +180,15 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 											{user.username}#{user.discriminator}
 										</span>
 										{hasCustomStatus && (
-											<>
-												<span className={styles.fullTag}>/</span>
-												<div className={styles.customStatusRow}>
-													<CustomStatusDisplay
-														userId={user.id}
-														className={styles.customStatusText}
-														showTooltip
-														allowJumboEmoji
-														animateOnParentHover
-													/>
-												</div>
-											</>
+											<div className={styles.customStatusRow}>
+												<CustomStatusDisplay
+													userId={user.id}
+													className={styles.customStatusText}
+													showTooltip
+													allowJumboEmoji
+													animateOnParentHover
+												/>
+											</div>
 										)}
 									</div>
 								</div>
@@ -178,6 +201,12 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 										<span className={styles.editLabel}>
 											<Trans>Edit Profile</Trans>
 										</span>
+									</button>
+									<button type="button" onClick={() => setStatusSheetOpen(true)} className={styles.statusButton}>
+										<span className={styles.actionIconShell} aria-hidden>
+											<StatusIndicator status={currentStatus} size={16} />
+										</span>
+										<span className={styles.statusLabel}>{getStatusTypeLabel(i18n, currentStatus)}</span>
 									</button>
 									<button type="button" onClick={handleOpenPlutonium} className={styles.plutoniumButton}>
 										<span className={styles.actionIconShell} aria-hidden>
@@ -202,6 +231,13 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 									</button>
 								</div>
 
+								<ProfileIntegrationsBlock userId={user.id} compact={isMobileLayout} className={styles.section} />
+								{shouldShowStreamingCard && (
+									<div className={styles.section}>
+										<ProfileStreamingStatusCard userId={user.id} compact={isMobileLayout} />
+									</div>
+								)}
+
 								{!isMobileLayout && (
 									<>
 										<div className={styles.section}>
@@ -210,8 +246,16 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 											<Trans>Gifts Preview</Trans>
 										</h3>
 										{giftsLoading ? (
-											<div className={styles.giftLoadingRow}>
-												<Spinner />
+											<div className={styles.giftPreviewSkeletonList} aria-hidden="true">
+												{giftSkeletonRows.map((rowKey) => (
+													<div key={rowKey} className={styles.giftPreviewSkeletonCard}>
+														<div className={styles.giftPreviewSkeletonIcon} />
+														<div className={styles.giftPreviewSkeletonContent}>
+															<div className={styles.giftPreviewSkeletonLine} />
+															<div className={clsx(styles.giftPreviewSkeletonLine, styles.giftPreviewSkeletonLineShort)} />
+														</div>
+													</div>
+												))}
 											</div>
 										) : giftPreview.length > 0 ? (
 											<div className={styles.giftPreviewList}>
@@ -244,42 +288,6 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 									</div>
 										</div>
 
-										<div className={styles.section}>
-									<div className={styles.sectionHeader}>
-										<h3 className={styles.sectionTitle}>
-											<Trans>Media Preview</Trans>
-										</h3>
-										<div className={styles.mediaPreviewList}>
-											<div className={styles.mediaPreviewItem}>
-												<div className={styles.mediaPreviewThumb}>
-													<ImageSquareIcon weight="fill" className={styles.mediaPreviewIcon} />
-												</div>
-												<div className={styles.mediaPreviewMeta}>
-													<span className={styles.mediaPreviewTitle}>beach_trip_2026.png</span>
-													<span className={styles.mediaPreviewSub}>{t`2.4 MB · Image`}</span>
-												</div>
-											</div>
-											<div className={styles.mediaPreviewItem}>
-												<div className={styles.mediaPreviewThumb}>
-													<PlayCircleIcon weight="fill" className={styles.mediaPreviewIcon} />
-												</div>
-												<div className={styles.mediaPreviewMeta}>
-													<span className={styles.mediaPreviewTitle}>city_walk.mp4</span>
-													<span className={styles.mediaPreviewSub}>{t`00:23 · Video`}</span>
-												</div>
-											</div>
-											<div className={styles.mediaPreviewItem}>
-												<div className={styles.mediaPreviewThumb}>
-													<WaveformIcon weight="fill" className={styles.mediaPreviewIcon} />
-												</div>
-												<div className={styles.mediaPreviewMeta}>
-													<span className={styles.mediaPreviewTitle}>voice_001.ogg</span>
-													<span className={styles.mediaPreviewSub}>{t`00:11 · Voice`}</span>
-												</div>
-											</div>
-										</div>
-									</div>
-										</div>
 									</>
 								)}
 
@@ -323,6 +331,7 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 				userId={user.id}
 				initialNote={userNote}
 			/>
+			<StatusChangeBottomSheet isOpen={statusSheetOpen} onClose={() => setStatusSheetOpen(false)} />
 		</>
 	);
 });

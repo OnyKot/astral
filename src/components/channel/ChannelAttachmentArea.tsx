@@ -194,8 +194,6 @@ const SortableAttachmentItem = observer(
 		};
 
 		const containerStyle: React.CSSProperties = {
-			width: '200px',
-			height: '200px',
 			position: 'relative',
 			transform: CSS.Transform.toString(transform),
 			transition,

@@ -121,6 +121,35 @@ export class TextareaSegmentManager {
 		return {newText, newSegments: this.segments};
 	}
 
+	replaceText(
+		currentText: string,
+		start: number,
+		end: number,
+		replacementText: string,
+	): {newText: string; newSegments: Array<MentionSegment>} {
+		const safeStart = Math.max(0, Math.min(currentText.length, start));
+		const safeEnd = Math.max(safeStart, Math.min(currentText.length, end));
+		this.updateSegmentsForTextChange(safeStart, safeEnd, replacementText.length);
+		const newText = currentText.slice(0, safeStart) + replacementText + currentText.slice(safeEnd);
+		return {newText, newSegments: this.getSegments()};
+	}
+
+	replaceWithSegment(
+		currentText: string,
+		start: number,
+		end: number,
+		displayText: string,
+		actualText: string,
+		type: MentionSegment['type'],
+		id: string,
+	): {newText: string; newSegments: Array<MentionSegment>} {
+		const safeStart = Math.max(0, Math.min(currentText.length, start));
+		const safeEnd = Math.max(safeStart, Math.min(currentText.length, end));
+		const withoutSelection = currentText.slice(0, safeStart) + currentText.slice(safeEnd);
+		this.updateSegmentsForTextChange(safeStart, safeEnd, 0);
+		return this.insertSegment(withoutSelection, safeStart, displayText, actualText, type, id);
+	}
+
 	static detectChange(
 		oldText: string,
 		newText: string,

@@ -19,6 +19,7 @@
 
 import {useLingui} from '@lingui/react/macro';
 import {observer} from 'mobx-react-lite';
+import React from 'react';
 import {Controller, useForm} from 'react-hook-form';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {ChannelTypes} from '~/Constants';
@@ -41,6 +42,15 @@ export const ChannelCreateModal = observer(({guildId, parentId}: {guildId: strin
 	const form = useForm<FormInputs>({
 		defaultValues: getDefaultValues(),
 	});
+	const translatedChannelTypeOptions = React.useMemo(
+		() =>
+			channelTypeOptions.map((option) => ({
+				...option,
+				name: t(option.name),
+				desc: t(option.desc),
+			})),
+		[t],
+	);
 
 	const onSubmit = async (data: FormInputs) => {
 		await createChannel(guildId, data, parentId);
@@ -67,7 +77,7 @@ export const ChannelCreateModal = observer(({guildId, parentId}: {guildId: strin
 									aria-label={t`Channel type selection`}
 									value={Number(field.value)}
 									onChange={(value) => field.onChange(value.toString())}
-									options={channelTypeOptions}
+									options={translatedChannelTypeOptions}
 								/>
 							)}
 						/>

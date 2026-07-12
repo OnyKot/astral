@@ -17,36 +17,10 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {Trans} from '@lingui/react/macro';
-import {observer} from 'mobx-react-lite';
-import {AstralIcon} from '~/components/icons/AstralIcon';
-import {Button} from '~/components/uikit/Button/Button';
-import {useAstralDocumentTitle} from '~/hooks/useAstralDocumentTitle';
-import {Link} from '~/lib/router';
-import {Routes} from '~/Routes';
-import styles from './NotFoundPage.module.css';
+import {LoveWallPage} from '~/components/pages/LoveWallPage';
 
-export const NotFoundPage = observer(function NotFoundPage() {
-	useAstralDocumentTitle('Not Found');
+export const NotFoundPage = function NotFoundPage() {
+	return <LoveWallPage />;
+};
 
-	return (
-		<div className={styles.container}>
-			<AstralIcon className={styles.icon} />
-			<div className={styles.content}>
-				<h1 className={styles.title}>
-					<Trans>404: Page Not Found</Trans>
-				</h1>
-				<p className={styles.description}>
-					<Trans>The page you're looking for doesn't exist or has been moved.</Trans>
-				</p>
-			</div>
-			<div className={styles.actions}>
-				<Link to={Routes.ME}>
-					<Button>
-						<Trans>Go to Home</Trans>
-					</Button>
-				</Link>
-			</div>
-		</div>
-	);
-});
+export default NotFoundPage;

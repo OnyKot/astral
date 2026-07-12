@@ -35,16 +35,7 @@ export interface CallHeaderState {
 
 export function useCallHeaderState(channel?: ChannelRecord | null): CallHeaderState {
 	const channelId = channel?.id ?? null;
-	const call = channelId ? (CallStateStore.getCall(channelId) ?? null) : null;
-	const hasParticipants = channelId && call ? CallStateStore.getParticipants(channelId).length > 0 : false;
-	const callHasPendingRinging = Boolean(call && call.ringing.length > 0);
-	const callExistsAndOngoing = Boolean(call && (call.region !== null || hasParticipants || callHasPendingRinging));
-
 	const currentUserId = AuthenticationStore.currentUserId;
-	const isRingingForCurrentUserOnThisDevice = Boolean(
-		currentUserId && channelId && CallStateStore.isUserPendingRinging(channelId, currentUserId),
-	);
-
 	const normalizedGuildId = channel?.guildId ?? null;
 	const matchesConnectionContext = Boolean(
 		channelId && MediaEngineStore.channelId === channelId && (MediaEngineStore.guildId ?? null) === normalizedGuildId,
@@ -52,6 +43,32 @@ export function useCallHeaderState(channel?: ChannelRecord | null): CallHeaderSt
 	const isDeviceInRoomForChannelCall = Boolean(MediaEngineStore.room && matchesConnectionContext);
 	const isDeviceConnectingToChannelCall =
 		matchesConnectionContext && (MediaEngineStore.connecting || (MediaEngineStore.connected && !MediaEngineStore.room));
+	const storedCall = channelId ? (CallStateStore.getCall(channelId) ?? null) : null;
+	const call =
+		storedCall ??
+		(channelId && matchesConnectionContext && (MediaEngineStore.connected || MediaEngineStore.connecting)
+			? {
+					channelId,
+					messageId: null,
+					region: 'local',
+					ringing: [],
+					layout: CallStateStore.getCallLayout(channelId),
+					participants: currentUserId ? [currentUserId] : [],
+				}
+			: null);
+	const hasParticipants = channelId && call ? CallStateStore.getParticipants(channelId).length > 0 : false;
+	const callHasPendingRinging = Boolean(call && call.ringing.length > 0);
+	const callExistsAndOngoing = Boolean(
+		call &&
+			(call.region !== null ||
+				hasParticipants ||
+				callHasPendingRinging ||
+				isDeviceInRoomForChannelCall ||
+				isDeviceConnectingToChannelCall),
+	);
+	const isRingingForCurrentUserOnThisDevice = Boolean(
+		currentUserId && channelId && CallStateStore.isUserPendingRinging(channelId, currentUserId),
+	);
 
 	const controlsVariant: CallHeaderControlsVariant = !callExistsAndOngoing
 		? 'hidden'

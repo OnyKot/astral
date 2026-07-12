@@ -39,7 +39,7 @@ export const HelpButton = observer(() => {
 	const mergedButtonRef = useMergeRefs([hoverRef, buttonRef]);
 
 	const handleHelp = () => {
-		openExternalUrl('https://astraof.com/help');
+		openExternalUrl('https://astraof.com/invite/05YgRW2k');
 	};
 
 	return (
@@ -47,12 +47,12 @@ export const HelpButton = observer(() => {
 			<Tooltip
 				position="right"
 				size="large"
-				text={() => <TooltipWithKeybind label={t`Help Center`} action="get_help" />}
+				text={() => <TooltipWithKeybind label={t`Join Community`} action="get_help" />}
 			>
 				<FocusRing offset={-2} focusTarget={buttonRef} ringTarget={iconRef}>
 					<button
 						type="button"
-						aria-label={t`Help Center`}
+						aria-label={t`Join Community`}
 						onClick={handleHelp}
 						className={styles.button}
 						ref={mergedButtonRef}

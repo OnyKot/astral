@@ -18,13 +18,10 @@
  */
 
 import {useLingui} from '@lingui/react/macro';
-import {CaretRightIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import ChannelListLayoutStore from '~/stores/ChannelListLayoutStore';
-import {useLocation} from '~/lib/router';
-import {Routes} from '~/Routes';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import {ResizeHandle} from './ResizeHandle';
 import LayoutSizingStore from '~/stores/LayoutSizingStore';
@@ -40,10 +37,7 @@ interface GuildSidebarProps {
 export const GuildSidebar = observer(({header, content, roundTopLeft = true, resizeable = false}: GuildSidebarProps) => {
 	const {t} = useLingui();
 	const mobileLayout = MobileLayoutStore;
-	const location = useLocation();
 	const sidebarCollapsed = !mobileLayout.enabled && ChannelListLayoutStore.getSidebarCollapsed();
-
-	const showBottomNav = mobileLayout.enabled && Routes.isMobileBottomNavRoute(location.pathname);
 
 	return (
 		<div
@@ -51,7 +45,6 @@ export const GuildSidebar = observer(({header, content, roundTopLeft = true, res
 				styles.guildNavbarContainer,
 				sidebarCollapsed && styles.guildNavbarContainerCollapsed,
 				mobileLayout.enabled && styles.guildNavbarContainerMobile,
-				showBottomNav && styles.guildNavbarReserveMobileBottomNav,
 			)}
 			style={roundTopLeft ? undefined : {borderTopLeftRadius: 0}}
 		>
@@ -64,27 +57,16 @@ export const GuildSidebar = observer(({header, content, roundTopLeft = true, res
 					direction="right"
 					getSize={() => LayoutSizingStore.sidebarWidthPx}
 					onResize={(px) => {
-						ChannelListLayoutStore.setSidebarWidth(px);
-						LayoutSizingStore.setSidebarWidth(px);
+						LayoutSizingStore.previewSidebarWidth(px);
+					}}
+					onResizeEnd={(px) => {
+						LayoutSizingStore.commitSidebarWidth(px);
 					}}
 					onReset={() => {
-						ChannelListLayoutStore.resetSidebarWidth();
 						LayoutSizingStore.resetSidebar();
 					}}
 					ariaLabel={t`Resize community list`}
 				/>
-			)}
-			{sidebarCollapsed && !mobileLayout.enabled && (
-				<div className={styles.collapsedDock}>
-					<button
-						type="button"
-						className={styles.collapsedDockButton}
-						onClick={() => ChannelListLayoutStore.setSidebarCollapsed(false)}
-						aria-label={t`Expand channel list`}
-					>
-						<CaretRightIcon weight="bold" className={styles.collapsedDockIcon} />
-					</button>
-				</div>
 			)}
 		</div>
 	);

@@ -21,6 +21,7 @@ import {marketingUrl} from '~/utils/UrlUtils';
 
 export const Routes = {
 	HOME: '/',
+	MARKETING: '/marketing',
 	LOGIN: '/login',
 	REGISTER: '/register',
 	FORGOT_PASSWORD: '/forgot',
@@ -50,6 +51,9 @@ export const Routes = {
 	YOU: '/you',
 	REPORT: '/report',
 	PREMIUM_CALLBACK: '/premium-callback',
+	USER_PROFILE: '/users/:userId',
+	USER_PROFILE_LEGACY: '/user/:userId',
+	CHANNEL_USER_PROFILE: '/channel/:channelId/user/:userId',
 
 	terms: () => marketingUrl('terms'),
 	privacy: () => marketingUrl('privacy'),
@@ -71,6 +75,8 @@ export const Routes = {
 	dmChannelMessage: (channelId: string, messageId: string) => `${Routes.dmChannel(channelId)}/${messageId}`,
 	favoritesChannelMessage: (channelId: string, messageId: string) =>
 		`${Routes.favoritesChannel(channelId)}/${messageId}`,
+	userProfile: (userId: string) => `/users/${userId}`,
+	channelUserProfile: (channelId: string, userId: string) => `/channel/${channelId}/user/${userId}`,
 	inviteRegister: (code: string) => `/invite/${code}`,
 	inviteLogin: (code: string) => `/invite/${code}/login`,
 	giftRegister: (code: string) => `/gift/${code}`,
@@ -79,12 +85,18 @@ export const Routes = {
 	themeRegister: (themeId: string) => `/theme/${themeId}`,
 	themeLogin: (themeId: string) => `/theme/${themeId}/login`,
 
+	isUserProfileRoute: (pathname: string) =>
+		/^\/users\/[^/]+\/?$/.test(pathname) ||
+		/^\/user\/[^/]+\/?$/.test(pathname) ||
+		/^\/channel\/[^/]+\/user\/[^/]+\/?$/.test(pathname),
+
 	isSpecialPage: (pathname: string) =>
 		pathname === Routes.BOOKMARKS ||
 		pathname === Routes.MENTIONS ||
 		pathname === Routes.DISCOVERY ||
 		pathname === Routes.NOTIFICATIONS ||
-		pathname === Routes.YOU,
+		pathname === Routes.YOU ||
+		Routes.isUserProfileRoute(pathname),
 
 	isDMRoute: (pathname: string) => pathname.startsWith('/channels/@me'),
 	isFavoritesRoute: (pathname: string) => pathname.startsWith('/channels/@favorites'),
@@ -97,8 +109,11 @@ export const Routes = {
 		pathname === Routes.ME ||
 		pathname === Routes.dmChannel('@friends') ||
 		Routes.isFavoritesRoute(pathname) ||
+		pathname === Routes.BOOKMARKS ||
+		pathname === Routes.MENTIONS ||
 		pathname === Routes.DISCOVERY ||
 		pathname === Routes.NOTIFICATIONS ||
 		pathname === Routes.YOU ||
+		Routes.isUserProfileRoute(pathname) ||
 		(Routes.isGuildChannelRoute(pathname) && pathname.split('/').length === 3),
 } as const;

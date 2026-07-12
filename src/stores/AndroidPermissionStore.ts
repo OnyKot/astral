@@ -23,6 +23,8 @@ class AndroidPermissionStore {
 	initialized = false;
 	loading = false;
 	statuses: AndroidPermissionSnapshot = {...DEFAULT_STATUSES};
+	private refreshPromise: Promise<void> | null = null;
+	private lastRefreshAt = 0;
 
 	constructor() {
 		makeAutoObservable(this, {}, {autoBind: true});
@@ -57,24 +59,36 @@ class AndroidPermissionStore {
 			return;
 		}
 
-		runInAction(() => {
-			this.loading = true;
-		});
+		if (this.refreshPromise) return this.refreshPromise;
+		if (this.initialized && Date.now() - this.lastRefreshAt < 500) return;
 
-		try {
-			const statuses = await getAndroidPermissionStatuses();
-			runInAction(() => {
-				this.statuses = statuses;
-				this.initialized = true;
-				this.loading = false;
-			});
-		} catch (error) {
-			logger.error('Failed to refresh Android permission statuses', {error});
-			runInAction(() => {
-				this.initialized = true;
-				this.loading = false;
-			});
-		}
+		this.refreshPromise = (async () => {
+			if (!this.initialized) {
+				runInAction(() => {
+					this.loading = true;
+				});
+			}
+
+			try {
+				const statuses = await getAndroidPermissionStatuses();
+				runInAction(() => {
+					this.statuses = statuses;
+					this.initialized = true;
+					this.loading = false;
+					this.lastRefreshAt = Date.now();
+				});
+			} catch (error) {
+				logger.error('Failed to refresh Android permission statuses', {error});
+				runInAction(() => {
+					this.initialized = true;
+					this.loading = false;
+				});
+			} finally {
+				this.refreshPromise = null;
+			}
+		})();
+
+		return this.refreshPromise;
 	}
 
 	async check(permission: AndroidPermissionName): Promise<AndroidPermissionStatus> {

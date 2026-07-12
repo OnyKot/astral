@@ -66,6 +66,7 @@ import PermissionStore from '~/stores/PermissionStore';
 import SettingsSidebarStore from '~/stores/SettingsSidebarStore';
 import UserStore from '~/stores/UserStore';
 import * as PermissionUtils from '~/utils/PermissionUtils';
+import {isBroadcastVoiceChannel} from '~/utils/channelVoiceMode';
 import {AddOverridePopout} from '../shared/AddOverridePopout';
 import {
 	DEFAULT_ROLE_COLOR_HEX,
@@ -507,7 +508,19 @@ const ChannelPermissionsTab: React.FC<{channelId: string}> = observer(({channelI
 		];
 
 		if (channel.isVoice()) {
-			specs.push(PermissionUtils.generateChannelVoicePermissionSpec(i18n));
+			const voiceSpec = PermissionUtils.generateChannelVoicePermissionSpec(i18n);
+			if (isBroadcastVoiceChannel(channel)) {
+				voiceSpec.permissions = voiceSpec.permissions.map((permission) =>
+					permission.flag === Permissions.SPEAK
+						? {
+								...permission,
+								title: t`Allow joining as speaker`,
+								description: t`If disabled, members with this role join this stage as listeners only.`,
+							}
+						: permission,
+				);
+			}
+			specs.push(voiceSpec);
 		} else {
 			specs.push(PermissionUtils.generateChannelTextPermissionSpec(i18n));
 		}

@@ -26,38 +26,50 @@ import {useLingui} from '@lingui/react/macro';
 import {
 	ChatCircleDotsIcon,
 	CompassIcon,
+	ArrowsOutIcon,
 	CaretDownIcon,
+	CaretLeftIcon,
+	CaretRightIcon,
 	CaretUpIcon,
+	DotsThreeIcon,
 	ExclamationMarkIcon,
 	FolderIcon,
 	GearIcon,
-	NotePencilIcon,
+	MicrophoneIcon,
+	MicrophoneSlashIcon,
 	PlanetIcon,
-	RobotIcon,
-	WaveformIcon,
+	SpeakerHighIcon,
+	SpeakerSlashIcon,
 } from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
+import * as AccessibilityActionCreators from '~/actions/AccessibilityActionCreators';
 import * as DimensionActionCreators from '~/actions/DimensionActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import * as NavigationActionCreators from '~/actions/NavigationActionCreators';
 import * as PremiumModalActionCreators from '~/actions/PremiumModalActionCreators';
 import * as UserSettingsActionCreators from '~/actions/UserSettingsActionCreators';
-import {ChannelTypes, ME} from '~/Constants';
+import * as VoiceStateActionCreators from '~/actions/VoiceStateActionCreators';
+import {ChannelTypes, isGuildRtcChannelType, ME, Permissions} from '~/Constants';
 import {openClaimAccountModal} from '~/components/modals/ClaimAccountModal';
+import {CustomStatusModal} from '~/components/modals/CustomStatusModal';
 import {UserSettingsModal} from '~/components/modals/UserSettingsModal';
+import {MobileNavigationMenuButton} from '~/components/layout/MobileNavigationDrawer';
+import {CustomStatusDisplay} from '~/components/common/CustomStatusDisplay/CustomStatusDisplay';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
 import {MentionBadgeAnimated} from '~/components/uikit/MentionBadge';
 import {StatusAwareAvatar} from '~/components/uikit/StatusAwareAvatar';
 import {Tooltip} from '~/components/uikit/Tooltip/Tooltip';
 import {Popout} from '~/components/uikit/Popout/Popout';
 import {UserAreaPopout} from '~/components/popouts/UserAreaPopout';
-import {VoiceConnectionStatus} from '~/components/voice/VoiceConnectionStatus';
+import {VoiceConnectionStatus, VoiceDetailsPopout} from '~/components/voice/VoiceConnectionStatus';
+import {CompactVoiceCallView} from '~/components/voice/CompactVoiceCallView';
 import {ComponentDispatch} from '~/lib/ComponentDispatch';
 import {Platform} from '~/lib/Platform';
 import {useLocation} from '~/lib/router';
+import AppStorage from '~/lib/AppStorage';
 import {Routes} from '~/Routes';
 import type {ChannelRecord} from '~/records/ChannelRecord';
 import type {GuildRecord} from '~/records/GuildRecord';
@@ -69,8 +81,10 @@ import GuildDockStore from '~/stores/GuildDockStore';
 import GuildListStore from '~/stores/GuildListStore';
 import GuildReadStateStore from '~/stores/GuildReadStateStore';
 import InitializationStore from '~/stores/InitializationStore';
+import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import NagbarStore from '~/stores/NagbarStore';
+import PermissionStore from '~/stores/PermissionStore';
 import ReadStateStore from '~/stores/ReadStateStore';
 import SelectedChannelStore from '~/stores/SelectedChannelStore';
 import ContextMenuStore from '~/stores/ContextMenuStore';
@@ -80,8 +94,6 @@ import UserStore from '~/stores/UserStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import ChannelListLayoutStore from '~/stores/ChannelListLayoutStore';
 import AccessibilityStore from '~/stores/AccessibilityStore';
-import LayoutSizingStore from '~/stores/LayoutSizingStore';
-import VoicePanelLayoutStore from '~/stores/VoicePanelLayoutStore';
 import {getBestContrastColor, int2hex} from '~/utils/ColorUtils';
 import {isNativeMobile} from '~/utils/NativeUtils';
 import * as RouterUtils from '~/utils/RouterUtils';
@@ -107,6 +119,8 @@ const isSelectedPath = (pathname: string, path: string) => {
 
 const DM_LIST_REMOVAL_DELAY_MS = 750;
 const DESKTOP_DOCK_HIDE_DELAY_MS = 200;
+const PLUTONIUM_LIFETIME_HINT_KEY = 'astral.desktop_rail.lifetime_hint_shown.v1';
+const SETTINGS_DOT_DISMISSED_KEY = 'astral.desktop_rail.settings_dot_dismissed.v1';
 
 const getUnreadDMChannels = () => {
 	const dmChannels = ChannelStore.dmChannels;
@@ -145,11 +159,71 @@ const getSelectedGuildChannelIdFromPath = (pathname: string): string | null => {
 	return match[2];
 };
 
+const getSelectedDMChannelIdFromPath = (pathname: string): string | null => {
+	if (!Routes.isDMRoute(pathname)) return null;
+	const match = pathname.match(/^\/channels\/@me\/([^/]+)/);
+	return match?.[1] ?? null;
+};
+
+const MobileFloatingVoiceWindow = observer(({currentPathname}: {currentPathname: string}) => {
+	const {t} = useLingui();
+	const mediaChannelId = MediaEngineStore.channelId;
+	const mediaChannel = mediaChannelId ? ChannelStore.getChannel(mediaChannelId) : null;
+	const selectedChannelId = getSelectedGuildChannelIdFromPath(currentPathname) ?? getSelectedDMChannelIdFromPath(currentPathname);
+	const hasActiveLiveMedia = Object.values(MediaEngineStore.participants).some(
+		(participant) => participant.isScreenShareEnabled || participant.isCameraEnabled,
+	);
+	const shouldShow =
+		MobileLayoutStore.enabled &&
+		MediaEngineStore.connected &&
+		Boolean(MediaEngineStore.room) &&
+		Boolean(mediaChannel) &&
+		hasActiveLiveMedia &&
+		selectedChannelId !== mediaChannelId;
+
+	const openCallChannel = React.useCallback(() => {
+		if (!mediaChannel) return;
+		const path = mediaChannel.guildId
+			? Routes.guildChannel(mediaChannel.guildId, mediaChannel.id)
+			: Routes.dmChannel(mediaChannel.id);
+		RouterUtils.transitionTo(path);
+	}, [mediaChannel]);
+
+	if (!shouldShow || !mediaChannel) {
+		return null;
+	}
+
+	return (
+		<div className={styles.mobileFloatingVoiceWindow} aria-label={t`Active call preview`}>
+			<CompactVoiceCallView
+				channel={mediaChannel}
+				className={styles.mobileFloatingVoiceView}
+				hideHeader={true}
+				hideControlBar={true}
+			/>
+			<FocusRing offset={-2}>
+				<button
+					type="button"
+					className={styles.mobileFloatingVoiceOpenButton}
+					onClick={openCallChannel}
+					aria-label={t`Open call`}
+				>
+					<ArrowsOutIcon weight="bold" className={styles.mobileFloatingVoiceOpenIcon} />
+				</button>
+			</FocusRing>
+		</div>
+	);
+});
+
 const DesktopUtilityRail = observer(
 	({
+		classicMode = false,
+		compactDockMode = false,
 		onDockPointerEnter,
 		onDockPointerLeave,
 	}: {
+		classicMode?: boolean;
+		compactDockMode?: boolean;
 		onDockPointerEnter: () => void;
 		onDockPointerLeave: () => void;
 	}) => {
@@ -159,288 +233,459 @@ const DesktopUtilityRail = observer(
 		const currentUserId = currentUser?.id;
 		const selectedDMChannelId = SelectedChannelStore.selectedChannelIds.get(ME);
 		const directMessagesPath = selectedDMChannelId ? Routes.dmChannel(selectedDMChannelId) : Routes.ME;
-		const personalNotesPath = currentUserId ? Routes.dmChannel(currentUserId) : null;
 
 		const hasActiveVoiceConnection = Boolean(
 			(MediaEngineStore.connected || MediaEngineStore.connecting) && MediaEngineStore.channelId,
 		);
-		const shouldShowUserPanel = Boolean(currentUser && hasActiveVoiceConnection && !VoicePanelLayoutStore.collapsedIntoDock);
-		const [isUserPanelRendered, setIsUserPanelRendered] = React.useState(shouldShowUserPanel);
-		const userPanelHideTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+		const [isUtilityMenuOpen, setUtilityMenuOpen] = React.useState(false);
 
 		const isDirectMessagesSelected = location.pathname.startsWith(Routes.ME);
-		const isPersonalNotesSelected = Boolean(personalNotesPath && location.pathname.startsWith(personalNotesPath));
 		const isDiscoverySelected = location.pathname === Routes.DISCOVERY || location.pathname.startsWith(`${Routes.DISCOVERY}/`);
+		const [showLifetimeHint, setShowLifetimeHint] = React.useState(false);
+		const [showSettingsDot, setShowSettingsDot] = React.useState(false);
 
 		React.useEffect(() => {
-			if (userPanelHideTimerRef.current) {
-				clearTimeout(userPanelHideTimerRef.current);
-				userPanelHideTimerRef.current = null;
-			}
-
-			if (shouldShowUserPanel) {
-				setIsUserPanelRendered(true);
+			const hasShownLifetimeHint = AppStorage.getItem(PLUTONIUM_LIFETIME_HINT_KEY) === '1';
+			if (hasShownLifetimeHint) {
 				return;
 			}
 
-			if (!isUserPanelRendered) {
-				return;
-			}
-
-			userPanelHideTimerRef.current = setTimeout(() => {
-				setIsUserPanelRendered(false);
-				userPanelHideTimerRef.current = null;
-			}, 220);
+			setShowLifetimeHint(true);
+			AppStorage.setItem(PLUTONIUM_LIFETIME_HINT_KEY, '1');
+			const timeout = setTimeout(() => {
+				setShowLifetimeHint(false);
+			}, 5000);
 
 			return () => {
-				if (userPanelHideTimerRef.current) {
-					clearTimeout(userPanelHideTimerRef.current);
-					userPanelHideTimerRef.current = null;
-				}
+				clearTimeout(timeout);
 			};
-		}, [isUserPanelRendered, shouldShowUserPanel]);
+		}, []);
 
 		React.useEffect(() => {
-			VoicePanelLayoutStore.snapToDock();
-			const handleResize = () => VoicePanelLayoutStore.snapToDock();
-			window.addEventListener('resize', handleResize);
-			return () => window.removeEventListener('resize', handleResize);
+			setShowSettingsDot(AppStorage.getItem(SETTINGS_DOT_DISMISSED_KEY) !== '1');
 		}, []);
+
+		React.useEffect(() => {
+			setUtilityMenuOpen(false);
+		}, [location.pathname]);
 
 		const navigateToDirectMessages = React.useCallback(() => {
 			NavigationActionCreators.selectChannel(ME, selectedDMChannelId ?? null);
 			RouterUtils.transitionTo(directMessagesPath);
 		}, [directMessagesPath, selectedDMChannelId]);
 
-		const navigateToPersonalNotes = React.useCallback(() => {
-			if (!currentUserId || !personalNotesPath) return;
-			NavigationActionCreators.selectChannel(ME, currentUserId);
-			RouterUtils.transitionTo(personalNotesPath);
-		}, [currentUserId, personalNotesPath]);
-
 		const navigateToDiscovery = React.useCallback(() => {
 			NavigationActionCreators.selectChannel(ME, null);
 			RouterUtils.transitionTo(Routes.DISCOVERY);
 		}, []);
 
-		const handleOpenAIAssistant = React.useCallback(() => {
-			ModalActionCreators.push(modal(() => <UserSettingsModal initialTab="chat_settings" initialSubtab="ai" />));
-		}, []);
-
 		const handleOpenSettingsFromRail = React.useCallback(() => {
+			if (showSettingsDot) {
+				setShowSettingsDot(false);
+				AppStorage.setItem(SETTINGS_DOT_DISMISSED_KEY, '1');
+			}
+			setUtilityMenuOpen(false);
 			ModalActionCreators.push(modal(() => <UserSettingsModal />));
+		}, [showSettingsDot]);
+
+		const handleOpenCustomStatusFromDock = React.useCallback(() => {
+			setUtilityMenuOpen(false);
+			ModalActionCreators.push(modal(() => <CustomStatusModal />));
 		}, []);
 
-		const voicePanelDensity = 'comfortable';
-		const getRailWidthPx = React.useCallback(() => {
-			if (typeof window === 'undefined') {
-				return 68;
-			}
+		const voicePanelDensity = 'compact';
+		const compactVoiceDock = compactDockMode && hasActiveVoiceConnection;
+		const railTooltipPosition = compactDockMode ? 'top' : 'right';
 
-			const rootFontSize = Number.parseFloat(window.getComputedStyle(document.documentElement).fontSize || '16');
-			return Math.round(rootFontSize * 4.25);
+		const openPlutoniumFromRail = React.useCallback(() => {
+			setUtilityMenuOpen(false);
+			PremiumModalActionCreators.open();
 		}, []);
-		const dockAnchoredLeftPx =
-			typeof window !== 'undefined'
-				? getRailWidthPx() + 12
-				: VoicePanelLayoutStore.xPx;
-		const dockAnchoredBottomPx = 12;
-		const previousVoiceConnectionRef = React.useRef(false);
 
-		React.useEffect(() => {
-			const wasConnected = previousVoiceConnectionRef.current;
-			previousVoiceConnectionRef.current = hasActiveVoiceConnection;
+		const voiceState = MediaEngineStore.getCurrentUserVoiceState();
+		const connectedVoiceChannel = ChannelStore.getChannel(MediaEngineStore.channelId ?? '');
+		const isSelfMuted = LocalVoiceStateStore.selfMute;
+		const isSelfDeafened = LocalVoiceStateStore.selfDeaf;
+		const isGuildMuted = voiceState?.mute ?? false;
+		const isGuildDeafened = voiceState?.deaf ?? false;
+		const canSpeakInVoiceChannel = connectedVoiceChannel
+			? (!connectedVoiceChannel.guildId || PermissionStore.can(Permissions.SPEAK, connectedVoiceChannel))
+			: true;
+		const isBroadcastVoiceChannel = connectedVoiceChannel
+			? MediaEngineStore.isVoiceChannelStageLike(connectedVoiceChannel.id)
+			: false;
+		const isSuppressedVoiceListener =
+			isBroadcastVoiceChannel && MediaEngineStore.isCurrentUserInBroadcastListenerMode();
+		const isVoiceMuteDisabled = isGuildMuted || isSuppressedVoiceListener || !canSpeakInVoiceChannel;
+		const isVoiceDeafenDisabled = isGuildDeafened;
+		const muteButtonLabel = isVoiceMuteDisabled
+			? isGuildMuted
+				? t`Community Muted`
+				: t`Listener mode: join stage to speak`
+			: isSelfMuted
+				? t`Unmute`
+				: t`Mute`;
+		const deafenButtonLabel = isGuildDeafened ? t`Community Deafened` : isSelfDeafened ? t`Undeafen` : t`Deafen`;
+		const currentVoiceLatency = MediaEngineStore.displayLatency;
+		const voicePingLabel = currentVoiceLatency === null ? t`Ping` : `${currentVoiceLatency}ms`;
 
-			if (hasActiveVoiceConnection && !wasConnected) {
-				VoicePanelLayoutStore.setCollapsedIntoDock(false);
-			}
-		}, [hasActiveVoiceConnection]);
+		const handleToggleVoiceMute = React.useCallback(() => {
+			if (isVoiceMuteDisabled) return;
+			VoiceStateActionCreators.toggleSelfMute(null);
+		}, [isVoiceMuteDisabled]);
 
-		React.useEffect(() => {
-			if (!hasActiveVoiceConnection) {
-				return;
-			}
+		const handleToggleVoiceDeafen = React.useCallback(() => {
+			if (isVoiceDeafenDisabled) return;
+			VoiceStateActionCreators.toggleSelfDeaf(null);
+		}, [isVoiceDeafenDisabled]);
 
-			VoicePanelLayoutStore.widthPx = LayoutSizingStore.sidebarWidthPx;
-		}, [hasActiveVoiceConnection, LayoutSizingStore.sidebarWidthPx]);
-
-		return (
-			<aside className={styles.desktopUtilityRail} aria-label={t`DM shortcuts`}>
-			<div className={styles.desktopUtilityRailTop}>
-				<div className={styles.desktopUtilityRailList}>
-					<Tooltip position="right" size="large" text={t`Direct Messages`}>
-						<FocusRing offset={-2}>
-							<button
-								type="button"
-								className={clsx(
-									styles.desktopUtilityRailButton,
-									styles.desktopUtilityRailButtonDm,
-									isDirectMessagesSelected && styles.desktopUtilityRailButtonSelected,
-								)}
-								aria-label={t`Direct Messages`}
-								aria-pressed={isDirectMessagesSelected}
-								onClick={navigateToDirectMessages}
-							>
-								<ChatCircleDotsIcon
-									weight="fill"
-									className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconDm)}
-								/>
-							</button>
-						</FocusRing>
-					</Tooltip>
-
-					{personalNotesPath && (
-						<Tooltip position="right" size="large" text={t`Personal Notes`}>
-							<FocusRing offset={-2}>
-								<button
-									type="button"
-									className={clsx(
-										styles.desktopUtilityRailButton,
-										styles.desktopUtilityRailButtonNotes,
-										isPersonalNotesSelected && styles.desktopUtilityRailButtonSelected,
-									)}
-									aria-label={t`Personal Notes`}
-									aria-pressed={isPersonalNotesSelected}
-									onClick={navigateToPersonalNotes}
-								>
-									<NotePencilIcon
-										weight="fill"
-										className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconNotes)}
-									/>
-								</button>
-							</FocusRing>
-						</Tooltip>
+			return (
+				<aside
+					className={clsx(
+						styles.desktopUtilityRail,
+						compactDockMode && styles.desktopUtilityRailClassic,
+						!classicMode && compactDockMode && styles.desktopUtilityRailNonClassicDock,
+						!classicMode && compactVoiceDock && styles.desktopUtilityRailNonClassicVoiceDock,
+						classicMode && isUtilityMenuOpen && !hasActiveVoiceConnection && styles.desktopUtilityRailClassicOpen,
+						compactVoiceDock && styles.desktopUtilityRailClassicVoice,
 					)}
-
-					<Tooltip position="right" size="large" text={t`Discover`}>
-						<FocusRing offset={-2}>
-							<button
-								type="button"
-								className={clsx(
-									styles.desktopUtilityRailButton,
-									styles.desktopUtilityRailButtonDiscover,
-									isDiscoverySelected && styles.desktopUtilityRailButtonSelected,
-								)}
-								aria-label={t`Discover`}
-								aria-pressed={isDiscoverySelected}
-								onClick={navigateToDiscovery}
-							>
-								<CompassIcon
-									weight="fill"
-									className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconDiscover)}
-								/>
-							</button>
-						</FocusRing>
-					</Tooltip>
-
-					<Tooltip position="right" size="large" text={t`Plutonium`}>
-						<FocusRing offset={-2}>
-							<button
-								type="button"
-								className={clsx(
-									styles.desktopUtilityRailButton,
-									styles.desktopUtilityRailButtonPlutonium,
-									styles.desktopUtilityRailButtonPlutoniumHover,
-								)}
-								aria-label={t`Plutonium`}
-								onClick={() => PremiumModalActionCreators.open()}
-							>
-								<PlanetIcon
-									weight="fill"
-									className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconPlutonium)}
-								/>
-							</button>
-						</FocusRing>
-					</Tooltip>
-
-					<Tooltip position="right" size="large" text={t`AI Assistant`}>
-						<FocusRing offset={-2}>
-							<button
-								type="button"
-								className={clsx(styles.desktopUtilityRailButton, styles.desktopUtilityRailButtonAi)}
-								aria-label={t`AI Assistant`}
-								onClick={handleOpenAIAssistant}
-							>
-								<RobotIcon
-									weight="fill"
-									className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconAi)}
-								/>
-							</button>
-						</FocusRing>
-					</Tooltip>
-
-					<Tooltip position="right" size="large" text={t`Settings`}>
-						<FocusRing offset={-2}>
-							<button
-								type="button"
-								className={clsx(styles.desktopUtilityRailButton, styles.desktopUtilityRailButtonSettings)}
-								aria-label={t`Settings`}
-								onClick={handleOpenSettingsFromRail}
-							>
-								<GearIcon
-									weight="fill"
-									className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconSettings)}
-								/>
-							</button>
-						</FocusRing>
-					</Tooltip>
-				</div>
-			</div>
-
-			{currentUser && (
-				<div className={styles.desktopUtilityRailBottom}>
-					{hasActiveVoiceConnection && (
-						<Tooltip position="right" size="large" text={VoicePanelLayoutStore.collapsedIntoDock ? t`Open voice panel` : t`Hide voice panel`}>
-							<FocusRing offset={-2}>
-								<button
-									type="button"
-									className={clsx(
-										styles.desktopUtilityRailVoiceButton,
-										!VoicePanelLayoutStore.collapsedIntoDock && styles.desktopUtilityRailVoiceButtonActive,
-									)}
-									aria-label={VoicePanelLayoutStore.collapsedIntoDock ? t`Open voice panel` : t`Hide voice panel`}
-									aria-pressed={!VoicePanelLayoutStore.collapsedIntoDock}
-									onClick={() => VoicePanelLayoutStore.toggleCollapsedIntoDock()}
-								>
-									<WaveformIcon weight="fill" className={styles.desktopUtilityRailVoiceButtonIcon} />
-								</button>
-							</FocusRing>
-						</Tooltip>
-					)}
-					<Popout
-						render={() => <UserAreaPopout />}
-						position="right-end"
-						offsetMainAxis={10}
-						containerClass={styles.desktopUtilityRailProfilePopout}
-					>
-						<FocusRing offset={-2}>
-							<button type="button" className={styles.desktopUtilityRailVoiceHandle} aria-label={t`Profile`}>
-								<StatusAwareAvatar user={currentUser} size={36} className={styles.desktopUtilityRailAvatar} />
-							</button>
-						</FocusRing>
-					</Popout>
-					{isUserPanelRendered && (
-						<div
-							className={clsx(
-								styles.desktopUtilityRailUserPanel,
-								shouldShowUserPanel && styles.desktopUtilityRailUserPanelOpen,
-							)}
-							data-density={voicePanelDensity}
-							onMouseEnter={onDockPointerEnter}
-							onMouseLeave={onDockPointerLeave}
-							style={
-								{
-									left: `${dockAnchoredLeftPx}px`,
-									bottom: `${dockAnchoredBottomPx}px`,
-									width: `${LayoutSizingStore.sidebarWidthPx}px`,
-								} as React.CSSProperties
-							}
-						>
-							<div className={styles.desktopUtilityRailUserPanelBody}>
-								<VoiceConnectionStatus embedded={true} density={voicePanelDensity} />
+					aria-label={t`DM shortcuts`}
+				>
+					{!compactDockMode && (
+						<div className={styles.desktopUtilityRailTop}>
+							<div className={styles.desktopUtilityRailList}>
+								<Tooltip position={railTooltipPosition} size="large" text={t`Direct Messages`}>
+									<FocusRing offset={-2}>
+										<button
+											type="button"
+											className={clsx(
+												styles.desktopUtilityRailButton,
+												styles.desktopUtilityRailButtonDm,
+												isDirectMessagesSelected && styles.desktopUtilityRailButtonSelected,
+											)}
+											aria-label={t`Direct Messages`}
+											aria-pressed={isDirectMessagesSelected}
+											onClick={navigateToDirectMessages}
+										>
+											<ChatCircleDotsIcon
+												weight="fill"
+												className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconDm)}
+											/>
+										</button>
+									</FocusRing>
+								</Tooltip>
+								<Tooltip position={railTooltipPosition} size="large" text={t`Discover`}>
+									<FocusRing offset={-2}>
+										<button
+											type="button"
+											className={clsx(
+												styles.desktopUtilityRailButton,
+												styles.desktopUtilityRailButtonDiscover,
+												isDiscoverySelected && styles.desktopUtilityRailButtonSelected,
+											)}
+											aria-label={t`Discover`}
+											aria-pressed={isDiscoverySelected}
+											onClick={navigateToDiscovery}
+										>
+											<CompassIcon
+												weight="fill"
+												className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconDiscover)}
+											/>
+										</button>
+									</FocusRing>
+								</Tooltip>
+								<Tooltip position={railTooltipPosition} size="large" text={t`Plutonium`}>
+									<FocusRing offset={-2}>
+										<button
+											type="button"
+											className={clsx(
+												styles.desktopUtilityRailButton,
+												styles.desktopUtilityRailButtonPlutonium,
+												styles.desktopUtilityRailButtonPlutoniumHover,
+												showLifetimeHint && styles.desktopUtilityRailButtonPlutoniumHintVisible,
+											)}
+											aria-label={t`Plutonium`}
+											onClick={openPlutoniumFromRail}
+										>
+											<PlanetIcon
+												weight="fill"
+												className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconPlutonium)}
+											/>
+											{showLifetimeHint && (
+												<span className={styles.desktopUtilityRailPlutoniumHint}>
+													{t`Lifetime subscription is now available`}
+												</span>
+											)}
+										</button>
+									</FocusRing>
+								</Tooltip>
+								<Tooltip position={railTooltipPosition} size="large" text={t`Settings`}>
+									<FocusRing offset={-2}>
+										<button
+											type="button"
+											className={clsx(styles.desktopUtilityRailButton, styles.desktopUtilityRailButtonSettings)}
+											aria-label={t`Settings`}
+											onClick={handleOpenSettingsFromRail}
+										>
+											<GearIcon
+												weight="fill"
+												className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconSettings)}
+											/>
+											{showSettingsDot && <span className={styles.desktopUtilityRailSettingsDot} aria-hidden="true" />}
+										</button>
+									</FocusRing>
+								</Tooltip>
 							</div>
 						</div>
 					)}
+			{currentUser && (
+				<div
+					className={clsx(
+						styles.desktopUtilityRailBottom,
+						isUtilityMenuOpen && styles.desktopUtilityRailBottomOpen,
+						hasActiveVoiceConnection && styles.desktopUtilityRailBottomVoice,
+					)}
+				>
+					<div className={styles.desktopUtilityRailIdentityRow}>
+					<div className={styles.desktopUtilityRailAvatarStack}>
+						<Popout
+							render={() => <UserAreaPopout />}
+							position="right-end"
+							offsetMainAxis={10}
+							containerClass={styles.desktopUtilityRailProfilePopout}
+						>
+							<FocusRing offset={-2}>
+								<button type="button" className={styles.desktopUtilityRailVoiceHandle} aria-label={t`Profile`}>
+									<StatusAwareAvatar
+										user={currentUser}
+										size={compactDockMode ? 32 : 36}
+										className={styles.desktopUtilityRailAvatar}
+										statusScale={compactDockMode ? 0.78 : undefined}
+									/>
+								</button>
+							</FocusRing>
+						</Popout>
+					</div>
+
+					{compactVoiceDock && (
+						<Popout
+							render={() => <VoiceDetailsPopout compact={true} />}
+							position="top"
+							offsetMainAxis={12}
+						>
+							<FocusRing offset={-2}>
+								<button
+									type="button"
+									className={styles.desktopUtilityRailMenuPing}
+									aria-label={t`Voice connection details`}
+								>
+									{voicePingLabel}
+								</button>
+							</FocusRing>
+						</Popout>
+					)}
+
+					{compactDockMode && (
+						<div
+							className={clsx(
+								styles.desktopUtilityRailMiddleSlot,
+								hasActiveVoiceConnection && styles.desktopUtilityRailMiddleSlotVoice,
+							)}
+						>
+							{!hasActiveVoiceConnection && currentUserId && (
+								<CustomStatusDisplay
+									userId={currentUserId}
+									className={clsx(
+										styles.desktopUtilityRailStatusText,
+										isUtilityMenuOpen && styles.desktopUtilityRailStatusTextHidden,
+									)}
+									emojiClassName={styles.desktopUtilityRailStatusEmoji}
+									showText={true}
+									showTooltip={!isUtilityMenuOpen}
+									maxLines={1}
+									constrained
+									showPlaceholder
+									isEditable
+									onEdit={handleOpenCustomStatusFromDock}
+								/>
+							)}
+
+							{hasActiveVoiceConnection && (
+								<div className={styles.desktopUtilityRailInlineVoice}>
+									<VoiceConnectionStatus embedded={true} density={voicePanelDensity} dockExpanded={true} />
+								</div>
+							)}
+
+							{isUtilityMenuOpen && (
+								<div
+									className={clsx(
+										styles.desktopUtilityRailMenuGrid,
+										hasActiveVoiceConnection && styles.desktopUtilityRailMenuGridVoice,
+									)}
+								>
+							<Tooltip position="top" size="large" text={t`Direct Messages`}>
+								<FocusRing offset={-2}>
+									<button
+										type="button"
+										className={clsx(
+											styles.desktopUtilityRailButton,
+											styles.desktopUtilityRailButtonDm,
+											isDirectMessagesSelected && styles.desktopUtilityRailButtonSelected,
+										)}
+										aria-label={t`Direct Messages`}
+										aria-pressed={isDirectMessagesSelected}
+										onClick={() => {
+											setUtilityMenuOpen(false);
+											navigateToDirectMessages();
+										}}
+									>
+										<ChatCircleDotsIcon
+											weight="fill"
+											className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconDm)}
+										/>
+									</button>
+								</FocusRing>
+							</Tooltip>
+							<Tooltip position="top" size="large" text={t`Discover`}>
+								<FocusRing offset={-2}>
+									<button
+										type="button"
+										className={clsx(
+											styles.desktopUtilityRailButton,
+											styles.desktopUtilityRailButtonDiscover,
+											isDiscoverySelected && styles.desktopUtilityRailButtonSelected,
+										)}
+										aria-label={t`Discover`}
+										aria-pressed={isDiscoverySelected}
+										onClick={() => {
+											setUtilityMenuOpen(false);
+											navigateToDiscovery();
+										}}
+									>
+										<CompassIcon
+											weight="fill"
+											className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconDiscover)}
+										/>
+									</button>
+								</FocusRing>
+							</Tooltip>
+							<Tooltip position="top" size="large" text={t`Plutonium`}>
+								<FocusRing offset={-2}>
+									<button
+										type="button"
+										className={clsx(
+											styles.desktopUtilityRailButton,
+											styles.desktopUtilityRailButtonPlutonium,
+											styles.desktopUtilityRailButtonPlutoniumHover,
+											showLifetimeHint && styles.desktopUtilityRailButtonPlutoniumHintVisible,
+										)}
+										aria-label={t`Plutonium`}
+										onClick={openPlutoniumFromRail}
+									>
+										<PlanetIcon
+											weight="fill"
+											className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconPlutonium)}
+										/>
+										{showLifetimeHint && (
+											<span className={styles.desktopUtilityRailPlutoniumHint}>
+												{t`Lifetime subscription is now available`}
+											</span>
+										)}
+									</button>
+								</FocusRing>
+							</Tooltip>
+							<Tooltip position="top" size="large" text={t`Settings`}>
+								<FocusRing offset={-2}>
+									<button
+										type="button"
+										className={clsx(styles.desktopUtilityRailButton, styles.desktopUtilityRailButtonSettings)}
+										aria-label={t`Settings`}
+										onClick={handleOpenSettingsFromRail}
+									>
+										<GearIcon
+											weight="fill"
+											className={clsx(styles.desktopUtilityRailIcon, styles.desktopUtilityRailIconSettings)}
+										/>
+										{showSettingsDot && <span className={styles.desktopUtilityRailSettingsDot} aria-hidden="true" />}
+									</button>
+								</FocusRing>
+							</Tooltip>
+								</div>
+							)}
+						</div>
+					)}
+
+					{compactVoiceDock && (
+						<>
+							<Tooltip position={railTooltipPosition} size="large" text={muteButtonLabel}>
+								<FocusRing offset={-2} enabled={!isVoiceMuteDisabled}>
+									<button
+										type="button"
+											className={clsx(
+												styles.desktopUtilityRailAudioQuickButton,
+												styles.desktopUtilityRailAudioQuickButtonMute,
+												(isSelfMuted || isGuildMuted) && styles.desktopUtilityRailAudioQuickButtonMuted,
+												isVoiceMuteDisabled && styles.desktopUtilityRailAudioQuickButtonDisabled,
+											)}
+										onClick={handleToggleVoiceMute}
+										aria-label={muteButtonLabel}
+										aria-pressed={isSelfMuted || isGuildMuted}
+										disabled={isVoiceMuteDisabled}
+									>
+										{isSelfMuted || isGuildMuted ? (
+											<MicrophoneSlashIcon weight="fill" className={styles.desktopUtilityRailAudioQuickIcon} />
+										) : (
+											<MicrophoneIcon weight="fill" className={styles.desktopUtilityRailAudioQuickIcon} />
+										)}
+									</button>
+								</FocusRing>
+							</Tooltip>
+							<Tooltip position={railTooltipPosition} size="large" text={deafenButtonLabel}>
+								<FocusRing offset={-2} enabled={!isVoiceDeafenDisabled}>
+									<button
+										type="button"
+											className={clsx(
+												styles.desktopUtilityRailAudioQuickButton,
+												styles.desktopUtilityRailAudioQuickButtonDeafen,
+												(isSelfDeafened || isGuildDeafened) && styles.desktopUtilityRailAudioQuickButtonDeafened,
+												isVoiceDeafenDisabled && styles.desktopUtilityRailAudioQuickButtonDisabled,
+											)}
+										onClick={handleToggleVoiceDeafen}
+										aria-label={deafenButtonLabel}
+										aria-pressed={isSelfDeafened || isGuildDeafened}
+										disabled={isVoiceDeafenDisabled}
+									>
+										{isSelfDeafened || isGuildDeafened ? (
+											<SpeakerSlashIcon weight="fill" className={styles.desktopUtilityRailAudioQuickIcon} />
+										) : (
+											<SpeakerHighIcon weight="fill" className={styles.desktopUtilityRailAudioQuickIcon} />
+										)}
+									</button>
+								</FocusRing>
+							</Tooltip>
+						</>
+					)}
+
+					{compactDockMode && (
+						<Tooltip position={railTooltipPosition} size="large" text={t`More`}>
+							<FocusRing offset={-2}>
+								<button
+									type="button"
+									className={clsx(
+										styles.desktopUtilityRailMoreButton,
+										hasActiveVoiceConnection && styles.desktopUtilityRailMoreButtonVoice,
+										isUtilityMenuOpen && styles.desktopUtilityRailMoreButtonOpen,
+									)}
+									aria-label={t`More`}
+									aria-expanded={isUtilityMenuOpen}
+									onClick={() => setUtilityMenuOpen((open) => !open)}
+								>
+									<DotsThreeIcon weight="bold" className={styles.desktopUtilityRailMoreIcon} />
+								</button>
+							</FocusRing>
+						</Tooltip>
+					)}
+					</div>
 				</div>
 			)}
 		</aside>
@@ -781,6 +1026,7 @@ const GuildList = observer(({desktopDockEnabled = false, onDockPointerEnter, onD
 		>
 			<div className={clsx(styles.guildListContent, isDesktopDock && styles.guildListContentDocked)}>
 				<div className={clsx(styles.guildListTopSection, isDesktopDock && styles.guildListTopSectionDocked)}>
+					{mobileLayout.enabled && <MobileNavigationMenuButton className={styles.guildListMobileMenuButton} />}
 					{mobileLayout.enabled && <AstralButton isDocked={isDesktopDock} />}
 					{mobileLayout.enabled && (
 						<PlutoniumButton
@@ -952,6 +1198,7 @@ const GuildList = observer(({desktopDockEnabled = false, onDockPointerEnter, onD
 								<DndContext
 									modifiers={[isDesktopDock ? restrictToHorizontalAxis : restrictToVerticalAxis]}
 									onDragEnd={handleDragEnd}
+									onDragCancel={() => setIsDragging(false)}
 									onDragStart={() => setIsDragging(true)}
 									sensors={sensors}
 								>
@@ -998,15 +1245,15 @@ const GuildList = observer(({desktopDockEnabled = false, onDockPointerEnter, onD
 					)}
 
 					{shouldShowEmptyStateDivider && <div className={styles.guildDivider} />}
-
-					{!isDesktopDock && (
-						<>
-							<AddGuildButton />
-							{showDownloadButton && <DownloadButton />}
-							<HelpButton />
-						</>
-					)}
 				</div>
+
+				{!isDesktopDock && (
+					<div className={styles.guildListUtilitySection}>
+						<AddGuildButton />
+						{showDownloadButton && <DownloadButton />}
+						<HelpButton />
+					</div>
+				)}
 
 				{isDesktopDock && (
 					<div className={styles.guildDockUtilitySection}>
@@ -1026,6 +1273,44 @@ const GuildList = observer(({desktopDockEnabled = false, onDockPointerEnter, onD
 	);
 });
 
+export const ClassicCommunityRail = observer(({embedded = false}: {embedded?: boolean}) => {
+	const {t} = useLingui();
+	const isCollapsed = AccessibilityStore.classicCommunityListCollapsed;
+
+	const handleToggle = React.useCallback(() => {
+		AccessibilityActionCreators.update({classicCommunityListCollapsed: !isCollapsed});
+	}, [isCollapsed]);
+
+	return (
+		<aside
+			className={clsx(
+				styles.classicCommunityRail,
+				embedded && styles.classicCommunityRailEmbedded,
+				isCollapsed && styles.classicCommunityRailCollapsed,
+			)}
+			aria-label={t`Communities`}
+			data-collapsed={isCollapsed ? '1' : '0'}
+		>
+			<div className={styles.classicCommunityRailBody} aria-hidden={isCollapsed}>
+				<GuildList />
+			</div>
+			<button
+				type="button"
+				className={styles.classicCommunityRailToggle}
+				onClick={handleToggle}
+				aria-label={isCollapsed ? t`Show communities` : t`Hide communities`}
+				aria-expanded={!isCollapsed}
+			>
+				{isCollapsed ? (
+					<CaretRightIcon weight="bold" className={styles.classicCommunityRailToggleIcon} />
+				) : (
+					<CaretLeftIcon weight="bold" className={styles.classicCommunityRailToggleIcon} />
+				)}
+			</button>
+		</aside>
+	);
+});
+
 export const GuildsLayout = observer(({children}: {children: React.ReactNode}) => {
 	const {t} = useLingui();
 	const mobileLayout = MobileLayoutStore;
@@ -1037,9 +1322,16 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 	const isDesktopDiscoveryRoute = !mobileLayout.enabled && (
 		location.pathname === Routes.DISCOVERY || location.pathname.startsWith(`${Routes.DISCOVERY}/`)
 	);
+	const isDesktopUserProfileRoute = !mobileLayout.enabled && Routes.isUserProfileRoute(location.pathname);
 	const isCommunityRoute = getSelectedGuildIdFromPath(location.pathname) !== null;
+	const isClassicCommunityList = !mobileLayout.enabled && AccessibilityStore.useClassicCommunityList;
+	const isClassicDmLayoutRoute =
+		isClassicCommunityList &&
+		(Routes.isDMRoute(location.pathname) ||
+			location.pathname === Routes.BOOKMARKS ||
+			location.pathname === Routes.MENTIONS);
 	const isChannelRoute = Routes.isChannelRoute(location.pathname);
-	const isDesktopDockRoute = !mobileLayout.enabled && (isChannelRoute || isDesktopDiscoveryRoute);
+	const isDesktopDockRoute = !mobileLayout.enabled && (isChannelRoute || isDesktopDiscoveryRoute || isDesktopUserProfileRoute);
 	const hasOpenContextMenu = Boolean(ContextMenuStore.contextMenu);
 	const hasOpenModal = ModalStore.hasModalOpen();
 	const shouldPauseDockInteractions = hasOpenModal;
@@ -1048,13 +1340,19 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 	const isConnectedGuildVoiceCallView = Boolean(
 		!mobileLayout.enabled &&
 			selectedGuildChannelId &&
-			selectedGuildChannel?.type === ChannelTypes.GUILD_VOICE &&
+			selectedGuildChannel &&
+			isGuildRtcChannelType(selectedGuildChannel.type) &&
 			MediaEngineStore.connected &&
 			MediaEngineStore.room &&
 			MediaEngineStore.guildId === selectedGuildChannel.guildId &&
 			MediaEngineStore.channelId === selectedGuildChannelId,
 	);
-	const shouldUseDesktopDock = isDesktopDockRoute;
+	const hasActiveVoiceConnection = Boolean(
+		!mobileLayout.enabled &&
+			(MediaEngineStore.connected || MediaEngineStore.connecting || MediaEngineStore.reconnecting) &&
+			MediaEngineStore.channelId,
+	);
+	const shouldUseDesktopDock = isDesktopDockRoute && !isClassicCommunityList;
 	const shouldPinDesktopDock =
 		shouldUseDesktopDock &&
 		!mobileLayout.enabled &&
@@ -1070,11 +1368,13 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 	const isCommunitySidebarCollapsed = !mobileLayout.enabled && isCommunityRoute && ChannelListLayoutStore.getSidebarCollapsed();
 	const isMobileGuildRootRoute =
 		Routes.isGuildChannelRoute(location.pathname) && location.pathname.split('/').length === 3;
+	const isMobileGuildChannelDetailRoute =
+		mobileLayout.enabled &&
+		Routes.isGuildChannelRoute(location.pathname) &&
+		location.pathname.split('/').length > 3;
 	const showGuildListOnMobile =
 		mobileLayout.enabled &&
-		(location.pathname === Routes.DISCOVERY || isMobileGuildRootRoute);
-
-	const showBottomNav = mobileLayout.enabled && Routes.isMobileBottomNavRoute(location.pathname);
+		(location.pathname === Routes.DISCOVERY || isMobileGuildRootRoute || isMobileGuildChannelDetailRoute);
 
 	const nagbarConditions = useNagbarConditions();
 	const activeNagbars = useActiveNagbars(nagbarConditions);
@@ -1107,8 +1407,8 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 	const guildChannelSidebarWidth =
 		!mobileLayout.enabled && isCommunityRoute
 			? isCommunitySidebarCollapsed
-				? 0
-				: LayoutSizingStore.sidebarWidthPx
+				? '0px'
+				: 'var(--layout-sidebar-width)'
 			: null;
 
 	React.useEffect(() => {
@@ -1157,6 +1457,15 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 			className={clsx(
 				styles.guildsLayoutContainer,
 				!mobileLayout.enabled && styles.guildsLayoutContainerDesktopUtilityRail,
+				!isClassicCommunityList &&
+					shouldUseDesktopDock &&
+					styles.guildsLayoutContainerDesktopUtilityRailCompactDock,
+				isClassicCommunityList && styles.guildsLayoutContainerClassicCommunities,
+				isClassicCommunityList && hasActiveVoiceConnection && styles.guildsLayoutContainerClassicCommunitiesVoiceDock,
+				isClassicCommunityList &&
+					AccessibilityStore.classicCommunityListCollapsed &&
+					styles.guildsLayoutContainerClassicCommunitiesCollapsed,
+				isClassicDmLayoutRoute && styles.guildsLayoutContainerClassicDm,
 				shouldUseDesktopDock && styles.guildsLayoutContainerDesktopDock,
 				shouldShowDesktopDock && styles.guildsLayoutContainerDesktopDockVisible,
 				isDesktopDockExpanded && styles.guildsLayoutContainerDesktopDockExpanded,
@@ -1164,27 +1473,22 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 				shouldPinDesktopDock && styles.guildsLayoutContainerDesktopDockPinned,
 				isCommunitySidebarCollapsed && styles.guildsLayoutCommunitySidebarCollapsed,
 				mobileLayout.enabled && !showGuildListOnMobile && styles.guildsLayoutContainerMobile,
-				showBottomNav && styles.guildsLayoutReserveMobileBottomNav,
 			)}
 			style={
 				guildChannelSidebarWidth !== null
 					? ({
-							'--guild-channel-sidebar-width': `${guildChannelSidebarWidth}px`,
-							/*
-							 * Keep the guild channel sidebar and voice surfaces on the same
-						 * width variable so popouts/pills that read --layout-sidebar-width
-						 * do not drift horizontally from the sidebar shell.
-						 */
-							'--layout-sidebar-width': `${guildChannelSidebarWidth}px`,
+							'--guild-channel-sidebar-width': guildChannelSidebarWidth,
 							'--layout-voice-connection-height': '0px',
 						} as React.CSSProperties)
 					: ({
 							'--layout-voice-connection-height': '0px',
 						} as React.CSSProperties)
 			}
-		>
+			>
 			{!mobileLayout.enabled && (
 				<DesktopUtilityRail
+					classicMode={isClassicCommunityList}
+					compactDockMode={isClassicCommunityList || shouldUseDesktopDock}
 					onDockPointerEnter={handleDockPointerEnter}
 					onDockPointerLeave={handleDockPointerLeave}
 				/>
@@ -1233,14 +1537,23 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 					/>
 				</div>
 			)}
-			{!mobileLayout.enabled && !shouldUseDesktopDock && <GuildList />}
+			{!mobileLayout.enabled && isClassicCommunityList && <ClassicCommunityRail />}
+			{!mobileLayout.enabled && !shouldUseDesktopDock && !isClassicCommunityList && <GuildList />}
 			{mobileLayout.enabled && showGuildListOnMobile && <GuildList />}
 			<div
 				className={clsx(
 					styles.contentContainer,
 					shouldUseDesktopDock && styles.contentContainerDesktopDock,
+					isClassicCommunityList && styles.contentContainerClassicCommunities,
+					isClassicDmLayoutRoute && styles.contentContainerClassicDm,
 					mobileLayout.enabled && !showGuildListOnMobile && styles.contentContainerMobile,
+					isMobileGuildChannelDetailRoute && styles.contentContainerMobile,
 				)}
+				style={
+					isMobileGuildChannelDetailRoute
+						? ({zIndex: 'calc(var(--z-index-elevated-1) + 1)'} as React.CSSProperties)
+						: undefined
+				}
 			>
 				<TopNagbarContext.Provider value={activeNagbars.length > 0}>
 					<OutlineFrame
@@ -1259,6 +1572,7 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 					</OutlineFrame>
 				</TopNagbarContext.Provider>
 			</div>
+			<MobileFloatingVoiceWindow currentPathname={location.pathname} />
 		</div>
 	);
 });

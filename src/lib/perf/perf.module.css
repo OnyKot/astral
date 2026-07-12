@@ -1,0 +1,58 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/*
+ * `content-visibility: auto` skips layout + paint of off-screen subtrees
+ * while keeping them in the DOM (so querySelector/anchors still work). This
+ * is the single biggest cheap win for the flat-rendered lists across the
+ * interface — the browser does the work the app would otherwise need a
+ * virtualizer for, with zero risk to ScrollManager's anchor/jump behaviour.
+ *
+ * `contain-intrinsic-size` tells the browser the subtree's size while it is
+ * skipped, so the scrollbar stays accurate and the page doesn't jump when the
+ * content becomes visible. Each consumer overrides --cv-intrinsic-h to its
+ * item's real height.
+ *
+ * The `cvAuto` class is the base; `cvAutoGroup` / `cvAutoRow` set sensible
+ * default intrinsic heights for message groups and list rows respectively.
+ */
+
+.cvAuto {
+	content-visibility: auto;
+	contain-intrinsic-size: auto var(--cv-intrinsic-h, 64px);
+}
+
+.cvAutoGroup {
+	content-visibility: auto;
+	contain-intrinsic-size: auto var(--cv-intrinsic-h, 96px);
+}
+
+.cvAutoRow {
+	content-visibility: auto;
+	contain-intrinsic-size: auto var(--cv-intrinsic-h, 44px);
+}
+
+/*
+ * `contain: content` is a lighter containment hint for items that don't need
+ * the full content-visibility skip (e.g. very small lists where the skip
+ * overhead isn't worth it) but still benefit from layout/paint isolation.
+ */
+.cvContain {
+	contain: content;
+}

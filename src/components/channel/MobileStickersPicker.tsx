@@ -30,7 +30,6 @@ import {useStickerCategories} from '~/components/channel/sticker-picker/hooks/us
 import {useVirtualRows} from '~/components/channel/sticker-picker/hooks/useVirtualRows';
 import {StickerPickerCategoryList} from '~/components/channel/sticker-picker/StickerPickerCategoryList';
 import {STICKERS_PER_ROW_MOBILE} from '~/components/channel/sticker-picker/StickerPickerConstants';
-import {StickerPickerInspector} from '~/components/channel/sticker-picker/StickerPickerInspector';
 import {StickerPickerSearchBar} from '~/components/channel/sticker-picker/StickerPickerSearchBar';
 import {VirtualRowRenderer} from '~/components/channel/sticker-picker/VirtualRow';
 import {
@@ -85,7 +84,7 @@ export const MobileStickersPicker = observer(
 			return ComponentDispatch.subscribe('STICKER_PICKER_RERENDER', forceUpdate);
 		});
 
-		useSearchInputAutofocus(searchInputRef);
+		useSearchInputAutofocus(searchInputRef, {initialFocus: false});
 
 		const {favoriteStickers, frequentlyUsedStickers, stickersByGuildId} = useStickerCategories(
 			allStickersForCategories,
@@ -221,7 +220,6 @@ export const MobileStickersPicker = observer(
 							horizontal={true}
 						/>
 					</div>
-					<StickerPickerInspector hoveredSticker={hoveredSticker} />
 				</div>
 			</div>
 		);

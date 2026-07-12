@@ -478,14 +478,6 @@ export const ThemeTabContent: React.FC<ThemeTabContentProps> = observer(({mode =
 					deprecated: false,
 				},
 				{
-					id: 'astral-2-old-version',
-					label: t`Astral 2.0 Old Version`,
-					description: t`Legacy neutral shell and static button motion`,
-					gradient: 'legacy',
-					buttonMotion: 'static',
-					deprecated: true,
-				},
-				{
 					id: 'neon',
 					label: t`Neon`,
 					description: t`Emerald-violet Aurora, snappy fast clicks`,
@@ -555,35 +547,35 @@ export const ThemeTabContent: React.FC<ThemeTabContentProps> = observer(({mode =
 							label: t`Clean`,
 							description: t`Clean base canvas for your own minimal chat style.`,
 						};
-					case 'classic':
-						return {
-							asset,
-							label: t`Classic glyphs`,
-							description: t`A balanced default look that keeps chat readable and calm.`,
-						};
-					case 'astral_orbit':
-						return {
-							asset,
-							label: t`Astral orbit`,
-							description: t`Soft circular rhythm for a polished personalized space.`,
-						};
 					case 'constellation':
 						return {
 							asset,
-							label: t`Constellation`,
-							description: t`Structured line style for a focused conversation tone.`,
+							label: t`Star map`,
+							description: t`High-detail space motif with a cinematic conversation mood.`,
 						};
 					case 'meteor':
 						return {
 							asset,
-							label: t`Meteor trail`,
-							description: t`Dynamic accents when you want chat to feel more active.`,
+							label: t`Magic`,
+							description: t`Decorative fantasy accents for a vivid message space.`,
 						};
 					case 'nebula_arcs':
 						return {
 							asset,
-							label: t`Nebula arcs`,
-							description: t`Calm curved forms for a softer cozy chat atmosphere.`,
+							label: t`Love`,
+							description: t`Warm romantic pattern for a softer cozy atmosphere.`,
+						};
+					case 'winter':
+						return {
+							asset,
+							label: t`Winter`,
+							description: t`Cool seasonal pattern that stays readable in all themes.`,
+						};
+					case 'zoo':
+						return {
+							asset,
+							label: t`Zoo`,
+							description: t`Playful illustrated motif with balanced visibility.`,
 						};
 					default:
 						return {
@@ -637,24 +629,8 @@ export const ThemeTabContent: React.FC<ThemeTabContentProps> = observer(({mode =
 		});
 	}, []);
 
-	const previewBackground = React.useMemo(() => {
-		if (themeGradientStyle === 'custom') {
-			return buildCustomGradientPreview(
-				customThemeGradientStart,
-				customThemeGradientMiddle,
-				customThemeGradientEnd,
-				customThemeGradientAngle,
-			);
-		}
-
-		return GRADIENT_PREVIEW_BACKGROUNDS[themeGradientStyle];
-	}, [
-		themeGradientStyle,
-		customThemeGradientStart,
-		customThemeGradientMiddle,
-		customThemeGradientEnd,
-		customThemeGradientAngle,
-	]);
+	const previewBackground =
+		'linear-gradient(180deg, color-mix(in srgb, var(--background-primary) 14%, transparent) 0%, transparent 18%, color-mix(in srgb, var(--background-secondary) 18%, transparent) 100%)';
 
 	const customGradientStartNumber =
 		cssColorStringToNumber(customThemeGradientStart) ?? cssColorStringToNumber(DEFAULT_CUSTOM_THEME_GRADIENT.start) ?? 0x1d4ed8;
@@ -714,7 +690,7 @@ export const ThemeTabContent: React.FC<ThemeTabContentProps> = observer(({mode =
 		description: string,
 		selected: boolean,
 	) => {
-		const previewTileSize = `${Math.max(132, Math.round(asset.tileSize * 0.42))}px`;
+		const previewTileSize = `${Math.max(84, Math.round(asset.tileSize * 0.75))}px`;
 		return (
 			<button
 				key={asset.id}

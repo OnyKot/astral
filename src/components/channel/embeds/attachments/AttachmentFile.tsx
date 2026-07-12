@@ -35,10 +35,15 @@ import {
 } from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
+import {useEffect, useState} from 'react';
 import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators';
+import * as MediaViewerActionCreators from '~/actions/MediaViewerActionCreators';
+import {MessageAttachmentFlags} from '~/Constants';
 import {splitFilename} from '~/components/channel/embeds/EmbedUtils';
+import {ForwardedStoryCard} from '~/components/channel/ForwardedStoryCard';
 import {useMaybeMessageViewContext} from '~/components/channel/MessageViewContext';
 import {canDeleteAttachmentUtil} from '~/components/channel/messageActionUtils';
+import {isGifType, isImageType, isVideoAttachment} from '~/components/channel/messageAttachmentUtils';
 import {MediaContextMenu} from '~/components/uikit/ContextMenu/MediaContextMenu';
 import {Tooltip} from '~/components/uikit/Tooltip/Tooltip';
 import {useDeleteAttachment} from '~/hooks/useDeleteAttachment';
@@ -48,6 +53,7 @@ import attachmentFileStyles from '~/styles/AttachmentFile.module.css';
 import messageStyles from '~/styles/Message.module.css';
 import {downloadFile} from '~/utils/FileDownloadUtils';
 import {formatFileSize} from '~/utils/FileUtils';
+import {parseForwardedStoryPreview, type ForwardedStoryPreviewData} from '~/utils/StoryForwardPayload';
 
 interface AttachmentFileProps {
 	attachment: MessageAttachment;
@@ -62,6 +68,8 @@ export const AttachmentFile = observer(({attachment, message, isPreview}: Attach
 	const fileName = attachment.title || attachment.filename;
 	const fileSize = formatFileSize(attachment.size);
 	const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
+	const [storyPreview, setStoryPreview] = useState<ForwardedStoryPreviewData | null>(null);
+	const [checkedStoryPreview, setCheckedStoryPreview] = useState(false);
 
 	const {name: fileNameWithoutExt, extension: fileExt} = splitFilename(fileName);
 
@@ -111,6 +119,19 @@ export const AttachmentFile = observer(({attachment, message, isPreview}: Attach
 		return <FileIcon size={32} />;
 	};
 
+	const imageFileExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'];
+	const isTextFile =
+		(attachment.content_type ?? '').toLowerCase().startsWith('text/') ||
+		['txt', 'md', 'markdown', 'log'].includes(fileExtension);
+	const isImageFile = isImageType(attachment.content_type) || imageFileExtensions.includes(fileExtension);
+	const isVideoFile = isVideoAttachment(attachment);
+	const canOpenPreview = !isExpired && Boolean(attachment.url) && (isImageFile || isVideoFile);
+	const mediaViewerType = isVideoFile
+		? 'video'
+		: (attachment.flags & MessageAttachmentFlags.IS_ANIMATED) !== 0 || isGifType(attachment.content_type) || fileExtension === 'gif'
+			? 'gif'
+			: 'image';
+
 	const containerStyles: React.CSSProperties = isMobile
 		? {
 				display: 'grid',
@@ -126,8 +147,73 @@ export const AttachmentFile = observer(({attachment, message, isPreview}: Attach
 
 	const handleDownload = async (e: React.MouseEvent) => {
 		e.preventDefault();
+		e.stopPropagation();
 		if (!attachment.url || isExpired) return;
 		await downloadFile(attachment.url, 'file', fileName);
+	};
+
+	useEffect(() => {
+		let cancelled = false;
+		setStoryPreview(null);
+		setCheckedStoryPreview(false);
+
+		if (!isTextFile || !attachment.url || isExpired || attachment.size > 128 * 1024) {
+			setCheckedStoryPreview(true);
+			return () => {
+				cancelled = true;
+			};
+		}
+
+		fetch(attachment.url, {credentials: 'include'})
+			.then((response) => (response.ok ? response.text() : ''))
+			.then((text) => {
+				if (cancelled) return;
+				setStoryPreview(parseForwardedStoryPreview(text));
+			})
+			.catch(() => {
+				if (!cancelled) setStoryPreview(null);
+			})
+			.finally(() => {
+				if (!cancelled) setCheckedStoryPreview(true);
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [attachment.size, attachment.url, isExpired, isTextFile]);
+
+	const handleOpenPreview = (e: React.MouseEvent | React.KeyboardEvent) => {
+		if (!canOpenPreview) return;
+		if (e.type === 'keydown') {
+			const keyEvent = e as React.KeyboardEvent;
+			if (keyEvent.key !== 'Enter' && keyEvent.key !== ' ') return;
+		}
+		e.preventDefault();
+		e.stopPropagation();
+		MediaViewerActionCreators.openMediaViewer(
+			[
+				{
+					src: attachment.proxy_url ?? attachment.url ?? '',
+					originalSrc: attachment.url ?? '',
+					naturalWidth: typeof attachment.width === 'number' ? attachment.width : isVideoFile ? 640 : 0,
+					naturalHeight: typeof attachment.height === 'number' ? attachment.height : isVideoFile ? 360 : 0,
+					type: mediaViewerType,
+					contentHash: attachment.content_hash,
+					attachmentId: attachment.id,
+					filename: attachment.filename,
+					fileSize: attachment.size,
+					duration: attachment.duration,
+					expiresAt: attachment.expires_at ?? null,
+					expired: attachment.expired ?? false,
+				},
+			],
+			0,
+			{
+				channelId: message?.channelId,
+				messageId: message?.id,
+				message,
+			},
+		);
 	};
 
 	const handleDelete = useDeleteAttachment(message, attachment.id);
@@ -156,6 +242,14 @@ export const AttachmentFile = observer(({attachment, message, isPreview}: Attach
 		));
 	};
 
+	if (storyPreview) {
+		return <ForwardedStoryCard preview={storyPreview} messageId={message?.id} channelId={message?.channelId} />;
+	}
+
+	if (isTextFile && !checkedStoryPreview && !isPreview) {
+		return null;
+	}
+
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: context menu on container is intentional
 		<div style={containerStyles} className={attachmentFileStyles.container} onContextMenu={handleContextMenu}>
@@ -169,7 +263,14 @@ export const AttachmentFile = observer(({attachment, message, isPreview}: Attach
 					<TrashIcon size={16} weight="bold" />
 				</button>
 			)}
-			<div className={attachmentFileStyles.attachmentContainer}>
+			<div
+				className={clsx(attachmentFileStyles.attachmentContainer, canOpenPreview && attachmentFileStyles.previewableContainer)}
+				onClick={handleOpenPreview}
+				onKeyDown={handleOpenPreview}
+				role={canOpenPreview ? 'button' : undefined}
+				tabIndex={canOpenPreview ? 0 : undefined}
+				aria-label={canOpenPreview ? t`Open media in full view` : undefined}
+			>
 				<div className={attachmentFileStyles.iconContainer}>{getFileTypeIcon()}</div>
 				<div className={attachmentFileStyles.fileInfoContainer}>
 					<p className={attachmentFileStyles.fileName}>

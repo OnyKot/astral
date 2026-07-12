@@ -34,9 +34,12 @@ import UserStore from '~/stores/UserStore';
 import type {VoiceState} from '~/stores/voice/MediaEngineFacade';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import * as NicknameUtils from '~/utils/NicknameUtils';
+import {getChannelListNameEffectPreset} from '~/utils/ProfileEffectResolver';
 import styles from './GroupedVoiceParticipant.module.css';
 import {VoiceParticipantItem} from './VoiceParticipantItem';
 import {VoiceStateIcons} from './VoiceStateIcons';
+
+const groupedVoiceParticipantStyles = styles as unknown as Record<string, string>;
 
 interface GroupedVoiceParticipantProps {
 	user: UserRecord;
@@ -58,6 +61,7 @@ export const GroupedVoiceParticipant = observer(function GroupedVoiceParticipant
 	const currentConnectionId = MediaEngineStore.connectionId;
 	const localSelfVideo = LocalVoiceStateStore.selfVideo;
 	const localSelfStream = LocalVoiceStateStore.selfStream;
+	const channelListNameEffect = getChannelListNameEffectPreset(user);
 
 	const toggleExpanded = React.useCallback(() => setIsExpanded((prev) => !prev), []);
 
@@ -80,6 +84,9 @@ export const GroupedVoiceParticipant = observer(function GroupedVoiceParticipant
 	);
 
 	const connectionCount = voiceStates.length;
+	const displayName = NicknameUtils.getNickname(user);
+	const openProfileAriaLabel = t`Open profile for ${displayName}`;
+	const toggleDevicesLabel = isExpanded ? t`Collapse devices` : t`Expand devices`;
 
 	const stateAgg = React.useMemo(() => {
 		let anyCameraOn = false;
@@ -138,20 +145,28 @@ export const GroupedVoiceParticipant = observer(function GroupedVoiceParticipant
 					className={clsx(styles.participantButton, stateAgg.anySpeaking && styles.participantButtonSpeaking)}
 					role="button"
 					tabIndex={0}
-					aria-label={`Open profile for ${NicknameUtils.getNickname(user)}`}
+					aria-label={openProfileAriaLabel}
 					onContextMenu={handleContextMenu}
 				>
 					<div className={styles.avatarAndName}>
-						<AvatarWithPresence user={user} size={24} speaking={stateAgg.anySpeaking} guildId={guildId} />
+						<AvatarWithPresence
+							user={user}
+							size={24}
+							speaking={stateAgg.anySpeaking}
+							guildId={guildId}
+							disablePresence={true}
+						/>
 						<div className={styles.nameContainer}>
 							<span
 								className={clsx(
 									styles.participantName,
 									stateAgg.anySpeaking && styles.participantNameSpeaking,
 									isCurrentUser && !stateAgg.anySpeaking && styles.participantNameCurrent,
+									channelListNameEffect !== 'none' &&
+										groupedVoiceParticipantStyles[`participantNameEffect_${channelListNameEffect}`],
 								)}
 							>
-								{NicknameUtils.getNickname(user)}
+								{displayName}
 							</span>
 							{connectionCount > 1 && (
 								<Tooltip text={connectionCount === 1 ? t`${connectionCount} device` : t`${connectionCount} devices`}>
@@ -172,11 +187,11 @@ export const GroupedVoiceParticipant = observer(function GroupedVoiceParticipant
 							className={styles.flexShrinkZero}
 						/>
 
-						<Tooltip text={isExpanded ? 'Collapse devices' : 'Expand devices'}>
+						<Tooltip text={toggleDevicesLabel}>
 							<FocusRing offset={-2}>
 								<button
 									type="button"
-									aria-label={isExpanded ? 'Collapse devices' : 'Expand devices'}
+									aria-label={toggleDevicesLabel}
 									aria-expanded={isExpanded}
 									onClick={(e) => {
 										e.stopPropagation();

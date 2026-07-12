@@ -30,6 +30,7 @@ interface RelationshipRemovePayload {
 export function handleRelationshipRemove(data: RelationshipRemovePayload, _context: GatewayHandlerContext): void {
 	RelationshipStore.removeRelationship(data.id);
 	MemberSearchStore.handleFriendshipChange(data.id, false);
-	MessageStore.handleRelationshipUpdate();
+	// Передаём userId для оптимизации через обратный индекс
+	MessageStore.handleRelationshipUpdate({userId: data.id});
 	QuickSwitcherStore.recomputeIfOpen();
 }

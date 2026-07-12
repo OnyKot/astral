@@ -35,7 +35,8 @@
 	padding: 2px;
 	background-color: var(--background-primary);
 	border: 1px solid var(--background-header-secondary);
-	border-radius: 8px;
+	border-radius: 0.7rem;
+	box-shadow: 0 8px 22px rgb(0 0 0 / 0.18);
 	user-select: none;
 	-webkit-user-select: none;
 }
@@ -48,9 +49,13 @@
 	padding: 4px;
 	height: 30px;
 	min-width: 30px;
-	border-radius: 6px;
+	border-radius: 0.48rem;
 	color: var(--text-tertiary);
 	cursor: pointer;
+	transition:
+		background-color var(--motion-dur-short) var(--motion-ease-snap),
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 /*
@@ -70,6 +75,11 @@
 .button.active {
 	color: var(--text-primary);
 	background-color: var(--background-modifier-hover);
+	transform: translateY(-1px);
+}
+
+.button:active {
+	transform: scale(0.94);
 }
 
 .button.danger {
@@ -98,10 +108,23 @@
 .emojiImage {
 	height: 1.25rem;
 	width: 1.25rem;
+	object-fit: contain;
+	transform: scale(var(--emoji-visual-scale, 1));
+	transform-origin: center;
 }
 
 span.emojiImage {
 	font-size: 1.25rem;
 	line-height: 1;
 	font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.button {
+		transition: background-color var(--motion-dur-short) var(--motion-ease-snap);
+	}
+
+	.button:active {
+		transform: none;
+	}
 }

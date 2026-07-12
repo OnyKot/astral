@@ -14,7 +14,7 @@ const stableAppUrl = (
   process.env.ASTRAL_ELECTRON_STABLE_APP_URL ??
   'https://astraof.com'
 ).replace(/\/+$/, '');
-const stableLoginUrl = `${stableAppUrl}/login`;
+const stableStartUrl = `${stableAppUrl}/channels/@me`;
 const allowNavigation = splitList(process.env.ASTRAL_CAPACITOR_ALLOW_NAVIGATION, [
   'astraof.com',
   '*.astraof.com',
@@ -39,7 +39,7 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: true,
   },
   server: {
-    url: stableLoginUrl,
+    url: stableStartUrl,
     cleartext: false,
     allowNavigation,
   },

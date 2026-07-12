@@ -60,8 +60,26 @@ class MessageStore {
 	updateCounter = 0;
 	private pendingFullHydration = false;
 
+	// Обратный индекс: userId -> Set<channelId> для O(k) обновлений вместо O(N)
+	private userChannelIndex = new Map<string, Set<ChannelId>>();
+
 	constructor() {
 		makeAutoObservable(this, {}, {autoBind: true});
+
+		reaction(
+			() => {
+				const channelId = SelectedChannelStore.currentChannelId;
+				return {
+					channelId,
+					connected: ConnectionStore.isConnected,
+					channelReady: channelId ? ChannelStore.getChannel(channelId) != null : false,
+				};
+			},
+			({channelId, connected, channelReady}) => {
+				if (!channelId || !connected || !channelReady) return;
+				this.hydrateSelectedChannelIfNeeded(channelId);
+			},
+		);
 	}
 
 	get version(): number {
@@ -77,8 +95,16 @@ class MessageStore {
 		return ChannelMessages.getOrCreate(channelId);
 	}
 
+	peekMessages(channelId: ChannelId): ChannelMessages | undefined {
+		return ChannelMessages.get(channelId);
+	}
+
 	getMessage(channelId: ChannelId, messageId: MessageId): MessageRecord | undefined {
 		return ChannelMessages.getOrCreate(channelId).get(messageId);
+	}
+
+	peekMessage(channelId: ChannelId, messageId: MessageId): MessageRecord | undefined {
+		return ChannelMessages.get(channelId)?.get(messageId);
 	}
 
 	getLastEditableMessage(channelId: ChannelId): MessageRecord | undefined {
@@ -101,6 +127,34 @@ class MessageStore {
 		const channel = ChannelMessages.get(channelId);
 		return channel?.hasPresent() ?? false;
 	}
+
+	// --- Обратный индекс (userId -> channelIds) ---
+
+	private indexMessage(message: Message, channelId: ChannelId): void {
+		const userId = message.author?.id;
+		if (!userId) return;
+
+		if (!this.userChannelIndex.has(userId)) {
+			this.userChannelIndex.set(userId, new Set());
+		}
+		this.userChannelIndex.get(userId)!.add(channelId);
+	}
+
+	private unindexMessage(message: Message, channelId: ChannelId): void {
+		const userId = message.author?.id;
+		if (!userId) return;
+
+		this.userChannelIndex.get(userId)?.delete(channelId);
+		if (this.userChannelIndex.get(userId)?.size === 0) {
+			this.userChannelIndex.delete(userId);
+		}
+	}
+
+	private getChannelsForUser(userId: string): Set<ChannelId> {
+		return this.userChannelIndex.get(userId) ?? new Set();
+	}
+
+	// --- Конец обратного индекса ---
 
 	@action
 	handleConnectionClosed(): boolean {
@@ -157,8 +211,7 @@ class MessageStore {
 				this.startChannelHydration(messages.channelId, {forceScrollToBottom: this.pendingFullHydration});
 				didHydrateSelectedChannel = true;
 			} else {
-				ChannelMessages.clear(messages.channelId);
-				DimensionStore.clearChannelDimensions(messages.channelId);
+				ChannelMessages.commit(messages.mutate({ready: messages.length > 0 || messages.ready, loadingMore: false}));
 			}
 		});
 
@@ -182,19 +235,35 @@ class MessageStore {
 		return didHydrateSelectedChannel;
 	}
 
-	private startChannelHydration(channelId: ChannelId, options: {forceScrollToBottom?: boolean} = {}): void {
-		if (!ChannelStore.getChannel(channelId)) return;
+	private startChannelHydration(channelId: ChannelId, options: {forceScrollToBottom?: boolean} = {}): boolean {
+		if (!ChannelStore.getChannel(channelId)) return false;
 
 		const {forceScrollToBottom = false} = options;
 		const messages = ChannelMessages.getOrCreate(channelId);
+		const shouldKeepVisibleMessages = messages.ready && messages.length > 0;
 
-		ChannelMessages.commit(messages.mutate({loadingMore: true, ready: false, error: false}));
+		ChannelMessages.commit(messages.mutate({loadingMore: true, ready: shouldKeepVisibleMessages, error: false}));
 
 		if (forceScrollToBottom) {
 			DimensionStore.updateChannelDimensions(channelId, 1, 1, 0);
 		}
 
 		MessageActionCreators.fetchMessages(channelId, null, null, MAX_MESSAGES_PER_CHANNEL);
+		return true;
+	}
+
+	@action
+	private hydrateSelectedChannelIfNeeded(channelId: ChannelId): boolean {
+		const messages = ChannelMessages.getOrCreate(channelId);
+		if (messages.ready || messages.loadingMore || messages.error) {
+			return false;
+		}
+
+		const didStartHydration = this.startChannelHydration(channelId);
+		if (didStartHydration) {
+			this.notifyChange();
+		}
+		return didStartHydration;
 	}
 
 	@action
@@ -385,6 +454,14 @@ class MessageStore {
 			hasMoreAfter: action.hasMoreAfter,
 			cached: action.cached,
 		});
+
+		// Индексируем сообщения для обратного индекса
+		if (!action.cached) {
+			for (const msg of action.messages) {
+				this.indexMessage(msg, action.channelId);
+			}
+		}
+
 		ChannelMessages.commit(messages);
 		this.notifyChange();
 		return false;
@@ -407,8 +484,14 @@ class MessageStore {
 			return false;
 		}
 
-		const updated = existing.receiveMessage(action.message, DimensionStore.isAtBottom(action.channelId));
+		const isCurrentUserMessage = action.message.author.id === UserStore.currentUser?.id;
+		const shouldKeepBottom = isCurrentUserMessage || DimensionStore.isAtBottom(action.channelId);
+		const updated = existing.receiveMessage(action.message, shouldKeepBottom);
 		ChannelMessages.commit(updated);
+
+		// Индексируем для обратного индекса
+		this.indexMessage(action.message, action.channelId);
+
 		this.notifyChange();
 		return false;
 	}
@@ -593,7 +676,31 @@ class MessageStore {
 	}
 
 	@action
-	handleRelationshipUpdate(): boolean {
+	handleRelationshipUpdate(action?: {userId?: string}): boolean {
+		// Если знаем конкретного пользователя — точечное обновление через обратный индекс
+		if (action?.userId) {
+			const affectedChannels = this.getChannelsForUser(action.userId);
+			if (affectedChannels.size === 0) return false;
+
+			const isBlocked = RelationshipStore.isBlocked(action.userId);
+
+			for (const channelId of affectedChannels) {
+				const messages = ChannelMessages.get(channelId);
+				if (!messages) continue;
+
+				const updatedMessages = messages.map((message) => {
+					if (message.author.id !== action.userId) return message;
+					return message.withUpdates({blocked: isBlocked});
+				});
+
+				ChannelMessages.commit(messages.reset(updatedMessages));
+			}
+
+			this.notifyChange();
+			return true;
+		}
+
+		// Полный пересчёт как fallback (когда не знаем userId)
 		ChannelMessages.forEach((messages) => {
 			const updatedMessages = messages.map((message) =>
 				message.withUpdates({

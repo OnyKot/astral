@@ -61,8 +61,8 @@
 .headerWrapper {
 	--channel-header-surface: color-mix(in srgb, var(--background-primary) 90%, var(--background-floating) 10%);
 	--channel-header-surface-strong: color-mix(in srgb, var(--surface-interactive-selected-bg) 16%, var(--channel-header-surface) 84%);
-	--channel-header-border: color-mix(in srgb, var(--text-primary) 10%, transparent);
-	--channel-header-highlight: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	--channel-header-border: color-mix(in srgb, var(--text-primary) 6%, transparent);
+	--channel-header-highlight: color-mix(in srgb, var(--text-primary) 4%, transparent);
 	--channel-header-chip-top: color-mix(in srgb, var(--channel-header-surface) 86%, var(--background-floating) 14%);
 	--channel-header-chip-bottom: color-mix(in srgb, var(--channel-header-surface-strong) 88%, var(--background-primary) 12%);
 	--channel-header-chip-hover-top: color-mix(in srgb, var(--surface-interactive-hover-bg) 42%, var(--channel-header-chip-top) 58%);
@@ -73,8 +73,8 @@
 	);
 	--channel-header-group-top: color-mix(in srgb, var(--channel-header-surface) 90%, var(--background-floating) 10%);
 	--channel-header-group-bottom: color-mix(in srgb, var(--channel-header-surface-strong) 90%, var(--background-primary) 10%);
-	--channel-header-left-edge: color-mix(in srgb, var(--app-surface-background) 82%, var(--background-primary) 18%);
-	--channel-header-right-edge: color-mix(in srgb, var(--background-primary) 92%, var(--background-floating) 8%);
+	--channel-header-left-edge: var(--background-primary);
+	--channel-header-right-edge: var(--background-primary);
 	/*
 	 * Header background gets a soft horizontal feather on the LEFT
 	 * edge (matching the DM sidebar bleed) and on the bottom so the
@@ -82,19 +82,14 @@
 	 * instead of reading as a stripe. The radial brand-color glow in
 	 * the top-left stays — it's the only intentional visual landmark.
 	 */
-	background:
-		linear-gradient(
-			90deg,
-			var(--channel-header-left-edge) 0%,
-			var(--channel-header-right-edge) 100%
-		);
+	background: var(--background-primary);
 	display: flex;
 	flex-direction: column;
 	position: relative;
 	isolation: isolate;
 	border-bottom: none;
 	box-shadow: none;
-	backdrop-filter: blur(24px) saturate(130%);
+	backdrop-filter: none;
 }
 
 .headerWrapperPrivate {
@@ -135,9 +130,9 @@
 	content: '';
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(180deg, color-mix(in srgb, var(--text-primary) 3%, transparent), transparent 58%);
+	background: linear-gradient(180deg, color-mix(in srgb, var(--text-primary) 2%, transparent), transparent 62%);
 	pointer-events: none;
-	opacity: 0.12;
+	opacity: 0.08;
 }
 
 .headerWrapperCallActive {
@@ -168,6 +163,7 @@
 		linear-gradient(180deg, color-mix(in srgb, var(--background-floating) 10%, transparent), transparent 72%),
 		linear-gradient(180deg, color-mix(in srgb, var(--background-primary) 88%, var(--app-surface-background) 12%), color-mix(in srgb, var(--background-secondary) 20%, var(--background-primary) 80%));
 	color: var(--text-primary);
+	animation: callBannerSlideIn var(--motion-dur-short) var(--motion-ease-smooth) both;
 }
 
 .callBannerInfo {
@@ -247,15 +243,16 @@
 .callBannerAvatarPending::before {
 	content: '';
 	position: absolute;
-	inset: -6px;
+	inset: -4px;
 	border-radius: 50%;
 	border: 1px solid color-mix(in srgb, var(--white) 45%, transparent);
-	animation: callBannerRing 1.6s ease-in-out infinite;
+	opacity: 0.5;
+	animation: none;
 }
 
 .callBannerAvatarPending .callBannerAvatar {
-	filter: grayscale(0.75);
-	opacity: 0.75;
+	filter: grayscale(0.35);
+	opacity: 0.9;
 }
 
 @keyframes callBannerRing {
@@ -291,13 +288,17 @@
 	justify-content: center;
 	width: 2.25rem;
 	height: 2.25rem;
-	border-radius: 0.95rem;
+	border-radius: 0.5rem;
 	border: 1px solid var(--channel-header-border);
 	background: color-mix(in srgb, var(--channel-header-surface) 84%, var(--background-floating) 16%);
 	box-shadow: inset 0 1px 0 var(--channel-header-highlight);
 	transition:
 		var(--button-motion-transition),
 		transform 180ms ease;
+}
+
+.mobileMenuButton {
+	margin-right: 0.18rem;
 }
 
 .backButton:hover {
@@ -341,7 +342,7 @@
 	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
 	background: color-mix(in srgb, var(--channel-header-surface) 90%, transparent);
 	padding: 0.38rem 0.52rem;
-	border-radius: 0.92rem;
+	border-radius: 0.5rem;
 	text-align: left;
 	cursor: pointer;
 	-webkit-app-region: no-drag;
@@ -349,6 +350,15 @@
 	transition:
 		var(--button-motion-transition),
 		transform 180ms ease;
+}
+
+.mobileButtonConversation {
+	border: none;
+	background: transparent;
+	box-shadow: none;
+	padding: 0;
+	border-radius: 0;
+	gap: 0.38rem;
 }
 
 .desktopButton {
@@ -383,7 +393,7 @@
 	cursor: pointer;
 	-webkit-app-region: no-drag;
 	padding: 0.38rem 0.52rem;
-	border-radius: 0.92rem;
+	border-radius: 0.5rem;
 	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
 	background: color-mix(in srgb, var(--channel-header-surface) 90%, transparent);
 	box-shadow: none;
@@ -486,6 +496,7 @@
 	flex-shrink: 1;
 }
 
+
 .channelCapsuleBody {
 	display: flex;
 	align-items: center;
@@ -562,7 +573,7 @@
 	overflow: hidden;
 	position: relative;
 	padding: 0.38rem 0.52rem;
-	border-radius: 0.92rem;
+	border-radius: 0.5rem;
 	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
 	background: color-mix(in srgb, var(--channel-header-surface) 90%, transparent);
 	box-shadow: none;
@@ -598,6 +609,60 @@
 	.channelInfoContainer {
 		margin-inline: 0;
 		max-width: min(100%, 30rem);
+	}
+
+	.headerWrapperPrivate .desktopButton,
+	.headerWrapperPrivate .groupDMHeaderTrigger,
+	.headerWrapperPrivate .channelInfoContainer {
+		padding: 0;
+		border-color: transparent;
+		background: transparent;
+	}
+
+	.headerWrapperPrivate .desktopButton {
+		gap: 0.65rem;
+	}
+
+	.headerWrapperPrivate .desktopButton:hover,
+	.headerWrapperPrivate .groupDMHeaderTrigger:hover,
+	.headerWrapperPrivate .channelInfoContainer:hover {
+		border-color: transparent;
+		background: transparent;
+	}
+
+	.headerWrapperPrivate .dmNameWrapper {
+		align-items: flex-start;
+		max-width: min(22rem, 100%);
+	}
+
+	.headerWrapperPrivate .channelCapsuleBody {
+		overflow: visible;
+	}
+
+	.headerWrapperPrivate .channelTitleRow {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0;
+		overflow: visible;
+	}
+
+	.headerWrapperPrivate .channelName {
+		font-size: 1.02rem;
+		line-height: 1.2rem;
+		max-height: 1.2rem;
+	}
+
+	.headerWrapperPrivate .channelCapsuleMeta {
+		max-width: min(16rem, 34vw);
+		margin-left: 0;
+		opacity: 0.82;
+		transform: none;
+		font-size: 0.68rem;
+		line-height: 0.9rem;
+	}
+
+	.headerWrapperPrivate .channelCapsuleMeta::before {
+		display: none;
 	}
 }
 
@@ -704,6 +769,91 @@
 	box-shadow: none;
 }
 
+.selectionToolbar {
+	display: inline-flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.34rem;
+	min-width: 0;
+	padding: 0.22rem;
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 20%, transparent);
+	border-radius: 999px;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--brand-primary) 10%, transparent), transparent),
+		color-mix(in srgb, var(--channel-header-surface) 88%, var(--background-floating) 12%);
+	box-shadow:
+		0 10px 24px rgb(0 0 0 / 0.14),
+		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 6%, transparent);
+	-webkit-app-region: no-drag;
+}
+
+.selectionCount {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.34rem;
+	flex: 0 1 auto;
+	min-width: 0;
+	padding: 0 0.5rem 0 0.6rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-primary);
+	font-size: 0.82rem;
+	font-weight: 720;
+	line-height: 1;
+}
+
+.selectionCountNumber {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.35rem;
+	height: 1.35rem;
+	padding: 0 0.34rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+	color: color-mix(in srgb, var(--brand-primary) 84%, var(--text-primary) 16%);
+	font-size: 0.74rem;
+}
+
+.selectionActionButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 2rem;
+	width: 2rem;
+	flex-shrink: 0;
+	cursor: pointer;
+	border: 1px solid transparent;
+	border-radius: 0.62rem;
+	color: var(--text-primary);
+	background: color-mix(in srgb, var(--background-floating) 42%, transparent);
+	border-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	transition:
+		color 160ms ease,
+		background-color 160ms ease,
+		border-color 160ms ease,
+		box-shadow 160ms ease,
+		transform 160ms ease;
+}
+
+.selectionActionButton:hover {
+	background: color-mix(in srgb, var(--brand-primary) 18%, var(--background-floating) 82%);
+	border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+	transform: none;
+	box-shadow: none;
+}
+
+.selectionActionButtonDanger {
+	color: color-mix(in srgb, var(--status-danger) 86%, var(--text-primary) 14%);
+}
+
+.selectionActionButtonDanger:hover {
+	background: color-mix(in srgb, var(--status-danger) 18%, var(--background-floating) 82%);
+	border-color: color-mix(in srgb, var(--status-danger) 36%, transparent);
+	color: var(--status-danger);
+}
+
 .messageSearchFocusWrapper {
 	display: flex;
 	flex: 0 1 auto;
@@ -727,7 +877,7 @@
 	width: 2rem;
 	flex-shrink: 0;
 	cursor: pointer;
-	border-radius: 0.66rem;
+	border-radius: 0.62rem;
 	border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
 	background: color-mix(in srgb, var(--channel-header-surface) 90%, transparent);
 	box-shadow: none;
@@ -758,6 +908,8 @@
 	color: var(--text-primary);
 	background: color-mix(in srgb, var(--channel-header-surface-strong) 92%, transparent);
 	border-color: color-mix(in srgb, var(--brand-primary) 24%, transparent);
+	transform: translateY(-1px);
+	box-shadow: 0 6px 16px rgb(0 0 0 / 0.14);
 }
 
 .newsBellButton {
@@ -860,6 +1012,10 @@
 	color: var(--text-primary);
 	cursor: pointer;
 	box-shadow: none;
+	pointer-events: auto;
+	touch-action: manipulation;
+	-webkit-app-region: no-drag;
+	-webkit-tap-highlight-color: transparent;
 }
 
 .buttonIcon {
@@ -885,6 +1041,9 @@
 .inlineEditButton {
 	font-weight: 500;
 	cursor: pointer;
+	transition:
+		color var(--motion-dur-short) var(--motion-ease-snap),
+		transform var(--motion-dur-short) var(--motion-ease-smooth);
 }
 
 .inlineEditInput {
@@ -906,6 +1065,28 @@
 	background-color: var(--status-danger);
 	box-shadow: 0 0 0 0.08rem var(--channel-header-background);
 	pointer-events: none;
+	animation: unreadPinPulse 1.6s var(--motion-ease-smooth) infinite;
+}
+
+@keyframes callBannerSlideIn {
+	from {
+		opacity: 0;
+		transform: translateY(-8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes unreadPinPulse {
+	0%,
+	100% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.12);
+	}
 }
 
 @keyframes newsBellRing {
@@ -1023,6 +1204,11 @@
 		border-radius: 0.95rem;
 	}
 
+	.mobileButtonConversation {
+		padding: 0;
+		border-radius: 0;
+	}
+
 	.channelName {
 		font-size: 0.96rem;
 		line-height: 1.35rem;
@@ -1054,6 +1240,16 @@
 		border-radius: 1rem;
 		box-shadow: none;
 		margin-right: 0;
+	}
+
+	.selectionToolbar {
+		gap: 0.24rem;
+		max-width: min(100%, 58vw);
+	}
+
+	.selectionCount {
+		max-width: 9.5rem;
+		font-size: 0.76rem;
 	}
 
 	.iconButtonMobile {
@@ -1088,6 +1284,11 @@
 		border-radius: 0.85rem;
 	}
 
+	.mobileButtonConversation {
+		padding: 0;
+		border-radius: 0;
+	}
+
 	.channelName {
 		font-size: 0.9rem;
 		line-height: 1.26rem;
@@ -1104,6 +1305,10 @@
 		padding: 0.18rem;
 	}
 
+	.selectionCount {
+		max-width: 7.4rem;
+	}
+
 	.iconButtonMobile {
 		width: 2.2rem;
 		height: 2.2rem;
@@ -1113,5 +1318,77 @@
 	.buttonIconMobile {
 		width: 1.08rem;
 		height: 1.08rem;
+	}
+}
+
+@media (max-width: 380px) {
+	.mobileMenuButton {
+		margin-right: 0;
+	}
+
+	.headerContainer {
+		gap: 0.28rem;
+		padding-right: max(0.3rem, var(--safe-area-right, 0px));
+		padding-left: max(0.3rem, var(--safe-area-left, 0px));
+	}
+
+	.headerLeftSection,
+	.channelNameCluster,
+	.dmNameWrapper {
+		min-width: 0;
+	}
+
+	.backButton {
+		margin-right: 0.1rem;
+		width: 2rem;
+		height: 2rem;
+	}
+
+	.mobileButton,
+	.channelInfoContainer {
+		min-width: 0;
+		padding: 0.3rem 0.38rem;
+	}
+
+	.mobileButtonConversation {
+		padding: 0;
+	}
+
+	.channelName {
+		font-size: 0.82rem;
+		line-height: 1.12rem;
+		max-height: 1.12rem;
+	}
+
+	.channelCapsuleMeta,
+	.channelCurrentTag {
+		display: none;
+	}
+
+	.headerRightSection {
+		gap: 0.12rem;
+		padding: 0.1rem;
+	}
+
+	.iconButtonMobile {
+		width: 2rem;
+		height: 2rem;
+		border-radius: 0.7rem;
+	}
+
+	.buttonIconMobile {
+		width: 1rem;
+		height: 1rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.callBanner,
+	.unreadPinIndicator {
+		animation: none;
+	}
+
+	.inlineEditButton {
+		transition: color var(--motion-dur-short) var(--motion-ease-snap);
 	}
 }

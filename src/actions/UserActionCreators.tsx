@@ -75,6 +75,8 @@ export const update = async (
 		premium_badge_timestamp_hidden?: boolean;
 		premium_badge_sequence_hidden?: boolean;
 		accent_color?: number | null;
+		profile_accent_effect?: string | null;
+		channel_list_name_effect?: string | null;
 		has_dismissed_premium_onboarding?: boolean;
 		has_unread_gift_inventory?: boolean;
 		email_token?: string;
@@ -438,19 +440,38 @@ export const getHarvestStatus = async (harvestId: string): Promise<any> => {
 
 export type PreloadedDirectMessages = Record<string, Message>;
 
+const pendingDMPreloadPromises = new Map<string, Promise<PreloadedDirectMessages>>();
+
 export const preloadDMMessages = async (channelIds: Array<string>): Promise<PreloadedDirectMessages> => {
-	try {
-		logger.debug('Preloading DM messages', {channelCount: channelIds.length});
-		const response = await http.post<PreloadedDirectMessages>(Endpoints.USER_PRELOAD_MESSAGES, {
-			channels: channelIds,
-		});
-		const preloadedData = response.body ?? {};
-
-		MessageStore.handleMessagePreload({messages: preloadedData});
-
-		return preloadedData;
-	} catch (error) {
-		logger.error('Failed to preload DM messages', error);
-		throw error;
+	const uniqueChannelIds = Array.from(new Set(channelIds.filter(Boolean)));
+	if (uniqueChannelIds.length === 0) {
+		return {};
 	}
+
+	const preloadKey = uniqueChannelIds.join(',');
+	const pending = pendingDMPreloadPromises.get(preloadKey);
+	if (pending) {
+		return pending;
+	}
+
+	const promise = (async () => {
+		try {
+			logger.debug('Preloading DM messages', {channelCount: uniqueChannelIds.length});
+			const response = await http.post<PreloadedDirectMessages>(Endpoints.USER_PRELOAD_MESSAGES, {
+				channels: uniqueChannelIds,
+			});
+			const preloadedData = response.body ?? {};
+
+			MessageStore.handleMessagePreload({messages: preloadedData});
+
+			return preloadedData;
+		} catch (error) {
+			logger.error('Failed to preload DM messages', error);
+			throw error;
+		}
+	})();
+
+	pendingDMPreloadPromises.set(preloadKey, promise);
+	promise.finally(() => pendingDMPreloadPromises.delete(preloadKey));
+	return promise;
 };

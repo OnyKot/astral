@@ -35,8 +35,10 @@ interface UseVoiceCallTracksAndLayoutArgs {
 
 function getUserIdFromIdentity(identity: string | undefined): string | null {
 	if (!identity) return null;
-	const match = identity.match(/^user_(\d+)(?:_(.+))?$/);
-	return match ? match[1] : null;
+	if (!identity.startsWith('user_')) return null;
+	const value = identity.slice(5);
+	const delimiterIndex = value.indexOf('_');
+	return delimiterIndex === -1 ? value : value.slice(0, delimiterIndex);
 }
 
 function dedupeTracksByUser(

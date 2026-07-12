@@ -564,7 +564,7 @@ class KeybindStore {
 
 	isPushToTalkMuted(userMuted: boolean): boolean {
 		if (!this.isPushToTalkEnabled()) return false;
-		if (userMuted) return false;
+		void userMuted;
 		if (this.pushToTalkLatched) return false;
 		return !this.pushToTalkHeld;
 	}

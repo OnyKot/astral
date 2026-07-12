@@ -264,6 +264,7 @@ export class GatewaySocket extends EventEmitter<GatewaySocketEvents> {
 		self_video: boolean;
 		self_stream: boolean;
 		viewer_stream_key?: string | null;
+		suppress?: boolean;
 		connection_id: string | null;
 	}): void {
 		const isMobileLayout = MobileLayoutStore.isMobileLayout();

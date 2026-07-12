@@ -18,7 +18,7 @@
  */
 
 import {FloatingPortal} from '@floating-ui/react';
-import {Trans} from '@lingui/react/macro';
+import {Trans, useLingui} from '@lingui/react/macro';
 import {PencilIcon, SmileyIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {AnimatePresence, motion} from 'framer-motion';
@@ -31,7 +31,7 @@ import {useTooltipPortalRoot} from '~/components/uikit/Tooltip';
 import {Tooltip} from '~/components/uikit/Tooltip/Tooltip';
 import {useMergeRefs} from '~/hooks/useMergeRefs';
 import {useReactionTooltip} from '~/hooks/useReactionTooltip';
-import {type CustomStatus, getCustomStatusText, normalizeCustomStatus} from '~/lib/customStatus';
+import {type CustomStatus, getCustomStatusText, isGiftShowcaseCustomStatus, normalizeCustomStatus} from '~/lib/customStatus';
 import UnicodeEmojis from '~/lib/UnicodeEmojis';
 import EmojiStore from '~/stores/EmojiStore';
 import GuildStore from '~/stores/GuildStore';
@@ -345,17 +345,20 @@ export const CustomStatusDisplay = observer(
 		animateOnParentHover = false,
 		alwaysAnimate = false,
 	}: CustomStatusDisplayProps) => {
+		const {t} = useLingui();
 		const containerRef = React.useRef<HTMLDivElement>(null);
 		const status = customStatus === undefined ? (userId ? PresenceStore.getCustomStatus(userId) : null) : customStatus;
 		const normalized = normalizeCustomStatus(status);
-		const displayText = normalized?.text ? sanitizeText(normalized.text) : null;
+		const displayText = normalized?.text
+			? sanitizeText(isGiftShowcaseCustomStatus(normalized) ? t`Gift showcase` : normalized.text)
+			: null;
 		const isOverflowing = useTextOverflow(containerRef, displayText, maxLines > 1);
 
 		if (!normalized) {
 			if (showPlaceholder && isEditable && onEdit) {
 				return (
 					<FocusRing offset={-2}>
-						<button type="button" className={styles.placeholder} onClick={onEdit}>
+						<button type="button" className={clsx(styles.placeholder, className)} onClick={onEdit}>
 							<SmileyIcon size={14} weight="regular" className={styles.placeholderIcon} />
 							<span className={styles.placeholderText}>
 								<Trans>Set a custom status</Trans>
@@ -367,7 +370,8 @@ export const CustomStatusDisplay = observer(
 			return null;
 		}
 
-		const fullText = getCustomStatusText(normalized);
+		const rawFullText = getCustomStatusText(normalized);
+		const fullText = rawFullText && isGiftShowcaseCustomStatus(normalized) ? t`Gift showcase` : rawFullText;
 		const hasEmoji = Boolean(normalized.emojiId || normalized.emojiName);
 		const hasText = Boolean(normalized.text);
 

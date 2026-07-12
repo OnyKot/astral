@@ -24,8 +24,7 @@ import ReactRefreshPlugin from '@rspack/plugin-react-refresh';
 import { createPoFileRule, getLinguiSwcPluginConfig } from './scripts/build/rspack/lingui.mjs';
 import { staticFilesPlugin } from './scripts/build/rspack/static-files.mjs';
 
-const __filename = fileURLToPath(
-    import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const ROOT_DIR = path.resolve(__dirname, '.');
@@ -35,7 +34,27 @@ const PKGS_DIR = path.join(ROOT_DIR, 'pkgs');
 const PUBLIC_DIR = path.join(ROOT_DIR, 'assets');
 
 const CDN_ENDPOINT = 'https://astraof.com';
-const DEV_PROXY_TARGET = 'https://astraof.com';
+const DEFAULT_DEV_PROXY_TARGET = CDN_ENDPOINT;
+
+function resolveDevProxyTarget(name, fallback = DEFAULT_DEV_PROXY_TARGET) {
+    const rawTarget = process.env[name]?.trim() || fallback;
+
+    try {
+        const target = new URL(rawTarget);
+        if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+            throw new Error(`expected http: or https:, received ${target.protocol}`);
+        }
+        return target.origin;
+    } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        throw new Error(`Invalid ${name} value "${rawTarget}": ${reason}`);
+    }
+}
+
+const DEV_API_PROXY_TARGET = resolveDevProxyTarget('ASTRAL_DEV_API_PROXY_TARGET');
+const DEV_GATEWAY_PROXY_TARGET = resolveDevProxyTarget('ASTRAL_DEV_GATEWAY_PROXY_TARGET', DEV_API_PROXY_TARGET);
+const DEV_API_PROXY_ORIGIN = new URL(DEV_API_PROXY_TARGET).origin;
+const DEV_API_PROXY_HOST = new URL(DEV_API_PROXY_TARGET).host;
 
 const isProduction = process.env.NODE_ENV === 'production';
 const isDevelopment = !isProduction;
@@ -46,10 +65,9 @@ const mode = isProduction ? 'production' : 'development';
 const devJsName = 'assets/[name].js';
 const devCssName = 'assets/[name].css';
 
-// Sensible dev-mode defaults so a fresh clone can `pnpm dev` and immediately
-// hit the live prod API via local same-origin proxying (avoids browser CORS on
-// 127.0.0.1/localhost during login and API calls). Production builds always use
-// the real env vars.
+// Dev-mode defaults proxy same-origin API/gateway/media to production so the
+// frontend can boot locally without the full Caddy/API stack. Override with
+// ASTRAL_DEV_API_PROXY_TARGET to hit a local backend or another deployment.
 const DEV_ENV_DEFAULTS = {
     PUBLIC_BOOTSTRAP_API_ENDPOINT: '/api',
     PUBLIC_BOOTSTRAP_API_PUBLIC_ENDPOINT: '/api',
@@ -298,12 +316,8 @@ export default () => {
                         priority: 48,
                         reuseExistingChunk: true,
                     },
-                    animation: {
-                        test: /[\\/]node_modules[\\/](framer-motion|motion)[\\/]/,
-                        name: 'animation',
-                        priority: 45,
-                        reuseExistingChunk: true,
-                    },
+                    // framer-motion is intentionally kept as the stable runtime.
+                    // The in-tree WAAPI experiment is not aliased in local/dev builds.
                     mobx: {
                         test: /[\\/]node_modules[\\/](mobx|mobx-react-lite|mobx-persist-store)[\\/]/,
                         name: 'mobx',
@@ -359,7 +373,7 @@ export default () => {
                         reuseExistingChunk: true,
                     },
                     ui: {
-                        test: /[\\/]node_modules[\\/](react-select|react-hook-form|react-modal-sheet|react-zoom-pan-pinch|@floating-ui)[\\/]/,
+                        test: /[\\/]node_modules[\\/](react-select|react-hook-form|react-zoom-pan-pinch|@floating-ui)[\\/]/,
                         name: 'ui',
                         priority: 30,
                         reuseExistingChunk: true,
@@ -422,9 +436,9 @@ export default () => {
             // bind back to an addressable host — the browser ends up trying
             // to reach `ws://[::]:0` and gives the "WebSocket failed" spam.
             // Spelling out the pieces explicitly fixes it for every OS.
-            client: disableDevServerClient
-                ? false
-                : {
+            client: disableDevServerClient ?
+                false :
+                {
                     webSocketURL: {
                         hostname: '127.0.0.1',
                         port: 3000,
@@ -448,11 +462,13 @@ export default () => {
              */
             proxy: [{
                     context: ['/api', '/media', '/s3'],
-                    target: DEV_PROXY_TARGET,
+                    target: DEV_API_PROXY_TARGET,
                     changeOrigin: true,
+                    timeout: 30000,
+                    proxyTimeout: 30000,
                     headers: {
-                        'X-Forwarded-Host': 'astraof.com',
-                        'Origin': 'https://astraof.com',
+                        'X-Forwarded-Host': DEV_API_PROXY_HOST,
+                        'Origin': DEV_API_PROXY_ORIGIN,
                     },
                     onProxyReq: (proxyReq, req) => {
                         // Log custom headers for debugging
@@ -466,9 +482,12 @@ export default () => {
                 },
                 {
                     context: ['/gateway'],
-                    target: DEV_PROXY_TARGET,
+                    target: DEV_GATEWAY_PROXY_TARGET,
+                    router: () => DEV_GATEWAY_PROXY_TARGET,
                     changeOrigin: true,
                     ws: true,
+                    timeout: 30000,
+                    proxyTimeout: 30000,
                 },
             ],
         } : undefined,

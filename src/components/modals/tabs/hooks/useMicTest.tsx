@@ -24,6 +24,7 @@ import {MicrophonePermissionDeniedModal} from '~/components/alerts/MicrophonePer
 import MediaPermissionStore from '~/stores/MediaPermissionStore';
 import {ensureNativePermission, isNativePermissionDenied} from '~/utils/NativePermissions';
 import {isDesktop, isNativeMobile} from '~/utils/NativeUtils';
+import {clampMediaVolumePercent} from '~/utils/voice/audioVolume';
 
 interface MicTestSettings {
 	inputDeviceId: string;
@@ -216,8 +217,11 @@ export const useMicTest = (settings: MicTestSettings) => {
 
 			sourceRef.current.connect(analyserRef.current);
 			analyserRef.current.connect(gainNodeRef.current);
+			// Route monitoring audio only through the <audio> element so it honors the
+			// selected output device (via setSinkId) and the output-volume setting.
+			// Connecting to audioContext.destination as well would play the mic a
+			// second time on the system default device (double playback / echo).
 			gainNodeRef.current.connect(destinationRef.current);
-			gainNodeRef.current.connect(audioContextRef.current.destination);
 
 			audioElementRef.current = new Audio();
 			audioElementRef.current.srcObject = destinationRef.current.stream;
@@ -230,7 +234,7 @@ export const useMicTest = (settings: MicTestSettings) => {
 				}
 			}
 
-			audioElementRef.current.volume = settings.outputVolume / 100;
+			audioElementRef.current.volume = clampMediaVolumePercent(settings.outputVolume);
 			await audioElementRef.current.play();
 
 			setIsTesting(true);

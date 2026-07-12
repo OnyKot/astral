@@ -91,6 +91,12 @@
 	}
 }
 
+@media (hover: none), (max-width: 639px) {
+	.toggleButton:hover {
+		text-decoration: none;
+	}
+}
+
 .warningText {
 	color: var(--alert-warning-color);
 	font-size: 0.875rem;

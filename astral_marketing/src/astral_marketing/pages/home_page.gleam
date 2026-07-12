@@ -23,9 +23,6 @@ import lustre/element.{type Element}
 import lustre/element/html
 import wisp
 
-const hero_video_url =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4"
-
 fn tr(ctx: Context, ru: String, en: String) -> String {
   case ctx.locale {
     locale.Ru -> ru
@@ -58,26 +55,18 @@ fn hero_section(ctx: Context) -> Element(a) {
       ),
     ],
     [
-      html.video(
+      html.div(
         [
-          attribute.class("absolute inset-0 z-0 h-full w-full object-cover"),
-          attribute.attribute("autoplay", "autoplay"),
-          attribute.attribute("loop", "loop"),
-          attribute.attribute("muted", "muted"),
-          attribute.attribute("playsinline", "playsinline"),
+          attribute.class("home-hero-backdrop"),
+          attribute.attribute("aria-hidden", "true"),
         ],
-        [
-          html.source([
-            attribute.src(hero_video_url),
-            attribute.type_("video/mp4"),
-          ]),
-        ],
+        [],
       ),
       html.div([attribute.class("relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center")], [
         html.h1(
           [
             attribute.class(
-              "animate-fade-rise max-w-7xl text-[3rem] leading-[0.95] tracking-[-2.46px] text-white sm:text-7xl md:text-8xl font-normal font-accent",
+              "animate-fade-rise max-w-6xl text-[2.85rem] leading-[0.98] tracking-normal text-white sm:text-6xl md:text-7xl font-bold font-display",
             ),
           ],
           [
@@ -128,12 +117,56 @@ fn hero_section(ctx: Context) -> Element(a) {
   )
 }
 
+pub fn messenger_scene(ctx: Context) -> Element(a) {
+  html.div(
+    [
+      attribute.class(
+        "astral-hero-comms pointer-events-none absolute inset-x-0 top-20 z-[-1] mx-auto hidden max-w-7xl md:block",
+      ),
+      attribute.attribute("aria-hidden", "true"),
+    ],
+    [
+      html.div([attribute.class("hero-chat-card hero-chat-card--left")], [
+        html.div([attribute.class("hero-chat-card__top")], [
+          html.span([attribute.class("hero-presence hero-presence--online")], []),
+          html.span([], [html.text(tr(ctx, "Команда", "Team"))]),
+        ]),
+        html.p([], [
+          html.text(tr(
+            ctx,
+            "Голос уже открыт, макеты в канале.",
+            "Voice is live, mockups are in the channel.",
+          )),
+        ]),
+      ]),
+      html.div([attribute.class("hero-chat-card hero-chat-card--right")], [
+        html.div([attribute.class("hero-chat-card__top")], [
+          html.span([attribute.class("hero-presence hero-presence--idle")], []),
+          html.span([], [html.text(tr(ctx, "Дизайн", "Design"))]),
+        ]),
+        html.p([], [
+          html.text(tr(
+            ctx,
+            "Закрепил тред, можно ревьюить.",
+            "Pinned the thread, ready for review.",
+          )),
+        ]),
+      ]),
+      html.div([attribute.class("hero-channel-strip")], [
+        html.span([], [html.text("# general")]),
+        html.span([], [html.text("# voice")]),
+        html.span([], [html.text("# drops")]),
+      ]),
+    ],
+  )
+}
+
 fn cta_button(href: String, label: String) -> Element(a) {
   html.a(
     [
       attribute.href(href),
       attribute.class(
-        "liquid-glass interactive-glass inline-flex items-center justify-center rounded-full px-14 py-5 text-base text-[hsl(var(--foreground))] cursor-pointer",
+        "astral-button astral-button-primary inline-flex items-center justify-center px-12 py-5 text-base text-[hsl(var(--foreground))] cursor-pointer",
       ),
     ],
     [html.text(label)],
@@ -145,7 +178,7 @@ fn secondary_button(href: String, label: String) -> Element(a) {
     [
       attribute.href(href),
       attribute.class(
-        "interactive-glass inline-flex items-center justify-center rounded-full border border-white/20 bg-black/20 px-8 py-5 text-base text-[hsl(var(--foreground))] backdrop-blur-sm transition-colors duration-200 hover:bg-black/30",
+        "astral-button astral-button-secondary inline-flex items-center justify-center px-8 py-5 text-base text-[hsl(var(--foreground))]",
       ),
     ],
     [html.text(label)],

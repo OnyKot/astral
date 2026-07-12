@@ -28,9 +28,11 @@ import ConnectionStore from '~/stores/ConnectionStore';
 import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
 import MediaPermissionStore from '~/stores/MediaPermissionStore';
 import ParticipantVolumeStore from '~/stores/ParticipantVolumeStore';
+import PermissionStore from '~/stores/PermissionStore';
 import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import VoiceDevicePermissionStore from '~/stores/voice/VoiceDevicePermissionStore';
+import {Permissions} from '~/Constants';
 import {ensureNativePermission, isNativePermissionDenied} from '~/utils/NativePermissions';
 import {isDesktop, isNativeMobile} from '~/utils/NativeUtils';
 import {SoundType} from '~/utils/SoundUtils';
@@ -217,12 +219,51 @@ const requestMicrophoneDirectly = async (): Promise<boolean> => {
 	}
 };
 
+const isCurrentUserBroadcastListener = (): boolean => {
+	const channelId = MediaEngineStore.channelId;
+	const connectionId = MediaEngineStore.connectionId;
+	if (!channelId || !connectionId) return false;
+
+	const channel = ChannelStore.getChannel(channelId);
+	if (!channel || !MediaEngineStore.isVoiceChannelStageLike(channel.id)) return false;
+
+	const voiceState = MediaEngineStore.getVoiceStateByConnectionId(connectionId);
+	return voiceState?.suppress === true;
+};
+
 export const toggleSelfMute = async (_guildId: string | null = null): Promise<void> => {
 	const room = MediaEngineStore.room;
 	const connectedChannelId = MediaEngineStore.channelId;
 
 	const currentMute = LocalVoiceStateStore.getSelfMute();
 	const currentDeaf = LocalVoiceStateStore.getSelfDeaf();
+	const isStageListener = isCurrentUserBroadcastListener();
+
+	if (isStageListener) {
+		if (!currentMute) {
+			LocalVoiceStateStore.updateSelfMute(true);
+		}
+		LocalVoiceStateStore.updateSelfVideo(false);
+		LocalVoiceStateStore.updateSelfStream(false);
+
+		if (room?.localParticipant) {
+			room.localParticipant.audioTrackPublications.forEach((publication: LocalTrackPublication) => {
+				const track = publication.track;
+				if (!track) return;
+				track.mute().catch((error) => logger.error('Failed to force mute local track for listener mode', {error}));
+			});
+		}
+
+		await MediaEngineStore.setCameraEnabled(false).catch(() => {});
+		await MediaEngineStore.setScreenShareEnabled(false).catch(() => {});
+		MediaEngineStore.syncLocalVoiceStateWithServer({
+			self_mute: true,
+			self_video: false,
+			self_stream: false,
+			suppress: true,
+		});
+		return;
+	}
 
 	const willUndeafen = currentDeaf;
 	const willUnmute = currentMute;
@@ -284,6 +325,37 @@ export const toggleSelfMute = async (_guildId: string | null = null): Promise<vo
 
 	logger.debug('Voice state updated', {newMute, newDeaf});
 
+	if (!newMute && room?.localParticipant) {
+		const participant = room.localParticipant;
+		const hasAudioTrack = participant.audioTrackPublications.size > 0;
+
+		if (!hasAudioTrack || !participant.isMicrophoneEnabled) {
+			let inputDeviceId = VoiceSettingsStore.getInputDeviceId() || 'default';
+			const inputDevices = VoiceDevicePermissionStore.getState().inputDevices;
+			const hasRequestedInputDevice =
+				inputDeviceId === 'default' || inputDevices.some((device) => device.deviceId === inputDeviceId);
+			if (!hasRequestedInputDevice && inputDevices.length > 0) {
+				inputDeviceId = 'default';
+			}
+
+			try {
+				await participant.setMicrophoneEnabled(true, {
+					deviceId: inputDeviceId,
+					echoCancellation: VoiceSettingsStore.getEchoCancellation(),
+					noiseSuppression: VoiceSettingsStore.getNoiseSuppression(),
+					autoGainControl: VoiceSettingsStore.getAutoGainControl(),
+				});
+			} catch (error) {
+				logger.error('Failed to re-enable microphone track while unmuting', {error});
+				LocalVoiceStateStore.updateSelfMute(true);
+				if (room) {
+					MediaEngineStore.syncLocalVoiceStateWithServer({self_mute: true});
+				}
+				return;
+			}
+		}
+	}
+
 	if (room?.localParticipant) {
 		room.localParticipant.audioTrackPublications.forEach((publication: LocalTrackPublication) => {
 			const track = publication.track;
@@ -317,6 +389,57 @@ export const toggleSelfMute = async (_guildId: string | null = null): Promise<vo
 
 type VoiceStateProperty = 'self_mute' | 'self_deaf' | 'self_video' | 'self_stream';
 
+const sendCurrentUserSuppressUpdate = async (suppress: boolean): Promise<void> => {
+	const connectionId = MediaEngineStore.connectionId;
+	const channelId = MediaEngineStore.channelId;
+	if (!connectionId || !channelId) return;
+
+	const voiceState = MediaEngineStore.getVoiceStateByConnectionId(connectionId);
+	if (!voiceState) return;
+
+	const socket = ConnectionStore.socket;
+	if (!socket) return;
+
+	socket.updateVoiceState({
+		guild_id: voiceState.guild_id,
+		channel_id: voiceState.channel_id,
+		connection_id: connectionId,
+		self_mute: suppress ? true : voiceState.self_mute,
+		self_deaf: voiceState.self_deaf,
+		self_video: suppress ? false : voiceState.self_video,
+		self_stream: suppress ? false : voiceState.self_stream,
+		suppress,
+	});
+
+	if (suppress) {
+		LocalVoiceStateStore.updateSelfMute(true);
+		LocalVoiceStateStore.updateSelfVideo(false);
+		LocalVoiceStateStore.updateSelfStream(false);
+		await MediaEngineStore.setCameraEnabled(false).catch(() => {});
+		await MediaEngineStore.setScreenShareEnabled(false).catch(() => {});
+	}
+
+	MediaEngineStore.syncLocalVoiceStateWithServer({
+		suppress,
+		self_mute: suppress ? true : undefined,
+		self_video: suppress ? false : undefined,
+		self_stream: suppress ? false : undefined,
+	});
+};
+
+export const moveCurrentUserToListeners = async (): Promise<void> => {
+	MediaEngineStore.setPreferredBroadcastRole('listener');
+	await sendCurrentUserSuppressUpdate(true);
+};
+
+export const moveCurrentUserToSpeakers = async (): Promise<void> => {
+	const channel = ChannelStore.getChannel(MediaEngineStore.channelId ?? '');
+	if (!channel) return;
+	if (!PermissionStore.can(Permissions.SPEAK, channel)) return;
+	MediaEngineStore.setPreferredBroadcastRole('speaker');
+	await sendCurrentUserSuppressUpdate(false);
+};
+
 const updateConnectionProperty = async (
 	connectionId: string,
 	property: VoiceStateProperty,
@@ -336,6 +459,7 @@ const updateConnectionProperty = async (
 		self_deaf: property === 'self_deaf' ? value : voiceState.self_deaf,
 		self_video: property === 'self_video' ? value : voiceState.self_video,
 		self_stream: property === 'self_stream' ? value : voiceState.self_stream,
+		suppress: voiceState.suppress,
 	});
 };
 
@@ -359,6 +483,7 @@ const updateConnectionsProperty = async (
 			self_deaf: property === 'self_deaf' ? value : voiceState.self_deaf,
 			self_video: property === 'self_video' ? value : voiceState.self_video,
 			self_stream: property === 'self_stream' ? value : voiceState.self_stream,
+			suppress: voiceState.suppress,
 		});
 	}
 };
@@ -417,6 +542,7 @@ export const bulkDisconnect = async (connectionIds: Array<string>): Promise<void
 			self_deaf: true,
 			self_video: false,
 			self_stream: false,
+			suppress: true,
 		});
 	}
 };
@@ -437,6 +563,7 @@ export const bulkMoveConnections = async (connectionIds: Array<string>, targetCh
 			self_deaf: voiceState.self_deaf,
 			self_video: voiceState.self_video,
 			self_stream: voiceState.self_stream,
+			suppress: voiceState.suppress,
 		});
 	}
 };

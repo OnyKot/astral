@@ -808,6 +808,7 @@ pub fn docs_page_script() -> Element(a) {
     initLocaleSelector();
     initNavToggle();
     initNavScroll();
+    initHeroVideo();
   });
 })();
 ",

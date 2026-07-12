@@ -1,0 +1,209 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.root {
+	display: grid;
+	gap: 7px;
+	padding: 0.58rem 0;
+	border-radius: 0;
+	border: 0;
+	border-top: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
+	background: transparent;
+}
+
+.rootCompact {
+	padding: 0.58rem 0;
+}
+
+.rootTransparent {
+	padding: 0;
+	border: none;
+	background: transparent;
+	border-radius: 0;
+	max-width: 100%;
+}
+
+.rootIconRow {
+	gap: 6px;
+}
+
+.titleRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.title {
+	font-size: 0.78rem;
+	font-weight: 800;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--text-tertiary) 94%, var(--text-secondary));
+}
+
+.linkedPill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 3px 8px;
+	border-radius: 0.4rem;
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 30%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+	font-size: 0.64rem;
+	font-weight: 700;
+	color: color-mix(in srgb, var(--brand-primary) 78%, var(--text-primary));
+}
+
+.integrationStack {
+	display: grid;
+	gap: 8px;
+}
+
+.integrationIconRow {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	flex-wrap: nowrap;
+	max-width: 100%;
+	overflow-x: auto;
+	overflow-y: hidden;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.integrationIconRow::-webkit-scrollbar {
+	display: none;
+}
+
+.integrationIconPill {
+	height: 30px;
+	width: 30px;
+	border-radius: 0.4rem;
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 26%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 14%, var(--background-primary) 86%);
+	color: var(--text-primary);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.integrationIconPill:hover,
+.integrationIconPill:focus-visible {
+	filter: brightness(1.08);
+	transform: translateY(-1px);
+}
+
+.integrationIconPillMuted {
+	opacity: 0.52;
+	border-color: color-mix(in srgb, var(--text-tertiary) 22%, transparent);
+	background: color-mix(in srgb, var(--background-secondary) 70%, var(--background-primary) 30%);
+}
+
+.integrationCard {
+	display: grid;
+	gap: 6px;
+	padding: 6px 8px;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	border-radius: 0.45rem;
+	background: color-mix(in srgb, var(--background-primary) 40%, transparent);
+}
+
+.integrationHead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.integrationIdentity {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--text-primary);
+}
+
+.integrationName {
+	font-size: 0.88rem;
+	font-weight: 700;
+}
+
+.integrationDetails {
+	display: grid;
+	gap: 4px;
+	max-height: 0;
+	opacity: 0;
+	transform: translateY(-2px);
+	overflow: hidden;
+	pointer-events: none;
+	transition:
+		max-height 0.2s ease,
+		opacity 0.2s ease,
+		transform 0.2s ease;
+}
+
+.integrationCard:hover .integrationDetails,
+.integrationCard:focus-within .integrationDetails,
+.integrationCard:active .integrationDetails {
+	max-height: 72px;
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.integrationLogin {
+	font-size: 0.78rem;
+	color: var(--text-secondary);
+}
+
+.verifiedRow {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 0.74rem;
+	color: color-mix(in srgb, var(--status-positive) 82%, var(--text-primary));
+}
+
+.disconnectedRow {
+	font-size: 0.78rem;
+	color: var(--text-secondary);
+}
+
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+	.root,
+	.rootCompact {
+		padding: 0.5rem 0;
+		min-width: 0;
+	}
+
+	.integrationDetails {
+		display: none;
+	}
+
+	.integrationCard {
+		display: inline-flex;
+		width: fit-content;
+		padding: 4px 6px;
+	}
+
+	.integrationStack {
+		gap: 5px;
+	}
+}

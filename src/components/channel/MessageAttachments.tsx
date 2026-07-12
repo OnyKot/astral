@@ -23,10 +23,11 @@ import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
 import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators';
-import {ChannelTypes, StickerFormatTypes} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType, StickerFormatTypes} from '~/Constants';
 import {Attachment} from '~/components/channel/embeds/attachments/Attachment';
 import {AttachmentMosaic} from '~/components/channel/embeds/attachments/AttachmentMosaic';
 import {Embed} from '~/components/channel/embeds/Embed';
+import {ForwardedStoryCard} from '~/components/channel/ForwardedStoryCard';
 import {GiftEmbed} from '~/components/channel/GiftEmbed';
 import {InviteEmbed} from '~/components/channel/InviteEmbed';
 import {MessageReactions} from '~/components/channel/MessageReactions';
@@ -54,6 +55,7 @@ import markupStyles from '~/styles/Markup.module.css';
 import * as AvatarUtils from '~/utils/AvatarUtils';
 import {useForwardedMessageContext} from '~/utils/forwardedMessageUtils';
 import {goToMessage} from '~/utils/MessageNavigator';
+import {parseForwardedStoryPreview} from '~/utils/StoryForwardPayload';
 import styles from './MessageAttachments.module.css';
 import {useMessageViewContext} from './MessageViewContext';
 
@@ -90,7 +92,7 @@ const ForwardedFromSource = observer(({message}: {message: MessageRecord}) => {
 				</div>
 			);
 		}
-		if (sourceChannel.type === ChannelTypes.GUILD_VOICE) {
+		if (isGuildRtcChannelType(sourceChannel.type)) {
 			return <SpeakerHighIcon className={styles.forwardedSourceIcon} weight="fill" size={iconSize} />;
 		}
 		return <HashIcon className={styles.forwardedSourceIcon} weight="bold" size={iconSize} />;
@@ -146,6 +148,7 @@ const ForwardedFromSource = observer(({message}: {message: MessageRecord}) => {
 
 const ForwardedMessageContent = observer(({message, snapshot}: {message: MessageRecord; snapshot: MessageSnapshot}) => {
 	const snapshotIsPreview = true;
+	const forwardedStoryPreview = parseForwardedStoryPreview(snapshot.content);
 	return (
 		<div className={styles.forwardedContainer}>
 			<div className={styles.forwardedBar} />
@@ -157,7 +160,13 @@ const ForwardedMessageContent = observer(({message, snapshot}: {message: Message
 					</span>
 				</div>
 
-				{snapshot.content && (
+				{forwardedStoryPreview ? (
+					<ForwardedStoryCard
+						preview={forwardedStoryPreview}
+						messageId={message.id}
+						channelId={message.channelId}
+					/>
+				) : snapshot.content && (
 					<div className={clsx(markupStyles.markup)}>
 						<SafeMarkdown
 							content={snapshot.content}
@@ -188,6 +197,7 @@ const ForwardedMessageContent = observer(({message, snapshot}: {message: Message
 											isPreview={snapshotIsPreview}
 											message={message}
 											renderInMosaic={shouldUseMosaic}
+											mediaAttachments={mediaAttachments}
 										/>
 									))}
 								</>
@@ -314,12 +324,10 @@ export const MessageAttachments = observer(() => {
 			)}
 
 			{(() => {
-				const {enrichedAttachments, mediaAttachments} = getAttachmentRenderingState(message.attachments);
-				const inlineMedia = UserSettingsStore.getInlineAttachmentMedia();
-				const shouldWrapInMosaic = inlineMedia && mediaAttachments.length > 0;
+				const {enrichedAttachments, mediaAttachments, shouldUseMosaic} = getAttachmentRenderingState(message.attachments);
 				return (
 					<>
-						{shouldWrapInMosaic && (
+						{shouldUseMosaic && (
 							<AttachmentMosaic attachments={mediaAttachments} message={message} isPreview={isPreview} />
 						)}
 						{enrichedAttachments.map((attachment) => (
@@ -328,7 +336,8 @@ export const MessageAttachments = observer(() => {
 								attachment={attachment}
 								isPreview={isPreview}
 								message={message}
-								renderInMosaic={shouldWrapInMosaic}
+								renderInMosaic={shouldUseMosaic}
+								mediaAttachments={mediaAttachments}
 							/>
 						))}
 					</>

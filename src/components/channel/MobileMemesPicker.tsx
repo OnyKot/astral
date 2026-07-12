@@ -121,7 +121,7 @@ export const MobileMemesPicker = observer(({onClose}: MobileMemesPickerProps = {
 	const [selectedMeme, setSelectedMeme] = useState<FavoriteMemeRecord | null>(null);
 	const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
 
-	useSearchInputAutofocus(searchInputRef);
+	useSearchInputAutofocus(searchInputRef, {initialFocus: false});
 
 	const getMaxWidth = useCallback(() => {
 		return window.innerWidth <= 768 ? Math.floor((window.innerWidth - 32) / 2) : 227;

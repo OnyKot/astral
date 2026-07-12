@@ -41,7 +41,7 @@ pub fn render(ctx: Context, _req: Request) -> Element(a) {
         html.div(
           [
             attribute.class(
-              "nav-card liquid-glass mx-auto max-w-7xl rounded-full px-5 py-4 md:px-8 md:py-5",
+              "nav-card mx-auto max-w-7xl px-4 py-3 md:px-6 md:py-4",
             ),
           ],
           [
@@ -52,7 +52,7 @@ pub fn render(ctx: Context, _req: Request) -> Element(a) {
                   [
                     href(ctx, "/"),
                     attribute.class(
-                      "inline-flex items-start text-[2rem] leading-none tracking-tight text-[hsl(var(--foreground))] font-accent",
+                      "nav-brand inline-flex items-start text-[1.75rem] leading-none tracking-tight text-[hsl(var(--foreground))] font-accent",
                     ),
                     attribute.attribute("aria-label", "Astral home"),
                   ],
@@ -80,7 +80,7 @@ pub fn render(ctx: Context, _req: Request) -> Element(a) {
                     [
                       attribute.href(ctx.app_endpoint <> "/login"),
                       attribute.class(
-                        "liquid-glass interactive-glass hidden md:inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm text-[hsl(var(--foreground))]",
+                        "nav-cta hidden md:inline-flex items-center justify-center px-5 py-2.5 text-sm text-[hsl(var(--foreground))]",
                       ),
                     ],
                     [html.text(tr(ctx, "Открыть Astral", "Open Astral"))],
@@ -93,7 +93,7 @@ pub fn render(ctx: Context, _req: Request) -> Element(a) {
                       attribute.attribute("aria-expanded", "false"),
                       attribute.attribute("aria-label", "Open menu"),
                       attribute.class(
-                        "icon-button-fx flex h-11 w-11 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 md:hidden cursor-pointer",
+                        "nav-icon-btn flex h-10 w-10 items-center justify-center text-white md:hidden cursor-pointer",
                       ),
                     ],
                     [icons.menu([attribute.class("h-6 w-6")])],
@@ -109,7 +109,7 @@ pub fn render(ctx: Context, _req: Request) -> Element(a) {
           attribute.id("nav-backdrop"),
           attribute.attribute("aria-hidden", "true"),
           attribute.class(
-            "fixed inset-0 z-[1001] bg-black/40 opacity-0 pointer-events-none backdrop-blur-2xl transition-opacity duration-300 md:hidden",
+            "fixed inset-0 z-[1001] bg-black/55 opacity-0 pointer-events-none md:hidden",
           ),
         ],
         [],
@@ -119,17 +119,17 @@ pub fn render(ctx: Context, _req: Request) -> Element(a) {
           attribute.id("nav-drawer"),
           attribute.attribute("aria-hidden", "true"),
           attribute.class(
-            "fixed right-2 top-2 bottom-2 z-[1002] w-[calc(100vw-1rem)] max-w-[420px] overflow-hidden rounded-[32px] bg-[rgba(7,16,33,0.86)] shadow-[0_35px_90px_rgba(0,0,0,0.62)] translate-x-[105%] transition-transform duration-300 ease-out md:hidden",
+            "nav-drawer-panel fixed right-0 top-0 bottom-0 z-[1002] w-[min(88vw,360px)] overflow-hidden translate-x-full md:hidden",
           ),
         ],
         [
-          html.div([attribute.class("liquid-glass relative flex h-full flex-col overflow-y-auto p-5")], [
+          html.div([attribute.class("relative flex h-full flex-col overflow-y-auto p-5")], [
             html.div([attribute.class("mb-6 flex items-center justify-between")], [
               html.a(
                 [
                   href(ctx, "/"),
                   attribute.class(
-                    "inline-flex items-start text-[2rem] leading-none tracking-tight text-[hsl(var(--foreground))] font-accent",
+                    "nav-brand inline-flex items-start text-[1.75rem] leading-none tracking-tight text-[hsl(var(--foreground))] font-accent",
                   ),
                   attribute.attribute("aria-label", "Astral home"),
                 ],
@@ -144,7 +144,7 @@ pub fn render(ctx: Context, _req: Request) -> Element(a) {
                   attribute.id("nav-close"),
                   attribute.attribute("aria-label", "Close menu"),
                   attribute.class(
-                    "icon-button-fx flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/16 cursor-pointer",
+                    "nav-icon-btn flex h-10 w-10 items-center justify-center text-white cursor-pointer",
                   ),
                 ],
                 [icons.x([attribute.class("h-5 w-5")])],
@@ -164,7 +164,7 @@ pub fn render(ctx: Context, _req: Request) -> Element(a) {
               [
                 attribute.href(ctx.app_endpoint <> "/login"),
                 attribute.class(
-                  "nav-drawer-link liquid-glass interactive-glass mt-6 inline-flex items-center justify-center rounded-full px-6 py-4 text-base text-[hsl(var(--foreground))]",
+                  "nav-drawer-link nav-cta mt-6 inline-flex items-center justify-center px-6 py-4 text-base text-[hsl(var(--foreground))]",
                 ),
               ],
               [html.text(tr(ctx, "Открыть Astral", "Open Astral"))],
@@ -179,9 +179,9 @@ pub fn render(ctx: Context, _req: Request) -> Element(a) {
 fn nav_link(href_attr: attribute.Attribute(a), label: String, active: Bool) -> Element(a) {
   let class_name = case active {
     True ->
-      "nav-link-fx is-active text-sm text-[hsl(var(--foreground))] transition-colors"
+      "nav-link-fx is-active text-sm text-[hsl(var(--foreground))]"
     False ->
-      "nav-link-fx text-sm text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
+      "nav-link-fx text-sm text-[hsl(var(--muted-foreground))]"
   }
 
   html.a([href_attr, attribute.class(class_name)], [html.text(label)])
@@ -192,7 +192,7 @@ fn drawer_link(href_attr: attribute.Attribute(a), label: String) -> Element(a) {
     [
       href_attr,
       attribute.class(
-        "nav-drawer-link drawer-link-fx rounded-[20px] px-4 py-4 text-base text-[hsl(var(--foreground))] transition-colors hover:bg-white/8",
+        "nav-drawer-link drawer-link-fx px-1 py-4 text-base text-[hsl(var(--foreground))]",
       ),
     ],
     [html.text(label)],

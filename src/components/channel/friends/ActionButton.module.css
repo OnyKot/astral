@@ -23,31 +23,42 @@
 	justify-content: center;
 	width: 2.25rem;
 	height: 2.25rem;
-	border-radius: 0.95rem;
-	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
-	box-shadow:
-		0 10px 20px rgb(8 15 28 / 0.12),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+	border-radius: 999px;
+	border: 1px solid transparent;
+	box-shadow: none;
 	transition:
 		var(--button-motion-transition),
-		transform 160ms ease;
+		box-shadow var(--motion-dur-short) var(--motion-ease-snap),
+		transform 160ms var(--motion-ease-smooth);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.button:hover {
+		transform: none;
+		box-shadow: none;
+	}
+}
+
+.button:active {
+	transform: translateY(0) scale(0.965);
 }
 
 .danger {
-	background:
-		linear-gradient(180deg, var(--background-floating), var(--background-secondary)),
-		color-mix(in srgb, var(--status-danger) 6%, transparent);
+	background: transparent;
 	color: var(--text-primary-muted);
 	cursor: pointer;
 }
 
 .danger:hover {
-	background:
-		linear-gradient(
-			135deg,
-			color-mix(in srgb, var(--status-danger) 82%, var(--background-floating) 18%),
-			color-mix(in srgb, var(--status-danger) 70%, var(--background-primary) 30%)
-		),
-		var(--status-danger);
+	background: color-mix(in srgb, var(--status-danger) 12%, transparent);
 	color: var(--text-primary);
+}
+
+@media (pointer: coarse) {
+	.button {
+		min-width: 44px;
+		min-height: 44px;
+		border: none;
+		box-shadow: none;
+	}
 }

@@ -20,6 +20,7 @@
 import {t} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import {
+	ArrowsClockwiseIcon,
 	BuildingsIcon,
 	CameraIcon,
 	CameraSlashIcon,
@@ -40,6 +41,7 @@ import {
 } from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {AnimatePresence, motion, useReducedMotion} from 'framer-motion';
+import {Track} from 'livekit-client';
 import {observer} from 'mobx-react-lite';
 import {useCallback, useEffect, useId, useMemo, useRef, useState} from 'react';
 import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators';
@@ -50,6 +52,7 @@ import * as PopoutActionCreators from '~/actions/PopoutActionCreators';
 import * as TextCopyActionCreators from '~/actions/TextCopyActionCreators';
 import * as VoiceSettingsActionCreators from '~/actions/VoiceSettingsActionCreators';
 import * as VoiceStateActionCreators from '~/actions/VoiceStateActionCreators';
+import {Permissions} from '~/Constants';
 import {CameraPreviewModalInRoom} from '~/components/modals/CameraPreviewModal';
 import {ScreenShareSettingsModal} from '~/components/modals/ScreenShareSettingsModal';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
@@ -66,6 +69,7 @@ import DeveloperOptionsStore from '~/stores/DeveloperOptionsStore';
 import GuildStore from '~/stores/GuildStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
+import PermissionStore from '~/stores/PermissionStore';
 import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
 import VoicePanelLayoutStore from '~/stores/VoicePanelLayoutStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
@@ -76,6 +80,7 @@ import {
 	getScreenShareQualityOptions,
 	type ScreenShareStreamResolution,
 } from '~/utils/voice/StreamQualityUtils';
+import {ReconnectOrbit} from './ReconnectOrbit';
 import {SignalStrengthIcon} from './SignalStrengthIcon';
 import styles from './VoiceConnectionStatus.module.css';
 
@@ -370,6 +375,9 @@ interface VoiceDetailsPanelProps {
 	isMobile: boolean;
 	strippedEndpoint: string | null;
 	onCopyEndpoint: (value: string) => Promise<unknown>;
+	detailsCollapsed?: boolean;
+	onToggleDetails?: () => void;
+	compact?: boolean;
 }
 
 const VoiceDetailsPanel = ({
@@ -381,42 +389,65 @@ const VoiceDetailsPanel = ({
 	isMobile,
 	strippedEndpoint,
 	onCopyEndpoint,
+	detailsCollapsed: detailsCollapsedProp,
+	onToggleDetails,
+	compact = false,
 }: VoiceDetailsPanelProps) => {
-	const [detailsCollapsed, setDetailsCollapsed] = useState(true);
+	const [internalDetailsCollapsed, setInternalDetailsCollapsed] = useState(true);
+	const detailsCollapsed = compact ? false : (detailsCollapsedProp ?? internalDetailsCollapsed);
+	const toggleDetails = onToggleDetails ?? (() => setInternalDetailsCollapsed((prev) => !prev));
 	const maxLatency = Math.max(...chartData.map((point) => point.latency), 20) + 10;
 
 	return (
-		<motion.div className={styles.popoutContainer} {...getEnterMotion(reducedMotion)}>
+		<motion.div
+			className={clsx(styles.popoutContainer, compact && styles.popoutContainerCompact)}
+			onPointerDownCapture={(event) => event.stopPropagation()}
+			onClickCapture={(event) => event.stopPropagation()}
+			{...getEnterMotion(reducedMotion)}
+		>
 			<motion.div className={styles.popoutHeader} {...getItemMotion(reducedMotion)}>
-				<span className={styles.popoutTitle}>{t`Voice Connection`}</span>
-				<div className={styles.popoutHeaderActions}>
-					<FocusRing offset={-2}>
-						<motion.button
-							type="button"
-							className={styles.popoutToggleButton}
-							onClick={() => setDetailsCollapsed((prev) => !prev)}
-							aria-label={detailsCollapsed ? t`Show connection details` : t`Hide connection details`}
-							{...getPressMotion(reducedMotion)}
-						>
-							{detailsCollapsed ? (
-								<CaretDownIcon weight="bold" className={styles.iconSmall} />
-							) : (
-								<CaretUpIcon weight="bold" className={styles.iconSmall} />
-							)}
-						</motion.button>
-					</FocusRing>
-					<FocusRing offset={-2}>
-						<motion.button
-							type="button"
-							className={styles.popoutCloseButton}
-							onClick={() => PopoutActionCreators.close()}
-							aria-label={t`Close`}
-							{...getPressMotion(reducedMotion)}
-						>
-							<XIcon weight="bold" className={styles.iconSmall} />
-						</motion.button>
-					</FocusRing>
-				</div>
+				<span className={styles.popoutTitle}>{compact ? t`Connection` : t`Voice Connection`}</span>
+				{!compact && (
+					<div className={styles.popoutHeaderActions}>
+						<FocusRing offset={-2}>
+							<button
+								type="button"
+								className={styles.popoutToggleButton}
+								onPointerDown={(event) => {
+									event.stopPropagation();
+								}}
+								onClick={(event) => {
+									event.preventDefault();
+									event.stopPropagation();
+									toggleDetails();
+								}}
+								aria-label={detailsCollapsed ? t`Show connection details` : t`Hide connection details`}
+								aria-expanded={!detailsCollapsed}
+							>
+								{detailsCollapsed ? (
+									<CaretDownIcon weight="bold" className={styles.iconSmall} />
+								) : (
+									<CaretUpIcon weight="bold" className={styles.iconSmall} />
+								)}
+							</button>
+						</FocusRing>
+						<FocusRing offset={-2}>
+							<motion.button
+								type="button"
+								className={styles.popoutCloseButton}
+								onClick={(event) => {
+									event.preventDefault();
+									event.stopPropagation();
+									PopoutActionCreators.close();
+								}}
+								aria-label={t`Close`}
+								{...getPressMotion(reducedMotion)}
+							>
+								<XIcon weight="bold" className={styles.iconSmall} />
+							</motion.button>
+						</FocusRing>
+					</div>
+				)}
 			</motion.div>
 
 			<motion.div className={styles.popoutSummaryRow} {...getItemMotion(reducedMotion, 0.04)}>
@@ -436,11 +467,15 @@ const VoiceDetailsPanel = ({
 						transition={reducedMotion ? undefined : {duration: 0.24, ease: ARC_EASE}}
 					>
 						<div className={styles.popoutDetailsInner}>
-							{chartData.length > 0 && (
+							{!compact && chartData.length > 0 ? (
 								<motion.div className={styles.chartContainer} {...getItemMotion(reducedMotion, 0.06)}>
 									<VoiceLatencyChart chartData={chartData} maxLatency={maxLatency} reducedMotion={reducedMotion} />
 								</motion.div>
-							)}
+							) : !compact ? (
+								<motion.div className={styles.popoutStatRow} {...getItemMotion(reducedMotion, 0.06)}>
+									<span className={styles.popoutStatLabel}>{t`Collecting ping samples...`}</span>
+								</motion.div>
+							) : null}
 
 							<motion.div className={styles.popoutStats} {...getItemMotion(reducedMotion, 0.1)}>
 								{connectionId && (
@@ -503,10 +538,11 @@ const VoiceDetailsPanel = ({
 	);
 };
 
-const VoiceDetailsPopout = observer(() => {
+export const VoiceDetailsPopout = observer(({compact = false}: {compact?: boolean}) => {
 	const {i18n} = useLingui();
 	const reducedMotion = useReducedMotion() ?? false;
-	const latency = MediaEngineStore.currentLatency;
+	const [detailsCollapsed, setDetailsCollapsed] = useState(true);
+	const latency = MediaEngineStore.displayLatency;
 	const averageLatency = MediaEngineStore.averageLatency;
 	const latencyHistory = MediaEngineStore.latencyHistory;
 	const voiceServerEndpoint = MediaEngineStore.voiceServerEndpoint;
@@ -539,6 +575,9 @@ const VoiceDetailsPopout = observer(() => {
 			isMobile={isMobile}
 			strippedEndpoint={strippedEndpoint}
 			onCopyEndpoint={async (value) => TextCopyActionCreators.copy(i18n, value)}
+			detailsCollapsed={detailsCollapsed}
+			onToggleDetails={() => setDetailsCollapsed((prev) => !prev)}
+			compact={compact}
 		/>
 	);
 });
@@ -592,9 +631,11 @@ const VoiceConnectionStatusInner = observer(
 	({
 		embedded = false,
 		density = 'comfortable',
+		dockExpanded = false,
 	}: {
 		embedded?: boolean;
 		density?: VoicePanelDensity;
+		dockExpanded?: boolean;
 	}) => {
 	const {t} = useLingui();
 	const reducedMotion = useReducedMotion() ?? false;
@@ -603,17 +644,31 @@ const VoiceConnectionStatusInner = observer(
 	const storeConnectedChannelId = MediaEngineStore.channelId;
 	const isConnecting = MediaEngineStore.connecting;
 	const storeIsConnected = MediaEngineStore.connected;
+	const isReconnecting = MediaEngineStore.reconnecting;
+	const reconnectAttempts = MediaEngineStore.reconnectAttempts;
+
+	// Show "Clearing old session..." if connecting takes more than 2s
+	const [connectingLong, setConnectingLong] = useState(false);
+	useEffect(() => {
+		if (!isConnecting) {
+			setConnectingLong(false);
+			return;
+		}
+		const t = window.setTimeout(() => setConnectingLong(true), 2000);
+		return () => window.clearTimeout(t);
+	}, [isConnecting]);
 	const isSelfMuted = LocalVoiceStateStore.selfMute;
 	const isSelfDeafened = LocalVoiceStateStore.selfDeaf;
 	const isGuildMuted = voiceState?.mute ?? false;
 	const isGuildDeafened = voiceState?.deaf ?? false;
 
-	const currentLatency = MediaEngineStore.currentLatency;
-	const isPingSearching = isConnecting || currentLatency === null;
+	const currentLatency = MediaEngineStore.displayLatency;
+	const isPingSearching = isConnecting && currentLatency === null;
 	const latencyForSignal = isPingSearching ? null : currentLatency;
 	const connectionId = MediaEngineStore.connectionId;
 	const isMobile = voiceState?.is_mobile ?? false;
-	const [isConnectionInfoCollapsed, setIsConnectionInfoCollapsed] = useState(true);
+	const isDesktopVoiceChrome = !MobileLayoutStore.enabled;
+	const [isConnectionInfoCollapsed, setIsConnectionInfoCollapsed] = useState(!isDesktopVoiceChrome);
 	const {statusRowRef, statusButtonRef, offsetCrossAxis} = useCenteredVoiceDetailsPopoutOffset(
 		!MobileLayoutStore.enabled,
 		[isConnectionInfoCollapsed],
@@ -624,7 +679,8 @@ const VoiceConnectionStatusInner = observer(
 	const connectedGuildId = storeConnectedGuildId;
 	const connectedChannelId = storeConnectedChannelId;
 	const isConnected = storeIsConnected;
-	const showConnectionInfo = !isConnectionInfoCollapsed;
+	const showConnectionInfo = !dockExpanded && (isDesktopVoiceChrome || !isConnectionInfoCollapsed);
+	const showConnectionInfoToggle = !isDesktopVoiceChrome && !dockExpanded;
 	const voiceSessionKey =
 		isConnected && connectedChannelId ? `${connectedGuildId ?? 'dm'}:${connectedChannelId}` : null;
 	const voiceConnectionDuration = useVoiceConnectionDuration(isConnected, voiceSessionKey);
@@ -637,13 +693,25 @@ const VoiceConnectionStatusInner = observer(
 	const resolvedGuildId = connectedGuildId ?? channel?.guildId ?? null;
 	const guild = resolvedGuildId ? GuildStore.getGuild(resolvedGuildId) : null;
 	const channelDisplayName = channel ? (channel.name || ChannelUtils.getDMDisplayName(channel)) : '';
+	const canSpeakInChannel = channel ? (!channel.guildId || PermissionStore.can(Permissions.SPEAK, channel)) : true;
+	const isBroadcastMode = channel ? MediaEngineStore.isVoiceChannelStageLike(channel.id) : false;
+	const isSuppressedListener = isBroadcastMode && MediaEngineStore.isCurrentUserInBroadcastListenerMode();
+	const isStageListenerLocked = isBroadcastMode && (isSuppressedListener || !canSpeakInChannel);
+	const muteControlDisabled = isGuildMuted || isStageListenerLocked;
 
 	if (!channel || (resolvedGuildId && !guild)) {
 		return null;
 	}
 
 	const getStatusText = () => {
-		if (isConnecting) return t`Connecting...`;
+		if (dockExpanded && currentLatency !== null) return `${currentLatency}ms`;
+		if (dockExpanded && isConnecting) return t`Connecting`;
+		if (dockExpanded && isReconnecting) return t`Retrying`;
+		if (dockExpanded) return t`Ping`;
+		if (isReconnecting) return reconnectAttempts > 0
+			? t`Reconnecting... (${reconnectAttempts})`
+			: t`Reconnecting...`;
+		if (isConnecting) return connectingLong ? t`Clearing old session...` : t`Connecting...`;
 		if (isConnected) return t`Voice Connected`;
 		return t`Disconnected`;
 	};
@@ -659,6 +727,12 @@ const VoiceConnectionStatusInner = observer(
 		event.stopPropagation();
 		setIsConnectionInfoCollapsed((prev) => !prev);
 	};
+
+	useEffect(() => {
+		if (isDesktopVoiceChrome) {
+			setIsConnectionInfoCollapsed(false);
+		}
+	}, [isDesktopVoiceChrome]);
 
 	useEffect(() => {
 		if (!embedded) {
@@ -678,14 +752,15 @@ const VoiceConnectionStatusInner = observer(
 			className={clsx(
 				styles.voiceConnectionContainer,
 				embedded && styles.voiceConnectionEmbedded,
-				embedded && isConnectionInfoCollapsed && styles.voiceConnectionEmbeddedCollapsed,
+				embedded && isConnectionInfoCollapsed && !dockExpanded && styles.voiceConnectionEmbeddedCollapsed,
+				dockExpanded && styles.voiceConnectionDockExpanded,
 				!embedded && density === 'compact' && styles.voiceConnectionCompact,
 				!embedded && isConnectionInfoCollapsed && styles.voiceConnectionCollapsed,
 			)}
 			{...getEnterMotion(reducedMotion)}
 		>
 			<motion.div className={styles.mediaSection} {...getItemMotion(reducedMotion, 0.04)}>
-				<LocalParticipantControls />
+				<LocalParticipantControls showDisconnect={dockExpanded} />
 			</motion.div>
 
 			<motion.div ref={statusRowRef} className={styles.statusRow} {...getItemMotion(reducedMotion)}>
@@ -705,7 +780,7 @@ const VoiceConnectionStatusInner = observer(
 					position="top"
 					offsetMainAxis={16}
 					offsetCrossAxis={offsetCrossAxis}
-					render={() => <VoiceDetailsPopout />}
+					render={() => <VoiceDetailsPopout compact={dockExpanded} />}
 				>
 					<FocusRingWrapper focusRingOffset={-2}>
 						<motion.button
@@ -715,22 +790,26 @@ const VoiceConnectionStatusInner = observer(
 							{...getPressMotion(reducedMotion)}
 						>
 							<span className={clsx(styles.statusIndicator, isConnecting && styles.statusIndicatorFast)} aria-hidden="true" />
-							{embedded && isConnectionInfoCollapsed && (
+							{embedded && isConnectionInfoCollapsed && !dockExpanded && (
 								<span className={styles.compactPing}>
 									{currentLatency !== null ? `${currentLatency}ms` : t`--ms`}
 								</span>
 							)}
-							<span className={styles.statusMeta}>
-								<span className={styles.statusLabel}>{getStatusText()}</span>
-								{voiceConnectionDuration && (
-									<span className={styles.statusTimer}>{voiceConnectionDuration}</span>
-								)}
-							</span>
+							{isReconnecting ? (
+								<ReconnectOrbit size="compact" className={styles.reconnectOrbit} />
+							) : (
+								<span className={styles.statusMeta}>
+									<span className={styles.statusLabel}>{getStatusText()}</span>
+									{voiceConnectionDuration && (
+										<span className={styles.statusTimer}>{voiceConnectionDuration}</span>
+									)}
+								</span>
+							)}
 						</motion.button>
 					</FocusRingWrapper>
 				</Popout>
 				<div className={styles.controls}>
-					{embedded ? (
+					{showConnectionInfoToggle && (
 						<Tooltip text={isConnectionInfoCollapsed ? t`Show server and room info` : t`Hide server and room info`}>
 							<FocusRing offset={-2}>
 								<motion.button
@@ -738,24 +817,7 @@ const VoiceConnectionStatusInner = observer(
 									className={clsx(styles.controlButton, !isConnectionInfoCollapsed && styles.selected)}
 									onClick={handleToggleExpand}
 									aria-label={isConnectionInfoCollapsed ? t`Show server and room info` : t`Hide server and room info`}
-									{...getPressMotion(reducedMotion)}
-								>
-									{isConnectionInfoCollapsed ? (
-										<CaretDownIcon weight="bold" className={styles.icon} />
-									) : (
-										<CaretUpIcon weight="bold" className={styles.icon} />
-									)}
-								</motion.button>
-							</FocusRing>
-						</Tooltip>
-					) : (
-						<Tooltip text={isConnectionInfoCollapsed ? t`Show server and room info` : t`Hide server and room info`}>
-							<FocusRing offset={-2}>
-								<motion.button
-									type="button"
-									className={clsx(styles.controlButton, !isConnectionInfoCollapsed && styles.selected)}
-									onClick={handleToggleExpand}
-									aria-label={isConnectionInfoCollapsed ? t`Show server and room info` : t`Hide server and room info`}
+									aria-expanded={!isConnectionInfoCollapsed}
 									{...getPressMotion(reducedMotion)}
 								>
 									{isConnectionInfoCollapsed ? (
@@ -767,14 +829,14 @@ const VoiceConnectionStatusInner = observer(
 							</FocusRing>
 						</Tooltip>
 					)}
-					<Tooltip text={isGuildMuted ? t`Community Muted` : isSelfMuted ? t`Unmute` : t`Mute`}>
-						<FocusRing offset={-2} enabled={!isGuildMuted}>
+					<Tooltip text={isStageListenerLocked ? t`Listener mode: join stage to speak` : isGuildMuted ? t`Community Muted` : isSelfMuted ? t`Unmute` : t`Mute`}>
+						<FocusRing offset={-2} enabled={!muteControlDisabled}>
 							<motion.button
 								type="button"
-								className={clsx(styles.controlButton, (isSelfMuted || isGuildMuted) && styles.selected, isGuildMuted && styles.disabled)}
-								onClick={isGuildMuted ? undefined : () => VoiceStateActionCreators.toggleSelfMute(null)}
-								aria-label={isGuildMuted ? t`Community Muted` : isSelfMuted ? t`Unmute` : t`Mute`}
-								disabled={isGuildMuted}
+								className={clsx(styles.controlButton, (isSelfMuted || isGuildMuted) && styles.selected, muteControlDisabled && styles.disabled)}
+								onClick={muteControlDisabled ? undefined : () => VoiceStateActionCreators.toggleSelfMute(null)}
+								aria-label={isStageListenerLocked ? t`Listener mode: join stage to speak` : isGuildMuted ? t`Community Muted` : isSelfMuted ? t`Unmute` : t`Mute`}
+								disabled={muteControlDisabled}
 								{...getPressMotion(reducedMotion)}
 							>
 								{isSelfMuted || isGuildMuted ? (
@@ -818,6 +880,36 @@ const VoiceConnectionStatusInner = observer(
 							</motion.button>
 						</FocusRing>
 					</Tooltip>
+					{(isConnecting && connectingLong) || isReconnecting ? (
+						<Tooltip text={t`Clear stuck session and retry`}>
+							<FocusRing offset={-2}>
+								<motion.button
+									type="button"
+									className={styles.controlButton}
+									onClick={async () => {
+										const guildId = MediaEngineStore.guildId;
+										const channelId = MediaEngineStore.channelId;
+										MediaEngineStore.evictingStaleSession = true;
+										try {
+											await MediaEngineStore.disconnectFromVoiceChannel();
+											try {
+												await fetch('/api/voice/clear-my-sessions', {method: 'POST'});
+											} catch {}
+											if (guildId && channelId) {
+												await MediaEngineStore.connectToVoiceChannel(guildId, channelId);
+											}
+										} finally {
+											MediaEngineStore.evictingStaleSession = false;
+										}
+									}}
+									aria-label={t`Clear session`}
+									{...getPressMotion(reducedMotion)}
+								>
+									<ArrowsClockwiseIcon weight="fill" className={styles.icon} />
+								</motion.button>
+							</FocusRing>
+						</Tooltip>
+					) : null}
 				</div>
 			</motion.div>
 
@@ -876,18 +968,49 @@ const VoiceConnectionStatusInner = observer(
 	);
 });
 
-const LocalParticipantControls = observer(() => {
+const LocalParticipantControls = observer(({showDisconnect = false}: {showDisconnect?: boolean}) => {
 	const {t} = useLingui();
 	const reducedMotion = useReducedMotion() ?? false;
 	const {inputDevices, outputDevices} = useMediaDevices();
 	const room = MediaEngineStore.room;
 	const localParticipant = room?.localParticipant;
+	const connectedChannel = ChannelStore.getChannel(MediaEngineStore.channelId ?? '');
+	const canSpeakInChannel = connectedChannel ? (!connectedChannel.guildId || PermissionStore.can(Permissions.SPEAK, connectedChannel)) : true;
+	const isBroadcastMode = connectedChannel ? MediaEngineStore.isVoiceChannelStageLike(connectedChannel.id) : false;
+	const isSuppressedListener = isBroadcastMode && MediaEngineStore.isCurrentUserInBroadcastListenerMode();
+	const isStageListenerLocked = isBroadcastMode && (isSuppressedListener || !canSpeakInChannel);
 	const participants = MediaEngineStore.participants;
 	const localParticipantSnapshot = Object.values(participants).find((p) => p.isLocal);
 	const isCameraEnabled = localParticipantSnapshot?.isCameraEnabled ?? false;
 	const isScreenShareEnabled = localParticipantSnapshot?.isScreenShareEnabled ?? false;
 	const isConnected = !!room && !!localParticipant;
 	const noiseSuppressionEnabled = VoiceSettingsStore.noiseSuppression;
+	const noiseSuppressionSupported = useMemo(() => {
+		if (typeof navigator === 'undefined') {
+			return true;
+		}
+		const supportedConstraints = navigator.mediaDevices?.getSupportedConstraints?.();
+		if (!supportedConstraints) {
+			return true;
+		}
+		return supportedConstraints.noiseSuppression !== false;
+	}, []);
+	const appliedNoiseSuppression = useMemo(() => {
+		const micTrackPublication = localParticipant?.getTrackPublication(Track.Source.Microphone);
+		const mediaTrack = micTrackPublication?.track?.mediaStreamTrack;
+		if (!mediaTrack || typeof mediaTrack.getSettings !== 'function') {
+			return null;
+		}
+
+		const settings = mediaTrack.getSettings();
+		return typeof settings.noiseSuppression === 'boolean' ? settings.noiseSuppression : null;
+	}, [localParticipant, noiseSuppressionEnabled, isConnected]);
+	const noiseSuppressionActive = noiseSuppressionSupported && noiseSuppressionEnabled;
+	const noiseSuppressionTooltip = !noiseSuppressionSupported
+		? t`Noise suppression is not supported by this device/browser`
+		: noiseSuppressionActive
+			? t`Noise suppression is ON`
+			: t`Noise suppression is OFF`;
 
 	const handleOpenAudioSettings = (event: React.MouseEvent) => {
 		event.preventDefault();
@@ -898,6 +1021,7 @@ const LocalParticipantControls = observer(() => {
 	};
 
 	const handleToggleCamera = useCallback(async () => {
+		if (isStageListenerLocked) return;
 		if (!localParticipant) return;
 
 		try {
@@ -922,7 +1046,7 @@ const LocalParticipantControls = observer(() => {
 		} catch (error) {
 			console.error('Failed to toggle camera:', error);
 		}
-	}, [isCameraEnabled, localParticipant]);
+	}, [isCameraEnabled, isStageListenerLocked, localParticipant]);
 
 	const getScreenShareConstraints = useCallback(
 		(resolution: ScreenShareStreamResolution, frameRate: number) => getScreenShareQualityOptions(resolution, frameRate),
@@ -930,6 +1054,7 @@ const LocalParticipantControls = observer(() => {
 	);
 
 	const handleScreenShare = useCallback(async () => {
+		if (isStageListenerLocked) return;
 		if (!localParticipant) return;
 
 		try {
@@ -955,23 +1080,35 @@ const LocalParticipantControls = observer(() => {
 		} catch (error) {
 			console.error('Failed to toggle screen share:', error);
 		}
-	}, [isScreenShareEnabled, localParticipant, getScreenShareConstraints]);
+	}, [getScreenShareConstraints, isScreenShareEnabled, isStageListenerLocked, localParticipant]);
 
 	return (
 		<>
 			<Tooltip
 				text={
-					!isConnected ? t`Please wait for connection...` : isCameraEnabled ? t`Turn Off Camera` : t`Turn On Camera`
+					isStageListenerLocked
+						? t`Listeners can't use camera in stage mode`
+						: !isConnected
+							? t`Please wait for connection...`
+							: isCameraEnabled
+								? t`Turn Off Camera`
+								: t`Turn On Camera`
 				}
 			>
-				<FocusRing offset={-2} enabled={isConnected}>
+				<FocusRing offset={-2} enabled={isConnected && !isStageListenerLocked}>
 					<motion.button
 						type="button"
 						className={clsx(styles.mediaButton, isCameraEnabled && styles.cameraActive)}
 						onClick={handleToggleCamera}
-						disabled={!isConnected}
+						disabled={!isConnected || isStageListenerLocked}
 						aria-label={
-							!isConnected ? t`Please wait for connection...` : isCameraEnabled ? t`Turn Off Camera` : t`Turn On Camera`
+							isStageListenerLocked
+								? t`Listeners can't use camera in stage mode`
+								: !isConnected
+									? t`Please wait for connection...`
+									: isCameraEnabled
+										? t`Turn Off Camera`
+										: t`Turn On Camera`
 						}
 						{...getPressMotion(reducedMotion)}
 					>
@@ -985,25 +1122,29 @@ const LocalParticipantControls = observer(() => {
 			</Tooltip>
 			<Tooltip
 				text={
-					!isConnected
-						? t`Please wait for connection...`
-						: isScreenShareEnabled
-							? t`Stop Sharing`
-							: t`Share Your Screen`
+					isStageListenerLocked
+						? t`Listeners can't share screen in stage mode`
+						: !isConnected
+							? t`Please wait for connection...`
+							: isScreenShareEnabled
+								? t`Stop Sharing`
+								: t`Share Your Screen`
 				}
 			>
-				<FocusRing offset={-2} enabled={isConnected}>
+				<FocusRing offset={-2} enabled={isConnected && !isStageListenerLocked}>
 					<motion.button
 						type="button"
 						className={clsx(styles.mediaButton, isScreenShareEnabled && styles.screenShareActive)}
 						onClick={handleScreenShare}
-						disabled={!isConnected}
+						disabled={!isConnected || isStageListenerLocked}
 						aria-label={
-							!isConnected
-								? t`Please wait for connection...`
-								: isScreenShareEnabled
-									? t`Stop Sharing`
-									: t`Share Your Screen`
+							isStageListenerLocked
+								? t`Listeners can't share screen in stage mode`
+								: !isConnected
+									? t`Please wait for connection...`
+									: isScreenShareEnabled
+										? t`Stop Sharing`
+										: t`Share Your Screen`
 						}
 						{...getPressMotion(reducedMotion)}
 					>
@@ -1011,13 +1152,24 @@ const LocalParticipantControls = observer(() => {
 					</motion.button>
 				</FocusRing>
 			</Tooltip>
-			<Tooltip text={noiseSuppressionEnabled ? t`Disable Noise Suppression` : t`Enable Noise Suppression`}>
+			<Tooltip text={noiseSuppressionTooltip}>
 				<FocusRing offset={-2}>
 					<motion.button
 						type="button"
-						className={clsx(styles.mediaButton, noiseSuppressionEnabled && styles.noiseSuppressionActive)}
-						onClick={() => VoiceSettingsActionCreators.update({noiseSuppression: !noiseSuppressionEnabled})}
-						aria-label={noiseSuppressionEnabled ? t`Disable Noise Suppression` : t`Enable Noise Suppression`}
+						className={clsx(
+							styles.mediaButton,
+							noiseSuppressionActive && styles.noiseSuppressionActive,
+							!noiseSuppressionSupported && styles.noiseSuppressionUnavailable,
+						)}
+						onClick={() => {
+							if (!noiseSuppressionSupported) {
+								return;
+							}
+							VoiceSettingsActionCreators.update({noiseSuppression: !noiseSuppressionEnabled});
+						}}
+						disabled={!noiseSuppressionSupported}
+						aria-pressed={noiseSuppressionActive}
+						aria-label={noiseSuppressionTooltip}
 						{...getPressMotion(reducedMotion)}
 					>
 						<WaveformIcon weight="fill" className={styles.mediaIcon} />
@@ -1037,18 +1189,45 @@ const LocalParticipantControls = observer(() => {
 					</motion.button>
 				</FocusRing>
 			</Tooltip>
+			{showDisconnect && (
+				<Tooltip text={t`Disconnect`}>
+					<FocusRing offset={-2}>
+						<motion.button
+							type="button"
+							className={clsx(styles.mediaButton, styles.mediaButtonDisconnect)}
+							onClick={async () => {
+								await MediaEngineStore.disconnectFromVoiceChannel();
+							}}
+							aria-label={t`Disconnect`}
+							{...getPressMotion(reducedMotion)}
+						>
+							<PhoneXIcon weight="fill" className={styles.mediaIcon} />
+						</motion.button>
+					</FocusRing>
+				</Tooltip>
+			)}
 		</>
 	);
 });
 
-const MockedVoiceConnectionStatus = observer(({embedded = false, density = 'comfortable'}: {embedded?: boolean; density?: VoicePanelDensity}) => {
+const MockedVoiceConnectionStatus = observer(
+	({
+		embedded = false,
+		density = 'comfortable',
+		dockExpanded = false,
+	}: {
+		embedded?: boolean;
+		density?: VoicePanelDensity;
+		dockExpanded?: boolean;
+	}) => {
 	const {i18n} = useLingui();
 	const reducedMotion = useReducedMotion() ?? false;
 	const {openProps: popoutProps} = usePopout('voice-details-popout');
 	const latency = 42;
 	const averageLatency = 45;
 	const voiceConnectionDuration = useVoiceConnectionDuration(true, 'mocked-voice-session', 5 * 60 + 12);
-	const [isConnectionInfoCollapsed, setIsConnectionInfoCollapsed] = useState(true);
+	const isDesktopVoiceChrome = !MobileLayoutStore.enabled;
+	const [isConnectionInfoCollapsed, setIsConnectionInfoCollapsed] = useState(!isDesktopVoiceChrome);
 	const {statusRowRef, statusButtonRef, offsetCrossAxis} = useCenteredVoiceDetailsPopoutOffset(
 		!MobileLayoutStore.enabled,
 		[isConnectionInfoCollapsed],
@@ -1066,18 +1245,25 @@ const MockedVoiceConnectionStatus = observer(({embedded = false, density = 'comf
 		return data;
 	}, []);
 
+	useEffect(() => {
+		if (isDesktopVoiceChrome) {
+			setIsConnectionInfoCollapsed(false);
+		}
+	}, [isDesktopVoiceChrome]);
+
 	return (
 		<motion.div
 			className={clsx(
 				styles.voiceConnectionContainer,
 				embedded && styles.voiceConnectionEmbedded,
+				dockExpanded && styles.voiceConnectionDockExpanded,
 				density === 'compact' && styles.voiceConnectionCompact,
 				!embedded && isConnectionInfoCollapsed && styles.voiceConnectionCollapsed,
 			)}
 			{...getEnterMotion(reducedMotion)}
 		>
 			<motion.div className={styles.mediaSection} {...getItemMotion(reducedMotion, 0.04)}>
-				<LocalParticipantControls />
+				<LocalParticipantControls showDisconnect={dockExpanded} />
 			</motion.div>
 
 			<motion.div ref={statusRowRef} className={styles.statusRow} {...getItemMotion(reducedMotion)}>
@@ -1105,6 +1291,7 @@ const MockedVoiceConnectionStatus = observer(({embedded = false, density = 'comf
 							isMobile={false}
 							strippedEndpoint="mock.voice.server:443"
 							onCopyEndpoint={async (value) => TextCopyActionCreators.copy(i18n, value)}
+							compact={dockExpanded}
 						/>
 					)}
 				>
@@ -1126,23 +1313,25 @@ const MockedVoiceConnectionStatus = observer(({embedded = false, density = 'comf
 					</FocusRingWrapper>
 				</Popout>
 			<div className={styles.controls}>
-				<Tooltip text={isConnectionInfoCollapsed ? t`Show server and room info` : t`Hide server and room info`}>
-					<FocusRing offset={-2}>
-						<motion.button
-							type="button"
-							className={clsx(styles.controlButton, !isConnectionInfoCollapsed && styles.selected)}
-							onClick={() => setIsConnectionInfoCollapsed((prev) => !prev)}
-							aria-label={isConnectionInfoCollapsed ? t`Show server and room info` : t`Hide server and room info`}
-							{...getPressMotion(reducedMotion)}
-						>
-							{isConnectionInfoCollapsed ? (
-								<CaretDownIcon weight="bold" className={styles.icon} />
-							) : (
-								<CaretUpIcon weight="bold" className={styles.icon} />
-							)}
-						</motion.button>
-					</FocusRing>
-				</Tooltip>
+				{!isDesktopVoiceChrome && !dockExpanded && (
+					<Tooltip text={isConnectionInfoCollapsed ? t`Show server and room info` : t`Hide server and room info`}>
+						<FocusRing offset={-2}>
+							<motion.button
+								type="button"
+								className={clsx(styles.controlButton, !isConnectionInfoCollapsed && styles.selected)}
+								onClick={() => setIsConnectionInfoCollapsed((prev) => !prev)}
+								aria-label={isConnectionInfoCollapsed ? t`Show server and room info` : t`Hide server and room info`}
+								{...getPressMotion(reducedMotion)}
+							>
+								{isConnectionInfoCollapsed ? (
+									<CaretDownIcon weight="bold" className={styles.icon} />
+								) : (
+									<CaretUpIcon weight="bold" className={styles.icon} />
+								)}
+							</motion.button>
+						</FocusRing>
+					</Tooltip>
+				)}
 				<Tooltip text={t`Disconnect`}>
 					<FocusRing offset={-2}>
 						<motion.button
@@ -1162,7 +1351,7 @@ const MockedVoiceConnectionStatus = observer(({embedded = false, density = 'comf
 			</motion.div>
 
 			<AnimatePresence initial={false}>
-				{!isConnectionInfoCollapsed && (
+				{(isDesktopVoiceChrome || dockExpanded || !isConnectionInfoCollapsed) && (
 					<motion.div
 						className={styles.collapsibleSection}
 						initial={reducedMotion ? undefined : {height: 0, opacity: 0}}
@@ -1197,15 +1386,18 @@ const MockedVoiceConnectionStatus = observer(({embedded = false, density = 'comf
 			</AnimatePresence>
 		</motion.div>
 	);
-});
+	},
+);
 
 export const VoiceConnectionStatus = observer(
 	({
 		embedded = false,
 		density = 'comfortable',
+		dockExpanded = false,
 	}: {
 		embedded?: boolean;
 		density?: VoicePanelDensity;
+		dockExpanded?: boolean;
 	}) => {
 	const storeConnectedGuildId = MediaEngineStore.guildId;
 	const storeConnectedChannelId = MediaEngineStore.channelId;
@@ -1223,13 +1415,14 @@ export const VoiceConnectionStatus = observer(
 		if (!forceShowVoiceConnection) {
 			return null;
 		}
-		return <MockedVoiceConnectionStatus embedded={embedded} density={density} />;
+		return <MockedVoiceConnectionStatus embedded={embedded} density={density} dockExpanded={dockExpanded} />;
 	}
 
 	return (
 		<VoiceConnectionStatusInner
 			embedded={embedded}
 			density={density}
+			dockExpanded={dockExpanded}
 		/>
 	);
 	},

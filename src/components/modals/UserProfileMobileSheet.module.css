@@ -25,13 +25,8 @@
 	width: 100%;
 	flex-direction: column;
 	overflow: hidden;
-	background:
-		radial-gradient(circle at 10% -10%, color-mix(in srgb, var(--brand-primary) 16%, transparent), transparent 44%),
-		linear-gradient(
-			180deg,
-			color-mix(in srgb, var(--background-floating) 90%, var(--background-primary) 10%),
-			color-mix(in srgb, var(--background-secondary) 86%, var(--background-primary) 14%)
-		);
+	background: var(--background-primary);
+	contain: layout paint;
 }
 
 .loadingScreen {
@@ -44,11 +39,11 @@
 
 .bannerContainer {
 	position: relative;
-	height: calc(184px + min(var(--safe-area-top, 0px), 20px));
+	height: calc(148px + min(var(--safe-area-top, 0px), 16px));
 	width: 100%;
 	overflow: hidden;
-	border-top-left-radius: 28px;
-	border-top-right-radius: 28px;
+	border-top-left-radius: 18px;
+	border-top-right-radius: 18px;
 }
 
 .bannerImage {
@@ -64,9 +59,25 @@
 	width: 100%;
 }
 
+.bannerShade {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		180deg,
+		rgb(6 10 20 / 0.04) 0%,
+		rgb(6 10 20 / 0.08) 48%,
+		rgb(6 10 20 / 0.26) 100%
+	);
+	pointer-events: none;
+}
+
 .profileContent {
 	position: relative;
+	margin-top: -10px;
+	border-top-left-radius: 18px;
+	border-top-right-radius: 18px;
 	background-color: var(--background-primary);
+	box-shadow: none;
 	animation: mobileProfileContentEnter var(--motion-dur-medium) var(--motion-ease-snap);
 }
 
@@ -176,7 +187,7 @@
 
 .actionsContainer {
 	position: absolute;
-	top: 1rem;
+	top: 0.875rem;
 	right: 1rem;
 	z-index: 10;
 	display: flex;
@@ -185,11 +196,11 @@
 
 .actionButton {
 	display: flex;
-	height: 2.5rem;
-	width: 2.5rem;
+	height: 2.375rem;
+	width: 2.375rem;
 	align-items: center;
 	justify-content: center;
-	border-radius: 14px;
+	border-radius: 9999px;
 	background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
 	color: var(--text-primary);
 	cursor: pointer;
@@ -260,6 +271,10 @@
 
 .musicActivityRow {
 	margin-top: 0.75rem;
+}
+
+.steamNowPlayingRow {
+	margin-top: 0.6rem;
 }
 
 .editProfileButton {
@@ -352,12 +367,62 @@
 
 .infoCard {
 	margin-top: 1rem;
-	border-radius: 1rem;
+	border-radius: 0.875rem;
 	background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
+	padding: 0.8rem;
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+
+.profileLinkCard {
+	margin-top: 1rem;
+}
+
+.giftShowcaseCard {
+	margin-top: 1rem;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	border-radius: 1rem;
 	padding: 1rem;
+	border: 1px solid color-mix(in srgb, #f5c451 22%, var(--text-primary) 8%, transparent);
+	background:
+		radial-gradient(circle at 10% 0%, rgb(245 196 81 / 0.22), transparent 44%),
+		color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
 	box-shadow:
 		0 10px 16px rgb(3 7 18 / 0.14),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+		inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+.giftShowcaseIcon {
+	display: flex;
+	height: 2.75rem;
+	width: 2.75rem;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	border-radius: 1rem;
+	color: #241806;
+	background: linear-gradient(135deg, #ffe08a, #f5a942);
+	box-shadow: 0 8px 18px rgb(245 169 66 / 0.18);
+}
+
+.giftShowcaseText {
+	display: grid;
+	gap: 0.125rem;
+	min-width: 0;
+}
+
+.giftShowcaseTitle {
+	font-weight: 800;
+	font-size: 0.875rem;
+	color: var(--text-primary);
+}
+
+.giftShowcaseDescription {
+	margin: 0;
+	font-size: 0.75rem;
+	line-height: 1.3;
+	color: var(--text-tertiary);
 }
 
 .bioSection {
@@ -377,14 +442,12 @@
 	width: 100%;
 	align-items: center;
 	justify-content: space-between;
-	border-radius: 1rem;
+	border-radius: 0.875rem;
 	background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
-	padding: 1rem;
+	padding: 0.8rem;
 	text-align: left;
 	cursor: pointer;
-	box-shadow:
-		0 10px 16px rgb(3 7 18 / 0.14),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent);
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 
 .noteTitle {
@@ -429,8 +492,88 @@
 	margin-top: 0.75rem;
 }
 
+.integrationsSection {
+	margin-top: 0.75rem;
+}
+
 .sheetContainer {
 	background-color: transparent;
+}
+
+.sheetContainer :global([data-rsbs-overlay='']) {
+	padding-bottom: 0;
+}
+
+@media (max-width: 560px) {
+	.bannerContainer {
+		height: calc(104px + min(var(--safe-area-top, 0px), 12px));
+	}
+
+	.profileContent {
+		margin-top: -12px;
+		border-top-left-radius: 18px;
+		border-top-right-radius: 18px;
+	}
+
+	.avatarContainer {
+		left: 0.75rem;
+		top: -34px;
+	}
+
+	.contentPadding {
+		padding: 2.6rem 0.75rem 0;
+	}
+
+	.actionsContainer {
+		top: 0.7rem;
+		right: 0.75rem;
+		gap: 0.35rem;
+	}
+
+	.actionButton {
+		width: 2.15rem;
+		height: 2.15rem;
+		box-shadow: none;
+	}
+
+	.username {
+		font-size: 1.3rem;
+		line-height: 1.6rem;
+	}
+
+	.discriminator {
+		font-size: 1.15rem;
+		line-height: 1.6rem;
+	}
+
+	.badgesWrapper {
+		flex: 1 1 100%;
+		max-width: 100%;
+		overflow-x: auto;
+	}
+
+	.actionButtonsContainer {
+		gap: 0.5rem;
+	}
+
+	.actionCard,
+	.infoCard,
+	.noteButton,
+	.giftShowcaseCard {
+		padding: 0.68rem;
+		border-radius: 0.875rem;
+		box-shadow: none;
+	}
+
+	.actionIconContainer,
+	.actionIconContainerSecondary {
+		width: 2.5rem;
+		height: 2.5rem;
+	}
+
+	.integrationsSection {
+		display: none;
+	}
 }
 
 @keyframes mobileProfileContentEnter {
