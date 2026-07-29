@@ -18,7 +18,14 @@
  */
 
 import type {GuildID, UserID} from '~/BrandedTypes';
-import {BatchBuilder, buildPatchFromData, executeVersionedUpdate, fetchMany, fetchOne} from '~/database/Cassandra';
+import {
+	BatchBuilder,
+	buildPatchFromData,
+	executeVersionedUpdate,
+	fetchMany,
+	fetchOne,
+	upsertOne,
+} from '~/database/Cassandra';
 import {GUILD_MEMBER_COLUMNS, type GuildMemberRow} from '~/database/CassandraTypes';
 import {GuildMember} from '~/Models';
 import {GuildMembers, GuildMembersByUserId} from '~/Tables';
@@ -42,8 +49,15 @@ export class GuildMemberRepository extends IGuildMemberRepository {
 		return member ? new GuildMember(member) : null;
 	}
 
-	async listMembers(guildId: GuildID): Promise<Array<GuildMember>> {
-		const members = await fetchMany<GuildMemberRow>(FETCH_GUILD_MEMBERS_BY_GUILD_ID_QUERY, {
+	async listMembers(guildId: GuildID, options?: {limit?: number}): Promise<Array<GuildMember>> {
+		const query =
+			options?.limit != null
+				? GuildMembers.selectCql({
+						where: GuildMembers.where.eq('guild_id'),
+						limit: options.limit,
+					})
+				: FETCH_GUILD_MEMBERS_BY_GUILD_ID_QUERY;
+		const members = await fetchMany<GuildMemberRow>(query, {
 			guild_id: guildId,
 		});
 		return members.map((member) => new GuildMember(member));
@@ -69,7 +83,8 @@ export class GuildMemberRepository extends IGuildMemberRepository {
 			{onFailure: 'log'},
 		);
 
-		await fetchOne(
+		// Index write after LWT; upsertOne avoids a pointless result round-trip shape.
+		await upsertOne(
 			GuildMembersByUserId.insert({
 				user_id: userId,
 				guild_id: guildId,

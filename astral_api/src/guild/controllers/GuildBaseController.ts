@@ -245,6 +245,18 @@ export const GuildBaseController = (app: HonoApp) => {
 		},
 	);
 
+	app.get(
+		'/guilds/:guild_id/counts',
+		RateLimitMiddleware(RateLimitConfigs.GUILD_GET),
+		LoginRequired,
+		Validator('param', z.object({guild_id: Int64Type})),
+		async (ctx) => {
+			const userId = ctx.get('user').id;
+			const guildId = createGuildID(ctx.req.valid('param').guild_id);
+			return ctx.json(await ctx.get('guildService').getGuildCounts({userId, guildId}));
+		},
+	);
+
 	app.patch(
 		'/guilds/:guild_id',
 		RateLimitMiddleware(RateLimitConfigs.GUILD_UPDATE),

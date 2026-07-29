@@ -189,19 +189,6 @@
 	align-items: center;
 }
 
-.pttLatchingRow {
-	display: flex;
-	justify-content: space-between;
-	align-items: flex-start;
-	gap: 1rem;
-}
-
-.pttLatchingText {
-	display: flex;
-	flex-direction: column;
-	gap: 0.25rem;
-}
-
 .pttDelayValue {
 	font-size: 0.75rem;
 	color: var(--text-primary-muted);

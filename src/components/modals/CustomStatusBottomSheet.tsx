@@ -18,16 +18,19 @@
  */
 
 import {Trans, useLingui} from '@lingui/react/macro';
-import {SmileyIcon, XIcon} from '@phosphor-icons/react';
+import {SmileyIcon, SparkleIcon, XIcon} from '@phosphor-icons/react';
 import clsx from 'clsx';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
 import * as UserSettingsActionCreators from '~/actions/UserSettingsActionCreators';
-import {ExpressionPickerSheet} from '~/components/modals/ExpressionPickerSheet';
+import {MobileEmojiPicker} from '~/components/channel/MobileEmojiPicker';
+import {StatusGifEmojiPicker} from '~/components/modals/StatusGifEmojiPicker';
 import {BottomSheet} from '~/components/uikit/BottomSheet/BottomSheet';
 import {Button} from '~/components/uikit/Button/Button';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
+import {type SegmentedTab, SegmentedTabs} from '~/components/uikit/SegmentedTabs/SegmentedTabs';
 import {CUSTOM_STATUS_TEXT_LIMIT, type CustomStatus, normalizeCustomStatus} from '~/lib/customStatus';
+import {getStatusGifEmoji, type StatusGifEmoji} from '~/lib/statusGifEmojis';
 import type {Emoji} from '~/stores/EmojiStore';
 import EmojiStore from '~/stores/EmojiStore';
 import PresenceStore from '~/stores/PresenceStore';
@@ -35,7 +38,9 @@ import UserStore from '~/stores/UserStore';
 import {getEmojiURL, shouldUseNativeEmoji} from '~/utils/EmojiUtils';
 import styles from './CustomStatusBottomSheet.module.css';
 
-const CUSTOM_STATUS_SNAP_POINTS: Array<number> = [0, 0.52];
+const CUSTOM_STATUS_COMPACT_SNAP = 0.52;
+const CUSTOM_STATUS_EXPANDED_SNAP = 0.74;
+type StatusEmojiTab = 'emojis' | 'status-gif-emojis';
 
 const EXPIRY_OPTIONS = [
 	{id: 'never', label: <Trans>Don&apos;t clear</Trans>, minutes: null},
@@ -54,12 +59,14 @@ const buildDraftStatus = (params: {
 	text: string;
 	emojiId: string | null;
 	emojiName: string | null;
+	emojiAnimated?: boolean | null;
 	expiresAt: string | null;
 }): CustomStatus | null => {
 	return normalizeCustomStatus({
 		text: params.text || null,
 		emojiId: params.emojiId,
 		emojiName: params.emojiName,
+		emojiAnimated: params.emojiAnimated ?? null,
 		expiresAt: params.expiresAt,
 	});
 };
@@ -74,9 +81,11 @@ export const CustomStatusBottomSheet = observer(({isOpen, onClose}: CustomStatus
 	const [statusText, setStatusText] = React.useState('');
 	const [emojiId, setEmojiId] = React.useState<string | null>(null);
 	const [emojiName, setEmojiName] = React.useState<string | null>(null);
+	const [emojiAnimated, setEmojiAnimated] = React.useState<boolean | null>(null);
 	const [selectedExpiry, setSelectedExpiry] = React.useState<string>('never');
 	const [isSaving, setIsSaving] = React.useState(false);
 	const [emojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
+	const [selectedEmojiTab, setSelectedEmojiTab] = React.useState<StatusEmojiTab>('emojis');
 
 	const mountedAt = React.useMemo(() => new Date(), []);
 
@@ -85,9 +94,18 @@ export const CustomStatusBottomSheet = observer(({isOpen, onClose}: CustomStatus
 			setStatusText(normalizedExisting?.text ?? '');
 			setEmojiId(normalizedExisting?.emojiId ?? null);
 			setEmojiName(normalizedExisting?.emojiName ?? null);
+			setEmojiAnimated(normalizedExisting?.emojiAnimated ?? null);
 			setSelectedExpiry('never');
+			setEmojiPickerOpen(false);
+			setSelectedEmojiTab(getStatusGifEmoji(normalizedExisting?.emojiName) ? 'status-gif-emojis' : 'emojis');
 		}
-	}, [isOpen, normalizedExisting?.text, normalizedExisting?.emojiId, normalizedExisting?.emojiName]);
+	}, [
+		isOpen,
+		normalizedExisting?.text,
+		normalizedExisting?.emojiId,
+		normalizedExisting?.emojiName,
+		normalizedExisting?.emojiAnimated,
+	]);
 
 	const getExpiresAt = React.useCallback(
 		(expiryId: string): string | null => {
@@ -99,24 +117,40 @@ export const CustomStatusBottomSheet = observer(({isOpen, onClose}: CustomStatus
 	);
 
 	const draftStatus = React.useMemo(
-		() => buildDraftStatus({text: statusText.trim(), emojiId, emojiName, expiresAt: getExpiresAt(selectedExpiry)}),
-		[statusText, emojiId, emojiName, selectedExpiry, getExpiresAt],
+		() =>
+			buildDraftStatus({
+				text: statusText.trim(),
+				emojiId,
+				emojiName,
+				emojiAnimated,
+				expiresAt: getExpiresAt(selectedExpiry),
+			}),
+		[statusText, emojiId, emojiName, emojiAnimated, selectedExpiry, getExpiresAt],
 	);
 
 	const handleEmojiSelect = React.useCallback((emoji: Emoji) => {
 		if (emoji.id) {
 			setEmojiId(emoji.id);
 			setEmojiName(emoji.name);
+			setEmojiAnimated(emoji.animated ?? null);
 		} else {
 			setEmojiId(null);
 			setEmojiName(emoji.surrogates ?? emoji.name);
+			setEmojiAnimated(null);
 		}
+	}, []);
+
+	const handleStatusGifEmojiSelect = React.useCallback((emoji: StatusGifEmoji) => {
+		setEmojiId(null);
+		setEmojiName(emoji.value);
+		setEmojiAnimated(true);
 	}, []);
 
 	const handleClearDraft = () => {
 		setStatusText('');
 		setEmojiId(null);
 		setEmojiName(null);
+		setEmojiAnimated(null);
 	};
 
 	const handleClearStatus = async () => {
@@ -152,6 +186,11 @@ export const CustomStatusBottomSheet = observer(({isOpen, onClose}: CustomStatus
 			}
 		}
 		if (draftStatus.emojiName) {
+			const statusGifEmoji = getStatusGifEmoji(draftStatus.emojiName);
+			if (statusGifEmoji) {
+				return <img src={statusGifEmoji.url} alt={statusGifEmoji.name} className={styles.emojiPreviewImage} />;
+			}
+
 			if (!shouldUseNativeEmoji) {
 				const twemojiUrl = getEmojiURL(draftStatus.emojiName);
 				if (twemojiUrl) {
@@ -164,16 +203,35 @@ export const CustomStatusBottomSheet = observer(({isOpen, onClose}: CustomStatus
 	};
 
 	const emojiPreview = renderEmojiPreview();
+	const emojiTabs = React.useMemo<Array<SegmentedTab<StatusEmojiTab>>>(
+		() => [
+			{
+				id: 'emojis',
+				label: t`Emoji`,
+				ariaLabel: t`Emojis`,
+				icon: SmileyIcon,
+			},
+			{
+				id: 'status-gif-emojis',
+				label: t`Animated`,
+				ariaLabel: t`Animated status emoji`,
+				icon: SparkleIcon,
+				tone: 'animated',
+			},
+		],
+		[t],
+	);
 
 	return (
 		<BottomSheet
 			isOpen={isOpen}
 			onClose={onClose}
-			snapPoints={CUSTOM_STATUS_SNAP_POINTS}
-			initialSnap={CUSTOM_STATUS_SNAP_POINTS[1]}
+			snapPoints={[0, CUSTOM_STATUS_COMPACT_SNAP, CUSTOM_STATUS_EXPANDED_SNAP]}
+			initialSnap={emojiPickerOpen ? CUSTOM_STATUS_EXPANDED_SNAP : CUSTOM_STATUS_COMPACT_SNAP}
 			title={t`Custom status`}
 			surface="primary"
 			zIndex={10001}
+			containerClassName={styles.statusSheet}
 		>
 			<div className={styles.content}>
 				<p className={styles.description}>
@@ -186,7 +244,10 @@ export const CustomStatusBottomSheet = observer(({isOpen, onClose}: CustomStatus
 							className={clsx(styles.emojiTriggerButton, emojiPickerOpen && styles.emojiTriggerButtonActive)}
 							aria-label={emojiPreview ? t`Change emoji` : t`Choose an emoji`}
 							disabled={isSaving}
-							onClick={() => setEmojiPickerOpen(true)}
+							onClick={() => {
+								setSelectedEmojiTab(getStatusGifEmoji(emojiName) ? 'status-gif-emojis' : 'emojis');
+								setEmojiPickerOpen((open) => !open);
+							}}
 						>
 							{emojiPreview ?? <SmileyIcon size={22} weight="fill" aria-hidden="true" />}
 						</button>
@@ -214,16 +275,6 @@ export const CustomStatusBottomSheet = observer(({isOpen, onClose}: CustomStatus
 						</FocusRing>
 					)}
 				</div>
-				<ExpressionPickerSheet
-					isOpen={emojiPickerOpen}
-					onClose={() => setEmojiPickerOpen(false)}
-					onEmojiSelect={(emoji) => {
-						handleEmojiSelect(emoji);
-						setEmojiPickerOpen(false);
-					}}
-					visibleTabs={['emojis']}
-					zIndex={10002}
-				/>
 				<div className={styles.expiryGroup} data-sheet-drag-ignore="true" aria-label={t`Clear after`}>
 					{EXPIRY_OPTIONS.map((option) => (
 						<button
@@ -252,6 +303,39 @@ export const CustomStatusBottomSheet = observer(({isOpen, onClose}: CustomStatus
 						<Trans>Save</Trans>
 					</Button>
 				</div>
+				{emojiPickerOpen && (
+					<div className={styles.statusEmojiPanel} data-sheet-drag-ignore="true">
+						<SegmentedTabs
+							tabs={emojiTabs}
+							selectedTab={selectedEmojiTab}
+							onTabChange={setSelectedEmojiTab}
+							ariaLabel={t`Status emoji categories`}
+							className={styles.statusEmojiTabs}
+						/>
+						<div className={styles.statusEmojiBody}>
+							{selectedEmojiTab === 'emojis' ? (
+								<MobileEmojiPicker
+									channelId={undefined}
+									handleSelect={(emoji) => {
+										handleEmojiSelect(emoji);
+										setEmojiPickerOpen(false);
+									}}
+									hideSearchBar
+								/>
+							) : (
+								<StatusGifEmojiPicker
+									selectedValue={emojiName}
+									onSelect={(emoji) => {
+										handleStatusGifEmojiSelect(emoji);
+										setEmojiPickerOpen(false);
+									}}
+									compact
+									disabled={isSaving}
+								/>
+							)}
+						</div>
+					</div>
+				)}
 			</div>
 		</BottomSheet>
 	);

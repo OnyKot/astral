@@ -19,7 +19,14 @@
 
 import type {ChannelID, EmojiID, GuildID, RoleID, StickerID, UserID} from '~/BrandedTypes';
 import {createChannelID, createRoleID, createUserID} from '~/BrandedTypes';
-import {ChannelTypes, GuildFeatures, MAX_CHANNELS_PER_CATEGORY, MAX_GUILD_CHANNELS, Permissions} from '~/Constants';
+import {
+	ChannelTypes,
+	GuildFeatures,
+	isGuildRtcChannelType,
+	MAX_CHANNELS_PER_CATEGORY,
+	MAX_GUILD_CHANNELS,
+	Permissions,
+} from '~/Constants';
 import type {ChannelCreateRequest, ChannelResponse} from '~/channel/ChannelModel';
 import {mapChannelToResponse} from '~/channel/ChannelModel';
 import type {IChannelRepository} from '~/channel/IChannelRepository';
@@ -140,8 +147,8 @@ export class ChannelOperationsService {
 			recipient_ids: null,
 			nsfw: false,
 			rate_limit_per_user: 0,
-			bitrate: params.data.type === ChannelTypes.GUILD_VOICE ? (params.data.bitrate ?? 64000) : null,
-			user_limit: params.data.type === ChannelTypes.GUILD_VOICE ? (params.data.user_limit ?? 0) : null,
+			bitrate: isGuildRtcChannelType(params.data.type) ? (params.data.bitrate ?? 64000) : null,
+			user_limit: isGuildRtcChannelType(params.data.type) ? (params.data.user_limit ?? 0) : null,
 			rtc_region: null,
 			last_message_id: null,
 			last_pin_timestamp: null,
@@ -517,11 +524,11 @@ export class ChannelOperationsService {
 			const adjustedPosition = isChangingParent ? Math.max(update.position - 1, 0) : Math.max(update.position, 0);
 			insertIndex = Math.min(adjustedPosition, siblingsWithoutBlock.length);
 		} else {
-			const isVoice = target.type === ChannelTypes.GUILD_VOICE;
+			const isVoice = isGuildRtcChannelType(target.type);
 			if (isVoice) {
 				insertIndex = siblingsWithoutBlock.length;
 			} else {
-				const firstVoice = siblingsWithoutBlock.findIndex((ch) => ch.type === ChannelTypes.GUILD_VOICE);
+				const firstVoice = siblingsWithoutBlock.findIndex((ch) => isGuildRtcChannelType(ch.type));
 				insertIndex = firstVoice === -1 ? siblingsWithoutBlock.length : firstVoice;
 			}
 		}

@@ -18,6 +18,7 @@
  */
 
 import {makeAutoObservable, runInAction} from 'mobx';
+import Config from '~/Config';
 import {Endpoints} from '~/Endpoints';
 import {isFirstPartyHost} from '~/utils/FirstPartyHosts';
 import RuntimeConfigStore from '~/stores/RuntimeConfigStore';
@@ -64,7 +65,13 @@ class GeoIPStore {
 		}
 
 		try {
-			const base = RuntimeConfigStore.apiPublicEndpoint || '';
+			// A first-ever visit has no persisted runtime config yet, so
+			// apiPublicEndpoint is still ''. Falling back to a bare relative URL
+			// aims the request at the page origin — the marketing/webapp service,
+			// which answers with HTML, so `response.json()` throws and geo silently
+			// degrades to nulls. Use the build-time bootstrap endpoint instead: it
+			// is the same base HttpClient starts from before /instance answers.
+			const base = RuntimeConfigStore.apiPublicEndpoint || Config.PUBLIC_BOOTSTRAP_API_PUBLIC_ENDPOINT;
 			const response = await fetch(`${base}${Endpoints.GEOIP}`);
 			if (!response.ok) {
 				throw new Error(`Failed to fetch geo data: ${response.statusText}`);

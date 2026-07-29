@@ -49,6 +49,11 @@ import {
 } from '~/Schema';
 import {getCachedUserPartialResponse, mapUserToPartialResponseWithCache} from '~/user/UserCacheHelpers';
 import {createPremiumClearPatch, shouldStripExpiredPremium} from '~/user/UserHelpers';
+import {SteamRepository} from '~/steam/SteamRepository';
+import {rowToConnectionResponse as steamRowToResponse} from '~/steam/SteamModel';
+import {TwitchRepository} from '~/twitch/TwitchRepository';
+import {mapLiveStateToResponse} from '~/twitch/TwitchModel';
+import {TelegramRepository} from '~/telegram/TelegramRepository';
 import {
 	mapGuildMemberToProfileResponse,
 	mapUserGuildSettingsToResponse,
@@ -505,6 +510,40 @@ export const UserAccountController = (app: HonoApp) => {
 		},
 	);
 
+	app.get(
+		'/users/:target_id/activity',
+		RateLimitMiddleware(RateLimitConfigs.USER_GET_PROFILE),
+		LoginRequired,
+		DefaultUserOnly,
+		Validator('param', z.object({target_id: Int64Type})),
+		async (ctx) => {
+			const currentUserId = ctx.get('user').id;
+			const targetUserId = createUserID(ctx.req.valid('param').target_id);
+			const [targetUser, targetSettings] = await Promise.all([
+				ctx.get('userService').findUnique(targetUserId),
+				ctx.get('userRepository').findSettings(targetUserId),
+			]);
+
+			if (!targetUser || !targetSettings) {
+				throw new UnknownUserError();
+			}
+
+			const hidden = targetUserId !== currentUserId && targetSettings.hideOnlineTime;
+			let lastActiveAt: Date | null = null;
+
+			if (!hidden) {
+				lastActiveAt = await ctx.get('redisActivityTracker').getActivity(targetUserId);
+				lastActiveAt ??= targetUser.lastActiveAt;
+			}
+
+			return ctx.json({
+				user_id: targetUserId.toString(),
+				last_active_at: lastActiveAt?.toISOString() ?? null,
+				hidden,
+			});
+		},
+	);
+
 	app.post(
 		'/links/user-modal',
 		RateLimitMiddleware(RateLimitConfigs.USER_CREATE_MODAL_LINK),
@@ -810,6 +849,82 @@ export const UserAccountController = (app: HonoApp) => {
 			const user = ctx.get('user');
 			await ctx.get('userService').cancelBulkMessageDeletion(user.id);
 			return ctx.json({success: true});
+		},
+	);
+
+	// Public integrations endpoint — returns visible integrations for any user
+	app.get(
+		'/users/:target_id/integrations',
+		RateLimitMiddleware(RateLimitConfigs.USER_GET_PROFILE),
+		LoginRequired,
+		Validator('param', z.object({target_id: Int64Type})),
+		async (ctx) => {
+			const {target_id} = ctx.req.valid('param');
+			const targetUserId = createUserID(target_id);
+
+			const steamRepo = new SteamRepository();
+			const twitchRepo = new TwitchRepository();
+			const telegramRepo = new TelegramRepository();
+
+			const [steamRow, twitchRow, telegramRow] = await Promise.all([
+				steamRepo.getConnection(targetUserId),
+				twitchRepo.getConnection(targetUserId),
+				telegramRepo.getConnection(targetUserId),
+			]);
+
+			// Steam: always show linked account, but hide current game details when presence is private.
+			const steam = steamRow
+				? (() => {
+						const connection = steamRowToResponse(steamRow);
+						if (!steamRow.presence_visible) {
+							return {
+								...connection,
+								currentGameId: null,
+								currentGameName: null,
+								currentGameStartedAt: null,
+								presenceVisible: false,
+							};
+						}
+						return connection;
+					})()
+				: null;
+
+			// Twitch: show login + live state if connected
+			let twitch = null;
+			if (twitchRow) {
+				const liveStateRow = await twitchRepo.getLiveState(twitchRow.twitch_user_id);
+				twitch = {
+					login: twitchRow.login,
+					displayName: twitchRow.display_name,
+					profileImageUrl: twitchRow.profile_image_url,
+					liveState: liveStateRow ? mapLiveStateToResponse(liveStateRow) : null,
+				};
+			}
+
+			// Telegram: only show username (no sensitive data)
+			const telegram = telegramRow
+				? {username: telegramRow.username, firstName: telegramRow.first_name}
+				: null;
+
+			return ctx.json({steam, twitch, telegram});
+		},
+	);
+
+	// Clear all voice sessions for current user (unstick from ghost voice state)
+	app.post(
+		'/voice/clear-my-sessions',
+		RateLimitMiddleware(RateLimitConfigs.USER_GET_PROFILE),
+		LoginRequired,
+		DefaultUserOnly,
+		async (ctx) => {
+			const userId = ctx.get('user').id;
+			try {
+				await (ctx.get('gatewayService' as never) as {terminateAllSessions?: (p: {userId: unknown}) => Promise<void>})
+					?.terminateAllSessions?.({userId});
+			} catch {
+				// non-fatal — best effort
+			}
+			return ctx.json({ok: true});
 		},
 	);
 

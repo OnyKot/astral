@@ -30,7 +30,30 @@ export default {
 			stage: 3,
 			features: {
 				'nesting-rules': true,
-				'custom-properties': true,
+				/*
+				 * Disabled deliberately. This feature emits a duplicate
+				 * declaration next to every `var()` usage with the fallback
+				 * value substituted, e.g.
+				 *
+				 *   right: calc(16px + 0.125rem);                        <- generated
+				 *   right: calc(var(--chat-horizontal-padding) + 0.125rem);
+				 *
+				 * Two costs, no benefit:
+				 *
+				 * 1. It duplicates a large share of a ~2 MB stylesheet for
+				 *    browsers that cannot run this app anyway — CSS custom
+				 *    properties ship since Chrome 49 / Safari 9.1, while the app
+				 *    needs React 19, ES modules and WASM.
+				 * 2. Substituting a numeric fallback can produce a fully
+				 *    evaluable math expression, e.g.
+				 *    `opacity: clamp(0, calc(0 * 1.4), 1)` from
+				 *    src/styles/Message.module.css. lightningcss panics on that
+				 *    ("unreachable code" in values/percentage.rs), which used to
+				 *    make CSS minification impossible for the whole bundle.
+				 *
+				 * See docs/PERFORMANCE_AUDIT_2026-07-26.md.
+				 */
+				'custom-properties': false,
 				'custom-media-queries': true,
 			},
 			browsers: 'last 10 years, > 0.5%, not dead',

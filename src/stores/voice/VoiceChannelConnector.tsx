@@ -158,9 +158,9 @@ export function syncVoiceStateToServer(
 		viewer_stream_key?: string | null;
 		suppress?: boolean;
 	},
-): void {
+): boolean {
 	const socket = ConnectionStore.socket;
-	if (!socket) return;
+	if (!socket) return false;
 	const currentVoiceState = VoiceStateManager.getVoiceStateByConnectionId(connectionId);
 
 	socket.updateVoiceState({
@@ -174,4 +174,5 @@ export function syncVoiceStateToServer(
 		suppress: partial?.suppress ?? currentVoiceState?.suppress,
 		connection_id: connectionId,
 	});
+	return true;
 }

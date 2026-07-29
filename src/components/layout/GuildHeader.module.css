@@ -145,6 +145,36 @@
     width: 100%;
 }
 
+.mobileHeaderBackButton {
+    display: inline-flex;
+    flex: 0 0 2.18rem;
+    align-items: center;
+    justify-content: center;
+    width: 2.18rem;
+    height: 2.18rem;
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--background-secondary) 78%, transparent);
+    color: var(--text-secondary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+        background-color 140ms var(--motion-ease-smooth),
+        color 140ms var(--motion-ease-smooth),
+        transform 140ms var(--motion-ease-smooth);
+}
+
+.mobileHeaderBackButton:active {
+    transform: scale(0.96);
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.mobileHeaderBackIcon {
+    width: 1.08rem;
+    height: 1.08rem;
+}
+
 .mobileHeaderIconWrap {
     display: flex;
     align-items: center;

@@ -73,6 +73,17 @@ describe('ChannelHelpers.normalizeGuildChannelInsertIndex', () => {
 		expect(insertIndex).toBe(2);
 	});
 
+	it('moves stage insertion after existing text channels in a category', () => {
+		const insertIndex = ChannelHelpers.normalizeGuildChannelInsertIndex({
+			remainingChannels,
+			insertIndex: 1,
+			targetChannel: channel({channelId: 103, type: ChannelTypes.GUILD_STAGE, position: 4}),
+			desiredParentId: categoryId,
+		});
+
+		expect(insertIndex).toBe(2);
+	});
+
 	it('keeps legal text insertion before voice channels unchanged', () => {
 		const insertIndex = ChannelHelpers.normalizeGuildChannelInsertIndex({
 			remainingChannels,

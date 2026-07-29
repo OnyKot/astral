@@ -27,7 +27,14 @@ import {
 	type RoleID,
 	type UserID,
 } from '~/BrandedTypes';
-import {ALL_PERMISSIONS, ChannelTypes, GuildFeatures, MAX_CHANNELS_PER_CATEGORY, Permissions} from '~/Constants';
+import {
+	ALL_PERMISSIONS,
+	ChannelTypes,
+	GuildFeatures,
+	isGuildRtcChannelType,
+	MAX_CHANNELS_PER_CATEGORY,
+	Permissions,
+} from '~/Constants';
 import {AuditLogActionType} from '~/constants/AuditLogActionType';
 import {
 	CannotExecuteOnDmError,
@@ -146,7 +153,9 @@ export class ChannelOperationsService {
 			}
 		}
 
-		if (data.rtc_region !== undefined && channel.type === ChannelTypes.GUILD_VOICE) {
+		const isRtcChannel = isGuildRtcChannelType(channel.type);
+
+		if (data.rtc_region !== undefined && isRtcChannel) {
 			await checkPermission(Permissions.UPDATE_RTC_REGION);
 
 			if (data.rtc_region !== null) {
@@ -234,20 +243,16 @@ export class ChannelOperationsService {
 			topic: data.topic !== undefined ? data.topic : channel.topic,
 			url: data.url !== undefined && channel.type === ChannelTypes.GUILD_LINK ? data.url : channel.url,
 			parent_id: requestedParentId,
-			bitrate: data.bitrate !== undefined && channel.type === ChannelTypes.GUILD_VOICE ? data.bitrate : channel.bitrate,
+			bitrate: data.bitrate !== undefined && isRtcChannel ? data.bitrate : channel.bitrate,
 			user_limit:
-				data.user_limit !== undefined && channel.type === ChannelTypes.GUILD_VOICE
-					? data.user_limit
-					: channel.userLimit,
+				data.user_limit !== undefined && isRtcChannel ? data.user_limit : channel.userLimit,
 			rate_limit_per_user:
 				data.rate_limit_per_user !== undefined && channel.type === ChannelTypes.GUILD_TEXT
 					? data.rate_limit_per_user
 					: channel.rateLimitPerUser,
 			nsfw: data.nsfw !== undefined && channel.type === ChannelTypes.GUILD_TEXT ? data.nsfw : channel.isNsfw,
 			rtc_region:
-				data.rtc_region !== undefined && channel.type === ChannelTypes.GUILD_VOICE
-					? data.rtc_region
-					: channel.rtcRegion,
+				data.rtc_region !== undefined && isRtcChannel ? data.rtc_region : channel.rtcRegion,
 			permission_overwrites: new Map(
 				Array.from(permissionOverwrites.entries()).map(([targetId, overwrite]) => [
 					targetId,
@@ -270,7 +275,7 @@ export class ChannelOperationsService {
 
 		if (
 			data.rtc_region !== undefined &&
-			channel.type === ChannelTypes.GUILD_VOICE &&
+			isRtcChannel &&
 			data.rtc_region !== channel.rtcRegion &&
 			this.voiceRoomStore
 		) {
@@ -412,7 +417,7 @@ export class ChannelOperationsService {
 
 		const {channel, guild} = await this.channelAuthService.getChannelAuthenticated({userId, channelId});
 
-		if (channel.type !== ChannelTypes.GUILD_VOICE) {
+		if (!isGuildRtcChannelType(channel.type)) {
 			throw new InvalidChannelTypeError();
 		}
 

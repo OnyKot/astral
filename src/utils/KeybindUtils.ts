@@ -39,6 +39,12 @@ export const formatKeyCombo = (combo: KeyCombo): string => {
 	}
 	if (combo.alt) parts.push(isMac() ? '⌥' : 'Alt');
 	const key = combo.code ?? combo.key ?? '';
+	const mouseMatch = key.match(/^Mouse(\d+)$/);
+	if (mouseMatch) {
+		parts.push(`Mouse ${mouseMatch[1]}`);
+		return parts.join(' + ');
+	}
+
 	if (key === ' ') {
 		parts.push('Space');
 	} else if (key.length === 1) {

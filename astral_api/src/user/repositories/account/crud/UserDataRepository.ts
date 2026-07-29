@@ -18,7 +18,15 @@
  */
 
 import {createUserID, type UserID} from '~/BrandedTypes';
-import {buildPatchFromData, Db, executeVersionedUpdate, fetchMany, fetchOne} from '~/database/Cassandra';
+import {
+	buildPatchFromData,
+	Db,
+	executeVersionedUpdate,
+	fetchMany,
+	fetchManyInChunks,
+	fetchOne,
+	upsertOne,
+} from '~/database/Cassandra';
 import {EMPTY_USER_ROW, USER_COLUMNS, type UserRow} from '~/database/CassandraTypes';
 import {User} from '~/Models';
 import {Users} from '~/Tables';
@@ -96,7 +104,9 @@ export class UserDataRepository {
 
 	async listUsers(userIds: Array<UserID>): Promise<Array<User>> {
 		if (userIds.length === 0) return [];
-		const users = await fetchMany<UserRow>(FETCH_USERS_BY_IDS_CQL, {user_ids: userIds});
+		const users = await fetchManyInChunks<UserRow>(FETCH_USERS_BY_IDS_CQL, userIds, (chunk) => ({
+			user_ids: chunk,
+		}));
 		return users.map((user) => new User(user));
 	}
 
@@ -144,12 +154,14 @@ export class UserDataRepository {
 
 	async updateLastActiveAt(params: {userId: UserID; lastActiveAt: Date; lastActiveIp?: string}): Promise<void> {
 		const {userId, lastActiveAt, lastActiveIp} = params;
-
-		const patch: UserPatch = {
-			last_active_at: Db.set(lastActiveAt),
-			...(lastActiveIp !== undefined ? {last_active_ip: Db.set(lastActiveIp)} : {}),
-		};
-
-		await this.patchUser(userId, patch);
+		// Plain UPDATE without IF — no LWT/SERIAL needed for activity tracking
+		const q = Users.patchByPk(
+			{user_id: userId} as Pick<UserRow, 'user_id'>,
+			{
+				last_active_at: Db.set(lastActiveAt),
+				...(lastActiveIp !== undefined ? {last_active_ip: Db.set(lastActiveIp)} : {}),
+			},
+		);
+		await upsertOne(q);
 	}
 }

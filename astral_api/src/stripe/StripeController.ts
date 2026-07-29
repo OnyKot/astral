@@ -184,6 +184,35 @@ export const StripeController = (app: HonoApp) => {
 		},
 	);
 
+	app.patch(
+		'/gifts/:code/metadata',
+		RateLimitMiddleware(RateLimitConfigs.GIFT_CODE_REDEEM),
+		LoginRequired,
+		DefaultUserOnly,
+		Validator('param', z.object({code: createStringType()})),
+		Validator('json', z.object({
+			emoji: createStringType().nullish(),
+			background: createStringType().nullish(),
+		})),
+		async (ctx) => {
+			const {code} = ctx.req.valid('param');
+			const {emoji, background} = ctx.req.valid('json');
+			await getStripeService(ctx).updateGiftMetadata(
+				ctx.get('user').id,
+				code,
+				emoji ?? null,
+				background ?? null,
+			);
+			const giftCode = await getStripeService(ctx).getGiftCode(code);
+			const response = await mapGiftCodeToResponse({
+				giftCode,
+				userCacheService: ctx.get('userCacheService'),
+				requestCache: ctx.get('requestCache'),
+			});
+			return ctx.json({success: true, gift: response});
+		},
+	);
+
 	app.get(
 		'/gifts/inventory/:user_id',
 		RateLimitMiddleware(RateLimitConfigs.GIFTS_LIST),

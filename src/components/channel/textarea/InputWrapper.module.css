@@ -28,9 +28,9 @@
 	background: color-mix(in srgb, var(--background-textarea) 90%, var(--background-primary) 10%);
 	border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
 	transition:
-		border-color var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease),
-		background-color var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease),
-		box-shadow var(--motion-dur-short, 160ms) var(--motion-ease-snap, ease);
+		border-color 80ms ease,
+		background-color 80ms ease,
+		box-shadow 80ms ease;
 	margin-bottom: 0;
 	border-radius: 0.68rem;
 	box-shadow: none;
@@ -54,10 +54,8 @@
 
 .box:focus-within {
 	background: color-mix(in srgb, var(--background-textarea) 92%, var(--background-primary) 8%);
-	border-color: color-mix(in srgb, var(--brand-primary) 28%, transparent);
-	box-shadow:
-		0 0 0 1px color-mix(in srgb, var(--brand-primary) 16%, transparent),
-		0 0 0 0.25rem color-mix(in srgb, var(--brand-primary) 10%, transparent);
+	border-color: color-mix(in srgb, var(--brand-primary) 32%, transparent);
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary) 18%, transparent);
 }
 
 .roundedAll {

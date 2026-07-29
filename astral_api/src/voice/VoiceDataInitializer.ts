@@ -34,15 +34,11 @@ export class VoiceDataInitializer {
 			const existingRegions = await repository.listRegions();
 			if (existingRegions.length > 0) {
 				Logger.info(
-					`[VoiceDataInitializer] Deleting ${existingRegions.length} existing voice regions to recreate with fresh data...`,
+					`[VoiceDataInitializer] Keeping ${existingRegions.length} existing voice regions and creating missing defaults...`,
 				);
-				for (const region of existingRegions) {
-					await repository.deleteRegion(region.id);
-					Logger.info(`[VoiceDataInitializer] Deleted region: ${region.name} (${region.id})`);
-				}
+			} else {
+				Logger.info('[VoiceDataInitializer] Creating default voice regions and servers...');
 			}
-
-			Logger.info('[VoiceDataInitializer] Creating dummy voice regions and servers...');
 
 			const livekitApiKey = Config.voice.apiKey;
 			const livekitApiSecret = Config.voice.apiSecret;
@@ -54,7 +50,7 @@ export class VoiceDataInitializer {
 
 			await this.createDefaultRegions(repository, livekitApiKey, livekitApiSecret);
 
-			Logger.info('[VoiceDataInitializer] Successfully created dummy voice regions and servers');
+			Logger.info('[VoiceDataInitializer] Successfully checked default voice regions and servers');
 		} catch (error) {
 			Logger.error({error}, '[VoiceDataInitializer] Failed to create dummy voice data');
 		}
@@ -134,10 +130,20 @@ export class VoiceDataInitializer {
 			})();
 
 		for (const {region} of defaultRegions) {
-			await repository.createRegion(region);
-			Logger.info(`[VoiceDataInitializer] Created region: ${region.name} (${region.id})`);
+			const existingRegion = await repository.getRegion(region.id);
+			if (!existingRegion) {
+				await repository.createRegion(region);
+				Logger.info(`[VoiceDataInitializer] Created region: ${region.name} (${region.id})`);
+			} else {
+				Logger.info(`[VoiceDataInitializer] Region already exists: ${existingRegion.name} (${existingRegion.id})`);
+			}
 
 			const serverId = `${region.id}-server-1`;
+			const existingServer = await repository.getServer(region.id, serverId);
+			if (existingServer) {
+				Logger.info(`[VoiceDataInitializer] Server already exists: ${serverId} -> ${existingServer.endpoint}`);
+				continue;
+			}
 
 			await repository.createServer({
 				regionId: region.id,

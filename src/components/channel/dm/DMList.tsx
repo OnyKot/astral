@@ -24,8 +24,6 @@ import {
 	CopyIcon,
 	CompassIcon,
 	BellSimpleSlashIcon,
-	CheckIcon,
-	ChecksIcon,
 	MagnifyingGlassIcon,
 	NotePencilIcon,
 	PaperPlaneIcon,
@@ -61,7 +59,6 @@ import {CustomStatusDisplay} from '~/components/common/CustomStatusDisplay/Custo
 import {GroupDMAvatar} from '~/components/common/GroupDMAvatar';
 import {LongPressable} from '~/components/LongPressable';
 import {CreateDMModal} from '~/components/modals/CreateDMModal';
-import {AddGuildModal} from '~/components/modals/AddGuildModal';
 import {EditGroupBottomSheet} from '~/components/modals/EditGroupBottomSheet';
 import {EditGroupModal} from '~/components/modals/EditGroupModal';
 import {GroupInvitesBottomSheet} from '~/components/modals/GroupInvitesBottomSheet';
@@ -104,9 +101,8 @@ import SelectedChannelStore from '~/stores/SelectedChannelStore';
 import StoryStore from '~/stores/StoryStore';
 import TypingStore from '~/stores/TypingStore';
 import UserGuildSettingsStore from '~/stores/UserGuildSettingsStore';
+import UserPinnedDMStore from '~/stores/UserPinnedDMStore';
 import UserStore from '~/stores/UserStore';
-import GuildListStore from '~/stores/GuildListStore';
-import GuildReadStateStore from '~/stores/GuildReadStateStore';
 
 import * as ChannelUtils from '~/utils/ChannelUtils';
 import {getSortedDmChannels} from '~/utils/dmChannelUtils';
@@ -115,8 +111,6 @@ import SnowflakeUtil from '~/utils/SnowflakeUtil';
 import {parseForwardedStoryPreview, parseForwardedStoryPreviewFromComponents} from '~/utils/StoryForwardPayload';
 import {SystemMessageUtils} from '~/utils/SystemMessageUtils';
 import * as TimeUtils from '~/utils/TimeUtils';
-import * as AvatarUtils from '~/utils/AvatarUtils';
-import * as StringUtils from '~/utils/StringUtils';
 
 import {PullToRefresh} from '~/components/uikit/PullToRefresh/PullToRefresh';
 import {SwipeActions} from '~/components/uikit/SwipeActions/SwipeActions';
@@ -185,7 +179,6 @@ const DMListItem = observer(({channel, isSelected}: {channel: ChannelRecord; isS
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [editGroupSheetOpen, setEditGroupSheetOpen] = useState(false);
 	const [invitesSheetOpen, setInvitesSheetOpen] = useState(false);
-	const currentUser = UserStore.getCurrentUser();
 	const messagesForChannel = MessageStore.peekMessages(channel.id);
 	const lastMessage =
 		messagesForChannel?.last() ??
@@ -208,11 +201,6 @@ const DMListItem = observer(({channel, isSelected}: {channel: ChannelRecord; isS
 		}
 	}, [isMobile, isSelected, keyboardModeEnabled]);
 
-	if (!isGroupDM && !recipient) return null;
-
-	const displayName = ChannelUtils.getDMDisplayName(channel);
-
-	const dmPath = Routes.dmChannel(channel.id);
 	const getRecipientStatusTooltip = useCallback(() => {
 		if (!recipient) return null;
 		const status = normalizeCustomStatus(PresenceStore.getCustomStatus(recipient.id));
@@ -224,6 +212,67 @@ const DMListItem = observer(({channel, isSelected}: {channel: ChannelRecord; isS
 	const prefetchConversation = useCallback(() => {
 		prefetchDMChannelMessages(channel.id, isMobile ? DM_THREAD_WARM_MESSAGE_LIMIT_MOBILE : MAX_MESSAGES_PER_CHANNEL);
 	}, [channel.id, isMobile]);
+
+	const timestampSnowflake = channel.lastMessageId ?? channel.id;
+	const dmListTimestamp = useMemo(() => {
+		if (!timestampSnowflake) {
+			return null;
+		}
+
+		const timestamp = SnowflakeUtil.extractTimestamp(timestampSnowflake);
+		if (!Number.isFinite(timestamp)) {
+			return null;
+		}
+
+		return TimeUtils.formatDmListTimestamp(timestamp, i18n.locale);
+	}, [i18n.locale, timestampSnowflake]);
+
+	const mobileListPreview = useMemo((): {text: string; rich: boolean} | null => {
+		if (!lastMessage) return null;
+
+		if (parseForwardedStoryPreview(lastMessage.content) || parseForwardedStoryPreviewFromComponents(lastMessage.components)) {
+			return {text: t`Story preview`, rich: false};
+		}
+
+		const normalizedContent = lastMessage.content.trim().replace(/\s+/g, ' ');
+		if (normalizedContent.length > 0) {
+			return {text: normalizedContent, rich: true};
+		}
+
+		const firstAttachment = lastMessage.attachments?.[0];
+		if (firstAttachment) {
+			const contentType = firstAttachment.content_type?.toLowerCase() ?? '';
+			if (
+				contentType.startsWith('image/') ||
+				contentType.startsWith('video/') ||
+				contentType.startsWith('audio/') ||
+				(firstAttachment.width != null && firstAttachment.height != null)
+			) {
+				return {text: t`Media`, rich: false};
+			}
+			return {text: t`File`, rich: false};
+		}
+
+		if (lastMessage.type !== MessageTypes.DEFAULT && lastMessage.type !== MessageTypes.REPLY) {
+			const systemText = SystemMessageUtils.stringify(lastMessage, i18n);
+			if (systemText) {
+				return {text: systemText.replace(/\.$/, ''), rich: false};
+			}
+		}
+
+		return null;
+	}, [lastMessage, i18n, t]);
+
+	/*
+	 * Every hook must sit above this guard. A DM's recipient can arrive from the
+	 * user cache a render late, so bailing out earlier would change the number of
+	 * hooks between renders and crash the whole list instead of just this row.
+	 */
+	if (!isGroupDM && !recipient) return null;
+
+	const displayName = ChannelUtils.getDMDisplayName(channel);
+
+	const dmPath = Routes.dmChannel(channel.id);
 
 	const navigateTo = () => {
 		prefetchConversation();
@@ -375,49 +424,6 @@ const DMListItem = observer(({channel, isSelected}: {channel: ChannelRecord; isS
 		});
 	}
 
-	const relativeTime = channel.lastMessageId
-		? TimeUtils.formatShortRelativeTime(SnowflakeUtil.extractTimestamp(channel.lastMessageId))
-		: null;
-	const isLastMessageFromCurrentUser = Boolean(lastMessage && lastMessage.author.id === currentUser?.id);
-	const showDeliveryStatus = isMobile && !isGroupDM && isLastMessageFromCurrentUser;
-	const isMessageRead = showDeliveryStatus && !hasUnreadMessages;
-
-	const mobileListPreview = useMemo((): {text: string; rich: boolean} | null => {
-		if (!lastMessage) return null;
-
-		if (parseForwardedStoryPreview(lastMessage.content) || parseForwardedStoryPreviewFromComponents(lastMessage.components)) {
-			return {text: t`Story preview`, rich: false};
-		}
-
-		const normalizedContent = lastMessage.content.trim().replace(/\s+/g, ' ');
-		if (normalizedContent.length > 0) {
-			return {text: normalizedContent, rich: true};
-		}
-
-		const firstAttachment = lastMessage.attachments?.[0];
-		if (firstAttachment) {
-			const contentType = firstAttachment.content_type?.toLowerCase() ?? '';
-			if (
-				contentType.startsWith('image/') ||
-				contentType.startsWith('video/') ||
-				contentType.startsWith('audio/') ||
-				(firstAttachment.width != null && firstAttachment.height != null)
-			) {
-				return {text: t`Media`, rich: false};
-			}
-			return {text: t`File`, rich: false};
-		}
-
-		if (lastMessage.type !== MessageTypes.DEFAULT && lastMessage.type !== MessageTypes.REPLY) {
-			const systemText = SystemMessageUtils.stringify(lastMessage, i18n);
-			if (systemText) {
-				return {text: systemText.replace(/\.$/, ''), rich: false};
-			}
-		}
-
-		return null;
-	}, [lastMessage, i18n, t]);
-
 	const renderMobileListPreview = () => {
 		if (!mobileListPreview) {
 			return null;
@@ -489,8 +495,8 @@ const DMListItem = observer(({channel, isSelected}: {channel: ChannelRecord; isS
 						icon: isMuted ? <BellSimpleIcon weight="fill" /> : <BellSimpleSlashIcon weight="fill" />,
 						label: isMuted ? t`Unmute` : t`Mute`,
 						color: isMuted
-							? 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, var(--background-secondary) 82%), color-mix(in srgb, var(--background-secondary) 92%, var(--background-primary) 8%))'
-							: 'linear-gradient(135deg, color-mix(in srgb, var(--text-primary) 12%, var(--background-secondary) 88%), color-mix(in srgb, var(--background-secondary) 94%, var(--background-primary) 6%))',
+							? 'color-mix(in srgb, var(--brand-primary) 18%, var(--background-secondary) 82%)'
+							: 'color-mix(in srgb, var(--text-primary) 10%, var(--background-secondary) 90%)',
 						onAction: handleToggleMuteSwipe,
 					}}
 				>
@@ -565,21 +571,9 @@ const DMListItem = observer(({channel, isSelected}: {channel: ChannelRecord; isS
 										</span>
 									) : null}
 								</div>
-								{(relativeTime || showDeliveryStatus) && (
+								{dmListTimestamp && (
 									<div className={styles.dmItemMeta}>
-										{relativeTime && <span className={styles.dmItemTimestamp}>{relativeTime}</span>}
-										{showDeliveryStatus && (
-											<span
-												className={clsx(styles.dmItemDeliveryStatus, isMessageRead && styles.dmItemDeliveryStatusRead)}
-												aria-label={isMessageRead ? t`Read` : t`Sent`}
-											>
-												{isMessageRead ? (
-													<ChecksIcon weight="bold" className={styles.dmItemDeliveryIcon} />
-												) : (
-													<CheckIcon weight="bold" className={styles.dmItemDeliveryIcon} />
-												)}
-											</span>
-										)}
+										<span className={styles.dmItemTimestamp}>{dmListTimestamp}</span>
 									</div>
 								)}
 							</div>
@@ -734,65 +728,9 @@ const getDmRouteChannelId = (pathname: string): string | null => {
 	return channelId ?? null;
 };
 
-const getSelectedGuildIdFromPath = (pathname: string): string | null => {
-	if (!Routes.isGuildChannelRoute(pathname)) {
-		return null;
-	}
-
-	const match = pathname.match(/^\/channels\/([^/]+)/);
-	if (!match || !match[1] || match[1].startsWith('@')) {
-		return null;
-	}
-
-	return match[1];
-};
-
-const MobileGuildStripItem = observer(({guild, isSelected}: {guild: {id: string; name: string; icon: string | null}; isSelected: boolean}) => {
-	const initials = StringUtils.getInitialsFromName(guild.name);
-	const iconUrl = AvatarUtils.getGuildIconURL(guild, false);
-	const mentionCount = GuildReadStateStore.getMentionCount(guild.id);
-	const hasUnread = GuildReadStateStore.hasUnread(guild.id);
-	const unreadCount = mentionCount > 0 ? mentionCount : hasUnread ? 1 : 0;
-	const selectedChannel = SelectedChannelStore.selectedChannelIds.get(guild.id);
-
-	const handleSelect = useCallback(() => {
-		NavigationActionCreators.selectGuild(guild.id);
-		RouterUtils.transitionTo(Routes.guildChannel(guild.id, selectedChannel));
-		if (MobileLayoutStore.isMobileLayout()) {
-			LayoutActionCreators.updateMobileLayoutState(false, true);
-		}
-	}, [guild.id, selectedChannel]);
-
-	return (
-		<FocusRing offset={-2}>
-			<button
-				type="button"
-				className={clsx(styles.mobileGuildStripItem, isSelected && styles.mobileGuildStripItemSelected)}
-				onClick={handleSelect}
-				aria-label={guild.name}
-				aria-pressed={isSelected}
-			>
-				<span
-					className={clsx(styles.mobileGuildStripAvatar, !iconUrl && styles.mobileGuildStripAvatarFallback)}
-					style={iconUrl ? {backgroundImage: `url(${iconUrl})`} : undefined}
-				>
-					{!iconUrl && <span className={styles.mobileGuildStripInitials}>{initials}</span>}
-				</span>
-				<span className={styles.mobileGuildStripName}>{guild.name}</span>
-				{unreadCount > 0 && (
-					<span className={styles.mobileGuildStripBadge}>
-						{mentionCount > 0 ? mentionCount : ''}
-					</span>
-				)}
-			</button>
-		</FocusRing>
-	);
-});
-
 export const DMList = observer(() => {
 	const {t} = useLingui();
 	const dmChannels = ChannelStore.dmChannels;
-	const guilds = GuildListStore.guilds;
 	const location = useLocation();
 	const isDiscoveryTab = location.pathname === Routes.DISCOVERY || location.pathname.startsWith(`${Routes.DISCOVERY}/`);
 	const currentUser = UserStore.currentUser;
@@ -803,7 +741,6 @@ export const DMList = observer(() => {
 	const [storiesCollapseProgress, setStoriesCollapseProgress] = useState(0);
 	const [isRefreshingDialogs, setIsRefreshingDialogs] = useState(false);
 	const [isMobileFabVisible, setIsMobileFabVisible] = useState(true);
-	const guildStripViewportRef = useRef<HTMLDivElement | null>(null);
 	const mobileScrollerRef = useRef<ScrollerHandle | null>(null);
 	const mobileScrollSaveFrameRef = useRef<number | null>(null);
 	const pendingMobileScrollTopRef = useRef(0);
@@ -811,28 +748,21 @@ export const DMList = observer(() => {
 	const mobileFabVisibleRef = useRef(true);
 	const storiesCollapsedRef = useRef(false);
 	const storiesCollapseProgressRef = useRef(0);
-	const guildStripDragRef = useRef<{
-		startX: number;
-		startY?: number;
-		startScrollLeft: number;
-		moved: boolean;
-		pointerId?: number;
-	} | null>(null);
 	const previewPreloadedChannelIdsRef = useRef<Set<string>>(new Set());
 	const warmedThreadChannelIdsRef = useRef<Set<string>>(new Set());
 
 	const handleOpenCreateDMModal = useCallback(() => {
 		ModalActionCreators.push(modal(() => <CreateDMModal />));
 	}, []);
-	const handleOpenAddGuildModal = useCallback(() => {
-		ModalActionCreators.push(modal(() => <AddGuildModal />));
-	}, []);
 
 	const currentUserId = currentUser?.id;
 	const personalNotesPath = currentUserId ? Routes.dmChannel(currentUserId) : '';
 
-	const filteredDmChannels = useMemo(() => getSortedDmChannels(dmChannels, currentUserId), [dmChannels, currentUserId]);
-	const selectedGuildId = getSelectedGuildIdFromPath(location.pathname);
+	const pinnedDmOrderKey = UserPinnedDMStore.pinnedDMs.join('\u001f');
+	const filteredDmChannels = useMemo(
+		() => getSortedDmChannels(dmChannels, currentUserId),
+		[dmChannels, currentUserId, pinnedDmOrderKey],
+	);
 
 	const routeDmChannelId = getDmRouteChannelId(location.pathname);
 	/*
@@ -1021,64 +951,12 @@ export const DMList = observer(() => {
 		}
 	}, [dmChannels.length, filteredDmChannels]);
 
-	const handleGuildStripPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-		const viewport = guildStripViewportRef.current;
-		if (!viewport) return;
-		guildStripDragRef.current = {
-			startX: event.clientX,
-			startY: event.clientY,
-			startScrollLeft: viewport.scrollLeft,
-			moved: false,
-			pointerId: event.pointerId,
-		};
-		viewport.setPointerCapture?.(event.pointerId);
-	}, []);
-
-	const handleGuildStripPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-		const state = guildStripDragRef.current;
-		const viewport = guildStripViewportRef.current;
-		if (!state || !viewport) return;
-		const dx = event.clientX - state.startX;
-		const dy = event.clientY - (state.startY ?? event.clientY);
-		const absDx = Math.abs(dx);
-		const absDy = Math.abs(dy);
-		if (!state.moved) {
-			if (absDy >= 12 && absDy >= absDx) {
-				guildStripDragRef.current = null;
-				return;
-			}
-			if (absDx < 12) return;
-			if (absDx < absDy * 1.5) {
-				guildStripDragRef.current = null;
-				return;
-			}
-		}
-		if (absDy > 36 || absDy > absDx * 0.75) {
-			guildStripDragRef.current = null;
+	const setMobileFabVisibility = useCallback((nextVisible: boolean) => {
+		if (mobileFabVisibleRef.current === nextVisible) {
 			return;
 		}
-		state.moved = true;
-		viewport.scrollLeft = state.startScrollLeft - dx;
-		event.preventDefault();
-		event.stopPropagation();
-	}, []);
-
-	const handleGuildStripPointerEnd = useCallback(() => {
-		const viewport = guildStripViewportRef.current;
-		const state = guildStripDragRef.current;
-		if (state?.pointerId != null) {
-			viewport?.releasePointerCapture?.(state.pointerId);
-		}
-		window.setTimeout(() => {
-			guildStripDragRef.current = null;
-		}, 0);
-	}, []);
-
-	const handleGuildStripClickCapture = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-		if (guildStripDragRef.current?.moved) {
-			event.preventDefault();
-			event.stopPropagation();
-		}
+		mobileFabVisibleRef.current = nextVisible;
+		setIsMobileFabVisible(nextVisible);
 	}, []);
 
 	useLayoutEffect(() => {
@@ -1092,19 +970,12 @@ export const DMList = observer(() => {
 		storiesCollapsedRef.current = restoredStoriesProgress >= 0.98;
 		setStoriesCollapseProgress(restoredStoriesProgress);
 		setStoriesCollapsed(restoredStoriesProgress >= 0.98);
+		setMobileFabVisibility(restoredPosition <= 28);
 		const frame = window.requestAnimationFrame(() => {
 			mobileScrollerRef.current?.scrollTo({to: restoredPosition, animate: false});
 		});
 		return () => window.cancelAnimationFrame(frame);
-	}, [isMobile]);
-
-	const setMobileFabVisibility = useCallback((nextVisible: boolean) => {
-		if (mobileFabVisibleRef.current === nextVisible) {
-			return;
-		}
-		mobileFabVisibleRef.current = nextVisible;
-		setIsMobileFabVisible(nextVisible);
-	}, []);
+	}, [isMobile, setMobileFabVisibility]);
 
 	const setStoriesCollapsedState = useCallback((nextCollapsed: boolean) => {
 		if (storiesCollapsedRef.current === nextCollapsed) {
@@ -1126,18 +997,10 @@ export const DMList = observer(() => {
 
 	const handleMobileScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
 		const scrollTop = Math.max(0, event.currentTarget.scrollTop);
-		const delta = scrollTop - lastMobileScrollTopRef.current;
 		pendingMobileScrollTopRef.current = scrollTop;
 		lastMobileScrollTopRef.current = scrollTop;
 		setStoriesCollapseProgressState(scrollTop / MOBILE_STORIES_COLLAPSE_DISTANCE_PX);
-
-		if (scrollTop <= 24) {
-			setMobileFabVisibility(true);
-		} else if (delta > 7) {
-			setMobileFabVisibility(false);
-		} else if (delta < -5) {
-			setMobileFabVisibility(true);
-		}
+		setMobileFabVisibility(scrollTop <= 28);
 
 		if (mobileScrollSaveFrameRef.current != null) return;
 
@@ -1225,42 +1088,6 @@ export const DMList = observer(() => {
 							<span>{t`Search chats`}</span>
 						</button>
 					</div>
-					{guilds.length > 0 && (
-						<div
-							className={styles.mobileGuildStrip}
-							aria-label={t`Communities`}
-							data-pull-to-refresh-ignore="true"
-						>
-							<FocusRing offset={-2}>
-								<button
-									type="button"
-									className={styles.mobileGuildAddButton}
-									onClick={handleOpenAddGuildModal}
-									aria-label={t`Add a Community`}
-								>
-									<PlusIcon weight="bold" className={styles.iconSize4} />
-								</button>
-							</FocusRing>
-							<div
-								ref={guildStripViewportRef}
-								className={styles.mobileGuildStripViewport}
-								onClickCapture={handleGuildStripClickCapture}
-								onPointerDown={handleGuildStripPointerDown}
-								onPointerMove={handleGuildStripPointerMove}
-								onPointerUp={handleGuildStripPointerEnd}
-								onPointerCancel={handleGuildStripPointerEnd}
-								onPointerLeave={handleGuildStripPointerEnd}
-							>
-								{guilds.map((guild) => (
-									<MobileGuildStripItem
-										key={guild.id}
-										guild={guild}
-										isSelected={selectedGuildId === guild.id}
-									/>
-								))}
-							</div>
-						</div>
-					)}
 				</div>
 
 				<PullToRefresh onRefresh={handlePullToRefresh} className={styles.mobilePullArea}>
@@ -1324,8 +1151,9 @@ export const DMList = observer(() => {
 			<FocusRing offset={-2}>
 				<button type="button" className={styles.dmListHeader} onClick={() => QuickSwitcherStore.show()}>
 					<div className={styles.dmListHeaderButton}>
+						<MagnifyingGlassIcon weight="bold" className={styles.dmListHeaderIcon} />
 						<span className={styles.dmListHeaderText}>
-							<Trans>Quick Switcher</Trans>
+							<Trans>Search chats</Trans>
 						</span>
 						<div className={styles.dmListHeaderShortcut}>
 							<KeybindHint action="quick_switcher" />

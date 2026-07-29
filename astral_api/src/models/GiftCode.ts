@@ -31,6 +31,8 @@ export class GiftCode {
 	readonly visionarySequenceNumber: number | null;
 	readonly checkoutSessionId: string | null;
 	readonly version: number;
+	readonly emoji: string | null;
+	readonly background: string | null;
 
 	constructor(row: GiftCodeRow) {
 		this.code = row.code;
@@ -43,6 +45,8 @@ export class GiftCode {
 		this.visionarySequenceNumber = row.visionary_sequence_number ?? null;
 		this.checkoutSessionId = row.checkout_session_id ?? null;
 		this.version = row.version;
+		this.emoji = row.emoji ?? null;
+		this.background = row.background ?? null;
 	}
 
 	toRow(): GiftCodeRow {
@@ -57,6 +61,8 @@ export class GiftCode {
 			visionary_sequence_number: this.visionarySequenceNumber,
 			checkout_session_id: this.checkoutSessionId,
 			version: this.version,
+			emoji: this.emoji,
+			background: this.background,
 		};
 	}
 }

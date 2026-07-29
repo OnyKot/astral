@@ -87,12 +87,21 @@ export const VoiceLobbyBottomSheet = observer(function VoiceLobbyBottomSheet({
 	const isInThisChannel = connectedGuildId === guild.id && connectedChannelId === channel.id;
 	const isConnected = isInThisChannel && isConnectedGlobal;
 	const isConnecting = isInThisChannel && isConnectingGlobal && !isConnectedGlobal;
-	const isMuted = voiceState ? voiceState.self_mute : localSelfMute;
+	const muteReason = isInThisChannel ? MediaEngineStore.getMuteReason(voiceState) : null;
+	const isMuted = voiceState ? muteReason !== null : localSelfMute;
 	const isDeafened = voiceState ? voiceState.self_deaf : localSelfDeaf;
 	const canSpeakInChannel = PermissionStore.can(Permissions.SPEAK, channel);
 	const isBroadcastMode = isBroadcastVoiceChannel(channel) || MediaEngineStore.isVoiceChannelStageLike(channel.id);
 	const isSuppressedListener = isBroadcastMode && MediaEngineStore.isCurrentUserInBroadcastListenerMode();
 	const isStageListenerLocked = isBroadcastMode && (isSuppressedListener || !canSpeakInChannel);
+	const muteActionDisabled = isStageListenerLocked;
+	const muteActionLabel = isStageListenerLocked
+		? t`Join stage to speak`
+		: muteReason === 'push_to_talk'
+			? t`Push-to-Talk: hold shortcut to speak`
+			: isMuted
+				? t`Unmute`
+				: t`Mute`;
 	const inputHasLabels = hasDeviceLabels(inputDevices);
 	const outputHasLabels = hasDeviceLabels(outputDevices);
 	const effectiveInputDeviceId = resolveEffectiveDeviceId(voiceSettings.inputDeviceId, inputDevices) ?? 'default';
@@ -195,7 +204,7 @@ export const VoiceLobbyBottomSheet = observer(function VoiceLobbyBottomSheet({
 				</div>
 
 				<div className={styles.actionButtons}>
-					<button type="button" className={styles.actionButton} onClick={handleToggleMute} disabled={isStageListenerLocked}>
+					<button type="button" className={styles.actionButton} onClick={handleToggleMute} disabled={muteActionDisabled}>
 						<div
 							className={clsx(styles.iconContainer, isMuted ? styles.iconContainerDanger : styles.iconContainerBrand)}
 						>
@@ -205,7 +214,7 @@ export const VoiceLobbyBottomSheet = observer(function VoiceLobbyBottomSheet({
 								<MicrophoneIcon weight="fill" className={styles.actionIcon} size={24} />
 							)}
 						</div>
-						<span className={styles.actionText}>{isStageListenerLocked ? t`Join stage to speak` : isMuted ? t`Unmute` : t`Mute`}</span>
+						<span className={styles.actionText}>{muteActionLabel}</span>
 					</button>
 
 					<button type="button" className={styles.actionButton} onClick={handleToggleDeafen}>

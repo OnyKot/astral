@@ -1,0 +1,27 @@
+declare const styles: {
+  readonly "actionButton": string;
+  readonly "actionButtonDanger": string;
+  readonly "actionGrid": string;
+  readonly "actionIcon": string;
+  readonly "actionLabel": string;
+  readonly "actionPanel": string;
+  readonly "actionPanelExpanded": string;
+  readonly "actionState": string;
+  readonly "banner": string;
+  readonly "bannerFallback": string;
+  readonly "bannerOverlay": string;
+  readonly "bannerWrap": string;
+  readonly "card": string;
+  readonly "cardHeader": string;
+  readonly "caret": string;
+  readonly "caretExpanded": string;
+  readonly "eyebrow": string;
+  readonly "guildIcon": string;
+  readonly "headerContent": string;
+  readonly "iconWrap": string;
+  readonly "statPill": string;
+  readonly "stats": string;
+  readonly "title": string;
+  readonly "titleBlock": string;
+};
+export = styles;

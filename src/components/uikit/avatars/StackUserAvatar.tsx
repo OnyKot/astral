@@ -42,12 +42,17 @@ export const StackUserAvatar = observer(({guild, channel, userId, size = 28, cla
 	const user = UserStore.getUser(userId);
 	if (!user) return null;
 
+	const currentUserId = UserStore.currentUser?.id;
+	const currentConnectionId = MediaEngineStore.connectionId;
 	let speaking = false;
 	for (const state of Object.values(channelStates)) {
 		if (state.user_id !== userId) continue;
 		const connectionId = state.connection_id ?? '';
 		const participant = MediaEngineStore.getParticipantByUserIdAndConnectionId(userId, connectionId);
-		const selfMuted = state.self_mute ?? (participant ? !participant.isMicrophoneEnabled : false);
+		const rawSelfMuted = state.self_mute ?? (participant ? !participant.isMicrophoneEnabled : false);
+		const isLocalConnection = userId === currentUserId && connectionId === currentConnectionId;
+		const muteReason = isLocalConnection ? MediaEngineStore.getMuteReason(state) : null;
+		const selfMuted = isLocalConnection ? muteReason !== null : rawSelfMuted;
 		const guildMuted = state.mute ?? false;
 
 		speaking ||= !!(participant?.isSpeaking && !selfMuted && !guildMuted);

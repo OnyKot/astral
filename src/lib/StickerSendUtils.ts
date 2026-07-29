@@ -42,7 +42,7 @@ export function handleStickerSelect(channelId: string, sticker: GuildStickerReco
 }
 
 function sendStickerMessage(channelId: string, sticker: GuildStickerRecord): void {
-	const nonce = SnowflakeUtils.fromTimestamp(Date.now());
+	const nonce = SnowflakeUtils.nextClientNonce();
 	const currentUser = UserStore.getCurrentUser();
 
 	if (!currentUser) {

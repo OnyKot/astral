@@ -110,6 +110,7 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = observer(
 			purchaseDisabledTooltip != null
 				? () => purchaseDisabledTooltip
 				: t`Claim your account to purchase or redeem Astral Plutonium.`;
+		const currentAccessLabel = isGiftSubscription ? t`gift time` : t`subscription`;
 
 		const wrapIfDisabled = (element: React.ReactElement, key: string, disabled: boolean) =>
 			disabled ? (
@@ -261,7 +262,7 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = observer(
 							<div className={styles.upgradeNote}>
 								<Trans>
 									Upgrading to Visionary is a <strong>one-time</strong> purchase and will{' '}
-									<strong>cancel your current {isGiftSubscription ? 'gift time' : 'subscription'} immediately</strong>.
+									<strong>cancel your current {currentAccessLabel} immediately</strong>.
 								</Trans>
 							</div>
 						)}

@@ -39,6 +39,36 @@ export const isAutoRedirectExemptPath = (pathname: string): boolean => {
 };
 
 /**
+ * Surfaces that deliberately run without a gateway socket, even for a visitor
+ * who already holds a token: the auth forms plus the standalone invite / gift /
+ * theme / OAuth / report pages.
+ *
+ * This mirrors the `isAuthRoute` memo in src/router/components/RootComponent.tsx
+ * — that component bails out of `ensureSessionStarted` on exactly these paths.
+ * The list lives here as well so src/index.tsx can make the same call *before*
+ * React mounts, when it opens the socket early to overlap the boot waterfall.
+ * Keep the two in sync (ideally collapse RootComponent onto this helper).
+ */
+const GATEWAY_BYPASS_PREFIXES = [
+	Routes.LOGIN,
+	Routes.REGISTER,
+	Routes.FORGOT_PASSWORD,
+	Routes.RESET_PASSWORD,
+	Routes.VERIFY_EMAIL,
+	Routes.AUTHORIZE_IP,
+	Routes.EMAIL_REVERT,
+	Routes.OAUTH_AUTHORIZE,
+	Routes.REPORT,
+	'/invite/',
+	'/gift/',
+	'/gifts/',
+	'/theme/',
+];
+
+export const isGatewayBypassPath = (pathname: string): boolean =>
+	GATEWAY_BYPASS_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+
+/**
  * Routes an unauthenticated visitor is allowed to view without being bounced
  * to the login screen. These include the public marketing surface, which is
  * normally served by the marketing service but can be handled by the SPA in

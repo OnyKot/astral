@@ -1,108 +1,141 @@
-If you believe you have found a security vulnerability in Astral, please report it responsibly. This policy explains what is in scope, how to submit a report, what we need from you, and what you can expect from us.
+# Responsible Disclosure Policy (Bug Bounty)
 
-## Safe harbor
+**Effective: 18 July 2026**  
+**Last updated: 18 July 2026**
 
-If you follow this policy, act in good faith, and avoid privacy violations or service disruption, Astral will not pursue legal action against you for your security research.
+## Table of Contents
 
-## Table of contents
+- [Summary](#summary)
+- [1. Who this is for](#1-who-this-is-for)
+- [2. In scope](#2-in-scope)
+- [3. Out of scope](#3-out-of-scope)
+- [4. How to report](#4-how-to-report)
+- [5. What to include](#5-what-to-include)
+- [6. Rewards and recognition](#6-rewards-and-recognition)
+- [7. What to expect from us](#7-what-to-expect-from-us)
+- [8. Safe testing rules](#8-safe-testing-rules)
+- [9. Operator contacts](#9-operator-contacts)
 
-- [Who should read this](#who-should-read-this)
-- [Scope](#scope)
-  - [In scope](#in-scope)
-  - [Out of scope](#out-of-scope)
-- [How to report](#how-to-report)
-- [What we need from you](#what-we-need-from-you)
-- [Rewards and recognition](#rewards-and-recognition)
-- [What to expect from us](#what-to-expect-from-us)
-- [Safe testing rules](#safe-testing-rules)
+## Summary
 
-## Who should read this
+- Found a security issue in Astral — email **security@astraof.com**. Do not publish it until we acknowledge the report and have a reasonable time to investigate and fix.
+- If you follow this policy, act in good faith, and avoid privacy harm or service disruption, we will not pursue legal action against you for in-scope security research (safe harbor).
+- In scope: `astraof.com` and Astral-operated services we actually control.
+- Rewards: Bug Hunter badge, Plutonium gift codes; **cash payouts are not guaranteed** and are considered case by case.
+- We aim to acknowledge reports within **five business days**.
 
-Security researchers, community members, and anyone who discovers a potential security issue in Astral should read this policy before sending a report. It explains what is in scope, how we triage findings, and how we acknowledge and reward responsible disclosures.
+## 1. Who this is for
 
-## Scope
+Security researchers, community members, and anyone who finds a potential security issue in Astral. Read this before submitting: it covers scope, triage, and how we credit responsible work.
 
-### In scope
+Astral is operated by:
 
-Astral websites, applications, and services operated by Astral Platform AB, including the domain below:
+| Detail | Information |
+| --- | --- |
+| Name | Individual Entrepreneur Andreev Ivan Sergeevich |
+| OGRNIP | 324508100385388 |
+| INN | 502991812328 |
+| Security email | security@astraof.com |
 
-| In-scope domain |
-| --------------- |
-| `astraof.com`     |
+## 2. In scope
+
+### 2.1. Domain and products
+
+| In scope |
+| --- |
+| `astraof.com` (web, API, Astral client apps, and related official surfaces on this domain) |
 
 Also in scope:
 
-- Infrastructure, systems, and operational services directly managed by Astral that impact authentication, authorization, payments, community data, or the processing of security- or privacy-relevant data (including user identifiers, account metadata, logs, analytics, telemetry, and similar signals).
-- Abuse cases that enable unauthorized persistence, privilege escalation, or data disclosure when triggered through officially supported product features.
+- infrastructure and operational services directly managed by Astral that affect authentication, authorization, payments, community data, or security-/privacy-relevant processing (user identifiers, account metadata, logs, analytics, telemetry, and similar signals);
+- abuse of officially supported product features that enables unauthorized persistence, privilege escalation, or data disclosure.
 
 If you are unsure whether a target is in scope, email us and ask.
 
-### Out of scope
+### 2.2. Safe harbor
 
-The following are out of scope (not an exhaustive list):
+If you follow this policy, act in good faith, and avoid privacy violations or service disruption, Astral will not pursue legal action against you for security research within the described scope.
 
-- Third-party services, infrastructure, or integrations we do not control (for example partner communities' independent integrations, bots, or external hosting providers).
-- Vulnerabilities that require physical access to facilities, servers, or devices.
-- Social engineering, phishing, bribery, coercion, or attempts to manipulate Astral staff or users.
-- Denial-of-service (DoS) attacks, traffic flooding, rate-limit exhaustion, or resource exhaustion testing.
-- Automated scanning or bulk testing that produces noisy/low-signal findings, especially without a clear security impact and a reliable reproduction path.
-- General UI bugs, feature requests, or non-security support issues (email support@astraof.com for those).
-- Issues in forked, modified, or outdated third-party deployments that are not reproducible on the latest official release.
+## 3. Out of scope
 
-In addition, we generally do not prioritize low-impact reports (for example missing best-practice headers or minor configuration issues) unless you can demonstrate a concrete security impact.
+Non-exhaustive list:
 
-## How to report
+- third-party services, infrastructure, or integrations we do not control (partner bots, external hosting, etc.);
+- issues that require physical access to facilities, servers, or devices;
+- social engineering, phishing, bribery, coercion, or manipulation of Astral staff or users;
+- DoS, traffic flooding, rate-limit or resource exhaustion testing;
+- noisy bulk automated scanning without clear impact and a reliable reproduction path;
+- ordinary UI bugs, feature requests, and non-security support — use **support@astraof.com**;
+- forks, modified, or outdated third-party deployments that cannot be reproduced on the current official release.
 
-Email your report to security@astraof.com.
+We generally deprioritize reports without concrete security impact (for example missing best-practice headers) unless you show real effect.
 
-Please include:
+## 4. How to report
 
-- A short, descriptive title.
-- Why the issue is a security concern (impact, affected users/systems, and realistic attack scenario).
-- Step-by-step reproduction instructions and any proof of concept (screenshots, logs, recordings, or curl commands are helpful).
+Email **security@astraof.com**.
 
-Please do not publicly disclose the vulnerability until we have acknowledged your report and had a reasonable opportunity to investigate and ship a fix. We may coordinate a disclosure timeline with you.
+Include:
 
-## What we need from you
+- a short descriptive title;
+- why it is a security issue (impact, affected users/systems, realistic attack scenario);
+- step-by-step reproduction and PoC (screenshots, logs, recording, curl — where helpful).
 
-To help us validate and fix the issue quickly, include as much of the following as you can:
+Do not publicly disclose the vulnerability until we acknowledge the report and have a reasonable opportunity to investigate and ship a fix. We may agree a disclosure timeline with you.
 
-- A clear summary of the issue and its impact.
-- Step-by-step reproduction instructions.
-- The environment you used (browser, operating system, client version, region, logged-in state, etc.).
-- Any mitigations you tried, and whether the issue persists after clearing caches, using a private window, or restarting clients.
-- A severity estimate (for example a CVSS score), or a plain-language assessment of the access/impact the issue enables.
+## 5. What to include
 
-## Rewards and recognition
+The more complete the report, the faster triage:
 
-Depending on validity, severity, and impact, we may award:
+- clear summary of the issue and impact;
+- step-by-step reproduction;
+- environment (browser, OS, client version, region, logged-in state);
+- mitigations you tried (cache clear, private window, client restart) and whether it persists;
+- severity estimate (CVSS or plain language: what access / what harm).
 
-- A Bug Hunter badge on your Astral profile.
-- Plutonium gift codes on astraof.com so you can access premium features.
+## 6. Rewards and recognition
 
-Higher-severity findings receive more recognition. We intend to add cash payouts in the future once our payments tooling is ready. At this time, we do not guarantee monetary rewards, but we do credit valid research that follows this policy.
+For valid, reproducible, meaningful reports we may award:
 
-### Credit and eligibility
+- a **Bug Hunter** badge on your Astral profile;
+- **Plutonium** gift codes on astraof.com.
 
-- Please report findings privately to security@astraof.com.
-- Public disclosure before we acknowledge and address the issue may make the report ineligible for rewards or recognition.
-- If multiple reports describe the same underlying issue, we typically credit the first report that clearly explains the vulnerability and enables reliable reproduction.
+Higher severity and impact generally mean stronger recognition.
 
-## What to expect from us
+**Cash payouts are not guaranteed.** We may consider individual cases; that does not create an obligation to pay for every report.
 
-- **Acknowledgement:** We aim to acknowledge reports within five business days (often sooner).
-- **Triage and updates:** We will review your report, prioritize critical issues, and keep you updated as we investigate.
-- **Resolution and disclosure:** After a fix is available, we typically coordinate disclosure and credit with the reporter, unless you prefer to remain anonymous.
-- **If we cannot reproduce:** We will share what we tried and may ask for additional details, environment information, or a clearer proof of concept.
+### Eligibility
 
-## Safe testing rules
+- report privately to security@astraof.com;
+- public disclosure before acknowledgement and a reasonable chance to fix may forfeit rewards and recognition;
+- for duplicate reports of the same underlying issue, we typically credit the first report that clearly explains the vulnerability and enables reliable reproduction.
 
-- Only test against accounts, communities, and data you own or have explicit permission to use.
-- Community-level testing (roles, permissions, invites, moderation tools, settings, data access, etc.) must be performed only in communities you own/admin, or where you have explicit permission from the community owner/admin.
-- Do not access, modify, or attempt to view other users' or other communities' data without consent.
-- Do not use automated flooding, scraping, brute forcing, or other disruptive techniques.
-- Do not use scanners or automated tools in ways that degrade reliability or create noisy/low-signal reports.
-- If your testing could trigger real user notifications, support workflows, emails, billing events, or payments, contact us first so we can monitor.
-- Follow applicable laws where you live and where the systems operate. If you are unsure, err on the side of caution and ask before escalating a high-impact test.
+## 7. What to expect from us
 
-Thank you for helping keep Astral secure.
+- **Acknowledgement** — we aim to reply within five business days (often sooner).
+- **Triage** — critical findings first; we keep you updated as we investigate.
+- **Fix and disclosure** — after a fix, we usually coordinate disclosure and credit with the reporter (anonymity on request).
+- **If we cannot reproduce** — we share what we tried and may ask for more detail, environment info, or a clearer PoC.
+
+## 8. Safe testing rules
+
+- Only test accounts, communities, and data you own or have explicit permission to use.
+- Community roles, invites, moderation, and settings — only in communities you own/admin or with explicit owner/admin permission.
+- Do not access or alter other users’ or other communities’ data without consent.
+- Do not use flooding, brute force, or destructive methods.
+- Do not run scanners in ways that degrade reliability or produce noisy low-signal reports.
+- If testing may trigger real user notifications, support tickets, email, billing, or payments — contact us first.
+- Follow applicable law where you live and where the systems run. If unsure, ask before escalating the test.
+
+## 9. Operator contacts
+
+| Topic | Contact |
+| --- | --- |
+| Vulnerabilities | security@astraof.com |
+| General support | support@astraof.com |
+| Legal requests | legal@astraof.com |
+| Website | https://astraof.com |
+
+Thank you for helping keep Astral safe.
+
+Individual Entrepreneur Andreev Ivan Sergeevich  
+OGRNIP 324508100385388 | INN 502991812328

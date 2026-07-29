@@ -114,12 +114,12 @@ export class GuildRepository implements IGuildRepositoryAggregate {
 		return await this.memberRepo.getMember(guildId, userId);
 	}
 
-	async listMembers(guildId: GuildID): Promise<Array<GuildMember>> {
-		return await this.memberRepo.listMembers(guildId);
+	async listMembers(guildId: GuildID, options?: {limit?: number}): Promise<Array<GuildMember>> {
+		return await this.memberRepo.listMembers(guildId, options);
 	}
 
-	async upsertMember(data: GuildMemberRow): Promise<GuildMember> {
-		return await this.memberRepo.upsertMember(data);
+	async upsertMember(data: GuildMemberRow, oldData?: GuildMemberRow | null): Promise<GuildMember> {
+		return await this.memberRepo.upsertMember(data, oldData);
 	}
 
 	async deleteMember(guildId: GuildID, userId: UserID): Promise<void> {
@@ -154,8 +154,8 @@ export class GuildRepository implements IGuildRepositoryAggregate {
 		return await this.moderationRepo.getBan(guildId, userId);
 	}
 
-	async listBans(guildId: GuildID): Promise<Array<GuildBan>> {
-		return await this.moderationRepo.listBans(guildId);
+	async listBans(guildId: GuildID, options?: {limit?: number}): Promise<Array<GuildBan>> {
+		return await this.moderationRepo.listBans(guildId, options);
 	}
 
 	async upsertBan(data: GuildBanRow): Promise<GuildBan> {

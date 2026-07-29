@@ -1,0 +1,85 @@
+#!/usr/bin/env sh
+# pre-commit — fast local checks before every commit.
+# Runs Biome format+lint and tsc on staged TS/JS files only.
+# Bypass with: git commit --no-verify
+
+set -eu
+
+RED='\033[0;31m'
+YEL='\033[0;33m'
+GRN='\033[0;32m'
+NC='\033[0m'
+
+info() { printf "${GRN}▶ %s${NC}\n" "$*" >&2; }
+warn() { printf "${YEL}! %s${NC}\n" "$*" >&2; }
+ok()   { printf "${GRN}✓ %s${NC}\n" "$*" >&2; }
+
+# Staged files only (added, copied, modified — not deleted)
+STAGED=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)
+
+if [ -z "$STAGED" ]; then
+    ok "no staged files — skipping pre-commit checks"
+    exit 0
+fi
+
+# ── 1. Conflict markers ────────────────────────────────────────────────────────
+CONFLICT_HITS=$(printf '%s\n' "$STAGED" | while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    grep -lE '^(<{7}|>{7}|={7})(\s|$)' "$f" 2>/dev/null || true
+done)
+if [ -n "$CONFLICT_HITS" ]; then
+    printf "${RED}✗ conflict markers found:${NC}\n" >&2
+    printf '%s\n' "$CONFLICT_HITS" | sed 's/^/    /' >&2
+    exit 1
+fi
+
+# ── 2. Biome check on staged TS/JS/JSON files ─────────────────────────────────
+BIOME_TARGETS=$(printf '%s\n' "$STAGED" | grep -E '\.(ts|tsx|js|jsx|mjs|cjs|json)$' || true)
+if [ -n "$BIOME_TARGETS" ]; then
+    BIOME_BIN=''
+    if [ -x 'node_modules/.bin/biome' ]; then
+        BIOME_BIN='node_modules/.bin/biome'
+    elif [ -x 'astral_app/node_modules/.bin/biome' ]; then
+        BIOME_BIN='astral_app/node_modules/.bin/biome'
+    fi
+
+    if [ -n "$BIOME_BIN" ]; then
+        info "biome check --write on staged files"
+        if ! printf '%s\n' "$BIOME_TARGETS" | xargs -r "$BIOME_BIN" check --write --no-errors-on-unmatched >/tmp/biome-precommit.log 2>&1; then
+            printf "${RED}✗ biome check failed:${NC}\n" >&2
+            head -40 /tmp/biome-precommit.log >&2
+            printf "${YEL}  Fix with: node_modules/.bin/biome check --write <files>${NC}\n" >&2
+            exit 1
+        fi
+        # Re-stage files that biome auto-fixed
+        printf '%s\n' "$BIOME_TARGETS" | xargs -r git add
+    else
+        warn "biome not installed — skipping lint (run 'pnpm install' to enable)"
+    fi
+fi
+
+# ── 3. TypeScript typecheck (only when TS files are staged) ───────────────────
+TS_STAGED=$(printf '%s\n' "$STAGED" | grep -E '\.(ts|tsx)$' || true)
+if [ -n "$TS_STAGED" ]; then
+    TSC_BIN=''
+    if [ -x 'node_modules/.bin/tsc' ]; then
+        TSC_BIN='node_modules/.bin/tsc'
+    fi
+
+    if [ -n "$TSC_BIN" ]; then
+        info "tsc --noEmit"
+        if ! node_modules/.bin/tsc --noEmit >/tmp/tsc-precommit.log 2>&1; then
+            printf "${RED}✗ TypeScript typecheck failed:${NC}\n" >&2
+            tail -30 /tmp/tsc-precommit.log >&2
+            if grep -q '\.module\.css' /tmp/tsc-precommit.log; then
+                printf "${YEL}  Stale CSS-module types detected. Try: pnpm generate:css-types${NC}\n" >&2
+            fi
+            exit 1
+        fi
+    else
+        warn "tsc not installed — skipping typecheck (run 'pnpm install' to enable)"
+    fi
+fi
+
+ok "pre-commit checks passed"
+exit 0

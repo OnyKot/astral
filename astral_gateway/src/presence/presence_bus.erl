@@ -20,11 +20,23 @@
 
 -include_lib("astral_gateway/include/timeout_config.hrl").
 
--export([start_link/0, subscribe/1, unsubscribe/1, publish/2]).
+-export([
+    start_link/0,
+    subscribe/1,
+    subscribe_many/1,
+    unsubscribe/1,
+    unsubscribe_many/1,
+    publish/2
+]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -type shard() :: #{pid := pid(), ref := reference()}.
 -type state() :: #{shards := #{non_neg_integer() => shard()}, shard_count := pos_integer()}.
+
+%% Routing table (tuple of pg scope names, one per shard) published by init/1 so
+%% that subscribe/unsubscribe can resolve their shard in the CALLING process
+%% instead of round-tripping through this node-global router.
+-define(SCOPES_TERM_KEY, {?MODULE, scopes}).
 
 -spec start_link() -> {ok, pid()} | {error, term()}.
 start_link() ->
@@ -32,11 +44,35 @@ start_link() ->
 
 -spec subscribe(integer()) -> ok.
 subscribe(UserId) when is_integer(UserId) ->
-    gen_server:call(?MODULE, {subscribe, UserId, self()}, ?DEFAULT_GEN_SERVER_TIMEOUT).
+    join(UserId, self()).
+
+%% Presence init subscribes to every friend and every group-DM recipient before
+%% READY can be dispatched. Batching it means the caller resolves the routing
+%% table once and never touches the router, instead of paying
+%% caller -> router -> shard -> pg for each id.
+-spec subscribe_many([integer()]) -> ok.
+subscribe_many(UserIds) when is_list(UserIds) ->
+    Pid = self(),
+    %% usort: pg allows the same pid to join a group twice, and a duplicate
+    %% membership would deliver every presence frame to the subscriber twice.
+    lists:foreach(
+        fun(UserId) -> join(UserId, Pid) end,
+        lists:usort([UserId || UserId <- UserIds, is_integer(UserId)])
+    ),
+    ok.
 
 -spec unsubscribe(integer()) -> ok.
 unsubscribe(UserId) when is_integer(UserId) ->
-    gen_server:call(?MODULE, {unsubscribe, UserId, self()}, ?DEFAULT_GEN_SERVER_TIMEOUT).
+    leave(UserId, self()).
+
+-spec unsubscribe_many([integer()]) -> ok.
+unsubscribe_many(UserIds) when is_list(UserIds) ->
+    Pid = self(),
+    lists:foreach(
+        fun(UserId) -> leave(UserId, Pid) end,
+        lists:usort([UserId || UserId <- UserIds, is_integer(UserId)])
+    ),
+    ok.
 
 -spec publish(integer(), term()) -> ok.
 publish(UserId, Payload) when is_integer(UserId) ->
@@ -47,6 +83,7 @@ init([]) ->
     process_flag(trap_exit, true),
     {ShardCount, Source} = determine_shard_count(presence_bus_shards),
     Shards = start_shards(ShardCount, #{}),
+    publish_scopes(ShardCount),
     maybe_log_shard_source(presence_bus, ShardCount, Source),
     {ok, #{shards => Shards, shard_count => ShardCount}}.
 
@@ -181,6 +218,66 @@ restart_shard(Index, State) ->
             Dummy = #{pid => spawn(fun() -> exit(normal) end), ref => make_ref()},
             {Dummy, State}
     end.
+
+-spec publish_scopes(pos_integer()) -> ok.
+publish_scopes(ShardCount) ->
+    %% Scope names are derived from the shard index, so they are stable across
+    %% router restarts; only init/1 writes this term, never a request path (a
+    %% persistent_term:put/2 triggers a global GC scan).
+    Scopes = list_to_tuple([
+        presence_bus_shard:scope_name(Index)
+     || Index <- lists:seq(0, ShardCount - 1)
+    ]),
+    persistent_term:put(?SCOPES_TERM_KEY, Scopes),
+    ok.
+
+-spec scope_for(integer()) -> {ok, atom()} | error.
+scope_for(UserId) ->
+    case persistent_term:get(?SCOPES_TERM_KEY, undefined) of
+        Scopes when is_tuple(Scopes), tuple_size(Scopes) > 0 ->
+            %% Same key and same shard count as ensure_shard/2, so a caller-side
+            %% join always lands in the scope the publish path reads.
+            {ok, element(select_shard(UserId, tuple_size(Scopes)) + 1, Scopes)};
+        _ ->
+            error
+    end.
+
+-spec join(integer(), pid()) -> ok.
+join(UserId, Pid) ->
+    case scope_for(UserId) of
+        {ok, Scope} ->
+            case catch pg:join(Scope, {presence, UserId}, Pid) of
+                ok ->
+                    ok;
+                _ ->
+                    %% Scope missing or dead: fall back to the router, which
+                    %% restarts the shard (and its pg scope) before joining.
+                    forward({subscribe, UserId, Pid})
+            end;
+        error ->
+            forward({subscribe, UserId, Pid})
+    end.
+
+-spec leave(integer(), pid()) -> ok.
+leave(UserId, Pid) ->
+    case scope_for(UserId) of
+        {ok, Scope} ->
+            case catch pg:leave(Scope, {presence, UserId}, Pid) of
+                ok ->
+                    ok;
+                not_joined ->
+                    ok;
+                _ ->
+                    forward({unsubscribe, UserId, Pid})
+            end;
+        error ->
+            forward({unsubscribe, UserId, Pid})
+    end.
+
+-spec forward(term()) -> ok.
+forward(Request) ->
+    _ = gen_server:call(?MODULE, Request, ?DEFAULT_GEN_SERVER_TIMEOUT),
+    ok.
 
 -spec forward_call(term(), term(), state()) -> {term(), state()}.
 forward_call(Key, Request, State) ->

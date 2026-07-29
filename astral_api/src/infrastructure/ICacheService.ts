@@ -25,6 +25,12 @@ export abstract class ICacheService {
 	abstract exists(key: string): Promise<boolean>;
 	abstract expire(key: string, ttlSeconds: number): Promise<void>;
 	abstract ttl(key: string): Promise<number>;
+	/**
+	 * Atomically increments a counter and, only when the counter is created, arms a `windowMs` expiry.
+	 * Returns the post-increment count together with the remaining window in milliseconds, so callers
+	 * never have to read-modify-write (which loses increments under concurrent bursts).
+	 */
+	abstract incrWithWindow(key: string, windowMs: number): Promise<{count: number; pttlMs: number}>;
 	abstract mget<T>(keys: Array<string>): Promise<Array<T | null>>;
 	abstract mset<T>(entries: Array<{key: string; value: T; ttlSeconds?: number}>): Promise<void>;
 	abstract deletePattern(pattern: string): Promise<number>;

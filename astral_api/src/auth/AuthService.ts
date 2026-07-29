@@ -197,6 +197,7 @@ export class AuthService implements IAuthService {
 			this.utilityService.assertNonBotUser.bind(this.utilityService),
 			this.createMfaTicketResponse.bind(this),
 			this.sessionService.createAuthSession.bind(this.sessionService),
+			cacheService,
 		);
 
 		this.mfaService =
@@ -593,9 +594,10 @@ export class AuthService implements IAuthService {
 		webauthn: boolean;
 	}> {
 		const ticket = createMfaTicket(randomString(64));
-		await this.cacheService.set(`mfa-ticket:${ticket}`, user.id.toString(), 60 * 5);
-
-		const credentials = await this.repository.listWebAuthnCredentials(user.id);
+		const [, credentials] = await Promise.all([
+			this.cacheService.set(`mfa-ticket:${ticket}`, user.id.toString(), 60 * 5),
+			this.repository.listWebAuthnCredentials(user.id),
+		]);
 		const hasSms = user.authenticatorTypes.has(UserAuthenticatorTypes.SMS);
 		const hasWebauthn = credentials.length > 0;
 		const hasTotp = user.authenticatorTypes.has(UserAuthenticatorTypes.TOTP);

@@ -22,7 +22,6 @@ import {createChannelID, createRoleID, createUserID} from '~/BrandedTypes';
 import type {GatewayDispatchEvent} from '~/Constants';
 import {MissingPermissionsError, UnknownGuildError} from '~/Errors';
 import type {GuildMemberResponse, GuildResponse} from '~/guild/GuildModel';
-import {Logger} from '~/Logger';
 import {GatewayRpcClient} from './GatewayRpcClient';
 import type {CallData} from './IGatewayService';
 
@@ -197,21 +196,30 @@ interface GuildMemberRpcResponse {
 	member_data?: GuildMemberResponse;
 }
 
-type PendingRequest<T> = {
-	resolve: (value: T) => void;
-	reject: (error: Error) => void;
-};
+interface GuildCounts {
+	memberCount: number;
+	presenceCount: number;
+}
+
+interface CachedGuildCounts {
+	counts: GuildCounts;
+	expiresAt: number;
+}
 
 export class GatewayService {
 	private rpcClient: GatewayRpcClient;
-	private pendingGuildDataRequests = new Map<string, Array<PendingRequest<GuildResponse>>>();
-	private pendingGuildMemberRequests = new Map<
-		string,
-		Array<PendingRequest<{success: boolean; memberData?: GuildMemberResponse}>>
-	>();
-	private pendingPermissionRequests = new Map<string, Array<PendingRequest<boolean>>>();
-	private batchTimeout: NodeJS.Timeout | null = null;
-	private readonly BATCH_DELAY_MS = 5;
+	// In-flight dedup rather than timer batching, following this class's own `pendingGuildCountsRequests`
+	// precedent. These are static on purpose: a GatewayService is instantiated per request, so
+	// instance-scoped maps would never coalesce anything. Every key embeds the userId (and, for guild
+	// data, the membership-check mode), so sharing across concurrent requests cannot leak authorization.
+	// Entries only live for the duration of the RPC, hence no size cap is needed.
+	private static inflightGuildData = new Map<string, Promise<GuildResponse>>();
+	private static inflightGuildMember = new Map<string, Promise<{success: boolean; memberData?: GuildMemberResponse}>>();
+	private static inflightPermission = new Map<string, Promise<boolean>>();
+	private static readonly GUILD_COUNTS_CACHE_TTL_MS = 3_000;
+	private static readonly GUILD_COUNTS_CACHE_MAX_ENTRIES = 2_000;
+	private static guildCountsCache = new Map<string, CachedGuildCounts>();
+	private static pendingGuildCountsRequests = new Map<string, Promise<GuildCounts>>();
 
 	constructor() {
 		this.rpcClient = GatewayRpcClient.getInstance();
@@ -221,155 +229,20 @@ export class GatewayService {
 		return this.rpcClient.call<T>(method, params);
 	}
 
-	private scheduleBatch(): void {
-		if (this.batchTimeout) {
-			return;
+	// The batch processors this replaced mapped these two RPC error strings onto domain errors before
+	// rejecting; without it callers would see a raw GatewayRpcError and return 500 instead of 404/403.
+	private static transformGuildRpcError(error: unknown): Error {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+
+		if (errorMessage === 'guild_not_found') {
+			return new UnknownGuildError();
 		}
 
-		this.batchTimeout = setTimeout(() => {
-			void this.processBatch().catch((error) => {
-				Logger.error({error}, 'GatewayService.processBatch failed — pending RPC requests may be orphaned');
-			});
-		}, this.BATCH_DELAY_MS);
-	}
-
-	private async processBatch(): Promise<void> {
-		this.batchTimeout = null;
-
-		const guildDataRequests = new Map(this.pendingGuildDataRequests);
-		const guildMemberRequests = new Map(this.pendingGuildMemberRequests);
-		const permissionRequests = new Map(this.pendingPermissionRequests);
-
-		const totalGuildDataRequests = Array.from(guildDataRequests.values()).reduce(
-			(sum, pending) => sum + pending.length,
-			0,
-		);
-		const totalGuildMemberRequests = Array.from(guildMemberRequests.values()).reduce(
-			(sum, pending) => sum + pending.length,
-			0,
-		);
-		const totalPermissionRequests = Array.from(permissionRequests.values()).reduce(
-			(sum, pending) => sum + pending.length,
-			0,
-		);
-
-		if (totalGuildDataRequests > 0 || totalGuildMemberRequests > 0 || totalPermissionRequests > 0) {
-			Logger.debug(
-				`[gateway-batch] Processing batch: ${guildDataRequests.size} unique guild.get_data requests (${totalGuildDataRequests} total), ${guildMemberRequests.size} unique guild.get_member requests (${totalGuildMemberRequests} total), ${permissionRequests.size} unique guild.check_permission requests (${totalPermissionRequests} total)`,
-			);
+		if (errorMessage === 'forbidden') {
+			return new MissingPermissionsError();
 		}
 
-		this.pendingGuildDataRequests.clear();
-		this.pendingGuildMemberRequests.clear();
-		this.pendingPermissionRequests.clear();
-
-		if (guildDataRequests.size > 0) {
-			await this.processGuildDataBatch(guildDataRequests);
-		}
-
-		if (guildMemberRequests.size > 0) {
-			await this.processGuildMemberBatch(guildMemberRequests);
-		}
-
-		if (permissionRequests.size > 0) {
-			await this.processPermissionBatch(permissionRequests);
-		}
-	}
-
-	private async processGuildDataBatch(requests: Map<string, Array<PendingRequest<GuildResponse>>>): Promise<void> {
-		const promises = Array.from(requests.entries()).map(async ([key, pending]) => {
-			try {
-				const [guildIdStr, userIdStr, skipCheck] = key.split('-');
-				const guildId = BigInt(guildIdStr) as GuildID;
-				const userId = BigInt(userIdStr) as UserID;
-				const skipMembershipCheck = skipCheck === 'skip';
-
-				const guildResponse = await this.call<GuildResponse>('guild.get_data', {
-					guild_id: guildId.toString(),
-					user_id: skipMembershipCheck ? null : userId.toString(),
-				});
-				pending.forEach(({resolve}) => resolve(guildResponse));
-			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : String(error);
-
-				let transformedError: Error;
-				if (errorMessage === 'guild_not_found') {
-					transformedError = new UnknownGuildError();
-				} else if (errorMessage === 'forbidden') {
-					transformedError = new MissingPermissionsError();
-				} else {
-					transformedError = error as Error;
-				}
-
-				pending.forEach(({reject}) => reject(transformedError));
-			}
-		});
-
-		await Promise.allSettled(promises);
-	}
-
-	private async processGuildMemberBatch(
-		requests: Map<string, Array<PendingRequest<{success: boolean; memberData?: GuildMemberResponse}>>>,
-	): Promise<void> {
-		const promises = Array.from(requests.entries()).map(async ([key, pending]) => {
-			try {
-				const [guildIdStr, userIdStr] = key.split('-');
-				const guildId = BigInt(guildIdStr) as GuildID;
-				const userId = BigInt(userIdStr) as UserID;
-
-				const rpcResult = await this.call<GuildMemberRpcResponse | null>('guild.get_member', {
-					guild_id: guildId.toString(),
-					user_id: userId.toString(),
-				});
-
-				if (rpcResult?.success && rpcResult.member_data) {
-					const result = {success: true, memberData: rpcResult.member_data};
-					pending.forEach(({resolve}) => resolve(result));
-				} else {
-					pending.forEach(({resolve}) => resolve({success: false}));
-				}
-			} catch (error) {
-				pending.forEach(({reject}) => reject(error as Error));
-			}
-		});
-
-		await Promise.allSettled(promises);
-	}
-
-	private async processPermissionBatch(requests: Map<string, Array<PendingRequest<boolean>>>): Promise<void> {
-		const promises = Array.from(requests.entries()).map(async ([key, pending]) => {
-			try {
-				const [guildIdStr, userIdStr, permissionStr, channelIdStr] = key.split('-');
-				const guildId = BigInt(guildIdStr) as GuildID;
-				const userId = BigInt(userIdStr) as UserID;
-				const permission = BigInt(permissionStr);
-				const channelId = channelIdStr !== '0' ? (BigInt(channelIdStr) as ChannelID) : undefined;
-
-				const result = await this.call<{has_permission: boolean}>('guild.check_permission', {
-					guild_id: guildId.toString(),
-					user_id: userId.toString(),
-					permission: permission.toString(),
-					channel_id: channelId ? channelId.toString() : '0',
-				});
-
-				pending.forEach(({resolve}) => resolve(result.has_permission));
-			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : String(error);
-
-				let transformedError: Error;
-				if (errorMessage === 'guild_not_found') {
-					transformedError = new UnknownGuildError();
-				} else if (errorMessage === 'forbidden') {
-					transformedError = new MissingPermissionsError();
-				} else {
-					transformedError = error as Error;
-				}
-
-				pending.forEach(({reject}) => reject(transformedError));
-			}
-		});
-
-		await Promise.allSettled(promises);
+		return error as Error;
 	}
 
 	async dispatchGuild({guildId, event, data}: DispatchGuildParams): Promise<void> {
@@ -394,7 +267,32 @@ export class GatewayService {
 		});
 	}
 
-	async getGuildCounts(guildId: GuildID): Promise<{memberCount: number; presenceCount: number}> {
+	async getGuildCounts(guildId: GuildID): Promise<GuildCounts> {
+		const cacheKey = guildId.toString();
+		const now = Date.now();
+		const cached = GatewayService.guildCountsCache.get(cacheKey);
+		if (cached && cached.expiresAt > now) {
+			return cached.counts;
+		}
+
+		const pending = GatewayService.pendingGuildCountsRequests.get(cacheKey);
+		if (pending) {
+			return pending;
+		}
+
+		const request = this.fetchGuildCounts(guildId)
+			.then((counts) => {
+				this.setCachedGuildCounts(cacheKey, counts);
+				return counts;
+			})
+			.finally(() => {
+				GatewayService.pendingGuildCountsRequests.delete(cacheKey);
+			});
+		GatewayService.pendingGuildCountsRequests.set(cacheKey, request);
+		return request;
+	}
+
+	private async fetchGuildCounts(guildId: GuildID): Promise<GuildCounts> {
 		const result = await this.call<{member_count: number; presence_count: number}>('guild.get_counts', {
 			guild_id: guildId.toString(),
 		});
@@ -402,6 +300,19 @@ export class GatewayService {
 			memberCount: result.member_count,
 			presenceCount: result.presence_count,
 		};
+	}
+
+	private setCachedGuildCounts(cacheKey: string, counts: GuildCounts): void {
+		if (GatewayService.guildCountsCache.size >= GatewayService.GUILD_COUNTS_CACHE_MAX_ENTRIES) {
+			const firstKey = GatewayService.guildCountsCache.keys().next().value;
+			if (firstKey) {
+				GatewayService.guildCountsCache.delete(firstKey);
+			}
+		}
+		GatewayService.guildCountsCache.set(cacheKey, {
+			counts,
+			expiresAt: Date.now() + GatewayService.GUILD_COUNTS_CACHE_TTL_MS,
+		});
 	}
 
 	async getChannelCount({guildId}: ChannelCountParams): Promise<number> {
@@ -426,17 +337,27 @@ export class GatewayService {
 	}: GuildDataParams & {skipMembershipCheck?: boolean}): Promise<GuildResponse> {
 		const key = `${guildId.toString()}-${userId.toString()}-${skipMembershipCheck ? 'skip' : 'check'}`;
 
-		return new Promise<GuildResponse>((resolve, reject) => {
-			const pending = this.pendingGuildDataRequests.get(key) || [];
-			pending.push({resolve, reject});
-			this.pendingGuildDataRequests.set(key, pending);
+		const inflight = GatewayService.inflightGuildData.get(key);
+		if (inflight) {
+			return inflight;
+		}
 
-			Logger.debug(
-				`[gateway-batch] Queued guild.get_data request for guild ${guildId.toString()}, user ${userId.toString()}, total pending: ${pending.length}`,
-			);
-
-			this.scheduleBatch();
+		const request = this.fetchGuildData(guildId, userId, skipMembershipCheck === true).finally(() => {
+			GatewayService.inflightGuildData.delete(key);
 		});
+		GatewayService.inflightGuildData.set(key, request);
+		return request;
+	}
+
+	private async fetchGuildData(guildId: GuildID, userId: UserID, skipMembershipCheck: boolean): Promise<GuildResponse> {
+		try {
+			return await this.call<GuildResponse>('guild.get_data', {
+				guild_id: guildId.toString(),
+				user_id: skipMembershipCheck ? null : userId.toString(),
+			});
+		} catch (error) {
+			throw GatewayService.transformGuildRpcError(error);
+		}
 	}
 
 	async getGuildMember({
@@ -445,17 +366,32 @@ export class GatewayService {
 	}: GuildMemberParams): Promise<{success: boolean; memberData?: GuildMemberResponse}> {
 		const key = `${guildId.toString()}-${userId.toString()}`;
 
-		return new Promise<{success: boolean; memberData?: GuildMemberResponse}>((resolve, reject) => {
-			const pending = this.pendingGuildMemberRequests.get(key) || [];
-			pending.push({resolve, reject});
-			this.pendingGuildMemberRequests.set(key, pending);
+		const inflight = GatewayService.inflightGuildMember.get(key);
+		if (inflight) {
+			return inflight;
+		}
 
-			Logger.debug(
-				`[gateway-batch] Queued guild.get_member request for guild ${guildId.toString()}, user ${userId.toString()}, total pending: ${pending.length}`,
-			);
-
-			this.scheduleBatch();
+		const request = this.fetchGuildMember(guildId, userId).finally(() => {
+			GatewayService.inflightGuildMember.delete(key);
 		});
+		GatewayService.inflightGuildMember.set(key, request);
+		return request;
+	}
+
+	private async fetchGuildMember(
+		guildId: GuildID,
+		userId: UserID,
+	): Promise<{success: boolean; memberData?: GuildMemberResponse}> {
+		const rpcResult = await this.call<GuildMemberRpcResponse | null>('guild.get_member', {
+			guild_id: guildId.toString(),
+			user_id: userId.toString(),
+		});
+
+		if (rpcResult?.success && rpcResult.member_data) {
+			return {success: true, memberData: rpcResult.member_data};
+		}
+
+		return {success: false};
 	}
 
 	async hasGuildMember({guildId, userId}: HasMemberParams): Promise<boolean> {
@@ -538,17 +474,35 @@ export class GatewayService {
 	async checkPermission({guildId, userId, permission, channelId}: CheckPermissionParams): Promise<boolean> {
 		const key = `${guildId.toString()}-${userId.toString()}-${permission.toString()}-${channelId?.toString() || '0'}`;
 
-		return new Promise<boolean>((resolve, reject) => {
-			const pending = this.pendingPermissionRequests.get(key) || [];
-			pending.push({resolve, reject});
-			this.pendingPermissionRequests.set(key, pending);
+		const inflight = GatewayService.inflightPermission.get(key);
+		if (inflight) {
+			return inflight;
+		}
 
-			Logger.debug(
-				`[gateway-batch] Queued guild.check_permission request for guild ${guildId.toString()}, user ${userId.toString()}, channel ${channelId?.toString() || 'none'}, permission ${permission.toString()}, total pending: ${pending.length}`,
-			);
-
-			this.scheduleBatch();
+		const request = this.fetchPermission(guildId, userId, permission, channelId).finally(() => {
+			GatewayService.inflightPermission.delete(key);
 		});
+		GatewayService.inflightPermission.set(key, request);
+		return request;
+	}
+
+	private async fetchPermission(
+		guildId: GuildID,
+		userId: UserID,
+		permission: bigint,
+		channelId?: ChannelID,
+	): Promise<boolean> {
+		try {
+			const result = await this.call<{has_permission: boolean}>('guild.check_permission', {
+				guild_id: guildId.toString(),
+				user_id: userId.toString(),
+				permission: permission.toString(),
+				channel_id: channelId ? channelId.toString() : '0',
+			});
+			return result.has_permission;
+		} catch (error) {
+			throw GatewayService.transformGuildRpcError(error);
+		}
 	}
 
 	async canManageRoles({guildId, userId, targetUserId, roleId}: CanManageRolesParams): Promise<boolean> {

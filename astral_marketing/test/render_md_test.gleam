@@ -17,7 +17,6 @@
 
 import astral_marketing/help_center
 import astral_marketing/locale
-import astral_marketing/markdown_utils
 import astral_marketing/render_md
 import gleam/string
 import gleeunit
@@ -1125,7 +1124,7 @@ pub fn render_article_shortcut_with_extra_whitespace_test() {
 
 pub fn create_slug_arabic_with_latin_tail_test() {
   help_center.create_slug("كيفية عمل انتهاء صلاحية المرفقات على Astral")
-  |> should.equal("كيفية-عمل-انتهاء-صلاحية-المرفقات-على-Astral")
+  |> should.equal("كيفية-عمل-انتهاء-صلاحية-المرفقات-على-astral")
 }
 
 pub fn create_slug_all_non_latin_fallback_test() {
@@ -1286,11 +1285,15 @@ pub fn render_article_shortcut_in_paragraph_test() {
 
 pub fn render_terms_table_of_contents_and_lists_test() {
   let markdown =
-    markdown_utils.load_markdown_with_fallback("priv/terms", locale.EnUS)
-  let help_data = help_center.load_help_articles(locale.EnUS)
+    "# Terms of Service\n\n## Table of Contents\n\n- [Welcome to Astral](#welcome-to-Astral)\n\n## Welcome to Astral {#welcome-to-Astral}\n\nPayments are processed by **Platega** and other payment providers chosen by Astral.\n\nIndividual Entrepreneur Andreev Ivan Sergeevich\n"
 
   let rendered =
-    render_md.render(markdown, "https://asrtal.ru", locale.EnUS, help_data)
+    render_md.render(
+      markdown,
+      "https://asrtal.ru",
+      locale.EnUS,
+      empty_help_data(),
+    )
 
   rendered
   |> string.contains(
@@ -1299,15 +1302,11 @@ pub fn render_terms_table_of_contents_and_lists_test() {
   |> should.be_true
 
   rendered
-  |> string.contains(
-    "we will automatically attempt to retry charging your payment method a reasonable number of times;",
-  )
+  |> string.contains("Platega")
   |> should.be_true
 
   rendered
-  |> string.contains(
-    "/help/en-us/articles/1445724566704881664-how-to-delete-or-disable-your-account",
-  )
+  |> string.contains("Individual Entrepreneur Andreev Ivan Sergeevich")
   |> should.be_true
 
   rendered

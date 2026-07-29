@@ -237,12 +237,16 @@ export class GuildRoleService {
 			memberIds.map(async (memberId) => {
 				const member = await this.guildMemberRepository.getMember(guildId, memberId);
 				if (member?.roleIds.has(roleId)) {
+					const oldRow = member.toRow();
 					const updatedRoleIds = new Set(member.roleIds);
 					updatedRoleIds.delete(roleId);
-					await this.guildMemberRepository.upsertMember({
-						...member.toRow(),
-						role_ids: updatedRoleIds.size > 0 ? updatedRoleIds : null,
-					});
+					await this.guildMemberRepository.upsertMember(
+						{
+							...oldRow,
+							role_ids: updatedRoleIds.size > 0 ? updatedRoleIds : null,
+						},
+						oldRow,
+					);
 				}
 			}),
 		);

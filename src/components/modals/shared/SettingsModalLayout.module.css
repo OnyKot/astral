@@ -285,6 +285,15 @@
 	min-height: 0;
 }
 
+.desktopPanelShellTransition {
+	width: 100%;
+	min-height: 0;
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
 @media screen and (min-width: 1024px) {
 	.desktopScrollInner {
 		max-width: clamp(740px, 85%, 960px);

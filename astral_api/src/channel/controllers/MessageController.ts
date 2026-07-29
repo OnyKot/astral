@@ -18,6 +18,7 @@
  */
 
 import type {Context} from 'hono';
+import {bodyLimit} from 'hono/body-limit';
 import type {HonoApp, HonoEnv} from '~/App';
 import {AttachmentDecayService} from '~/attachment/AttachmentDecayService';
 import type {ChannelID, UserID} from '~/BrandedTypes';
@@ -42,6 +43,15 @@ import {createQueryIntegerType, Int32Type, Int64Type, z} from '~/Schema';
 import {Validator} from '~/Validator';
 
 const DEFAULT_ATTACHMENT_UPLOAD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Cap multipart message bodies before parseBody() buffers the entire payload
+// into memory. Without a limit, an authenticated caller can stream an
+// arbitrarily large body to exhaust memory (the per-file size check in
+// validateAttachmentSizes only runs AFTER parseBody has already buffered
+// everything). 100 MiB covers typical messages (metadata + several images or
+// documents); very large single files should use a dedicated streaming upload
+// path rather than the in-memory multipart route.
+const MESSAGE_BODY_LIMIT = 100 * 1024 * 1024;
 
 const isUnknownUserFailure = (error: unknown): boolean => {
 	if (error instanceof UnknownUserError) {
@@ -283,15 +293,16 @@ export const MessageController = (app: HonoApp) => {
 			const referenceKey = (channelId: bigint | string, messageId: bigint | string) =>
 				`${channelId.toString()}:${messageId.toString()}`;
 			const referencedMessagesMap = new Map<string, Message | null>();
-			const referenceTargets = messages
-				.map((m) => m.reference)
-				.filter((r): r is NonNullable<typeof r> => r !== null && r !== undefined);
-			if (referenceTargets.length > 0) {
+			const referenceTargets = new Map<string, NonNullable<Message['reference']>>();
+			for (const message of messages) {
+				const ref = message.reference;
+				if (ref === null || ref === undefined) continue;
+				referenceTargets.set(referenceKey(ref.channelId, ref.messageId), ref);
+			}
+			if (referenceTargets.size > 0) {
 				const channelRepo = ctx.get('channelRepository');
 				await Promise.all(
-					referenceTargets.map(async (ref) => {
-						const k = referenceKey(ref.channelId, ref.messageId);
-						if (referencedMessagesMap.has(k)) return;
+					Array.from(referenceTargets.entries()).map(async ([k, ref]) => {
 						try {
 							const m = await channelRepo.getMessage(ref.channelId, ref.messageId);
 							referencedMessagesMap.set(k, m);
@@ -313,8 +324,26 @@ export const MessageController = (app: HonoApp) => {
 								requestCache,
 								mediaService: ctx.get('mediaService'),
 								attachmentDecayMap,
-								getReactions: (channelId, messageId) =>
-									ctx.get('channelService').getMessageReactions({userId, channelId, messageId}),
+								/*
+								 * Skip the repeated authorization only for THIS request's channel, which
+								 * MessageRetrievalService.getMessages already authorized once
+								 * (getChannelAuthenticated plus an explicit READ_MESSAGE_HISTORY check).
+								 * Going through channelService re-ran that entire check per message, costing
+								 * an extra channels read and gateway permission RPCs for every message with
+								 * reactions.
+								 *
+								 * Any other channel still takes the authorizing path: mapMessageToResponse
+								 * forwards this callback into the recursive referenced_message mapping with
+								 * the *referenced* message's channelId, which may be a channel the caller
+								 * cannot access. Reactions reveal who reacted, so that case must keep its
+								 * check.
+								 */
+								getReactions: (reactionChannelId, messageId) =>
+									reactionChannelId === channelId
+										? ctx.get('channelRepository').listMessageReactions(reactionChannelId, messageId)
+										: ctx
+												.get('channelService')
+												.getMessageReactions({userId, channelId: reactionChannelId, messageId}),
 								setHasReaction: (channelId, messageId, hasReaction) =>
 									ctx.get('channelService').setHasReaction(channelId, messageId, hasReaction),
 								getReferencedMessage: async (channelId, messageId) => {
@@ -375,8 +404,15 @@ export const MessageController = (app: HonoApp) => {
 					requestCache,
 					mediaService: ctx.get('mediaService'),
 					attachmentDecayMap,
-					getReactions: (channelId, messageId) =>
-						ctx.get('channelService').getMessageReactions({userId, channelId, messageId}),
+					/*
+					 * Same shape as the history route above: the request's own channel is already
+					 * authorized by MessageRetrievalService.getMessage, so it reads straight from the
+					 * repository, while a referenced message in any other channel keeps its check.
+					 */
+					getReactions: (reactionChannelId, messageId) =>
+						reactionChannelId === channelId
+							? ctx.get('channelRepository').listMessageReactions(reactionChannelId, messageId)
+							: ctx.get('channelService').getMessageReactions({userId, channelId: reactionChannelId, messageId}),
 					setHasReaction: (channelId, messageId, hasReaction) =>
 						ctx.get('channelService').setHasReaction(channelId, messageId, hasReaction),
 					getReferencedMessage: (channelId, messageId) => ctx.get('channelRepository').getMessage(channelId, messageId),
@@ -389,6 +425,7 @@ export const MessageController = (app: HonoApp) => {
 		'/channels/:channel_id/messages',
 		RateLimitMiddleware(RateLimitConfigs.CHANNEL_MESSAGE_CREATE),
 		LoginRequired,
+		bodyLimit({maxSize: MESSAGE_BODY_LIMIT}),
 		Validator('param', z.object({channel_id: Int64Type})),
 		async (ctx) => {
 			const user = ctx.get('user');
@@ -437,6 +474,7 @@ export const MessageController = (app: HonoApp) => {
 		'/channels/:channel_id/messages/:message_id',
 		RateLimitMiddleware(RateLimitConfigs.CHANNEL_MESSAGE_UPDATE),
 		LoginRequired,
+		bodyLimit({maxSize: MESSAGE_BODY_LIMIT}),
 		Validator('param', z.object({channel_id: Int64Type, message_id: Int64Type})),
 		async (ctx) => {
 			const {channel_id, message_id} = ctx.req.valid('param');

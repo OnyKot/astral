@@ -33,6 +33,7 @@ import {processMetadata, validateMedia} from '~/lib/MediaValidation';
 import {generateFilename, getMimeType} from '~/lib/MimeTypeUtils';
 import type {NSFWDetectionService} from '~/lib/NSFWDetectionService';
 import {readS3Object, streamToBuffer} from '~/lib/S3Utils';
+import {assertAllowedBucket, assertSafeS3Key} from '~/lib/S3PathValidation';
 import * as FetchUtils from '~/utils/FetchUtils';
 
 type MediaProxyMetadataRequest =
@@ -46,8 +47,14 @@ export const handleMetadataRequest = (coalescer: InMemoryCoalescer, nsfwDetectio
 		const request = await ctx.req.json<MediaProxyMetadataRequest>();
 		const cacheKey = (() => {
 			switch (request.type) {
-				case 'base64':
-					return `base64_${request.base64}`;
+				case 'base64': {
+					// Hash the payload instead of using it verbatim — a 50MB base64
+					// body would otherwise become a ~50MB key string held in the
+					// coalescer map, letting a caller exhaust memory with many
+					// distinct payloads.
+					const hash = crypto.createHash('sha256').update(request.base64).digest('hex');
+					return `base64_${hash}`;
+				}
 				case 'upload':
 					return `upload_${request.upload_filename}`;
 				case 'external':
@@ -64,12 +71,15 @@ export const handleMetadataRequest = (coalescer: InMemoryCoalescer, nsfwDetectio
 						return {buffer: Buffer.from(request.base64!, 'base64'), filename: undefined};
 
 					case 'upload': {
+						assertSafeS3Key(request.upload_filename!);
 						const {data} = await readS3Object(Config.AWS_S3_BUCKET_UPLOADS, request.upload_filename!);
 						assert(data instanceof Buffer);
 						return {buffer: data, filename: request.upload_filename};
 					}
 
 					case 's3': {
+						assertAllowedBucket(request.bucket!);
+						assertSafeS3Key(request.key!);
 						const {data} = await readS3Object(request.bucket!, request.key!);
 						assert(data instanceof Buffer);
 						const filename = request.key!.substring(request.key!.lastIndexOf('/') + 1);

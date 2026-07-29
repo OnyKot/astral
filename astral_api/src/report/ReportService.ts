@@ -58,7 +58,7 @@ import type {IStorageService} from '~/infrastructure/IStorageService';
 import {getMetricsService} from '~/infrastructure/MetricsService';
 import type {SnowflakeService} from '~/infrastructure/SnowflakeService';
 import type {IInviteRepository} from '~/invite/IInviteRepository';
-import type {Attachment, User} from '~/Models';
+import type {Attachment, Channel, User} from '~/Models';
 import type {ReportSearchService} from '~/search/ReportSearchService';
 import type {IUserRepository} from '~/user/IUserRepository';
 import * as SnowflakeUtils from '~/utils/SnowflakeUtils';
@@ -131,6 +131,15 @@ export class ReportService {
 
 		if (reporter.id && message.authorId === reporter.id) {
 			throw new CannotReportOwnMessageError();
+		}
+
+		// Authorization: the reporter must actually be able to see the message
+		// they're reporting. Without this, any user who obtains a
+		// channel_id+message_id pair could exfiltrate private channel content
+		// (gatherMessageContext below pulls ~25 surrounding messages and clones
+		// attachments) under the guise of a trust-and-safety report (BOLA).
+		if (reporter.id) {
+			await this.assertReporterCanSeeChannel(reporter.id, channel);
 		}
 
 		const [reportedUser, messageContext] = await Promise.all([
@@ -862,6 +871,29 @@ export class ReportService {
 		if (user && (user.flags & UserFlags.REPORT_BANNED) !== 0n) {
 			throw new ReportBannedError();
 		}
+	}
+
+	// Verifies the reporter can actually see the channel the reported message
+	// lives in. For guild channels: the reporter must be a member of the
+	// channel's guild. For DM/group-DM channels: the reporter must be one of
+	// the recipients. This stops a user from exfiltrating private message
+	// content by reporting a channel_id+message_id they have no access to.
+	private async assertReporterCanSeeChannel(reporterId: UserID, channel: Channel): Promise<void> {
+		if (channel.guildId) {
+			const reporterGuildIds = await this.userRepository.getUserGuildIds(reporterId);
+			const isMember = reporterGuildIds.some((guildId) => guildId === channel.guildId);
+			if (!isMember) {
+				throw new UnknownChannelError();
+			}
+			return;
+		}
+
+		// DM / group-DM / personal-notes: must be a recipient (or the owner
+		// for personal-notes, whose channel id is derived from the user id).
+		if (channel.recipientIds.has(reporterId)) {
+			return;
+		}
+		throw new UnknownChannelError();
 	}
 
 	private getReporterRateLimitKey(reporter: ReporterMetadata): string {

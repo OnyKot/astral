@@ -165,7 +165,7 @@ export const InviteModal = observer(({channelId}: {channelId: string}) => {
 
 			await MessageActionCreators.send(targetChannelId, {
 				content: inviteUrl,
-				nonce: SnowflakeUtils.fromTimestamp(Date.now()),
+				nonce: SnowflakeUtils.nextClientNonce(),
 			});
 
 			setSentInvites((prev) => new Map(prev).set(userId, true));

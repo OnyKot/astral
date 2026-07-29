@@ -53,7 +53,8 @@
     socket_pid := pid(),
     guilds := [integer()],
     ready := map(),
-    ignored_events := [binary()]
+    ignored_events := [binary()],
+    peer_ip := binary() | undefined
 }.
 
 -type state() :: #{
@@ -264,7 +265,8 @@ handle_identify_request(
                 ready => ReadyData,
                 bot => Bot,
                 ignored_events => IgnoredEvents,
-                initial_guild_id => InitialGuildId
+                initial_guild_id => InitialGuildId,
+                peer_ip => PeerIP
             },
             SessionName = process_registry:build_process_name(session, SessionId),
             case whereis(SessionName) of

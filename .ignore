@@ -4,10 +4,10 @@
 **/_vendor
 **/.astro/
 **/build
-!astral_app/scripts/build
+!scripts/build
 **/coverage
 **/dist
-astral_app/dist/
+dist/
 **/generated
 **/target
 **/ebin
@@ -71,8 +71,8 @@ next-env.d.ts
 /dev/astral.env
 
 # Project-specific artifacts
-/astral_app/src/assets/emoji-sprites/
-/astral_app/src/locales/*/messages.js
+/src/assets/emoji-sprites/
+/src/locales/*/messages.js
 /astral_admin/priv/static/app.css
 /astral_marketing/priv/static/app.css
 app.css

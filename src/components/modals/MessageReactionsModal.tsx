@@ -165,7 +165,12 @@ export const MessageReactionsModal = observer(
 		}
 
 		return (
-			<Modal.Root size="medium" className={styles.modalRoot} onClose={() => ModalActionCreators.pop()}>
+			<Modal.Root
+				size="medium"
+				className={styles.modalRoot}
+				onClose={() => ModalActionCreators.pop()}
+				transitionPreset="legacy"
+			>
 				<Modal.Header title={<Trans>Reactions</Trans>} />
 				<Modal.Content className={styles.modalContent} padding="none">
 					<div className={styles.modalLayout}>

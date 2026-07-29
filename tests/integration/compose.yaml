@@ -1,3 +1,10 @@
+# Integration test stack.
+#
+# Before running: copy env templates to the real (gitignored) files:
+#   cp env/api.env.example       env/api.env
+#   cp env/secrets.env.example   env/secrets.env
+# The services below load ./env/api.env and ./env/secrets.env via env_file;
+# those files are developer-local and never tracked.
 services:
   cassandra:
     image: scylladb/scylla:6.2
@@ -22,7 +29,7 @@ services:
       CASSANDRA_HOST: cassandra
       CASSANDRA_USERNAME: cassandra
       CASSANDRA_PASSWORD: cassandra
-      CASSANDRA_KEYSPACE: Astral
+      CASSANDRA_KEYSPACE: astral
     depends_on:
       cassandra:
         condition: service_healthy
@@ -134,7 +141,7 @@ services:
 
   media-proxy:
     build:
-      context: ../../Astral_media_proxy
+      context: ../../astral_media_proxy
     environment:
       NODE_ENV: production
       ASTRAL_MEDIA_PROXY_PORT: 8080
@@ -157,13 +164,13 @@ services:
 
   api:
     build:
-      context: ../../Astral_api
+      context: ../../astral_api
     command: ['pnpm', 'start']
     env_file:
       - ./env/api.env
       - ./env/secrets.env
     environment:
-      CASSANDRA_KEYSPACE: Astral
+      CASSANDRA_KEYSPACE: astral
       GATEWAY_RPC_SECRET: integration-gateway-secret
       ASTRAL_MEDIA_PROXY_HOST: media-proxy
       MEDIA_PROXY_SECRET_KEY: integration-media-secret
@@ -196,12 +203,17 @@ services:
 
   gateway:
     build:
-      context: ../../Astral_gateway
+      context: ../../astral_gateway
     environment:
       API_HOST: api:8080
       GATEWAY_RPC_SECRET: integration-gateway-secret
       ASTRAL_GATEWAY_WS_PORT: 8080
       ASTRAL_GATEWAY_RPC_PORT: 8081
+      astral_gateway_WS_PORT: 8080
+      astral_gateway_RPC_PORT: 8081
+      astral_gateway_PUSH_ENABLED: "false"
+      astral_gateway_IDENTIFY_RATE_LIMIT_ENABLED: "false"
+      MEDIA_PROXY_ENDPOINT: http://media-proxy:8080
     depends_on:
       api:
         condition: service_healthy
@@ -215,12 +227,12 @@ services:
 
   worker:
     build:
-      context: ../../Astral_api
+      context: ../../astral_api
     command: ['pnpm', 'start:worker']
     env_file:
       - ./env/api.env
     environment:
-      CASSANDRA_KEYSPACE: Astral
+      CASSANDRA_KEYSPACE: astral
       GATEWAY_RPC_SECRET: integration-gateway-secret
       MEDIA_PROXY_SECRET_KEY: integration-media-secret
     depends_on:

@@ -49,14 +49,12 @@ Sample response (dev env):
 {
   "api_code_version": 1,
   "endpoints": {
-    "api": "https://astraof.com/api",
     "api_client": "https://astraof.com/api",
     "api_public": "https://astraof.com/api",
     "gateway": "wss://astraof.com/gateway",
     "media": "https://media.astraof.com",
     "cdn": "https://cdn.astraof.com",
-    "marketing": "https://astraof.com/marketing",
-    "admin": "https://astraof.com/admin",
+    "marketing": "https://astraof.com",
     "invite": "https://astraof.com/invite",
     "gift": "https://astraof.com/gifts",
     "webapp": "https://astraof.com"

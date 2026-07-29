@@ -78,6 +78,16 @@ authorize(Req0) ->
                         Req0
                     ),
                     {error, Req};
+                <<>> ->
+                    %% Empty GATEWAY_RPC_SECRET must never authenticate as
+                    %% Authorization: "Bearer " (trailing space only).
+                    Req = cowboy_req:reply(
+                        500,
+                        ?JSON_HEADERS,
+                        jsx:encode(#{<<"error">> => <<"RPC secret not configured">>}),
+                        Req0
+                    ),
+                    {error, Req};
                 Secret when is_binary(Secret) ->
                     Expected = <<"Bearer ", Secret/binary>>,
                     case AuthHeader of

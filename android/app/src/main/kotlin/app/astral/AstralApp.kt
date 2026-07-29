@@ -56,6 +56,7 @@ fun AstralApp(container: AppContainer) {
                     authStarted = true
                     authViewModel.setMode(AuthMode.Register)
                 },
+                logoResId = R.mipmap.ic_launcher_foreground,
             )
             is AstralDestination.Auth -> AuthScreen(
                 state = state,
@@ -67,10 +68,14 @@ fun AstralApp(container: AppContainer) {
                 onBetaCode = authViewModel::updateBetaCode,
                 onDateOfBirth = authViewModel::updateDateOfBirth,
                 onConsent = authViewModel::updateConsent,
+                onMfaCode = authViewModel::updateMfaCode,
+                onMfaMethod = authViewModel::setMfaMethod,
+                onSendMfaSms = authViewModel::requestMfaSms,
                 onSubmit = authViewModel::submit,
             )
             is AstralDestination.Home -> HomeScreen(
                 session = target.session,
+                webAppUrl = container.webAppUrl,
                 onLogout = authViewModel::logout,
             )
         }

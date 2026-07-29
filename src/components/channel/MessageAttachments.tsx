@@ -55,7 +55,7 @@ import markupStyles from '~/styles/Markup.module.css';
 import * as AvatarUtils from '~/utils/AvatarUtils';
 import {useForwardedMessageContext} from '~/utils/forwardedMessageUtils';
 import {goToMessage} from '~/utils/MessageNavigator';
-import {parseForwardedStoryPreview} from '~/utils/StoryForwardPayload';
+import {parseForwardedStoryPreview, resolveForwardedStoryPreview} from '~/utils/StoryForwardPayload';
 import styles from './MessageAttachments.module.css';
 import {useMessageViewContext} from './MessageViewContext';
 
@@ -146,11 +146,34 @@ const ForwardedFromSource = observer(({message}: {message: MessageRecord}) => {
 	return null;
 });
 
-const ForwardedMessageContent = observer(({message, snapshot}: {message: MessageRecord; snapshot: MessageSnapshot}) => {
+const ForwardedMessageContent = observer(
+	({
+		message,
+		snapshot,
+		inlineReactions,
+	}: {
+		message: MessageRecord;
+		snapshot: MessageSnapshot;
+		inlineReactions?: React.ReactNode;
+	}) => {
 	const snapshotIsPreview = true;
 	const forwardedStoryPreview = parseForwardedStoryPreview(snapshot.content);
+
+	if (forwardedStoryPreview) {
+		return (
+			<div className={clsx(styles.forwardedStoryOnlyContainer, message.isCurrentUserAuthor() && styles.forwardedStoryOnlyContainerSelf)}>
+				<ForwardedStoryCard
+					preview={forwardedStoryPreview}
+					messageId={message.id}
+					channelId={message.channelId}
+				/>
+				{inlineReactions}
+			</div>
+		);
+	}
+
 	return (
-		<div className={styles.forwardedContainer}>
+		<div className={clsx(styles.forwardedContainer, message.isCurrentUserAuthor() && styles.forwardedContainerSelf)}>
 			<div className={styles.forwardedBar} />
 			<div className={styles.forwardedContent}>
 				<div className={styles.forwardedHeader}>
@@ -160,13 +183,7 @@ const ForwardedMessageContent = observer(({message, snapshot}: {message: Message
 					</span>
 				</div>
 
-				{forwardedStoryPreview ? (
-					<ForwardedStoryCard
-						preview={forwardedStoryPreview}
-						messageId={message.id}
-						channelId={message.channelId}
-					/>
-				) : snapshot.content && (
+				{snapshot.content && (
 					<div className={clsx(markupStyles.markup)}>
 						<SafeMarkdown
 							content={snapshot.content}
@@ -234,10 +251,17 @@ const ForwardedMessageContent = observer(({message, snapshot}: {message: Message
 export const MessageAttachments = observer(() => {
 	const {message, handleDelete, previewContext, onPopoutToggle} = useMessageViewContext();
 	const isPreview = Boolean(previewContext);
+	const snapshot = message.messageSnapshots?.[0] ?? null;
+	const hasSnapshotStoryPreview = snapshot ? parseForwardedStoryPreview(snapshot.content) != null : false;
+	const hasInlineStoryPreview = resolveForwardedStoryPreview(message.content, message.components) != null;
+	const shouldRenderReactions = UserSettingsStore.getRenderReactions() && message.reactions.length > 0;
+	const storySnapshotReactions = shouldRenderReactions && hasSnapshotStoryPreview ? (
+		<MessageReactions message={message} isPreview={isPreview} onPopoutToggle={onPopoutToggle} />
+	) : null;
 	return (
 		<>
-			{message.messageSnapshots && message.messageSnapshots.length > 0 && (
-				<ForwardedMessageContent message={message} snapshot={message.messageSnapshots[0]} />
+			{snapshot && (
+				<ForwardedMessageContent message={message} snapshot={snapshot} inlineReactions={storySnapshotReactions} />
 			)}
 
 			{message.invites.map((code) => (
@@ -360,7 +384,7 @@ export const MessageAttachments = observer(() => {
 					);
 				})}
 
-			{UserSettingsStore.getRenderReactions() && message.reactions.length > 0 && (
+			{shouldRenderReactions && !hasInlineStoryPreview && !hasSnapshotStoryPreview && (
 				<MessageReactions message={message} isPreview={isPreview} onPopoutToggle={onPopoutToggle} />
 			)}
 		</>

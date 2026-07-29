@@ -193,6 +193,7 @@ export class ChannelService {
 			mediaService,
 			snowflakeService,
 			readStateService,
+			this.channelData.getChannelAuthenticated.bind(this.channelData),
 			voiceAvailabilityService,
 		);
 	}

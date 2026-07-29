@@ -18,7 +18,6 @@
  */
 
 import {Readable, type Stream} from 'node:stream';
-import type {ReadableStream as WebReadableStream} from 'node:stream/web';
 
 type BinaryLike = ArrayBufferView | ArrayBuffer;
 
@@ -37,6 +36,8 @@ export const toBodyData = (value: BinaryLike): Uint8Array<ArrayBuffer> => {
 	return new Uint8Array(copyBuffer);
 };
 
-export const toWebReadableStream = (stream: Stream): WebReadableStream<Uint8Array> => {
-	return Readable.toWeb(stream as Readable);
+export const toWebReadableStream = (stream: Stream): ReadableStream => {
+	// Node vs DOM ReadableStream type params disagree across @types/node;
+	// callers need a BodyInit-compatible stream for Response / ctx.body.
+	return Readable.toWeb(stream as Readable) as unknown as ReadableStream;
 };

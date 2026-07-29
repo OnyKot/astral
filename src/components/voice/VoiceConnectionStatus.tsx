@@ -661,6 +661,8 @@ const VoiceConnectionStatusInner = observer(
 	const isSelfDeafened = LocalVoiceStateStore.selfDeaf;
 	const isGuildMuted = voiceState?.mute ?? false;
 	const isGuildDeafened = voiceState?.deaf ?? false;
+	const muteReason = MediaEngineStore.getMuteReason(voiceState);
+	const effectiveMuted = muteReason !== null;
 
 	const currentLatency = MediaEngineStore.displayLatency;
 	const isPingSearching = isConnecting && currentLatency === null;
@@ -698,6 +700,15 @@ const VoiceConnectionStatusInner = observer(
 	const isSuppressedListener = isBroadcastMode && MediaEngineStore.isCurrentUserInBroadcastListenerMode();
 	const isStageListenerLocked = isBroadcastMode && (isSuppressedListener || !canSpeakInChannel);
 	const muteControlDisabled = isGuildMuted || isStageListenerLocked;
+	const muteButtonLabel = isStageListenerLocked
+		? t`Listener mode: join stage to speak`
+		: muteReason === 'guild'
+			? t`Community Muted`
+			: muteReason === 'push_to_talk'
+				? t`Push-to-Talk: hold shortcut to speak`
+				: effectiveMuted
+					? t`Unmute`
+					: t`Mute`;
 
 	if (!channel || (resolvedGuildId && !guild)) {
 		return null;
@@ -829,17 +840,17 @@ const VoiceConnectionStatusInner = observer(
 							</FocusRing>
 						</Tooltip>
 					)}
-					<Tooltip text={isStageListenerLocked ? t`Listener mode: join stage to speak` : isGuildMuted ? t`Community Muted` : isSelfMuted ? t`Unmute` : t`Mute`}>
+					<Tooltip text={muteButtonLabel}>
 						<FocusRing offset={-2} enabled={!muteControlDisabled}>
 							<motion.button
 								type="button"
-								className={clsx(styles.controlButton, (isSelfMuted || isGuildMuted) && styles.selected, muteControlDisabled && styles.disabled)}
+								className={clsx(styles.controlButton, effectiveMuted && styles.selected, muteControlDisabled && styles.disabled)}
 								onClick={muteControlDisabled ? undefined : () => VoiceStateActionCreators.toggleSelfMute(null)}
-								aria-label={isStageListenerLocked ? t`Listener mode: join stage to speak` : isGuildMuted ? t`Community Muted` : isSelfMuted ? t`Unmute` : t`Mute`}
+								aria-label={muteButtonLabel}
 								disabled={muteControlDisabled}
 								{...getPressMotion(reducedMotion)}
 							>
-								{isSelfMuted || isGuildMuted ? (
+								{effectiveMuted ? (
 									<MicrophoneSlashIcon weight="fill" className={styles.icon} />
 								) : (
 									<MicrophoneIcon weight="fill" className={styles.icon} />

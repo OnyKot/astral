@@ -23,6 +23,7 @@ import {motion, useReducedMotion} from 'framer-motion';
 import React from 'react';
 import {getFabMotion} from '~/utils/motion/MotionPresets';
 import {hapticTap} from '~/utils/haptics';
+import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import styles from './ScrollToBottomButton.module.css';
 
 interface ScrollToBottomButtonProps {
@@ -47,6 +48,7 @@ interface ScrollToBottomButtonProps {
 export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({unreadCount = 0, onClick}) => {
 	const {t} = useLingui();
 	const reducedMotion = useReducedMotion() ?? false;
+	const isMobile = MobileLayoutStore.isMobileLayout();
 
 	const handleClick = () => {
 		hapticTap();
@@ -54,25 +56,43 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({unrea
 	};
 
 	const displayCount = unreadCount > 99 ? '99+' : String(unreadCount);
-
-	return (
-		<motion.button
-			type="button"
-			className={styles.button}
-			onClick={handleClick}
-			aria-label={
-				unreadCount > 0
-					? t`Jump to latest (${displayCount} unread)`
-					: t`Jump to latest messages`
-			}
-			{...getFabMotion(reducedMotion)}
-		>
+	const ariaLabel =
+		unreadCount > 0
+			? t`Jump to latest (${displayCount} unread)`
+			: t`Jump to latest messages`;
+	const content = (
+		<>
 			<ArrowDownIcon weight="bold" className={styles.icon} aria-hidden="true" />
 			{unreadCount > 0 && (
 				<span className={styles.unreadBadge} aria-hidden="true">
 					{displayCount}
 				</span>
 			)}
+		</>
+	);
+
+	if (isMobile) {
+		return (
+			<button
+				type="button"
+				className={`${styles.button} ${styles.mobileButton}`}
+				onClick={handleClick}
+				aria-label={ariaLabel}
+			>
+				{content}
+			</button>
+		);
+	}
+
+	return (
+		<motion.button
+			type="button"
+			className={styles.button}
+			onClick={handleClick}
+			aria-label={ariaLabel}
+			{...getFabMotion(reducedMotion)}
+		>
+			{content}
 		</motion.button>
 	);
 };

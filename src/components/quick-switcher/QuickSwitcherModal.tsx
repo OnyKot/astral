@@ -62,15 +62,10 @@ function getContainerMotion(reducedMotion: boolean) {
 	}
 
 	return {
-		/*
-		 * Modal rises from below with a small scale pop. Exit mirrors the
-		 * entrance but quicker so Escape feels responsive. Previously the
-		 * exit was missing entirely — the modal just disappeared.
-		 */
-		initial: {opacity: 0, y: 18, scale: 0.985},
-		animate: {opacity: 1, y: 0, scale: 1},
-		exit: {opacity: 0, y: 10, scale: 0.99, transition: {duration: 0.16, ease: 'easeIn' as const}},
-		transition: {duration: 0.28, ease: ARC_EASE},
+		initial: {opacity: 0},
+		animate: {opacity: 1},
+		exit: {opacity: 0, transition: {duration: 0.12, ease: 'easeIn' as const}},
+		transition: {duration: 0.18, ease: ARC_EASE},
 	};
 }
 

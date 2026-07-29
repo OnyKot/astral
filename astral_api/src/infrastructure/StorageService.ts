@@ -20,6 +20,8 @@
 import assert from 'node:assert/strict';
 import {execFile} from 'node:child_process';
 import fs from 'node:fs';
+import {Agent as HttpAgent} from 'node:http';
+import {Agent as HttpsAgent} from 'node:https';
 import path from 'node:path';
 import {PassThrough, pipeline, Readable} from 'node:stream';
 import {promisify} from 'node:util';
@@ -50,25 +52,59 @@ import {Logger} from '~/Logger';
 const pipelinePromise = promisify(pipeline);
 const execFilePromise = promisify(execFile);
 
+const S3_CONNECTION_TIMEOUT_MS = 3_000;
+const S3_REQUEST_TIMEOUT_MS = 30_000;
+
+// Keep-alive agents with a wide socket pool. `scheduling: 'lifo'` reuses the
+// most recently used socket first, which keeps idle connections warm and lets
+// the rest be reaped. Both protocols are covered because dev talks to MinIO
+// over plain HTTP while production uses HTTPS.
+const agentOptions = {
+	keepAlive: true,
+	keepAliveMsecs: 30_000,
+	maxSockets: 128,
+	maxFreeSockets: 32,
+	scheduling: 'lifo' as const,
+	timeout: S3_REQUEST_TIMEOUT_MS,
+};
+
+/*
+ * Module-scoped so every construction site shares one socket pool: the DI layer
+ * builds a StorageService per request, and a per-instance client would mean a
+ * fresh TCP/TLS handshake for nearly every S3 call. The former separate presign
+ * client had a byte-identical config and never performs network I/O
+ * (`getSignedUrl` only signs), so one client serves both roles.
+ */
+const s3Client = new S3Client({
+	endpoint: Config.s3.endpoint,
+	region: Config.s3.region,
+	credentials: {
+		accessKeyId: Config.s3.accessKeyId,
+		secretAccessKey: Config.s3.secretAccessKey,
+	},
+	requestChecksumCalculation: 'WHEN_REQUIRED',
+	responseChecksumValidation: 'WHEN_REQUIRED',
+	// Path-style applies to signed requests too: Selectel S3 serves
+	// bucket-scoped URLs as <endpoint>/<bucket>/<key>, not the virtual-hosted
+	// <bucket>.<endpoint>/<key> form. Presigned download URLs (harvest exports,
+	// report attachments, admin archives) are handed to clients to fetch
+	// directly, so they must resolve on the target provider.
+	forcePathStyle: true,
+	// The SDK defaults to maxSockets=50 with no request timeout, so a few
+	// stalled reads exhaust the pool and wedge all storage traffic. Passing
+	// handler options (not a constructed instance) keeps the smithy handler a
+	// transitive dep.
+	requestHandler: {
+		connectionTimeout: S3_CONNECTION_TIMEOUT_MS,
+		requestTimeout: S3_REQUEST_TIMEOUT_MS,
+		httpAgent: new HttpAgent(agentOptions),
+		httpsAgent: new HttpsAgent(agentOptions),
+	},
+});
+
 export class StorageService implements IStorageService {
-	private readonly s3: S3Client;
-	private readonly presignClient: S3Client;
-
-	constructor() {
-		const baseInit = {
-			endpoint: Config.s3.endpoint,
-			region: 'us-east-1',
-			credentials: {
-				accessKeyId: Config.s3.accessKeyId,
-				secretAccessKey: Config.s3.secretAccessKey,
-			},
-			requestChecksumCalculation: 'WHEN_REQUIRED',
-			responseChecksumValidation: 'WHEN_REQUIRED',
-		} as const;
-
-		this.s3 = new S3Client({...baseInit, forcePathStyle: true});
-		this.presignClient = new S3Client({...baseInit, forcePathStyle: false});
-	}
+	private readonly s3: S3Client = s3Client;
+	private readonly presignClient: S3Client = s3Client;
 
 	private getClient(_bucket: string): S3Client {
 		return this.s3;
@@ -409,6 +445,16 @@ export class StorageService implements IStorageService {
 	}
 
 	async purgeBucket(bucket: string): Promise<void> {
+		/*
+		 * This deletes every object in the bucket and is only ever meant for
+		 * seeding a throwaway dev environment. Refuse in production regardless of
+		 * what the caller asks for, so no misconfigured flag or stray call can
+		 * wipe real uploads.
+		 */
+		if (Config.nodeEnv === 'production') {
+			throw new Error(`Refusing to purge bucket "${bucket}": purgeBucket is disabled in production`);
+		}
+
 		const command = new ListObjectsV2Command({Bucket: bucket});
 		const {Contents} = await this.s3.send(command);
 		if (!Contents) {

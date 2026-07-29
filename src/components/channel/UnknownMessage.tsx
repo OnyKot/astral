@@ -33,7 +33,7 @@ import {useMessageViewContext} from './MessageViewContext';
 
 export const UnknownMessage = observer(() => {
 	const {i18n} = useLingui();
-	const {message, channel, shouldGroup, isHovering, previewContext, previewOverrides} = useMessageViewContext();
+	const {message, channel, showAvatar, isHovering, previewContext, previewOverrides} = useMessageViewContext();
 	const userAuthor = UserStore.getUser(message.author.id);
 	const author = message.webhookId != null ? message.author : (userAuthor ?? message.author);
 	const formattedDate = DateUtils.getRelativeDateString(message.timestamp, i18n);
@@ -42,7 +42,7 @@ export const UnknownMessage = observer(() => {
 
 	return (
 		<>
-			{!shouldGroup && (
+			{showAvatar && (
 				<>
 					<div className={styles.messageGutterLeft} />
 					<MessageAvatar

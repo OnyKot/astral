@@ -31,6 +31,7 @@ import {createThumbnail} from '~/lib/FFmpegUtils';
 import type {HonoEnv} from '~/lib/MediaTypes';
 import {getMediaCategory, getMimeType} from '~/lib/MimeTypeUtils';
 import {readS3Object} from '~/lib/S3Utils';
+import {assertSafeS3Key} from '~/lib/S3PathValidation';
 
 const ThumbnailRequestSchema = v.object({
 	type: v.literal('upload'),
@@ -41,6 +42,11 @@ export const handleThumbnailRequest = async (ctx: Context<HonoEnv>): Promise<Res
 	try {
 		const body = await ctx.req.json();
 		const {upload_filename} = v.parse(ThumbnailRequestSchema, body);
+
+		// Validate the key before reading — the metadata controller does this,
+		// and the thumbnail route must too so a leaked internal secret cannot
+		// be used to read arbitrary S3 keys via this path.
+		assertSafeS3Key(upload_filename);
 
 		const {data} = await readS3Object(Config.AWS_S3_BUCKET_UPLOADS, upload_filename);
 

@@ -24,6 +24,12 @@
 -define(CHUNK_SIZE, 1000).
 -define(MAX_USER_IDS, 100).
 -define(MAX_NONCE_LENGTH, 32).
+%% Hard ceiling for any single request, including the privileged "give me
+%% everything" form (limit = 0), so no caller can make the guild process
+%% materialise and copy an unbounded list.
+-define(MAX_MEMBER_LIMIT, 100000).
+%% A caller without moderation permissions may only take one page at a time.
+-define(MAX_UNPRIVILEGED_LIMIT, 100).
 
 -type session_state() :: map().
 -type request_data() :: map().
@@ -144,9 +150,9 @@ process_request(Request, SocketPid, SessionState) ->
     ),
 
     case check_permission(UserId, GuildId, Query, Limit, UserIds, SessionState) of
-        ok ->
+        {ok, Privileged} ->
             logger:debug("[guild_request_members] Permission check passed, fetching members"),
-            fetch_and_send_members(Request, SocketPid, SessionState);
+            fetch_and_send_members(Request#{privileged => Privileged}, SocketPid, SessionState);
         {error, Reason} ->
             logger:warning(
                 "[guild_request_members] Permission check failed: ~p",
@@ -156,16 +162,26 @@ process_request(Request, SocketPid, SessionState) ->
     end.
 
 -spec check_permission(integer(), integer(), binary(), non_neg_integer(), [integer()], session_state()) ->
-    ok | {error, atom()}.
-check_permission(UserId, GuildId, Query, Limit, UserIds, SessionState) ->
-    RequiresPermission = Query =:= <<>> andalso Limit =:= 0 andalso UserIds =:= [],
+    {ok, boolean()} | {error, atom()}.
+check_permission(UserId, GuildId, _Query, Limit, UserIds, SessionState) ->
+    %% Gate on the effective size of the request instead of on the sentinel
+    %% value: limit = 0 means "the whole roster", but so does limit = 100000, and
+    %% a prefix query with limit = 0 sweeps the whole roster too. Anything wider
+    %% than a single unprivileged page therefore needs moderation permissions.
+    %% Requests targeting explicit user_ids stay open (already capped at
+    %% ?MAX_USER_IDS) because that is the hot profile-resolution path.
+    RequiresPermission =
+        UserIds =:= [] andalso (Limit =:= 0 orelse Limit > ?MAX_UNPRIVILEGED_LIMIT),
     case RequiresPermission of
         false ->
-            ok;
+            {ok, false};
         true ->
             case lookup_guild(GuildId, SessionState) of
                 {ok, GuildPid} ->
-                    check_management_permission(UserId, GuildId, GuildPid);
+                    case check_management_permission(UserId, GuildId, GuildPid) of
+                        ok -> {ok, true};
+                        {error, Reason} -> {error, Reason}
+                    end;
                 {error, _} ->
                     {error, guild_not_found}
             end
@@ -192,14 +208,12 @@ check_management_permission(UserId, _GuildId, GuildPid) ->
 -spec lookup_guild(integer(), session_state()) -> {ok, pid()} | {error, not_found}.
 lookup_guild(GuildId, SessionState) ->
     Guilds = maps:get(guilds, SessionState, #{}),
+    %% Only guilds this session is actually connected to may be queried. There is
+    %% deliberately no global guild_manager fallback: it would let a session
+    %% resolve (and load) a guild it is not a member of.
     case maps:get(GuildId, Guilds, undefined) of
         {Pid, _Ref} when is_pid(Pid) ->
             {ok, Pid};
-        undefined ->
-            case gen_server:call(guild_manager, {lookup, GuildId}, 5000) of
-                {ok, Pid} when is_pid(Pid) -> {ok, Pid};
-                _ -> {error, not_found}
-            end;
         _ ->
             {error, not_found}
     end.
@@ -215,6 +229,9 @@ fetch_and_send_members(Request, _SocketPid, SessionState) ->
         nonce := Nonce
     } = Request,
     SessionId = maps:get(session_id, SessionState),
+    %% Default to the restricted ceiling if the flag is missing: fail closed.
+    Privileged = maps:get(privileged, Request, false),
+    EffectiveLimit = effective_limit(Privileged, Limit),
 
     logger:debug(
         "[guild_request_members] Looking up guild ~p for member request",
@@ -224,7 +241,7 @@ fetch_and_send_members(Request, _SocketPid, SessionState) ->
     case lookup_guild(GuildId, SessionState) of
         {ok, GuildPid} ->
             logger:debug("[guild_request_members] Guild ~p found, fetching members", [GuildId]),
-            Members = fetch_members(GuildPid, Query, Limit, UserIds),
+            Members = fetch_members(GuildPid, Query, EffectiveLimit, UserIds),
             logger:debug("[guild_request_members] Found ~p members", [length(Members)]),
             PresencesList = maybe_fetch_presences(Presences, GuildPid, Members),
             send_member_chunks(GuildPid, SessionId, Members, PresencesList, Nonce),
@@ -241,10 +258,25 @@ fetch_and_send_members(Request, _SocketPid, SessionState) ->
             {error, Reason}
     end.
 
--spec fetch_members(pid(), binary(), non_neg_integer(), [integer()]) -> [map()].
+%% Effective page size: the caller-supplied limit is advisory, this is what we
+%% actually ask the guild process for. Unprivileged callers never get more than
+%% one page, and even privileged ones are bounded.
+-spec effective_limit(boolean(), non_neg_integer()) -> pos_integer().
+effective_limit(true, 0) ->
+    ?MAX_MEMBER_LIMIT;
+effective_limit(true, Limit) ->
+    min(Limit, ?MAX_MEMBER_LIMIT);
+effective_limit(false, Limit) ->
+    min(max(Limit, 1), ?MAX_UNPRIVILEGED_LIMIT).
+
+-spec fetch_members(pid(), binary(), pos_integer(), [integer()]) -> [map()].
 fetch_members(GuildPid, _Query, _Limit, UserIds) when UserIds =/= [] ->
     logger:debug("[guild_request_members] Fetching members by user_ids: ~p", [UserIds]),
-    case gen_server:call(GuildPid, {list_guild_members, #{limit => 100000, offset => 0}}, 10000) of
+    case
+        gen_server:call(
+            GuildPid, {list_guild_members, #{limit => ?MAX_MEMBER_LIMIT, offset => 0}}, 10000
+        )
+    of
         #{members := AllMembers} ->
             logger:debug("[guild_request_members] Got ~p members from guild, filtering by user_ids", [length(AllMembers)]),
             Filtered = filter_members_by_ids(AllMembers, UserIds),
@@ -255,16 +287,15 @@ fetch_members(GuildPid, _Query, _Limit, UserIds) when UserIds =/= [] ->
             []
     end;
 fetch_members(GuildPid, Query, Limit, []) ->
-    ActualLimit = case Limit of 0 -> 100000; L -> L end,
-    logger:debug("[guild_request_members] Fetching members with query '~s', limit ~p", [Query, ActualLimit]),
-    case gen_server:call(GuildPid, {list_guild_members, #{limit => ActualLimit, offset => 0}}, 10000) of
+    logger:debug("[guild_request_members] Fetching members with query '~s', limit ~p", [Query, Limit]),
+    case gen_server:call(GuildPid, {list_guild_members, #{limit => Limit, offset => 0}}, 10000) of
         #{members := AllMembers} ->
             logger:debug("[guild_request_members] Got ~p members from guild", [length(AllMembers)]),
             Result = case Query of
                 <<>> ->
-                    lists:sublist(AllMembers, ActualLimit);
+                    lists:sublist(AllMembers, Limit);
                 _ ->
-                    filter_members_by_query(AllMembers, Query, ActualLimit)
+                    filter_members_by_query(AllMembers, Query, Limit)
             end,
             logger:debug("[guild_request_members] Returning ~p members after query/filter", [length(Result)]),
             Result;

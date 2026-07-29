@@ -19,10 +19,10 @@
 
 .actionBarContainer {
 	position: absolute;
-	top: -16px;
-	right: 0;
+	top: -20px;
+	right: max(0.35rem, var(--chat-horizontal-padding, 16px));
 	z-index: var(--z-index-elevated-1);
-	padding: 0 14px 0 32px;
+	padding: 0 0 0 36px;
 }
 
 .actionBar {
@@ -37,6 +37,7 @@
 	border: 1px solid var(--background-header-secondary);
 	border-radius: 0.7rem;
 	box-shadow: 0 8px 22px rgb(0 0 0 / 0.18);
+	backdrop-filter: blur(12px);
 	user-select: none;
 	-webkit-user-select: none;
 }

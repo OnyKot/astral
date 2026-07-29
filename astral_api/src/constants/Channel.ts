@@ -23,9 +23,14 @@ export const ChannelTypes = {
 	GUILD_VOICE: 2,
 	GROUP_DM: 3,
 	GUILD_CATEGORY: 4,
+	GUILD_STAGE: 13,
 	GUILD_LINK: 998,
 	DM_PERSONAL_NOTES: 999,
 } as const;
+
+export const GUILD_RTC_CHANNEL_TYPES = new Set<number>([ChannelTypes.GUILD_VOICE, ChannelTypes.GUILD_STAGE]);
+
+export const isGuildRtcChannelType = (type: number): boolean => GUILD_RTC_CHANNEL_TYPES.has(type);
 
 export const TEXT_BASED_CHANNEL_TYPES = new Set<number>([
 	ChannelTypes.GUILD_TEXT,
@@ -88,6 +93,7 @@ export const MessageAttachmentFlags = {
 	IS_SPOILER: 1 << 3,
 	CONTAINS_EXPLICIT_MEDIA: 1 << 4,
 	IS_ANIMATED: 1 << 5,
+	// Attachment bit flag value 8192; do not conflate with channel type GUILD_STAGE = 13.
 	IS_VOICE_MESSAGE: 1 << 13,
 } as const;
 

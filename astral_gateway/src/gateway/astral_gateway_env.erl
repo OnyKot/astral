@@ -68,23 +68,40 @@ ensure_loaded() ->
 -spec build_config() -> config().
 build_config() ->
     #{
-        ws_port => env_int("astral_gateway_WS_PORT", ws_port, 8080),
-        rpc_port => env_int("astral_gateway_RPC_PORT", rpc_port, 8081),
+        ws_port => env_int_compat("ASTRAL_GATEWAY_WS_PORT", "astral_gateway_WS_PORT", ws_port, 8080),
+        rpc_port => env_int_compat("ASTRAL_GATEWAY_RPC_PORT", "astral_gateway_RPC_PORT", rpc_port, 8081),
+        rpc_bind => rpc_bind_address(),
         api_host => env_string("API_HOST", api_host, "api"),
         api_canary_host => env_optional_string("API_CANARY_HOST", api_canary_host),
         rpc_secret_key => env_binary("GATEWAY_RPC_SECRET", rpc_secret_key, undefined),
-        identify_rate_limit_enabled => env_bool("astral_gateway_IDENTIFY_RATE_LIMIT_ENABLED", identify_rate_limit_enabled, false),
-        push_enabled => env_bool("astral_gateway_PUSH_ENABLED", push_enabled, true),
-        push_user_guild_settings_cache_mb => env_int("astral_gateway_PUSH_USER_GUILD_SETTINGS_CACHE_MB",
-                                                    push_user_guild_settings_cache_mb, 1024),
-        push_subscriptions_cache_mb => env_int("astral_gateway_PUSH_SUBSCRIPTIONS_CACHE_MB",
-                                              push_subscriptions_cache_mb, 1024),
-        push_blocked_ids_cache_mb => env_int("astral_gateway_PUSH_BLOCKED_IDS_CACHE_MB",
-                                             push_blocked_ids_cache_mb, 1024),
-        presence_cache_shards => env_optional_int("astral_gateway_PRESENCE_CACHE_SHARDS", presence_cache_shards),
-        presence_bus_shards => env_optional_int("astral_gateway_PRESENCE_BUS_SHARDS", presence_bus_shards),
-        presence_shards => env_optional_int("astral_gateway_PRESENCE_SHARDS", presence_shards),
-        guild_shards => env_optional_int("astral_gateway_GUILD_SHARDS", guild_shards),
+        identify_rate_limit_enabled => env_bool_compat("ASTRAL_GATEWAY_IDENTIFY_RATE_LIMIT_ENABLED",
+                                                       "astral_gateway_IDENTIFY_RATE_LIMIT_ENABLED",
+                                                       identify_rate_limit_enabled, true),
+        hot_reload_enabled => env_bool("GATEWAY_HOT_RELOAD_ENABLED", hot_reload_enabled, false),
+        heartbeat_interval_ms => env_int("GATEWAY_HEARTBEAT_INTERVAL_MS", heartbeat_interval_ms, 41250),
+        heartbeat_timeout_ms => env_int("GATEWAY_HEARTBEAT_TIMEOUT_MS", heartbeat_timeout_ms, 45000),
+        push_enabled => env_bool_compat("ASTRAL_GATEWAY_PUSH_ENABLED", "astral_gateway_PUSH_ENABLED", push_enabled, true),
+        push_user_guild_settings_cache_mb => env_int_compat("ASTRAL_GATEWAY_PUSH_USER_GUILD_SETTINGS_CACHE_MB",
+                                                            "astral_gateway_PUSH_USER_GUILD_SETTINGS_CACHE_MB",
+                                                            push_user_guild_settings_cache_mb, 1024),
+        push_subscriptions_cache_mb => env_int_compat("ASTRAL_GATEWAY_PUSH_SUBSCRIPTIONS_CACHE_MB",
+                                                      "astral_gateway_PUSH_SUBSCRIPTIONS_CACHE_MB",
+                                                      push_subscriptions_cache_mb, 1024),
+        push_blocked_ids_cache_mb => env_int_compat("ASTRAL_GATEWAY_PUSH_BLOCKED_IDS_CACHE_MB",
+                                                    "astral_gateway_PUSH_BLOCKED_IDS_CACHE_MB",
+                                                    push_blocked_ids_cache_mb, 1024),
+        presence_cache_shards => env_optional_int_compat("ASTRAL_GATEWAY_PRESENCE_CACHE_SHARDS",
+                                                         "astral_gateway_PRESENCE_CACHE_SHARDS",
+                                                         presence_cache_shards),
+        presence_bus_shards => env_optional_int_compat("ASTRAL_GATEWAY_PRESENCE_BUS_SHARDS",
+                                                         "astral_gateway_PRESENCE_BUS_SHARDS",
+                                                         presence_bus_shards),
+        presence_shards => env_optional_int_compat("ASTRAL_GATEWAY_PRESENCE_SHARDS",
+                                                   "astral_gateway_PRESENCE_SHARDS",
+                                                   presence_shards),
+        guild_shards => env_optional_int_compat("ASTRAL_GATEWAY_GUILD_SHARDS",
+                                                "astral_gateway_GUILD_SHARDS",
+                                                guild_shards),
         metrics_host => env_optional_string_compat("ASTRAL_METRICS_HOST", "Astral_METRICS_HOST", metrics_host),
         fcm_enabled => env_bool("FCM_ENABLED", fcm_enabled, true),
         fcm_server_key => env_binary("FCM_SERVER_KEY", fcm_server_key, undefined),
@@ -108,6 +125,16 @@ env_int(EnvVar, AppKey, Default) when is_atom(AppKey), is_integer(Default) ->
             parse_int(Value, Default)
     end.
 
+-spec env_int_compat(string(), string(), atom(), integer()) -> integer().
+env_int_compat(PrimaryEnvVar, FallbackEnvVar, AppKey, Default)
+    when is_atom(AppKey), is_integer(Default) ->
+    case os:getenv(PrimaryEnvVar) of
+        false ->
+            env_int(FallbackEnvVar, AppKey, Default);
+        Value ->
+            parse_int(Value, Default)
+    end.
+
 -spec env_optional_int(string(), atom()) -> integer() | undefined.
 env_optional_int(EnvVar, AppKey) when is_atom(AppKey) ->
     case os:getenv(EnvVar) of
@@ -117,11 +144,30 @@ env_optional_int(EnvVar, AppKey) when is_atom(AppKey) ->
             parse_int(Value, undefined)
     end.
 
+-spec env_optional_int_compat(string(), string(), atom()) -> integer() | undefined.
+env_optional_int_compat(PrimaryEnvVar, FallbackEnvVar, AppKey) when is_atom(AppKey) ->
+    case os:getenv(PrimaryEnvVar) of
+        false ->
+            env_optional_int(FallbackEnvVar, AppKey);
+        Value ->
+            parse_int(Value, undefined)
+    end.
+
 -spec env_bool(string(), atom(), boolean()) -> boolean().
 env_bool(EnvVar, AppKey, Default) when is_atom(AppKey), is_boolean(Default) ->
     case os:getenv(EnvVar) of
         false ->
             app_env_bool(AppKey, Default);
+        Value ->
+            parse_bool(Value, Default)
+    end.
+
+-spec env_bool_compat(string(), string(), atom(), boolean()) -> boolean().
+env_bool_compat(PrimaryEnvVar, FallbackEnvVar, AppKey, Default)
+    when is_atom(AppKey), is_boolean(Default) ->
+    case os:getenv(PrimaryEnvVar) of
+        false ->
+            env_bool(FallbackEnvVar, AppKey, Default);
         Value ->
             parse_bool(Value, Default)
     end.
@@ -282,4 +328,28 @@ app_env_optional_binary(Key) ->
             list_to_binary(Value);
         _ ->
             undefined
+    end.
+
+-spec rpc_bind_address() -> inet:ip_address().
+rpc_bind_address() ->
+    case os:getenv("ASTRAL_GATEWAY_RPC_BIND") of
+        false ->
+            {127, 0, 0, 1};
+        Value ->
+            parse_rpc_bind(string:trim(Value))
+    end.
+
+-spec parse_rpc_bind(string()) -> inet:ip_address().
+parse_rpc_bind("0.0.0.0") ->
+    {0, 0, 0, 0};
+parse_rpc_bind("::") ->
+    {0, 0, 0, 0, 0, 0, 0, 0};
+parse_rpc_bind("127.0.0.1") ->
+    {127, 0, 0, 1};
+parse_rpc_bind(Other) ->
+    case inet:parse_address(Other) of
+        {ok, Address} ->
+            Address;
+        {error, _} ->
+            {127, 0, 0, 1}
     end.

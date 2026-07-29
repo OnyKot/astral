@@ -23,7 +23,7 @@ import type {GuildMember} from '~/Models';
 
 export abstract class IGuildMemberRepository {
 	abstract getMember(guildId: GuildID, userId: UserID): Promise<GuildMember | null>;
-	abstract listMembers(guildId: GuildID): Promise<Array<GuildMember>>;
-	abstract upsertMember(data: GuildMemberRow): Promise<GuildMember>;
+	abstract listMembers(guildId: GuildID, options?: {limit?: number}): Promise<Array<GuildMember>>;
+	abstract upsertMember(data: GuildMemberRow, oldData?: GuildMemberRow | null): Promise<GuildMember>;
 	abstract deleteMember(guildId: GuildID, userId: UserID): Promise<void>;
 }

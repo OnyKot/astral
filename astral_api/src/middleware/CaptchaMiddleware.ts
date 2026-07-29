@@ -27,7 +27,10 @@ import {TestCaptchaService} from '~/infrastructure/TestCaptchaService';
 import {TurnstileService} from '~/infrastructure/TurnstileService';
 import {extractClientIp} from '~/utils/IpUtils';
 
-const useTestCaptcha = Config.dev.testModeEnabled;
+// Test captcha always passes verification — only safe outside production.
+// An accidentally-set ASTRAL_TEST_MODE flag in prod must not silently disable
+// captcha, so gate the test service behind a non-production environment.
+const useTestCaptcha = Config.dev.testModeEnabled && Config.nodeEnv !== 'production';
 const testCaptchaService = new TestCaptchaService();
 let hcaptchaService: ICaptchaService | null = null;
 let turnstileService: ICaptchaService | null = null;

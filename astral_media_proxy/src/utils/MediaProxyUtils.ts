@@ -35,7 +35,15 @@ export const verifySignature = (
 	mediaProxySecretKey: string,
 ): boolean => {
 	const expectedSignature = createSignature(proxyUrlPath, mediaProxySecretKey);
-	return crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(providedSignature));
+	const expectedBuffer = Buffer.from(expectedSignature);
+	const providedBuffer = Buffer.from(providedSignature);
+	// timingSafeEqual throws RangeError on length mismatch, which would leak
+	// whether the length is correct via a 500 vs 401 and skip the constant-time
+	// path. Compare lengths first and return false on mismatch.
+	if (expectedBuffer.length !== providedBuffer.length) {
+		return false;
+	}
+	return crypto.timingSafeEqual(expectedBuffer, providedBuffer);
 };
 
 export const reconstructOriginalURL = (proxyUrlPath: string): string => {
@@ -48,6 +56,19 @@ export const reconstructOriginalURL = (proxyUrlPath: string): string => {
 	}
 	const protocol = parts[currentIndex++];
 	if (!protocol) throw new Error('Protocol is missing in the proxy URL path.');
+	// Defense-in-depth: reject any scheme other than http/https at the
+	// reconstruction site, before assertSafeDestination sees it. The signing
+	// service should never sign a non-http(s) path, but a single allowlist here
+	// prevents a future signing bug from turning the proxy into a file:/gopher:
+	// fetcher.
+	const decodedProtocol = decodeComponent(protocol).toLowerCase();
+	// The path segment is written without a trailing colon (".../https/host/..."), which is what
+	// buildMediaProxyURL has always emitted. Comparing against "https:" therefore rejected every
+	// real request, so normalise first and allowlist the bare scheme.
+	const scheme = decodedProtocol.endsWith(':') ? decodedProtocol.slice(0, -1) : decodedProtocol;
+	if (scheme !== 'http' && scheme !== 'https') {
+		throw new Error(`Unsupported protocol in proxy URL path: ${decodedProtocol}`);
+	}
 	const hostPart = parts[currentIndex++];
 	if (!hostPart) throw new Error('Hostname is missing in the proxy URL path.');
 	const [encodedHostname, encodedPort] = hostPart.split(':');
@@ -55,5 +76,5 @@ export const reconstructOriginalURL = (proxyUrlPath: string): string => {
 	const port = encodedPort ? decodeComponent(encodedPort) : '';
 	const encodedPath = parts.slice(currentIndex).join('/');
 	const path = decodeComponent(encodedPath);
-	return `${protocol}://${hostname}${port ? `:${port}` : ''}/${path}${query ? `?${query}` : ''}`;
+	return `${scheme}://${hostname}${port ? `:${port}` : ''}/${path}${query ? `?${query}` : ''}`;
 };

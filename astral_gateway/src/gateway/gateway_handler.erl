@@ -572,30 +572,77 @@ check_rate_limit(State = #state{rate_limit_state = RateLimitState}) ->
     end.
 
 extract_client_ip(Req) ->
-    case cowboy_req:header(<<"x-forwarded-for">>, Req) of
-        undefined ->
-            {PeerIP, _Port} = cowboy_req:peer(Req),
-            list_to_binary(inet:ntoa(PeerIP));
-        ForwardedFor ->
-            case parse_forwarded_for(ForwardedFor) of
-                <<>> ->
-                    {PeerIP, _Port} = cowboy_req:peer(Req),
-                    list_to_binary(inet:ntoa(PeerIP));
-                IP ->
-                    IP
+    {PeerIP, _Port} = cowboy_req:peer(Req),
+    PeerBinary = list_to_binary(inet:ntoa(PeerIP)),
+    %% X-Forwarded-For is client-supplied data. It may only be believed when the
+    %% socket peer is one of our own reverse proxies; a direct client could
+    %% otherwise pick the IP the API records for its session.
+    case is_trusted_peer(PeerBinary) of
+        false ->
+            PeerBinary;
+        true ->
+            case cowboy_req:header(<<"x-forwarded-for">>, Req) of
+                undefined ->
+                    PeerBinary;
+                ForwardedFor ->
+                    case parse_forwarded_for(ForwardedFor) of
+                        <<>> ->
+                            PeerBinary;
+                        IP ->
+                            IP
+                    end
             end
     end.
 
 parse_forwarded_for(HeaderValue) ->
-    case binary:split(HeaderValue, <<",">>) of
-        [First | _] ->
-            case normalize_forwarded_ip(First) of
-                {ok, IP} -> IP;
-                error -> <<>>
-            end;
+    %% Everything left of a hop we control is attacker-writable, so walk the
+    %% chain right-to-left and take the rightmost entry that is not one of our own
+    %% proxies. If every hop is private (LAN or a dev docker network) fall back to
+    %% the rightmost valid entry, which is the address our proxy actually saw.
+    Entries = lists:filtermap(
+        fun(Entry) ->
+            case normalize_forwarded_ip(Entry) of
+                {ok, IP} -> {true, IP};
+                error -> false
+            end
+        end,
+        binary:split(HeaderValue, <<",">>, [global])
+    ),
+    case lists:reverse(Entries) of
         [] ->
-            <<>>
+            <<>>;
+        [Rightmost | _] = RightToLeft ->
+            case lists:dropwhile(fun is_private_ip_binary/1, RightToLeft) of
+                [PublicIP | _] -> PublicIP;
+                [] -> Rightmost
+            end
     end.
+
+%% Trusted proxy set. Kept deliberately narrow: loopback plus the RFC1918 ranges
+%% every supported deployment puts the proxy on (the docker bridge networks live
+%% inside 172.16/12 and 192.168/16). A peer outside this set is treated as a
+%% direct client and its X-Forwarded-For is ignored, which fails closed.
+is_trusted_peer(IPBinary) ->
+    is_private_ip_binary(IPBinary).
+
+is_private_ip_binary(IPBinary) when is_binary(IPBinary) ->
+    case inet:parse_address(binary_to_list(IPBinary)) of
+        {ok, {127, _, _, _}} -> true;
+        {ok, {10, _, _, _}} -> true;
+        {ok, {172, Second, _, _}} when Second >= 16, Second =< 31 -> true;
+        {ok, {192, 168, _, _}} -> true;
+        {ok, {0, 0, 0, 0, 0, 0, 0, 1}} -> true;
+        %% IPv4-mapped IPv6 (dual-stack listeners report peers as ::ffff:a.b.c.d).
+        {ok, {0, 0, 0, 0, 0, 16#ffff, High, Low}} ->
+            V4 = {High bsr 8, High band 16#ff, Low bsr 8, Low band 16#ff},
+            is_private_ip_binary(list_to_binary(inet:ntoa(V4)));
+        %% fc00::/7 unique local addresses.
+        {ok, {Word, _, _, _, _, _, _, _}} when Word >= 16#fc00, Word =< 16#fdff -> true;
+        {ok, _} -> false;
+        {error, _} -> false
+    end;
+is_private_ip_binary(_) ->
+    false.
 
 normalize_forwarded_ip(Value) ->
     Trimmed = string:trim(Value),
@@ -788,5 +835,31 @@ parse_forwarded_for_invalid_ipv4_octet_test() ->
 
 parse_forwarded_for_unterminated_bracket_test() ->
     ?assertEqual(<<>>, parse_forwarded_for(<<"[2001:db8::1">>)).
+
+parse_forwarded_for_ignores_client_supplied_prefix_test() ->
+    %% Proxy appended the real peer on the right; the leftmost entry is spoofed.
+    Header = <<"1.2.3.4, 203.0.113.7">>,
+    ?assertEqual(<<"203.0.113.7">>, parse_forwarded_for(Header)).
+
+parse_forwarded_for_all_private_falls_back_to_rightmost_test() ->
+    Header = <<"10.0.0.5, 172.17.0.1">>,
+    ?assertEqual(<<"172.17.0.1">>, parse_forwarded_for(Header)).
+
+parse_forwarded_for_skips_invalid_entries_test() ->
+    Header = <<"203.0.113.7, not_an_ip, 10.0.0.1">>,
+    ?assertEqual(<<"203.0.113.7">>, parse_forwarded_for(Header)).
+
+is_private_ip_binary_test() ->
+    ?assert(is_private_ip_binary(<<"127.0.0.1">>)),
+    ?assert(is_private_ip_binary(<<"10.1.2.3">>)),
+    ?assert(is_private_ip_binary(<<"172.17.0.1">>)),
+    ?assert(is_private_ip_binary(<<"192.168.1.1">>)),
+    ?assert(is_private_ip_binary(<<"::1">>)),
+    ?assert(is_private_ip_binary(<<"fd00::1">>)),
+    ?assert(is_private_ip_binary(<<"::ffff:10.0.0.1">>)),
+    ?assertNot(is_private_ip_binary(<<"172.32.0.1">>)),
+    ?assertNot(is_private_ip_binary(<<"203.0.113.7">>)),
+    ?assertNot(is_private_ip_binary(<<"2001:db8::1">>)),
+    ?assertNot(is_private_ip_binary(<<"not_an_ip">>)).
 
 -endif.

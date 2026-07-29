@@ -31,7 +31,7 @@ import {getMetricsService} from '~/infrastructure/MetricsService';
 import type {SnowflakeService} from '~/infrastructure/SnowflakeService';
 import {Logger} from '~/Logger';
 import type {Channel, Message} from '~/Models';
-import {getContentType, isMediaFile, makeAttachmentCdnKey, validateAttachmentIds} from './MessageHelpers';
+import {getSafeAttachmentContentType, isMediaFile, makeAttachmentCdnKey, sanitizeAttachmentFilename, validateAttachmentIds} from './MessageHelpers';
 
 interface ProcessAttachmentParams {
 	message: Message;
@@ -170,9 +170,13 @@ export class AttachmentProcessingService {
 		}
 
 		const attachmentId = createAttachmentID(this.snowflakeService.generate());
-		const cdnKey = makeAttachmentCdnKey(message.channelId, attachmentId, attachment.filename);
+		const safeFilename = sanitizeAttachmentFilename(attachment.filename);
+		const cdnKey = makeAttachmentCdnKey(message.channelId, attachmentId, safeFilename);
 
-		let contentType = getContentType(attachment.filename);
+		// Use the safe content type so HTML/SVG attachments cannot be
+		// served as active content (stored XSS). They are forced to a
+		// non-executable octet-stream type and downloaded instead.
+		let contentType = getSafeAttachmentContentType(safeFilename);
 		let size = BigInt(uploadedFile.contentLength);
 		const clientFlags =
 			(attachment.flags ?? 0) &
@@ -197,7 +201,7 @@ export class AttachmentProcessingService {
 			return {
 				attachment: {
 					attachment_id: attachmentId,
-					filename: attachment.filename,
+					filename: safeFilename,
 					size,
 					title: attachment.title ?? null,
 					description: attachment.description ?? null,
@@ -250,7 +254,7 @@ export class AttachmentProcessingService {
 		return {
 			attachment: {
 				attachment_id: attachmentId,
-				filename: attachment.filename,
+				filename: safeFilename,
 				size,
 				title: attachment.title ?? null,
 				description: attachment.description ?? null,

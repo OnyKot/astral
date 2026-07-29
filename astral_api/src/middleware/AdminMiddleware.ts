@@ -17,19 +17,61 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
+import type {Context} from 'hono';
 import {createMiddleware} from 'hono/factory';
 import type {HonoEnv} from '~/App';
+import {Config} from '~/Config';
 import {AdminACLs} from '~/Constants';
 import {MissingACLError, MissingPermissionsError, UnauthorizedError} from '~/Errors';
 import {Logger} from '~/Logger';
+
+/*
+ * Which credentials may reach an admin route.
+ *
+ * An OAuth2 bearer token carries only the scopes the user consented to
+ * (identify, email, guilds, ...) — none of which implies admin power — yet
+ * nothing on the admin routes ever inspected them, so an `identify`-only
+ * third-party app inherited every AdminACL of the authorizing user.
+ *
+ * Rejecting bearer outright is not an option: the first-party admin panel
+ * (astral_admin) authenticates with exactly such a token, and it requests the
+ * ordinary `identify email` scopes, so the scope set cannot tell it apart from
+ * a third-party app. The application the token was issued to can. Hence:
+ * session tokens, or a bearer belonging to the configured admin application.
+ *
+ * When `ASTRAL_ADMIN_APPLICATION_ID` is unset every bearer is refused, which
+ * locks the admin panel out until it is configured. That is the deliberate
+ * failure direction — the alternative silently restores the original hole.
+ *
+ * The cookie check is separate from the token type: the music session cookie is
+ * resolved into a `session` token by UserMiddleware, and a cookie rides along
+ * automatically — SameSite=Lax still sends it on a cross-site top-level GET.
+ * Admin calls must carry their credential in the Authorization header, which no
+ * other site can make a browser attach.
+ */
+const assertAdminCredential = (ctx: Context<HonoEnv>): void => {
+	if (ctx.get('authViaCookie')) throw new UnauthorizedError();
+
+	const tokenType = ctx.get('authTokenType');
+	if (tokenType === 'session') return;
+
+	if (tokenType === 'bearer') {
+		const adminApplicationId = Config.auth.adminOAuthApplicationId;
+		const tokenApplicationId = ctx.get('oauthBearerApplicationId');
+		if (adminApplicationId && tokenApplicationId && tokenApplicationId.toString() === adminApplicationId) {
+			return;
+		}
+	}
+
+	throw new UnauthorizedError();
+};
 
 export const requireAdminACL = (requiredACL: string) =>
 	createMiddleware<HonoEnv>(async (ctx, next) => {
 		const adminUser = ctx.get('user');
 		if (!adminUser) throw new UnauthorizedError();
 
-		const tokenType = ctx.get('authTokenType');
-		if (tokenType !== 'bearer' && tokenType !== 'session') throw new UnauthorizedError();
+		assertAdminCredential(ctx);
 
 		Logger.debug(
 			{
@@ -57,8 +99,7 @@ export const requireAnyAdminACL = (requiredACLs: Array<string>) =>
 		const adminUser = ctx.get('user');
 		if (!adminUser) throw new UnauthorizedError();
 
-		const tokenType = ctx.get('authTokenType');
-		if (tokenType !== 'bearer' && tokenType !== 'session') throw new UnauthorizedError();
+		assertAdminCredential(ctx);
 
 		Logger.debug(
 			{

@@ -28,92 +28,29 @@
 }
 
 .loginLaunchButton {
-	position: relative;
-	overflow: hidden;
-	background:
-		linear-gradient(135deg, rgb(70 70 84 / 0.98) 0%, rgb(45 45 58 / 0.98) 100%),
-		rgb(45 45 58 / 0.98) !important;
-	border: 1px solid rgb(255 255 255 / 0.14);
-	box-shadow:
-		0 12px 24px rgb(0 0 0 / 0.28),
-		inset 0 1px 0 rgb(255 255 255 / 0.12);
+	background: rgb(255 255 255 / 0.08) !important;
+	border: 1px solid rgb(255 255 255 / 0.12);
+	box-shadow: none;
+	color: rgb(245 245 250 / 0.96) !important;
 }
 
-.loginLaunchButton::before {
-	content: '';
-	position: absolute;
-	inset: -140% -26%;
-	background: linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 0.24) 50%, transparent 100%);
-	transform: translateX(-74%) rotate(18deg);
-	transition: transform 540ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.loginLaunchButton:hover::before,
-.loginLaunchButton:focus-visible::before {
-	transform: translateX(74%) rotate(18deg);
+.loginLaunchButton:hover,
+.loginLaunchButton:focus-visible {
+	background: rgb(255 255 255 / 0.12) !important;
+	border-color: rgb(255 255 255 / 0.18);
+	box-shadow: none !important;
 }
 
 .loginLaunchLabel {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 0.48rem;
-	position: relative;
-	z-index: 1;
-}
-
-.loginLaunchIconFrame {
-	position: relative;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.loginLaunchIconFrame::after {
-	content: '';
-	position: absolute;
-	left: -0.36rem;
-	top: 50%;
-	width: 0.38rem;
-	height: 0.18rem;
-	border-radius: 999px;
-	background: linear-gradient(90deg, rgb(255 214 145 / 0.92) 0%, rgb(255 145 96 / 0) 100%);
-	transform-origin: 100% 50%;
-	animation: loginRocketFlame 0.9s ease-in-out infinite;
-}
-
-.loginLaunchIcon {
-	width: 1.02rem;
-	height: 1.02rem;
-	color: rgb(249 249 255 / 0.96);
-	animation: loginRocketFloat 2.1s ease-in-out infinite;
+	gap: 0;
 }
 
 .loginLaunchText {
 	font-weight: 620;
 	letter-spacing: 0.005em;
-}
-
-@keyframes loginRocketFloat {
-	0%,
-	100% {
-		transform: translateY(0) rotate(-3deg);
-	}
-	50% {
-		transform: translateY(-1px) rotate(1deg);
-	}
-}
-
-@keyframes loginRocketFlame {
-	0%,
-	100% {
-		opacity: 0.6;
-		transform: scaleX(0.72) translateX(0);
-	}
-	50% {
-		opacity: 1;
-		transform: scaleX(1.05) translateX(-1px);
-	}
 }
 
 .loginNotice {
@@ -713,15 +650,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.loginLaunchButton::before {
-		transition: none;
-	}
-
-	.loginLaunchIcon,
-	.loginLaunchIconFrame::after {
-		animation: none;
-	}
-
 	.mobileModeButton {
 		transition: none;
 	}

@@ -33,9 +33,9 @@ export const ReferralProgramSection: React.FC = () => {
 
 		try {
 			await navigator.clipboard.writeText(summary.share_url);
-			ToastActionCreators.success(t`Реферальная ссылка скопирована.`);
+			ToastActionCreators.success(t`Referral link copied.`);
 		} catch {
-			ToastActionCreators.error(t`Не удалось скопировать ссылку.`);
+			ToastActionCreators.error(t`Failed to copy link.`);
 		}
 	}, [summary, t]);
 
@@ -43,16 +43,16 @@ export const ReferralProgramSection: React.FC = () => {
 		<section className={styles.card}>
 			<div className={styles.header}>
 				<h2 className={styles.title}>
-					<Trans>Реферальная программа</Trans>
+					<Trans>Referral Program</Trans>
 				</h2>
 				<p className={styles.description}>
 					<Trans>
-						Приглашайте людей в Astral и получайте процент с оплаченных подписок приглашённых пользователей.
+						Invite people to Astral and earn a percentage of paid subscriptions from invited users.
 					</Trans>
 				</p>
 			</div>
 
-			{loading ? <div className={styles.loading}>{t`Загружаем статистику рефералок...`}</div> : null}
+			{loading ? <div className={styles.loading}>{t`Loading referral stats...`}</div> : null}
 			{error ? <div className={styles.error}>{error}</div> : null}
 
 			{summary ? (
@@ -60,19 +60,19 @@ export const ReferralProgramSection: React.FC = () => {
 					<div className={styles.statsGrid}>
 						<div className={styles.stat}>
 							<span className={styles.statLabel}>
-								<Trans>Оплаченных рефералов</Trans>
+								<Trans>Paid referrals</Trans>
 							</span>
 							<div className={styles.statValue}>{summary.paid_referrals_count}</div>
 						</div>
 						<div className={styles.stat}>
 							<span className={styles.statLabel}>
-								<Trans>Текущая ставка</Trans>
+								<Trans>Current rate</Trans>
 							</span>
 							<div className={styles.statValue}>{summary.reward_percent}%</div>
 						</div>
 						<div className={styles.stat}>
 							<span className={styles.statLabel}>
-								<Trans>Максимальная ставка</Trans>
+								<Trans>Maximum rate</Trans>
 							</span>
 							<div className={styles.statValue}>{summary.max_reward_percent}%</div>
 						</div>
@@ -80,30 +80,31 @@ export const ReferralProgramSection: React.FC = () => {
 
 					<div className={styles.shareBox}>
 						<div className={styles.shareLabel}>
-							<Trans>Ваша реферальная ссылка</Trans>
+							<Trans>Your referral link</Trans>
 						</div>
 						<div className={styles.shareRow}>
 							<div className={styles.shareUrl}>{summary.share_url}</div>
 							<Button onClick={handleCopyLink} small variant="primary">
-								<Trans>Скопировать</Trans>
+								<Trans>Copy</Trans>
 							</Button>
 						</div>
 					</div>
 
 					<ul className={styles.rules}>
 						<li>
-							<Trans>Реферал засчитывается только после первой оплаченной подписки приглашённого пользователя.</Trans>
+							<Trans>A referral only counts after the invited user's first paid subscription.</Trans>
 						</li>
 						<li>
-							<Trans>Ставка растёт от 10% до 50% в зависимости от числа оплаченных рефералов.</Trans>
+							<Trans>The rate grows from 10% to 50% depending on the number of paid referrals.</Trans>
 						</li>
 						<li>
 							{summary.support_bot_username ? (
 								<Trans>
-									Выводы обрабатываются вручную раз в неделю через Telegram-бота поддержки @{summary.support_bot_username}.
+									Payouts are processed manually once a week through the Telegram support bot @
+									{summary.support_bot_username}.
 								</Trans>
 							) : (
-								<Trans>Выводы обрабатываются вручную раз в неделю через Telegram-бота поддержки.</Trans>
+								<Trans>Payouts are processed manually once a week through the Telegram support bot.</Trans>
 							)}
 						</li>
 					</ul>

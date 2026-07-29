@@ -173,7 +173,7 @@ export function createSystemMessage(channelId: string, content: string): Message
 		flags: 0,
 	});
 
-	const nonce = SnowflakeUtils.fromTimestamp(Date.now());
+	const nonce = SnowflakeUtils.nextClientNonce();
 
 	return new MessageRecord({
 		id: nonce,
@@ -247,7 +247,7 @@ export async function executeCommand(command: ParsedCommand, channelId: string, 
 
 				await MessageActionCreators.send(dmChannelId, {
 					content: command.message,
-					nonce: SnowflakeUtils.fromTimestamp(Date.now()),
+					nonce: SnowflakeUtils.nextClientNonce(),
 					hasAttachments: false,
 					flags: 0,
 				});

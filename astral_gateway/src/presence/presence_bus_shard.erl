@@ -20,7 +20,10 @@
 
 -include_lib("astral_gateway/include/timeout_config.hrl").
 
--export([start_link/1]).
+%% scope_name/1 is exported so presence_bus can publish the routing table and
+%% resolve a shard's pg scope in the calling process; both must derive the name
+%% the same way.
+-export([start_link/1, scope_name/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -type state() :: #{scope := atom(), pg_pid := pid(), shard_index := non_neg_integer()}.

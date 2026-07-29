@@ -20,6 +20,7 @@
 import type {Task} from 'graphile-worker';
 import {createChannelID, createGuildID, createMessageID, createUserID, type UserID} from '~/BrandedTypes';
 import {Logger} from '~/Logger';
+import {notifyTelegram} from '~/telegram/TelegramNotificationsService';
 import {CommonFields, validatePayload} from '../utils/TaskPayloadValidator';
 import {getWorkerDependencies} from '../WorkerContext';
 
@@ -101,6 +102,18 @@ const handleMentions: Task = async (payload, helpers) => {
 	await readStateService.bulkIncrementMentionCounts(mentionedUserIds.map((userId) => ({userId, channelId})));
 	const uniqueUserIds = Array.from(new Set(mentionedUserIds));
 	await Promise.all(uniqueUserIds.map((userId) => gatewayService.invalidatePushBadgeCount({userId})));
+
+	// Telegram mention notifications — fire-and-forget
+	if (guildId != null && message) {
+		const channel = await channelRepository.findUnique(channelId);
+		const channelName = channel?.name ? `#${channel.name}` : `#${channelId}`;
+		const preview = (message.content ?? '').slice(0, 100).trim();
+		const body = preview ? (preview.length === 100 ? `${preview}…` : preview) : '<i>упомянул(-а) вас</i>';
+		const url = `https://astraof.com/channels/${guildId}/${channelId}/${messageId}`;
+		for (const userId of uniqueUserIds) {
+			void notifyTelegram(userId, {kind: 'mentions', title: `🔔 ${channelName}`, body, url});
+		}
+	}
 
 	if (guildId != null) {
 		await userRepository.createRecentMentions(

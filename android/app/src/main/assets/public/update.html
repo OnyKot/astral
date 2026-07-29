@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="robots" content="noindex">
+	<title>Astral — обновление</title>
+	<link rel="icon" href="/web/favicon-32x32.png" type="image/png">
+	<style>
+		:root {
+			color-scheme: dark;
+			--bg: #0a0a0b;
+			--panel: #141416;
+			--text: #f2f3f5;
+			--muted: #949ba4;
+			--accent: #5865f2;
+			--accent-soft: rgba(88, 101, 242, 0.25);
+			--danger: #ed4245;
+		}
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			min-height: 100vh;
+			display: grid;
+			place-items: center;
+			padding: 24px;
+			font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+			background: radial-gradient(circle at top, #1a1b22 0%, var(--bg) 55%);
+			color: var(--text);
+		}
+		.card {
+			width: min(440px, 100%);
+			padding: 28px 24px;
+			border-radius: 16px;
+			background: var(--panel);
+			border: 1px solid rgba(255, 255, 255, 0.06);
+			box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+		}
+		.brand {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			margin-bottom: 20px;
+		}
+		.brand img {
+			width: 40px;
+			height: 40px;
+			border-radius: 12px;
+		}
+		h1 {
+			margin: 0;
+			font-size: 1.25rem;
+			font-weight: 600;
+		}
+		#status {
+			margin: 0 0 8px;
+			font-size: 1rem;
+		}
+		#detail {
+			margin: 0 0 18px;
+			min-height: 1.25rem;
+			color: var(--muted);
+			font-size: 0.875rem;
+			line-height: 1.4;
+		}
+		.bar {
+			height: 8px;
+			border-radius: 999px;
+			background: rgba(255, 255, 255, 0.08);
+			overflow: hidden;
+		}
+		#fill {
+			height: 100%;
+			width: 0%;
+			border-radius: inherit;
+			background: linear-gradient(90deg, var(--accent), #7289ff);
+			transition: width 0.25s ease;
+		}
+		#fill.error {
+			background: var(--danger);
+		}
+		#percent {
+			margin-top: 10px;
+			font-size: 0.8125rem;
+			color: var(--muted);
+			text-align: right;
+		}
+		.actions {
+			display: none;
+			margin-top: 18px;
+			gap: 10px;
+		}
+		.actions.visible {
+			display: flex;
+			flex-wrap: wrap;
+		}
+		button {
+			appearance: none;
+			border: 0;
+			border-radius: 8px;
+			padding: 10px 14px;
+			font: inherit;
+			font-weight: 600;
+			cursor: pointer;
+			background: var(--accent);
+			color: white;
+		}
+		button.secondary {
+			background: rgba(255, 255, 255, 0.08);
+			color: var(--text);
+		}
+	</style>
+</head>
+<body>
+	<div class="card">
+		<div class="brand">
+			<img src="/web/android-chrome-192x192.png" alt="" width="40" height="40">
+			<h1>Обновление Astral</h1>
+		</div>
+		<p id="status">Подготовка…</p>
+		<p id="detail">Скачиваем свежую версию приложения. Не закрывайте вкладку.</p>
+		<div class="bar" aria-hidden="true"><div id="fill"></div></div>
+		<div id="percent">0%</div>
+		<div class="actions" id="actions">
+			<button type="button" id="retry">Повторить</button>
+			<button type="button" class="secondary" id="openApp">Открыть Astral</button>
+		</div>
+	</div>
+	<script>
+	(function () {
+		const params = new URLSearchParams(window.location.search);
+		const targetSha = params.get('sha') || '';
+		const rawReturn = params.get('return') || '';
+		// Only allow same-origin paths to avoid open redirects.
+		const returnPath = rawReturn.startsWith('/') && !rawReturn.startsWith('//') ? rawReturn : '/channels/@me';
+		const bust = String(Date.now());
+
+		const statusEl = document.getElementById('status');
+		const detailEl = document.getElementById('detail');
+		const fillEl = document.getElementById('fill');
+		const percentEl = document.getElementById('percent');
+		const actionsEl = document.getElementById('actions');
+		const retryBtn = document.getElementById('retry');
+		const openAppBtn = document.getElementById('openApp');
+
+		function formatMb(bytes) {
+			if (!bytes || bytes <= 0) return '';
+			return (bytes / (1024 * 1024)).toFixed(1) + ' МБ';
+		}
+
+		function setProgress(percent, status, detail) {
+			const clamped = Math.min(100, Math.max(0, percent));
+			fillEl.style.width = clamped + '%';
+			percentEl.textContent = Math.round(clamped) + '%';
+			if (status) statusEl.textContent = status;
+			if (typeof detail === 'string') detailEl.textContent = detail;
+		}
+
+		function buildReturnUrl() {
+			const url = new URL(returnPath, window.location.origin);
+			url.searchParams.set('__r', bust);
+			url.searchParams.set('__astral_cache_reset', '1');
+			return url.toString();
+		}
+
+		async function withTimeout(promise, ms) {
+			return Promise.race([
+				promise,
+				new Promise(function (resolve) {
+					setTimeout(resolve, ms);
+				}),
+			]);
+		}
+
+		// IMPORTANT: fetch assets by their exact URL (no ?v= query) with
+		// cache: 'reload'. This overwrites the browser HTTP cache entry that
+		// the app HTML references, which is the whole point of this page.
+		// A query-busted URL is a different cache key and leaves the stale
+		// immutable-cached bundle in place.
+		async function fetchWithProgress(url, onChunk) {
+			const response = await fetch(url, { cache: 'reload', credentials: 'same-origin' });
+			if (!response.ok) {
+				throw new Error(url + ' → HTTP ' + response.status);
+			}
+			const total = Number(response.headers.get('content-length') || 0);
+			if (!response.body || !total) {
+				await response.arrayBuffer();
+				if (onChunk) onChunk(total || 1, total || 1);
+				return total || 0;
+			}
+			const reader = response.body.getReader();
+			let loaded = 0;
+			while (true) {
+				const result = await reader.read();
+				if (result.done) break;
+				loaded += result.value.byteLength;
+				if (onChunk) onChunk(loaded, total);
+			}
+			return loaded;
+		}
+
+		async function discoverAssets() {
+			const assets = ['/assets/main.css', '/assets/main.js'];
+			try {
+				// Probe an app page (not '/', which is served by marketing).
+				const html = await fetch(returnPath, { cache: 'reload' }).then(function (r) {
+					return r.text();
+				});
+				const found = [];
+				const linkRe = /<link[^>]+href="(\/assets\/[^"]+\.css)"/gi;
+				const scriptRe = /<script[^>]+src="(\/assets\/[^"]+\.js)"/gi;
+				let match;
+				while ((match = linkRe.exec(html))) found.push(match[1]);
+				while ((match = scriptRe.exec(html))) found.push(match[1]);
+				if (found.length) return Array.from(new Set(found));
+			} catch (e) {
+				// fall back
+			}
+			return assets;
+		}
+
+		async function runUpdate() {
+			actionsEl.classList.remove('visible');
+			fillEl.classList.remove('error');
+			setProgress(2, 'Очистка кеша…', 'Удаляем старые файлы приложения из браузера.');
+
+			try {
+				if ('caches' in window) {
+					const keys = await caches.keys();
+					await Promise.all(keys.map(function (key) { return caches.delete(key); }));
+				}
+			} catch (e) {}
+
+			try {
+				if ('serviceWorker' in navigator) {
+					const registrations = await withTimeout(navigator.serviceWorker.getRegistrations(), 3000);
+					await withTimeout(
+						Promise.all(registrations.map(function (reg) { return reg.unregister(); })),
+						3000,
+					);
+				}
+			} catch (e) {}
+
+			setProgress(12, 'Загрузка обновления…', targetSha ? ('Сборка ' + targetSha) : 'Скачиваем новую версию.');
+
+			const assets = await discoverAssets();
+			let totalBytes = 0;
+			let loadedBytes = 0;
+			const sizes = {};
+
+			for (const asset of assets) {
+				try {
+					const head = await fetch(asset, { method: 'HEAD', cache: 'no-store' });
+					sizes[asset] = Number(head.headers.get('content-length') || 0);
+					totalBytes += sizes[asset];
+				} catch (e) {}
+			}
+			if (!totalBytes) totalBytes = assets.length * 4 * 1024 * 1024;
+
+			for (const asset of assets) {
+				await fetchWithProgress(asset, function (loaded) {
+					const slice = loadedBytes + loaded;
+					const overall = 12 + (slice / totalBytes) * 78;
+					setProgress(
+						overall,
+						'Загрузка обновления…',
+						formatMb(slice) + (totalBytes ? ' из ~' + formatMb(totalBytes) : ''),
+					);
+				});
+				loadedBytes += sizes[asset] || Math.floor(totalBytes / assets.length);
+			}
+
+			setProgress(94, 'Проверка версии…', 'Почти готово.');
+			await fetch(returnPath, { cache: 'reload' });
+
+			if (targetSha) {
+				try {
+					const manifest = await fetch('/version.json?v=' + bust, { cache: 'reload' }).then(function (r) {
+						return r.json();
+					});
+					if (manifest && manifest.sha && manifest.sha.slice(0, 7) !== targetSha.slice(0, 7)) {
+						throw new Error('Сервер ещё не отдал сборку ' + targetSha);
+					}
+				} catch (e) {
+					// non-fatal — still redirect
+				}
+			}
+
+			setProgress(100, 'Готово!', 'Открываем Astral…');
+			window.location.replace(buildReturnUrl());
+		}
+
+		function showError(error) {
+			fillEl.classList.add('error');
+			setProgress(100, 'Не удалось обновить', (error && error.message) || 'Попробуйте ещё раз или обновите страницу через Ctrl+Shift+R.');
+			actionsEl.classList.add('visible');
+		}
+
+		retryBtn.addEventListener('click', function () {
+			runUpdate().catch(showError);
+		});
+		openAppBtn.addEventListener('click', function () {
+			window.location.replace(buildReturnUrl());
+		});
+
+		runUpdate().catch(showError);
+	})();
+	</script>
+</body>
+</html>

@@ -22,6 +22,11 @@ import {createUserID} from '~/BrandedTypes';
 import {AdminACLs} from '~/Constants';
 import {requireAdminACL} from '~/middleware/AdminMiddleware';
 import {RateLimitMiddleware} from '~/middleware/RateLimitMiddleware';
+import {
+	ADMIN_RESPONSE_CACHE_TTL_SECONDS,
+	adminResponseCacheKey,
+	cachedAdminResponse,
+} from '../AdminResponseCache';
 import {RateLimitConfigs} from '~/RateLimitConfig';
 import {Validator} from '~/Validator';
 import {
@@ -56,9 +61,11 @@ export const UserAdminController = (app: HonoApp) => {
 	app.get('/admin/users/me', requireAdminACL(AdminACLs.AUTHENTICATE), async (ctx) => {
 		const adminUser = ctx.get('user');
 		const cacheService = ctx.get('cacheService');
-		return ctx.json({
+		const key = adminResponseCacheKey({endpoint: 'users-me', adminUserId: adminUser.id.toString()});
+		const body = await cachedAdminResponse(cacheService, key, ADMIN_RESPONSE_CACHE_TTL_SECONDS, async () => ({
 			user: await mapUserToAdminResponse(adminUser, cacheService),
-		});
+		}));
+		return ctx.json(body);
 	});
 
 	app.post(

@@ -62,6 +62,8 @@ export class AdminCodeGenerationService {
 				visionary_sequence_number: null,
 				checkout_session_id: null,
 				version: 1,
+				emoji: null,
+				background: null,
 			};
 			await this.userRepository.createGiftCode(giftCodeRow);
 			codes.push(code);

@@ -46,7 +46,7 @@ import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
 import * as UserProfileActionCreators from '~/actions/UserProfileActionCreators';
-import {ChannelTypes, ME, RelationshipTypes} from '~/Constants';
+import {ChannelTypes, ME, RelationshipTypes, StatusTypes} from '~/Constants';
 import {ChannelSearchBottomSheet} from '~/components/bottomsheets/ChannelSearchBottomSheet';
 import {ChannelDetailsBottomSheet} from '~/components/bottomsheets/ChannelDetailsBottomSheet';
 import {MessageSearchBar} from '~/components/channel/MessageSearchBar';
@@ -72,10 +72,13 @@ import FavoritesStore from '~/stores/FavoritesStore';
 import MemberListStore from '~/stores/MemberListStore';
 import MessageSelectionStore from '~/stores/MessageSelectionStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
+import PresenceStore from '~/stores/PresenceStore';
+import UserActivityStore from '~/stores/UserActivityStore';
 import RelationshipStore from '~/stores/RelationshipStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import * as CallUtils from '~/utils/CallUtils';
 import * as ChannelUtils from '~/utils/ChannelUtils';
+import {shouldUse12HourFormat} from '~/utils/DateUtils';
 import {MAX_GROUP_DM_RECIPIENTS} from '~/utils/groupDmUtils';
 import * as RouterUtils from '~/utils/RouterUtils';
 import type {SearchSegment} from '~/utils/SearchSegmentManager';
@@ -95,6 +98,21 @@ import styles from './ChannelHeader.module.css';
 import {useChannelHeaderData} from './channel-header/useChannelHeaderData';
 
 const {VoiceCallButton, VideoCallButton} = CallButtons;
+const LAST_ONLINE_RECENT_MS = 10 * 60 * 1000;
+
+const formatLastOnlineTime = (timestamp: string, locale: string): string | null => {
+	const date = new Date(timestamp);
+	const time = date.getTime();
+	if (!Number.isFinite(time)) {
+		return null;
+	}
+
+	return new Intl.DateTimeFormat(locale, {
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: shouldUse12HourFormat(locale),
+	}).format(date);
+};
 
 interface ChannelHeaderProps {
 	channel?: ChannelRecord;
@@ -356,12 +374,52 @@ export const ChannelHeader = observer(
 			RelationshipStore.getRelationship(recipient.id)?.type === RelationshipTypes.FRIEND;
 		const isPrivateHeader = isDM || isGroupDM || isPersonalNotes;
 		const channelHoverDescription =
-			(isGuildChannel && channel?.topic?.trim()) || channelTypeLabel || (isDM || isGroupDM ? t`Conversation` : '');
+			(isGuildChannel && channel?.topic?.trim()) ||
+			(!isDM ? channelTypeLabel : null) ||
+			(isGroupDM ? t`Conversation` : '');
 		const shouldShowCreateGroupButton = !!channel && !isMobile && !isPersonalNotes && isFriendDM && !isGroupDM;
 		const shouldShowAddFriendsButton = !!channel && !isMobile && !isPersonalNotes && isGroupDM && !isGroupDMFull;
 		const selectionActive = channel ? MessageSelectionStore.isActiveForChannel(channel.id) : false;
 		const selectedMessages = selectionActive ? MessageSelectionStore.getSelectedMessages() : [];
 		const selectedCount = selectedMessages.length;
+		const recipientStatus = recipient ? PresenceStore.getStatus(recipient.id) : StatusTypes.OFFLINE;
+		const isRecipientInCall = recipient ? MediaEngineStore.isUserInAnyVoiceChannel(recipient.id) : false;
+		const isRecipientOnline =
+			isRecipientInCall ||
+			recipientStatus === StatusTypes.ONLINE ||
+			recipientStatus === StatusTypes.IDLE ||
+			recipientStatus === StatusTypes.DND;
+		const recipientActivity = recipient ? UserActivityStore.getActivity(recipient.id) : null;
+
+		React.useEffect(() => {
+			if (!isDM || !recipient || isRecipientOnline) {
+				return;
+			}
+
+			UserActivityStore.ensureActivity(recipient.id);
+		}, [isDM, recipient?.id, recipient, isRecipientOnline]);
+
+		const dmPresenceLabel = React.useMemo(() => {
+			if (!isDM || !recipient) {
+				return null;
+			}
+
+			if (isRecipientOnline) {
+				return t`currently online`;
+			}
+
+			if (!recipientActivity || recipientActivity.hidden || !recipientActivity.lastActiveAt) {
+				return t`last online: recently`;
+			}
+
+			const lastActiveTime = Date.parse(recipientActivity.lastActiveAt);
+			if (!Number.isFinite(lastActiveTime) || Date.now() - lastActiveTime < LAST_ONLINE_RECENT_MS) {
+				return t`last online: recently`;
+			}
+
+			const formattedTime = formatLastOnlineTime(recipientActivity.lastActiveAt, i18n.locale);
+			return formattedTime ? t`last online: at ${formattedTime}` : t`last online: recently`;
+		}, [isDM, recipient, isRecipientOnline, recipientActivity, t, i18n.locale]);
 
 		const handleForwardSelectedMessages = React.useCallback(() => {
 			if (selectedMessages.length === 0) return;
@@ -464,12 +522,26 @@ export const ChannelHeader = observer(
 													<>
 														<StatusAwareAvatar user={recipient} size={40} showOffline={true} />
 														<span className={styles.dmNameWrapper}>
-															<Tooltip text={isDMNameOverflowing && directMessageName ? directMessageName : ''}>
-																<span ref={dmNameRef} className={styles.channelName}>
-																	{directMessageName}
+															<span className={styles.dmIdentity}>
+																<span className={styles.channelTitleRow}>
+																	<Tooltip text={isDMNameOverflowing && directMessageName ? directMessageName : ''}>
+																		<span ref={dmNameRef} className={styles.channelName}>
+																			{directMessageName}
+																		</span>
+																	</Tooltip>
+																	{isBotDMRecipient && <UserTag className={styles.userTag} system={recipient.system} />}
 																</span>
-															</Tooltip>
-															{isBotDMRecipient && <UserTag className={styles.userTag} system={recipient.system} />}
+																{dmPresenceLabel && (
+																	<span
+																		className={clsx(
+																			styles.dmPresenceLabel,
+																			isRecipientOnline && styles.dmPresenceLabelOnline,
+																		)}
+																	>
+																		{dmPresenceLabel}
+																	</span>
+																)}
+															</span>
 														</span>
 														<CaretRightIcon className={styles.caretRight} weight="bold" />
 													</>
@@ -502,16 +574,28 @@ export const ChannelHeader = observer(
 												<StatusAwareAvatar user={recipient} size={40} showOffline={true} />
 												<span className={styles.dmNameWrapper}>
 													<span className={styles.channelCapsuleBody}>
-														<span className={styles.channelTitleRow}>
-															<Tooltip text={isDMNameOverflowing ? directMessageName : ''}>
-																<span ref={dmNameRef} className={styles.channelName}>
-																	{directMessageName}
+														<span className={styles.dmIdentity}>
+															<span className={styles.channelTitleRow}>
+																<Tooltip text={isDMNameOverflowing ? directMessageName : ''}>
+																	<span ref={dmNameRef} className={styles.channelName}>
+																		{directMessageName}
+																	</span>
+																</Tooltip>
+																{channelHoverDescription && (
+																	<span className={styles.channelCapsuleMeta}>{channelHoverDescription}</span>
+																)}
+																{isBotDMRecipient && <UserTag className={styles.userTag} system={recipient.system} />}
+															</span>
+															{dmPresenceLabel && (
+																<span
+																	className={clsx(
+																		styles.dmPresenceLabel,
+																		isRecipientOnline && styles.dmPresenceLabelOnline,
+																	)}
+																>
+																	{dmPresenceLabel}
 																</span>
-															</Tooltip>
-															{channelHoverDescription && (
-																<span className={styles.channelCapsuleMeta}>{channelHoverDescription}</span>
 															)}
-															{isBotDMRecipient && <UserTag className={styles.userTag} system={recipient.system} />}
 														</span>
 													</span>
 												</span>

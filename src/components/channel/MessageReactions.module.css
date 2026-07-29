@@ -21,16 +21,26 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
+	justify-content: flex-start;
+	gap: 0.25rem;
 	padding-top: 0.25rem;
 	user-select: none;
 	-webkit-user-select: none;
+}
+
+.reactionsGridSelf {
+	justify-content: flex-end;
 }
 
 .reactionContainer {
 	position: relative;
 	border-radius: 0.5rem;
 	margin-bottom: 0;
-	margin-inline-end: 0.25rem;
+}
+
+.reactionMotionItem {
+	transform-origin: center bottom;
+	will-change: transform, opacity;
 }
 
 .reactionButton {

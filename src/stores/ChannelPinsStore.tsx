@@ -23,7 +23,7 @@ import {type Message, MessageRecord} from '~/records/MessageRecord';
 import AuthenticationStore from '~/stores/AuthenticationStore';
 import type {ReactionEmoji} from '~/utils/ReactionUtils';
 
-interface ChannelPinEntry {
+export interface ChannelPinEntry {
 	message: MessageRecord;
 	pinnedAt: string;
 }
@@ -68,12 +68,25 @@ class ChannelPinsStore {
 		return pins[pins.length - 1]?.pinnedAt;
 	}
 
-	getLastPinnedMessageId(channelId: string): string | undefined {
+	getLatestPin(channelId: string): ChannelPinEntry | null {
 		const pins = this.channelPins[channelId];
 		if (!pins || pins.length === 0) {
-			return undefined;
+			return null;
 		}
-		return pins[pins.length - 1]?.message.id;
+
+		return pins.reduce((latest, pin) => {
+			const latestTime = Date.parse(latest.pinnedAt);
+			const pinTime = Date.parse(pin.pinnedAt);
+			return pinTime > latestTime ? pin : latest;
+		}, pins[0]);
+	}
+
+	getLastPinTimestamp(channelId: string): string | null | undefined {
+		return this.channelState[channelId]?.lastPinTimestamp;
+	}
+
+	getLastPinnedMessageId(channelId: string): string | undefined {
+		return this.getLatestPin(channelId)?.message.id;
 	}
 
 	handleFetchPending(channelId: string): void {

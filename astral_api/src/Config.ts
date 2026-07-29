@@ -113,13 +113,21 @@ const ConfigSchema = z.object({
 	gateway: z.object({
 		rpcHost: z.string(),
 		rpcPort: z.number(),
-		rpcSecret: z.string(),
+		// The RPC secret authenticates API-to-gateway calls. An 8/16-char secret
+		// is brute-forceable; require at least 32 characters (≈192 bits of
+		// base64url entropy).
+		rpcSecret: z.string().min(32, 'GATEWAY_RPC_SECRET must be at least 32 characters'),
+		// Extra source IPs allowed for /_rpc beyond RFC1918 (e.g. prod host when
+		// gateway reaches fleet API via NodePort / public VPS addressing).
+		rpcTrustedIps: z.array(z.string()).default([]),
 	}),
 
 	mediaProxy: z.object({
 		host: z.string(),
 		port: z.number(),
-		secretKey: z.string(),
+		// This key both signs external-media URLs and authenticates internal
+		// proxy requests. A short key breaks both protections.
+		secretKey: z.string().min(32, 'MEDIA_PROXY_SECRET_KEY must be at least 32 characters'),
 	}),
 
 	geoip: z.object({
@@ -161,6 +169,7 @@ const ConfigSchema = z.object({
 
 	s3: z.object({
 		endpoint: z.string(),
+		region: z.string(),
 		accessKeyId: z.string(),
 		secretAccessKey: z.string(),
 		buckets: z.object({
@@ -224,6 +233,13 @@ const ConfigSchema = z.object({
 		url: z.string().optional(),
 		internalUrl: z.string().optional(),
 		autoCreateDummyData: z.boolean(),
+		turn: z.object({
+			enabled: z.boolean(),
+			keyId: z.string().optional(),
+			apiToken: z.string().optional(),
+			ttlSeconds: z.number().int().positive(),
+			excludedCountries: z.array(z.string()),
+		}),
 	}),
 
 	search: z.object({
@@ -369,6 +385,22 @@ const ConfigSchema = z.object({
 		apiToken: z.string().optional(),
 	}),
 
+	selectelCdn: z.object({
+		purgeEnabled: z.boolean(),
+		// CDN domain (CNAME) the cache task targets, e.g. cdn.astraof.com.
+		domain: z.string().optional(),
+		// Project-scoped IAM token (X-Auth-Token). CDN API does not accept static
+		// tokens, so this is a 24h IAM token. If auth credentials are provided
+		// below, the service refreshes it automatically; otherwise this env must
+		// hold a currently-valid token.
+		apiToken: z.string().optional(),
+		// Optional: auto-issue/refresh the IAM token from these credentials.
+		authUsername: z.string().optional(),
+		authAccountId: z.string().optional(),
+		authPassword: z.string().optional(),
+		authProjectName: z.string().optional(),
+	}),
+
 	alerts: z.object({
 		webhookUrl: z.string().url().optional(),
 	}),
@@ -393,6 +425,40 @@ const ConfigSchema = z.object({
 		redirectUri: z.string(),
 		appEndpoint: z.string(),
 		autoCreate: z.boolean(),
+	}),
+
+	twitch: z.object({
+		enabled: z.boolean(),
+		clientId: z.string().optional(),
+		clientSecret: z.string().optional(),
+		redirectUri: z.string(),
+		eventSubCallbackUrl: z.string(),
+		eventSubSecret: z.string().optional(),
+		postConnectRedirectUrl: z.string(),
+		autoSyncEventSub: z.boolean(),
+	}),
+
+	steam: z.object({
+		enabled: z.boolean(),
+		apiKey: z.string().optional(),
+		realm: z.string(),
+		returnUrl: z.string(),
+		postConnectRedirectUrl: z.string(),
+	}),
+
+	riot: z.object({
+		enabled: z.boolean(),
+		apiKey: z.string().optional(),
+	}),
+
+	telegram: z.object({
+		enabled: z.boolean(),
+		botToken: z.string().optional(),
+		botUsername: z.string().optional(),
+		loginMaxAgeSeconds: z.number().int().positive(),
+		postConnectRedirectUrl: z.string(),
+		webhookSecret: z.string().optional(),
+		webhookUrl: z.string().optional(),
 	}),
 
 	musicSearch: z.object({
@@ -420,6 +486,10 @@ const ConfigSchema = z.object({
 		searchEnhancementEnabled: z.boolean(),
 	}),
 
+	ncmec: z.object({
+		apiKey: z.string().optional(),
+	}).optional(),
+
 	adminBootstrap: z.object({
 		userIds: z.array(z.string()),
 		emails: z.array(z.string()),
@@ -427,7 +497,26 @@ const ConfigSchema = z.object({
 	}),
 
 	auth: z.object({
-		sudoModeSecret: z.string(),
+		// Signs sudo-mode JWTs that grant elevated account privileges. A short
+		// secret is brute-forceable and would let an attacker forge sudo tokens.
+		sudoModeSecret: z.string().min(32, 'SUDO_MODE_SECRET must be at least 32 characters'),
+		/*
+		 * Application id of the first-party admin panel (astral_admin), which
+		 * authenticates with an OAuth2 bearer token rather than a session token.
+		 *
+		 * Admin routes must not accept just any bearer: astral_admin requests the
+		 * ordinary `identify email` scopes, exactly what any third-party app can
+		 * ask for, so scope cannot distinguish it — only the application it was
+		 * issued to can. Leaving this unset means no bearer reaches an admin
+		 * route, which locks the admin panel out; that is deliberate, because the
+		 * alternative default hands every AdminACL of an authorizing admin to any
+		 * app they consent to.
+		 */
+		adminOAuthApplicationId: z.string().optional(),
+		// Email "new login location" challenge (IP authorization link). Prefer
+		// leaving enabled in production; set IP_AUTHORIZATION_ENABLED=false to
+		// temporarily skip the inbox check after password verification.
+		ipAuthorizationEnabled: z.boolean(),
 		passkeys: z.object({
 			rpName: z.string(),
 			rpId: z.string(),
@@ -464,6 +553,10 @@ const ConfigSchema = z.object({
 		grantStaffOnRegistration: z.boolean(),
 		testModeEnabled: z.boolean(),
 		testHarnessToken: z.string().optional(),
+		// Boot-time bucket seeding, which PURGES the uploads bucket. Opt-in only:
+		// NODE_ENV defaults to 'development' when unset, so gating this on the env
+		// string meant an API booting without NODE_ENV wiped its own uploads.
+		seedBuckets: z.boolean(),
 	}),
 
 	attachmentDecayEnabled: z.boolean(),
@@ -526,7 +619,7 @@ function loadConfig() {
 		cassandra: {
 			hosts: required('CASSANDRA_HOSTS'),
 			keyspace: required('CASSANDRA_KEYSPACE'),
-			localDc: optional('CASSANDRA_LOCAL_DC'),
+			localDc: optional('CASSANDRA_LOCAL_DC') || 'datacenter1',
 			username: required('CASSANDRA_USERNAME'),
 			password: required('CASSANDRA_PASSWORD'),
 		},
@@ -539,6 +632,10 @@ function loadConfig() {
 			rpcHost: optional('ASTRAL_GATEWAY_RPC_HOST') || 'gateway',
 			rpcPort: optionalInt('ASTRAL_GATEWAY_RPC_PORT', 8081),
 			rpcSecret: required('GATEWAY_RPC_SECRET'),
+			rpcTrustedIps: (optional('GATEWAY_RPC_TRUSTED_IPS') || '')
+				.split(',')
+				.map((value) => value.trim())
+				.filter((value) => value.length > 0),
 		},
 
 		mediaProxy: {
@@ -588,6 +685,7 @@ function loadConfig() {
 
 		s3: {
 			endpoint: required('AWS_S3_ENDPOINT'),
+			region: optional('AWS_S3_REGION') || 'ru-1',
 			accessKeyId: required('AWS_ACCESS_KEY_ID'),
 			secretAccessKey: required('AWS_SECRET_ACCESS_KEY'),
 			buckets: {
@@ -654,6 +752,19 @@ function loadConfig() {
 			url: optional('LIVEKIT_URL'),
 			internalUrl: optional('LIVEKIT_INTERNAL_URL') || optional('LIVEKIT_ADMIN_URL'),
 			autoCreateDummyData: optionalBool('LIVEKIT_AUTO_CREATE_DUMMY_DATA'),
+			turn: {
+				enabled: optionalBool('TURN_ENABLED'),
+				keyId: optional('CLOUDFLARE_TURN_KEY_ID'),
+				apiToken: optional('CLOUDFLARE_TURN_API_TOKEN'),
+				ttlSeconds: optionalInt('CLOUDFLARE_TURN_TTL_SECONDS', 86400),
+				// Unset => default to RU exclusion. Empty string => no
+				// exclusions (TURN offered to everyone, incl. RU/BY). Read
+				// process.env directly instead of optional(), which collapses
+				// '' to undefined and would silently restore the RU default.
+				excludedCountries: parseCommaSeparated(
+					process.env.CLOUDFLARE_TURN_EXCLUDED_COUNTRIES ?? 'RU',
+				).map((item) => item.toUpperCase()),
+			},
 		},
 
 		search: {
@@ -701,15 +812,15 @@ function loadConfig() {
 							optional('TBANK_PRICE_ID_GIFT_VISIONARY_RUB') || 'tbank_gift_visionary_rub',
 						gift1MonthId: optional('TBANK_PRICE_ID_GIFT_1_MONTH_RUB') || 'tbank_gift_1_month_rub',
 						gift1YearId: optional('TBANK_PRICE_ID_GIFT_1_YEAR_RUB') || 'tbank_gift_1_year_rub',
-						monthlyAmountKopeks: optionalInt('TBANK_PRICE_AMOUNT_MONTHLY_KOPEKS', 49_000),
-						yearlyAmountKopeks: optionalInt('TBANK_PRICE_AMOUNT_YEARLY_KOPEKS', 490_000),
+						monthlyAmountKopeks: optionalInt('TBANK_PRICE_AMOUNT_MONTHLY_KOPEKS', 29_900),
+						yearlyAmountKopeks: optionalInt('TBANK_PRICE_AMOUNT_YEARLY_KOPEKS', 299_000),
 						visionaryAmountKopeks: optionalInt('TBANK_PRICE_AMOUNT_VISIONARY_KOPEKS', 2_990_000),
 						giftVisionaryAmountKopeks: optionalInt(
 							'TBANK_PRICE_AMOUNT_GIFT_VISIONARY_KOPEKS',
 							2_990_000,
 						),
-						gift1MonthAmountKopeks: optionalInt('TBANK_PRICE_AMOUNT_GIFT_1_MONTH_KOPEKS', 49_000),
-						gift1YearAmountKopeks: optionalInt('TBANK_PRICE_AMOUNT_GIFT_1_YEAR_KOPEKS', 490_000),
+						gift1MonthAmountKopeks: optionalInt('TBANK_PRICE_AMOUNT_GIFT_1_MONTH_KOPEKS', 29_900),
+						gift1YearAmountKopeks: optionalInt('TBANK_PRICE_AMOUNT_GIFT_1_YEAR_KOPEKS', 299_000),
 					}
 				: undefined,
 		},
@@ -733,15 +844,15 @@ function loadConfig() {
 							optional('CLOUDPAYMENTS_PRICE_ID_GIFT_1_MONTH_RUB') || 'cloudpayments_gift_1_month_rub',
 						gift1YearId:
 							optional('CLOUDPAYMENTS_PRICE_ID_GIFT_1_YEAR_RUB') || 'cloudpayments_gift_1_year_rub',
-						monthlyAmountKopeks: optionalInt('CLOUDPAYMENTS_PRICE_AMOUNT_MONTHLY_KOPEKS', 49_000),
-						yearlyAmountKopeks: optionalInt('CLOUDPAYMENTS_PRICE_AMOUNT_YEARLY_KOPEKS', 490_000),
+						monthlyAmountKopeks: optionalInt('CLOUDPAYMENTS_PRICE_AMOUNT_MONTHLY_KOPEKS', 29_900),
+						yearlyAmountKopeks: optionalInt('CLOUDPAYMENTS_PRICE_AMOUNT_YEARLY_KOPEKS', 299_000),
 						visionaryAmountKopeks: optionalInt('CLOUDPAYMENTS_PRICE_AMOUNT_VISIONARY_KOPEKS', 2_990_000),
 						giftVisionaryAmountKopeks: optionalInt(
 							'CLOUDPAYMENTS_PRICE_AMOUNT_GIFT_VISIONARY_KOPEKS',
 							2_990_000,
 						),
-						gift1MonthAmountKopeks: optionalInt('CLOUDPAYMENTS_PRICE_AMOUNT_GIFT_1_MONTH_KOPEKS', 49_000),
-						gift1YearAmountKopeks: optionalInt('CLOUDPAYMENTS_PRICE_AMOUNT_GIFT_1_YEAR_KOPEKS', 490_000),
+						gift1MonthAmountKopeks: optionalInt('CLOUDPAYMENTS_PRICE_AMOUNT_GIFT_1_MONTH_KOPEKS', 29_900),
+						gift1YearAmountKopeks: optionalInt('CLOUDPAYMENTS_PRICE_AMOUNT_GIFT_1_YEAR_KOPEKS', 299_000),
 					}
 				: undefined,
 		},
@@ -767,8 +878,8 @@ function loadConfig() {
 							optional('INTELLECTMONEY_PRICE_ID_GIFT_1_MONTH_RUB') || 'intellectmoney_gift_1_month_rub',
 						gift1YearId:
 							optional('INTELLECTMONEY_PRICE_ID_GIFT_1_YEAR_RUB') || 'intellectmoney_gift_1_year_rub',
-						monthlyAmountKopeks: optionalInt('INTELLECTMONEY_PRICE_AMOUNT_MONTHLY_KOPEKS', 49_000),
-						yearlyAmountKopeks: optionalInt('INTELLECTMONEY_PRICE_AMOUNT_YEARLY_KOPEKS', 490_000),
+						monthlyAmountKopeks: optionalInt('INTELLECTMONEY_PRICE_AMOUNT_MONTHLY_KOPEKS', 29_900),
+						yearlyAmountKopeks: optionalInt('INTELLECTMONEY_PRICE_AMOUNT_YEARLY_KOPEKS', 299_000),
 						visionaryAmountKopeks: optionalInt('INTELLECTMONEY_PRICE_AMOUNT_VISIONARY_KOPEKS', 2_990_000),
 						giftVisionaryAmountKopeks: optionalInt(
 							'INTELLECTMONEY_PRICE_AMOUNT_GIFT_VISIONARY_KOPEKS',
@@ -776,9 +887,9 @@ function loadConfig() {
 						),
 						gift1MonthAmountKopeks: optionalInt(
 							'INTELLECTMONEY_PRICE_AMOUNT_GIFT_1_MONTH_KOPEKS',
-							49_000,
+							29_900,
 						),
-						gift1YearAmountKopeks: optionalInt('INTELLECTMONEY_PRICE_AMOUNT_GIFT_1_YEAR_KOPEKS', 490_000),
+						gift1YearAmountKopeks: optionalInt('INTELLECTMONEY_PRICE_AMOUNT_GIFT_1_YEAR_KOPEKS', 299_000),
 				  }
 				: undefined,
 		},
@@ -802,12 +913,12 @@ function loadConfig() {
 						giftVisionaryId: optional('WATA_PRICE_ID_GIFT_VISIONARY_RUB') || 'wata_gift_visionary_rub',
 						gift1MonthId: optional('WATA_PRICE_ID_GIFT_1_MONTH_RUB') || 'wata_gift_1_month_rub',
 						gift1YearId: optional('WATA_PRICE_ID_GIFT_1_YEAR_RUB') || 'wata_gift_1_year_rub',
-						monthlyAmountKopeks: optionalInt('WATA_PRICE_AMOUNT_MONTHLY_KOPEKS', 49_000),
-						yearlyAmountKopeks: optionalInt('WATA_PRICE_AMOUNT_YEARLY_KOPEKS', 490_000),
+						monthlyAmountKopeks: optionalInt('WATA_PRICE_AMOUNT_MONTHLY_KOPEKS', 29_900),
+						yearlyAmountKopeks: optionalInt('WATA_PRICE_AMOUNT_YEARLY_KOPEKS', 299_000),
 						visionaryAmountKopeks: optionalInt('WATA_PRICE_AMOUNT_VISIONARY_KOPEKS', 2_990_000),
 						giftVisionaryAmountKopeks: optionalInt('WATA_PRICE_AMOUNT_GIFT_VISIONARY_KOPEKS', 2_990_000),
-						gift1MonthAmountKopeks: optionalInt('WATA_PRICE_AMOUNT_GIFT_1_MONTH_KOPEKS', 49_000),
-						gift1YearAmountKopeks: optionalInt('WATA_PRICE_AMOUNT_GIFT_1_YEAR_KOPEKS', 490_000),
+						gift1MonthAmountKopeks: optionalInt('WATA_PRICE_AMOUNT_GIFT_1_MONTH_KOPEKS', 29_900),
+						gift1YearAmountKopeks: optionalInt('WATA_PRICE_AMOUNT_GIFT_1_YEAR_KOPEKS', 299_000),
 				  }
 				: undefined,
 		},
@@ -816,6 +927,16 @@ function loadConfig() {
 			purgeEnabled: optionalBool('CLOUDFLARE_PURGE_ENABLED'),
 			zoneId: optional('CLOUDFLARE_ZONE_ID'),
 			apiToken: optional('CLOUDFLARE_API_TOKEN'),
+		},
+
+		selectelCdn: {
+			purgeEnabled: optionalBool('SELECTEL_CDN_PURGE_ENABLED'),
+			domain: optional('SELECTEL_CDN_DOMAIN'),
+			apiToken: optional('SELECTEL_CDN_API_TOKEN'),
+			authUsername: optional('SELECTEL_CDN_AUTH_USERNAME'),
+			authAccountId: optional('SELECTEL_CDN_AUTH_ACCOUNT_ID'),
+			authPassword: optional('SELECTEL_CDN_AUTH_PASSWORD'),
+			authProjectName: optional('SELECTEL_CDN_AUTH_PROJECT_NAME'),
 		},
 
 		alerts: {
@@ -844,6 +965,54 @@ function loadConfig() {
 				`${trimTrailingSlash(optional('ASTRAL_MUSIC_APP_ENDPOINT') || 'https://music.astraof.com')}/api/music/auth/callback`,
 			appEndpoint: trimTrailingSlash(optional('ASTRAL_MUSIC_APP_ENDPOINT') || 'https://music.astraof.com'),
 			autoCreate: optionalBool('MUSIC_OAUTH2_AUTO_CREATE', true),
+		},
+
+		twitch: {
+			enabled: optionalBool('TWITCH_ENABLED'),
+			clientId: optional('TWITCH_CLIENT_ID'),
+			clientSecret: optional('TWITCH_CLIENT_SECRET'),
+			redirectUri:
+				optional('TWITCH_REDIRECT_URI') ||
+				`${trimTrailingSlash(apiPublicEndpoint)}/integrations/twitch/oauth/callback`,
+			eventSubCallbackUrl:
+				optional('TWITCH_EVENTSUB_CALLBACK_URL') ||
+				`${trimTrailingSlash(apiPublicEndpoint)}/integrations/twitch/eventsub`,
+			eventSubSecret: optional('TWITCH_EVENTSUB_SECRET'),
+			postConnectRedirectUrl:
+				optional('TWITCH_POST_CONNECT_REDIRECT_URL') ||
+				`${trimTrailingSlash(webAppEndpoint)}/settings/integrations?provider=twitch`,
+			autoSyncEventSub: optionalBool('TWITCH_EVENTSUB_AUTO_SYNC', true),
+		},
+
+		steam: {
+			enabled: optionalBool('STEAM_ENABLED'),
+			apiKey: optional('STEAM_API_KEY'),
+			realm: optional('STEAM_REALM') || trimTrailingSlash(webAppEndpoint),
+			returnUrl:
+				optional('STEAM_RETURN_URL') ||
+				`${trimTrailingSlash(apiPublicEndpoint)}/integrations/steam/openid/callback`,
+			postConnectRedirectUrl:
+				optional('STEAM_POST_CONNECT_REDIRECT_URL') ||
+				`${trimTrailingSlash(webAppEndpoint)}/settings/integrations?provider=steam`,
+		},
+
+		riot: {
+			enabled: optionalBool('RIOT_ENABLED'),
+			apiKey: optional('RIOT_API_KEY'),
+		},
+
+		telegram: {
+			enabled: optionalBool('TELEGRAM_ENABLED'),
+			botToken: optional('TELEGRAM_BOT_TOKEN'),
+			botUsername: optional('TELEGRAM_BOT_USERNAME'),
+			loginMaxAgeSeconds: Number(process.env.TELEGRAM_LOGIN_MAX_AGE_SECONDS ?? 86400),
+			postConnectRedirectUrl:
+				optional('TELEGRAM_POST_CONNECT_REDIRECT_URL') ||
+				`${trimTrailingSlash(webAppEndpoint)}/settings/integrations?provider=telegram`,
+			webhookSecret: optional('TELEGRAM_WEBHOOK_SECRET'),
+			webhookUrl:
+				optional('TELEGRAM_WEBHOOK_URL') ||
+				`${trimTrailingSlash(apiPublicEndpoint)}/integrations/telegram/webhook`,
 		},
 
 		musicSearch: {
@@ -881,6 +1050,8 @@ function loadConfig() {
 			searchEnhancementEnabled: optionalBool('GROK_SEARCH_ENHANCEMENT_ENABLED'),
 		},
 
+		ncmec: optional('NCMEC_API_KEY') ? {apiKey: optional('NCMEC_API_KEY')} : undefined,
+
 		adminBootstrap: {
 			userIds: optionalCsv('ADMIN_BOOTSTRAP_USER_IDS'),
 			emails: optionalCsv('ADMIN_BOOTSTRAP_EMAILS'),
@@ -889,6 +1060,8 @@ function loadConfig() {
 
 		auth: {
 			sudoModeSecret: required('SUDO_MODE_SECRET'),
+			adminOAuthApplicationId: optional('ASTRAL_ADMIN_APPLICATION_ID'),
+			ipAuthorizationEnabled: optionalBool('IP_AUTHORIZATION_ENABLED', true),
 			passkeys: {
 				rpName: optional('PASSKEY_RP_NAME') || 'Astral',
 				rpId: optional('PASSKEY_RP_ID') || extractHostname(webAppEndpoint),
@@ -925,6 +1098,7 @@ function loadConfig() {
 			grantStaffOnRegistration: optionalBool('DEV_GRANT_STAFF_ON_REGISTRATION'),
 			testModeEnabled,
 			testHarnessToken: optional('ASTRAL_TEST_TOKEN'),
+			seedBuckets: optionalBool('ASTRAL_DEV_SEED_BUCKETS'),
 		},
 
 		attachmentDecayEnabled: optionalBool('ATTACHMENT_DECAY_ENABLED', true),

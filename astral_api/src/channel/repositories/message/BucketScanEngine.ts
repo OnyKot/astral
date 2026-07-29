@@ -73,6 +73,12 @@ export interface BucketScanOptions {
 	direction: BucketScanDirection;
 	indexPageSize: number;
 	stopAfterBucket?: number;
+	/**
+	 * Buckets a negative index already proved empty. Without this an
+	 * under-filled page walks (and re-marks) every empty bucket back to the
+	 * start of the range one round trip at a time.
+	 */
+	skipBuckets?: ReadonlySet<number>;
 }
 
 export interface BucketScanResult<Row> {
@@ -108,7 +114,10 @@ export async function scanBucketsWithIndex<Row>(
 	const seenRowIds = new Set<bigint>();
 	const processedBuckets = new Set<number>();
 
-	const processBucket = async (bucket: number) => {
+	const applyFetchedBucket = async (
+		bucket: number,
+		fetchResult: BucketScanBucketFetchResult<Row>,
+	) => {
 		trace?.({
 			kind: BucketScanTraceKind.ProcessBucket,
 			minBucket: opts.minBucket,
@@ -119,18 +128,7 @@ export async function scanBucketsWithIndex<Row>(
 			remaining,
 		});
 
-		trace?.({
-			kind: BucketScanTraceKind.FetchBucket,
-			minBucket: opts.minBucket,
-			maxBucket: opts.maxBucket,
-			limit: opts.limit,
-			direction: opts.direction,
-			bucket,
-			remaining,
-		});
-
-		const {rows, unbounded} = await deps.fetchRowsForBucket(bucket, remaining);
-
+		const {rows, unbounded} = fetchResult;
 		trace?.({
 			kind: BucketScanTraceKind.FetchBucket,
 			minBucket: opts.minBucket,
@@ -181,8 +179,81 @@ export async function scanBucketsWithIndex<Row>(
 		}
 	};
 
+	// Fetch a small window of buckets in parallel, then apply in order so
+	// remaining/limit semantics stay identical to the sequential scan.
+	const BUCKET_FETCH_CONCURRENCY = 4;
+	const processBucketsParallel = async (bucketBatch: Array<number>) => {
+		if (bucketBatch.length === 0 || remaining <= 0) {
+			return;
+		}
+		const fetchLimit = remaining;
+		const fetched = await Promise.all(
+			bucketBatch.map(async (bucket) => ({
+				bucket,
+				result: await deps.fetchRowsForBucket(bucket, fetchLimit),
+			})),
+		);
+		for (const {bucket, result} of fetched) {
+			if (remaining <= 0) break;
+			await applyFetchedBucket(bucket, result);
+		}
+	};
+
 	const stopAfterBucket = typeof opts.stopAfterBucket === 'number' ? opts.stopAfterBucket : null;
 	const shouldStopAfterBucket = (bucket: number) => stopAfterBucket !== null && bucket === stopAfterBucket;
+	const skipBuckets = opts.skipBuckets;
+
+	const drainBuckets = async (
+		bucketCandidates: Iterable<number>,
+		/*
+		 * Only the numeric fallback may consult the negative index. A bucket that
+		 * came out of the positive index is by definition a bucket that holds
+		 * messages, so skipping it buys nothing — and it would drop a message
+		 * whenever the two indexes briefly disagree: `upsertMessage` clears the
+		 * empty marker and adds the positive entry in one batch, and a Cassandra
+		 * batch is not isolated, so a reader can observe the new positive entry
+		 * while still holding a stale empty marker.
+		 */
+		useSkipSet: boolean,
+	): Promise<number | null> => {
+		let batch: Array<number> = [];
+		let stopBucket: number | null = null;
+
+		const flush = async () => {
+			if (batch.length === 0) return;
+			await processBucketsParallel(batch);
+			batch = [];
+		};
+
+		for (const bucket of bucketCandidates) {
+			if (remaining <= 0) break;
+			if (bucket < opts.minBucket || bucket > opts.maxBucket) continue;
+			if (processedBuckets.has(bucket)) continue;
+			processedBuckets.add(bucket);
+			if (useSkipSet && skipBuckets?.has(bucket)) {
+				// A known-empty bucket yields nothing for any query shape, so the
+				// fetch is pure cost. stopAfterBucket must still fire: the caller's
+				// range restriction cannot widen just because its boundary is empty.
+				if (shouldStopAfterBucket(bucket)) {
+					stopBucket = bucket;
+					await flush();
+					return stopBucket;
+				}
+				continue;
+			}
+			batch.push(bucket);
+			if (shouldStopAfterBucket(bucket)) {
+				stopBucket = bucket;
+				await flush();
+				return stopBucket;
+			}
+			if (batch.length >= BUCKET_FETCH_CONCURRENCY) {
+				await flush();
+			}
+		}
+		await flush();
+		return stopBucket;
+	};
 
 	if (opts.direction === BucketScanDirection.Desc) {
 		let cursorMax: number | null = opts.maxBucket;
@@ -216,26 +287,18 @@ export async function scanBucketsWithIndex<Row>(
 
 			if (buckets.length === 0) break;
 
-			for (const bucket of buckets) {
-				if (remaining <= 0) break;
-				if (bucket < opts.minBucket || bucket > opts.maxBucket) continue;
-				if (processedBuckets.has(bucket)) continue;
-				processedBuckets.add(bucket);
-
-				await processBucket(bucket);
-
-				if (shouldStopAfterBucket(bucket)) {
-					trace?.({
-						kind: BucketScanTraceKind.StopAfterBucketReached,
-						minBucket: opts.minBucket,
-						maxBucket: opts.maxBucket,
-						limit: opts.limit,
-						direction: opts.direction,
-						bucket,
-						remaining,
-					});
-					return {rows: out};
-				}
+			const stopBucket = await drainBuckets(buckets, false);
+			if (stopBucket !== null) {
+				trace?.({
+					kind: BucketScanTraceKind.StopAfterBucketReached,
+					minBucket: opts.minBucket,
+					maxBucket: opts.maxBucket,
+					limit: opts.limit,
+					direction: opts.direction,
+					bucket: stopBucket,
+					remaining,
+				});
+				return {rows: out};
 			}
 
 			const last = buckets[buckets.length - 1];
@@ -244,24 +307,22 @@ export async function scanBucketsWithIndex<Row>(
 		}
 
 		if (remaining > 0) {
-			for (let bucket = opts.maxBucket; remaining > 0 && bucket >= opts.minBucket; bucket--) {
-				if (processedBuckets.has(bucket)) continue;
-				processedBuckets.add(bucket);
-
-				await processBucket(bucket);
-
-				if (shouldStopAfterBucket(bucket)) {
-					trace?.({
-						kind: BucketScanTraceKind.StopAfterBucketReached,
-						minBucket: opts.minBucket,
-						maxBucket: opts.maxBucket,
-						limit: opts.limit,
-						direction: opts.direction,
-						bucket,
-						remaining,
-					});
-					return {rows: out};
-				}
+			const fallbackBuckets: Array<number> = [];
+			for (let bucket = opts.maxBucket; bucket >= opts.minBucket; bucket--) {
+				fallbackBuckets.push(bucket);
+			}
+			const stopBucket = await drainBuckets(fallbackBuckets, true);
+			if (stopBucket !== null) {
+				trace?.({
+					kind: BucketScanTraceKind.StopAfterBucketReached,
+					minBucket: opts.minBucket,
+					maxBucket: opts.maxBucket,
+					limit: opts.limit,
+					direction: opts.direction,
+					bucket: stopBucket,
+					remaining,
+				});
+				return {rows: out};
 			}
 		}
 	} else {
@@ -296,26 +357,18 @@ export async function scanBucketsWithIndex<Row>(
 
 			if (buckets.length === 0) break;
 
-			for (const bucket of buckets) {
-				if (remaining <= 0) break;
-				if (bucket < opts.minBucket || bucket > opts.maxBucket) continue;
-				if (processedBuckets.has(bucket)) continue;
-				processedBuckets.add(bucket);
-
-				await processBucket(bucket);
-
-				if (shouldStopAfterBucket(bucket)) {
-					trace?.({
-						kind: BucketScanTraceKind.StopAfterBucketReached,
-						minBucket: opts.minBucket,
-						maxBucket: opts.maxBucket,
-						limit: opts.limit,
-						direction: opts.direction,
-						bucket,
-						remaining,
-					});
-					return {rows: out};
-				}
+			const stopBucket = await drainBuckets(buckets, false);
+			if (stopBucket !== null) {
+				trace?.({
+					kind: BucketScanTraceKind.StopAfterBucketReached,
+					minBucket: opts.minBucket,
+					maxBucket: opts.maxBucket,
+					limit: opts.limit,
+					direction: opts.direction,
+					bucket: stopBucket,
+					remaining,
+				});
+				return {rows: out};
 			}
 
 			const last = buckets[buckets.length - 1];
@@ -324,24 +377,22 @@ export async function scanBucketsWithIndex<Row>(
 		}
 
 		if (remaining > 0) {
-			for (let bucket = opts.minBucket; remaining > 0 && bucket <= opts.maxBucket; bucket++) {
-				if (processedBuckets.has(bucket)) continue;
-				processedBuckets.add(bucket);
-
-				await processBucket(bucket);
-
-				if (shouldStopAfterBucket(bucket)) {
-					trace?.({
-						kind: BucketScanTraceKind.StopAfterBucketReached,
-						minBucket: opts.minBucket,
-						maxBucket: opts.maxBucket,
-						limit: opts.limit,
-						direction: opts.direction,
-						bucket,
-						remaining,
-					});
-					return {rows: out};
-				}
+			const fallbackBuckets: Array<number> = [];
+			for (let bucket = opts.minBucket; bucket <= opts.maxBucket; bucket++) {
+				fallbackBuckets.push(bucket);
+			}
+			const stopBucket = await drainBuckets(fallbackBuckets, true);
+			if (stopBucket !== null) {
+				trace?.({
+					kind: BucketScanTraceKind.StopAfterBucketReached,
+					minBucket: opts.minBucket,
+					maxBucket: opts.maxBucket,
+					limit: opts.limit,
+					direction: opts.direction,
+					bucket: stopBucket,
+					remaining,
+				});
+				return {rows: out};
 			}
 		}
 	}

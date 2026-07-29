@@ -80,8 +80,18 @@ const AuthLayoutContent = observer(function AuthLayoutContent({children}: {child
 	const splashUrlRef = useRef<string | null>(null);
 	const scrollerRef = useRef<ScrollerHandle>(null);
 	const location = useLocation();
+	const isMinimalAuthRoute =
+		location.pathname === '/login' ||
+		location.pathname === '/register' ||
+		location.pathname === '/forgot' ||
+		location.pathname === '/reset';
+	const shouldLoadPattern = !isMinimalAuthRoute || Boolean(splashUrl);
 
-	const {patternReady, splashLoaded, splashDimensions} = useAuthBackground(splashUrl, foodPatternUrl);
+	const {patternReady, splashLoaded, splashDimensions} = useAuthBackground(
+		splashUrl,
+		foodPatternUrl,
+		shouldLoadPattern,
+	);
 
 	const handleSetSplashUrl = useCallback(
 		(url: string | null) => {
@@ -188,9 +198,9 @@ const AuthLayoutContent = observer(function AuthLayoutContent({children}: {child
 				}}
 			>
 				<NativeDragRegion className={styles.topDragRegion} />
-				<div className={styles.scrollerWrapper}>
+				<div className={clsx(styles.scrollerWrapper, isMinimalAuthRoute && styles.minimalAuthShell)}>
 					<Scroller ref={scrollerRef} className={styles.mobileContainer} fade={false} key="auth-layout-mobile-scroller">
-						<div className={styles.mobileContent}>
+						<div className={styles.mobileContent} key={location.pathname}>
 							<div className={styles.mobileLogoContainer}>
 								<div className={styles.mobileWordmarkText}>Astral</div>
 							</div>
@@ -210,7 +220,7 @@ const AuthLayoutContent = observer(function AuthLayoutContent({children}: {child
 			}}
 		>
 			<NativeDragRegion className={styles.topDragRegion} />
-			<div className={styles.scrollerWrapper}>
+			<div className={clsx(styles.scrollerWrapper, isMinimalAuthRoute && styles.minimalAuthShell)}>
 				<Scroller ref={scrollerRef} className={styles.container} overflow="hidden" key="auth-layout-scroller">
 					{isNative && !isMacOS && <NativeTitlebar platform={platform} />}
 					<div className={styles.characterBackground}>
@@ -234,7 +244,13 @@ const AuthLayoutContent = observer(function AuthLayoutContent({children}: {child
 						>
 							<div className={styles.leftSplitWrapper}>
 								<div className={styles.leftSplitAnimated}>
-									<AuthCardContainer showLogoSide={showLogoSide} isInert={false}>
+									<AuthCardContainer
+										showLogoSide={isMinimalAuthRoute ? false : showLogoSide}
+										isInert={false}
+										animateSize={isMinimalAuthRoute}
+										animateContent={isMinimalAuthRoute}
+										contentKey={location.pathname}
+									>
 										{children}
 									</AuthCardContainer>
 								</div>

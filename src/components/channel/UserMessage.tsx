@@ -30,6 +30,7 @@ import {MessageAttachments} from '~/components/channel/MessageAttachments';
 import {MessageAuthorInfo} from '~/components/channel/MessageAuthorInfo';
 import {MessageComponents} from '~/components/channel/MessageComponents';
 import {ForwardedStoryCard} from '~/components/channel/ForwardedStoryCard';
+import {MessageReactions} from '~/components/channel/MessageReactions';
 import {MessageAvatar} from '~/components/channel/MessageAvatar';
 import {MessageUsername} from '~/components/channel/MessageUsername';
 import {ReplyPreview} from '~/components/channel/ReplyPreview';
@@ -63,7 +64,7 @@ const MessageStateToClassName: Record<string, string> = {
 
 export const UserMessage = observer(() => {
 	const {t, i18n} = useLingui();
-	const {message, channel, handleDelete, isHovering, shouldGroup, previewContext, previewOverrides} =
+	const {message, channel, handleDelete, isHovering, shouldGroup, showAvatar, previewContext, previewOverrides, onPopoutToggle} =
 		useMessageViewContext();
 	const [animateEmoji, setAnimateEmoji] = React.useState(
 		UserSettingsStore.getAnimateEmoji() && FocusManager.isFocused(),
@@ -74,6 +75,9 @@ export const UserMessage = observer(() => {
 	const userAuthor = UserStore.getUser(message.author.id);
 	const author = message.webhookId != null ? message.author : (userAuthor ?? message.author);
 	const formattedDate = DateUtils.getRelativeDateString(message.timestamp, i18n);
+	const cornerTimestamp = DateUtils.isSameDay(message.timestamp)
+		? DateUtils.getFormattedTime(message.timestamp)
+		: DateUtils.getFormattedShortDate(message.timestamp);
 	const messageDisplayCompact = UserSettingsStore.getMessageDisplayCompact();
 	const showUserAvatarsInCompactMode = AccessibilityStore.showUserAvatarsInCompactMode;
 	const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -105,6 +109,22 @@ export const UserMessage = observer(() => {
 	const shouldAppearAuthorless = false;
 
 	const mobileLayout = MobileLayoutStore;
+	const renderMessageStatus = () => <MessageStatusIcon message={message} channelId={channel.id} />;
+	const renderMessageBubbleCornerMeta = () => (
+		<span className={styles.messageBubbleCornerMeta}>
+			<TimestampWithTooltip date={message.timestamp} className={styles.messageCornerTimestamp}>
+				{cornerTimestamp}
+			</TimestampWithTooltip>
+			{message.isCurrentUserAuthor() && renderMessageStatus()}
+		</span>
+	);
+	const renderStoryReactions = () => {
+		if (!hasStoryPreview || !UserSettingsStore.getRenderReactions() || message.reactions.length === 0) {
+			return null;
+		}
+
+		return <MessageReactions message={message} isPreview={Boolean(previewContext)} onPopoutToggle={onPopoutToggle} />;
+	};
 
 	React.useLayoutEffect(() => {
 		if (isEditing) {
@@ -231,11 +251,9 @@ export const UserMessage = observer(() => {
 						<TimestampWithTooltip date={message.timestamp} className={styles.messageTimestamp}>
 							{formattedDate}
 						</TimestampWithTooltip>
-						{channel.isPrivate() && (
-							<MessageStatusIcon message={message} channelId={channel.id} />
-						)}
+						{renderMessageStatus()}
 					</h3>
-					<div className={styles.messageText}>
+					<div className={styles.messageText} data-mobile-message-action-hitbox="bubble">
 						<div className={clsx(markupStyles.markup)}>
 							<SafeMarkdown
 								content={message.content}
@@ -347,16 +365,24 @@ export const UserMessage = observer(() => {
 					/>
 					{!shouldHideContent && (hasTextContent || hasStoryPreview) && (
 						hasStoryPreview ? (
-							<div
-								className={clsx(
-									styles.compactForwardedStory,
-									MessageStateToClassName[message.state],
-								)}
-							>
-								{renderMessageContent()}
-							</div>
+							<>
+								<div
+									className={clsx(
+										styles.compactForwardedStory,
+										MessageStateToClassName[message.state],
+									)}
+									data-mobile-message-action-hitbox="bubble"
+								>
+									{renderMessageContent()}
+									{renderMessageBubbleCornerMeta()}
+								</div>
+								{renderStoryReactions()}
+							</>
 						) : (
-							<span className={clsx(styles.compactInlineContent, MessageStateToClassName[message.state])}>
+							<span
+								className={clsx(styles.compactInlineContent, MessageStateToClassName[message.state])}
+								data-mobile-message-action-hitbox="bubble"
+							>
 								{isEditing && !previewContext && !mobileLayout.enabled ? (
 									<EditingMessageInput
 										channel={channel}
@@ -386,6 +412,7 @@ export const UserMessage = observer(() => {
 											))}
 									</span>
 								)}
+								{renderMessageBubbleCornerMeta()}
 							</span>
 						)
 					)}
@@ -394,6 +421,7 @@ export const UserMessage = observer(() => {
 				<div className={styles.container}>
 					<MessageAttachments />
 					<MessageComponents />
+					{((!hasTextContent && !hasStoryPreview && !isEditing) || shouldHideContent) && renderMessageBubbleCornerMeta()}
 				</div>
 
 				{mobileLayout.enabled && message.state === MessageStates.FAILED && (
@@ -412,7 +440,7 @@ export const UserMessage = observer(() => {
 				<ReplyPreview message={message} channelId={channel.id} animateEmoji={animateEmoji} />
 			)}
 
-			{!shouldGroup && (
+			{showAvatar && (
 				<>
 					<div className={styles.messageGutterLeft} />
 					<MessageAvatar
@@ -428,13 +456,13 @@ export const UserMessage = observer(() => {
 				</>
 			)}
 
-			{shouldGroup && (
+			{!showAvatar && (
 				<MessageAuthorInfo
 					message={message}
 					author={author}
 					guild={guild}
 					member={member ?? undefined}
-					shouldGroup={shouldGroup}
+					shouldGroup
 					shouldAppearAuthorless={shouldAppearAuthorless}
 					messageDisplayCompact={messageDisplayCompact}
 					showUserAvatarsInCompactMode={showUserAvatarsInCompactMode}
@@ -449,8 +477,11 @@ export const UserMessage = observer(() => {
 			{(hasTextContent || hasStoryPreview || isEditing) &&
 				((!shouldHideContent && (hasTextContent || hasStoryPreview)) || isEditing) && (
 				<div className={styles.messageContent}>
-					<div className={clsx(styles.messageText, MessageStateToClassName[message.state])}>
-						{!shouldGroup && (
+					<div
+						className={clsx(styles.messageText, MessageStateToClassName[message.state])}
+						data-mobile-message-action-hitbox="bubble"
+					>
+						{showAvatar && (
 							<h3 className={clsx(styles.messageAuthorInfo, styles.messageAuthorInfoInBubble)}>
 								<span className={styles.authorContainer}>
 									<MessageUsername
@@ -465,25 +496,24 @@ export const UserMessage = observer(() => {
 									/>
 									{author.bot && <UserTag className={styles.userTagOffset} system={author.system} />}
 								</span>
-								<span className={styles.messageBubbleMeta}>
-									<TimestampWithTooltip date={message.timestamp} className={styles.messageTimestamp}>
-										{formattedDate}
-									</TimestampWithTooltip>
-									{(message.flags & MessageFlags.SUPPRESS_NOTIFICATIONS) !== 0 && (
+								{(message.flags & MessageFlags.SUPPRESS_NOTIFICATIONS) !== 0 && (
+									<span className={styles.messageBubbleMeta}>
 										<Tooltip text={t`This was a @silent message.`}>
 											<BellSlashIcon weight="fill" className={styles.silentMessageIcon} />
 										</Tooltip>
-									)}
-								</span>
+									</span>
+								)}
 							</h3>
 						)}
 						{renderMessageContent()}
+						{renderMessageBubbleCornerMeta()}
 					</div>
+					{renderStoryReactions()}
 				</div>
 			)}
 
 			<div className={styles.container}>
-				{((!hasTextContent && !hasStoryPreview && !isEditing) || (shouldHideContent && !isEditing)) && !shouldGroup && (
+				{((!hasTextContent && !hasStoryPreview && !isEditing) || (shouldHideContent && !isEditing)) && showAvatar && (
 					<h3 className={styles.messageAuthorInfo}>
 						<span className={styles.authorContainer}>
 							<MessageUsername
@@ -498,9 +528,6 @@ export const UserMessage = observer(() => {
 							/>
 							{author.bot && <UserTag className={styles.userTagOffset} />}
 						</span>
-						<TimestampWithTooltip date={message.timestamp} className={styles.messageTimestamp}>
-							{formattedDate}
-						</TimestampWithTooltip>
 						{(message.flags & MessageFlags.SUPPRESS_NOTIFICATIONS) !== 0 && (
 							<Tooltip text={t`This was a @silent message.`}>
 								<BellSlashIcon weight="fill" className={styles.silentMessageIcon} />
@@ -511,6 +538,7 @@ export const UserMessage = observer(() => {
 
 				<MessageAttachments />
 				<MessageComponents />
+				{((!hasTextContent && !hasStoryPreview && !isEditing) || shouldHideContent) && renderMessageBubbleCornerMeta()}
 			</div>
 
 			{mobileLayout.enabled && message.state === MessageStates.FAILED && (

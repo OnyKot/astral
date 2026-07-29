@@ -29,6 +29,7 @@ export const ReactionInteractionDisabledModal = observer(() => {
 			description={t`You can't interact with reactions in search results as it might disrupt the space-time continuum.`}
 			primaryText={t`Understood`}
 			onPrimary={() => {}}
+			transitionPreset="legacy"
 		/>
 	);
 });

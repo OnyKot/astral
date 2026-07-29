@@ -68,6 +68,24 @@ const RegisterPageContent = observer(function RegisterPageContent() {
 	}, []);
 
 	useEffect(() => {
+		const navigatorWithConnection = navigator as Navigator & {connection?: {saveData?: boolean}};
+		if (navigatorWithConnection.connection?.saveData) return;
+
+		const preloadLogin = () => {
+			void import('~/components/pages/LoginPage');
+		};
+		const schedule = window.requestIdleCallback;
+
+		if (schedule) {
+			const id = schedule(preloadLogin, {timeout: 1800});
+			return () => window.cancelIdleCallback?.(id);
+		}
+
+		const id = window.setTimeout(preloadLogin, 500);
+		return () => window.clearTimeout(id);
+	}, []);
+
+	useEffect(() => {
 		if (!isVerificationModalOpen) {
 			return;
 		}
@@ -87,7 +105,7 @@ const RegisterPageContent = observer(function RegisterPageContent() {
 	return (
 		<>
 			<h1 className={sharedStyles.title}>
-				<Trans>Create an account</Trans>
+				<Trans>Create account</Trans>
 			</h1>
 
 			<div className={`${sharedStyles.container} ${styles.nativeRegisterContainer}`} data-auth-cosmic>

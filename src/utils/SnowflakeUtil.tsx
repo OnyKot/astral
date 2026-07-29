@@ -25,6 +25,7 @@ import {
 	fromTimestamp as fromTimestampImpl,
 	fromTimestampWithSequence as fromTimestampWithSequenceImpl,
 	isProbablyAValidSnowflake as isProbablyAValidSnowflakeImpl,
+	nextClientNonce as nextClientNonceImpl,
 	type SnowflakeSequence,
 } from './SnowflakeUtils';
 
@@ -55,6 +56,10 @@ const SnowflakeUtil = {
 
 	fromTimestampWithSequence(timestamp: number, sequence: SnowflakeSequence): string {
 		return fromTimestampWithSequenceImpl(timestamp, sequence);
+	},
+
+	nextClientNonce(timestamp?: number): string {
+		return nextClientNonceImpl(timestamp);
 	},
 
 	isProbablyAValidSnowflake(value: string | null | undefined): boolean {

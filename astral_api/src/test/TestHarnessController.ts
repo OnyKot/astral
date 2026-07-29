@@ -147,16 +147,21 @@ const FETCH_CHANNEL_EMPTY_BUCKETS = ChannelEmptyBuckets.select({
 });
 
 const ensureHarnessAccess = (ctx: Context<HonoEnv>) => {
-	if (!Config.dev.testModeEnabled) {
+	if (!Config.dev.testModeEnabled || Config.nodeEnv === 'production') {
 		throw new TestHarnessDisabledError();
 	}
 
-	if (Config.dev.testHarnessToken) {
-		const headerValue = ctx.req.header(TEST_AUTH_HEADER) || ctx.req.header('authorization') || '';
-		const bearer = headerValue.startsWith('Bearer ') ? headerValue.slice('Bearer '.length) : headerValue;
-		if (bearer !== Config.dev.testHarnessToken) {
-			throw new TestHarnessForbiddenError();
-		}
+	// Fail-closed: a token MUST be configured. Without one, the harness
+	// would be open to any unauthenticated caller — which grants admin
+	// ACLs, sets user flags, deletes accounts and seeds messages.
+	if (!Config.dev.testHarnessToken) {
+		throw new TestHarnessForbiddenError();
+	}
+
+	const headerValue = ctx.req.header(TEST_AUTH_HEADER) || ctx.req.header('authorization') || '';
+	const bearer = headerValue.startsWith('Bearer ') ? headerValue.slice('Bearer '.length) : headerValue;
+	if (bearer !== Config.dev.testHarnessToken) {
+		throw new TestHarnessForbiddenError();
 	}
 };
 

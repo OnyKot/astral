@@ -44,16 +44,13 @@
 	display: flex;
 	align-items: center;
 	justify-content: flex-end;
-	color: var(--white, #fff);
+	color: color-mix(in srgb, var(--text-primary) 88%, white 12%);
 	font-size: 18px;
 	pointer-events: none;
 	z-index: 0;
 	padding-inline: 0.9rem;
 	overflow: hidden;
-	background: var(
-		--swipe-action-background,
-		linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 30%, var(--background-secondary) 70%), var(--background-secondary))
-	);
+	background: var(--swipe-action-background, color-mix(in srgb, var(--background-secondary) 92%, var(--background-primary) 8%));
 	box-shadow: none;
 	contain: paint;
 }
@@ -70,7 +67,7 @@
 }
 
 .actionLayerArmed {
-	filter: saturate(1.04) brightness(1.05);
+	filter: brightness(1.04);
 }
 
 .actionBody {
@@ -97,7 +94,7 @@
 	height: 1.52rem;
 	flex: 0 0 1.52rem;
 	border-radius: 999px;
-	background: transparent;
+	background: color-mix(in srgb, currentColor 10%, transparent);
 	box-shadow: none;
 	transition:
 		transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),

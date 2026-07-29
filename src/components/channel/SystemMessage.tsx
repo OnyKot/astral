@@ -22,7 +22,6 @@ import type {Icon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
-import {MessageReactions} from '~/components/channel/MessageReactions';
 import {TimestampWithTooltip} from '~/components/channel/TimestampWithTooltip';
 import type {MessageRecord} from '~/records/MessageRecord';
 import UserSettingsStore from '~/stores/UserSettingsStore';
@@ -66,11 +65,6 @@ export const SystemMessage = observer(
 							</TimestampWithTooltip>
 						</div>
 					</div>
-					{UserSettingsStore.getRenderReactions() && message.reactions.length > 0 && (
-						<div className={styles.container}>
-							<MessageReactions message={message} />
-						</div>
-					)}
 				</div>
 			);
 		}
@@ -88,11 +82,6 @@ export const SystemMessage = observer(
 						</TimestampWithTooltip>
 					</div>
 				</div>
-				{UserSettingsStore.getRenderReactions() && message.reactions.length > 0 && (
-					<div className={styles.container}>
-						<MessageReactions message={message} />
-					</div>
-				)}
 			</>
 		);
 	},

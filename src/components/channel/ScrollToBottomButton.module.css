@@ -78,6 +78,22 @@
 		right: 16px;
 		bottom: calc(16px + var(--safe-area-bottom, 0px));
 	}
+
+	.mobileButton {
+		animation: none;
+		transition:
+			transform 90ms var(--motion-ease-snap),
+			background-color 120ms var(--motion-ease-snap),
+			border-color 120ms var(--motion-ease-snap);
+	}
+
+	.mobileButton:hover {
+		transform: none;
+	}
+
+	.mobileButton .unreadBadge {
+		animation: none;
+	}
 }
 
 @keyframes unreadBadgePulse {

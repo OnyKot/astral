@@ -28,6 +28,11 @@ import {AdminRateLimitConfigs} from '~/rate_limit_configs/AdminRateLimitConfig';
 import {Int64Type} from '~/Schema';
 import {Validator} from '~/Validator';
 import {
+	ADMIN_RESPONSE_CACHE_TTL_SECONDS,
+	adminResponseCacheKey,
+	cachedAdminResponse,
+} from '../AdminResponseCache';
+import {
 	ClearGuildFieldsRequest,
 	DeleteGuildRequest,
 	ForceAddUserToGuildRequest,
@@ -253,9 +258,17 @@ export const GuildAdminController = (app: HonoApp) => {
 		async (ctx) => {
 			const {status} = ctx.req.valid('query');
 			const guildService = ctx.get('guildService');
-			return ctx.json({
-				applications: await guildService.discoveryApplications.listApplications(status),
+			const cacheService = ctx.get('cacheService');
+			const adminId = ctx.get('user').id.toString();
+			const key = adminResponseCacheKey({
+				endpoint: 'guilds-discovery-applications',
+				adminUserId: adminId,
+				suffix: status ?? 'all',
 			});
+			const body = await cachedAdminResponse(cacheService, key, ADMIN_RESPONSE_CACHE_TTL_SECONDS, async () => ({
+				applications: await guildService.discoveryApplications.listApplications(status),
+			}));
+			return ctx.json(body);
 		},
 	);
 

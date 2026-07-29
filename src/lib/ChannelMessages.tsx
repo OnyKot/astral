@@ -22,6 +22,7 @@ import {
 	MAX_LOADED_MESSAGES,
 	MAX_MESSAGE_CACHE_SIZE,
 	MAX_MESSAGES_PER_CHANNEL,
+	MessageStates,
 	TRUNCATED_MESSAGE_VIEW_SIZE,
 } from '~/Constants';
 import {type Message, MessageRecord} from '~/records/MessageRecord';
@@ -67,19 +68,6 @@ function hydrateMessage(channelMessages: ChannelMessages, raw: Message): Message
 		return new MessageRecord(raw);
 	}
 	return current;
-}
-
-function dedupeRecords(records: Array<MessageRecord>): Array<MessageRecord> {
-	const seen = new Set<MessageId>();
-	const result: Array<MessageRecord> = [];
-
-	for (const record of records) {
-		if (seen.has(record.id)) continue;
-		seen.add(record.id);
-		result.push(record);
-	}
-
-	return result;
 }
 
 class MessageBufferSegment {
@@ -406,6 +394,15 @@ export class ChannelMessages {
 		return undefined;
 	}
 
+	findNewestPresent(predicate: (m: MessageRecord) => boolean, limit = this.messageList.length): MessageRecord | undefined {
+		const start = Math.max(0, this.messageList.length - Math.max(0, limit));
+		for (let i = this.messageList.length - 1; i >= start; i--) {
+			if (predicate(this.messageList[i])) return this.messageList[i];
+		}
+
+		return undefined;
+	}
+
 	map<T>(mapper: (m: MessageRecord, idx: number, arr: Array<MessageRecord>) => T, thisArg?: unknown): Array<T> {
 		return this.messageList.map(mapper, thisArg);
 	}
@@ -542,9 +539,9 @@ export class ChannelMessages {
 
 	reset(records: Array<MessageRecord>): ChannelMessages {
 		return this.cloneAnd((draft) => {
-			draft.messageList = dedupeRecords(records);
+			draft.messageList = records;
 			draft.messageIndex = {};
-			for (const m of draft.messageList) {
+			for (const m of records) {
 				draft.messageIndex[m.id] = m;
 			}
 			draft.beforeBuffer.clear();
@@ -680,7 +677,26 @@ export class ChannelMessages {
 			return this.replace(message.nonce, updated);
 		}
 
+		const isLocalOptimistic =
+			message.state === MessageStates.SENDING ||
+			message.state === MessageStates.FAILED ||
+			(message.nonce != null && message.id === message.nonce);
+
 		if (this.hasMoreAfter) {
+			if (isLocalOptimistic) {
+				// Sending while scrolled into history must surface the optimistic message.
+				// Prefer reconstituting present from the after-buffer; otherwise clear the
+				// gap flag so the local send can attach (jump-to-present fetch reconciles).
+				const presentLimit = IS_MOBILE_CLIENT ? MAX_MESSAGES_PER_CHANNEL : TRUNCATED_MESSAGE_VIEW_SIZE;
+				const base =
+					this.afterBuffer.size > 0 ? this.jumpToPresent(presentLimit) : this.cloneAnd({hasMoreAfter: false});
+				const merged = base.merge([hydrateMessage(base, message)]);
+				if (truncateFromTop) {
+					return merged.truncateTop(presentLimit, false);
+				}
+				return merged;
+			}
+
 			if (this.afterBuffer.isBoundary) {
 				this.afterBuffer.isBoundary = false;
 			}
@@ -773,9 +789,8 @@ export class ChannelMessages {
 
 	private mergeInto(incoming: Array<MessageRecord>, prepend = false, clearSideBuffer = false): void {
 		const newItems: Array<MessageRecord> = [];
-		const incomingRecords = dedupeRecords(incoming);
 
-		for (const msg of incomingRecords) {
+		for (const msg of incoming) {
 			const existing = this.messageIndex[msg.id];
 			this.messageIndex[msg.id] = msg;
 

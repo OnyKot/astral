@@ -111,7 +111,13 @@ vi.mock('~/lib/HttpClient', () => {
 			webapp: 'https://localhost',
 		},
 		captcha: {provider: 'none', hcaptcha_site_key: null, turnstile_site_key: null},
-		features: {sms_mfa_enabled: false, voice_enabled: false, stripe_enabled: false, self_hosted: false},
+		features: {
+			sms_mfa_enabled: false,
+			voice_enabled: false,
+			stripe_enabled: false,
+			billing_enabled: false,
+			self_hosted: false,
+		},
 	};
 
 	const mockResponse = Promise.resolve({ok: true, status: 200, headers: {}, body: defaultInstance});

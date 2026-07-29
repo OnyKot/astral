@@ -113,18 +113,25 @@ export const BlockedMessageGroups = React.memo<BlockedMessageGroupsProps>((props
 		const nodes: Array<React.ReactNode> = [];
 		let currentGroupMessages: Array<MessageRecord> = [];
 		let groupId: string | undefined;
+		let lastFlushedMessage: MessageRecord | undefined;
 
-		const flushGroup = () => {
+		const flushGroup = (nextMessage?: MessageRecord) => {
 			if (currentGroupMessages.length > 0) {
+				const groupKey = currentGroupMessages[0]!.id;
+				const previousMessage = lastFlushedMessage;
+				const groupLastMessage = currentGroupMessages[currentGroupMessages.length - 1]!;
 				nodes.push(
 					<MessageGroup
-						key={currentGroupMessages[0].id}
+						key={groupKey}
 						messages={currentGroupMessages}
 						channel={channel}
+						previousMessage={previousMessage}
+						nextMessage={nextMessage}
 						messageDisplayCompact={compact}
 						idPrefix="blocked-messages"
 					/>,
 				);
+				lastFlushedMessage = groupLastMessage;
 				currentGroupMessages = [];
 				groupId = undefined;
 			}
@@ -133,6 +140,7 @@ export const BlockedMessageGroups = React.memo<BlockedMessageGroupsProps>((props
 		messageGroups.forEach((item, itemIndex) => {
 			if (item.type === ChannelStreamType.DIVIDER) {
 				flushGroup();
+				lastFlushedMessage = undefined;
 				nodes.push(
 					<Divider
 						key={item.unreadId || item.contentKey || `divider-${itemIndex}`}
@@ -147,7 +155,7 @@ export const BlockedMessageGroups = React.memo<BlockedMessageGroupsProps>((props
 				const message = item.content as MessageRecord;
 
 				if (groupId !== item.groupId) {
-					flushGroup();
+					flushGroup(message);
 					groupId = item.groupId;
 				}
 

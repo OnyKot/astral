@@ -20,6 +20,7 @@
 import type {WebhookEvent} from 'livekit-server-sdk';
 import {WebhookReceiver} from 'livekit-server-sdk';
 import {Logger} from '~/Logger';
+import type {ChannelID, GuildID} from '~/BrandedTypes';
 import type {IUserRepository} from '~/user/IUserRepository';
 import type {VoiceTopology} from '~/voice/VoiceTopology';
 import type {IGatewayService} from './IGatewayService';
@@ -29,10 +30,12 @@ import {isDMRoom, parseParticipantIdentity, parseParticipantMetadataWithRaw, par
 
 const FREE_MAX_WIDTH = 1280;
 const FREE_MAX_HEIGHT = 720;
+const PARTICIPANT_LEFT_DISCONNECT_DELAY_MS = 7000;
 
 export class LiveKitWebhookService {
 	private receivers: Map<string, WebhookReceiver>;
 	private serverMap: Map<string, {regionId: string; serverId: string}>;
+	private pendingParticipantLeftTimers = new Map<string, NodeJS.Timeout>();
 
 	constructor(
 		private voiceRoomStore: IVoiceRoomStore,
@@ -147,6 +150,7 @@ export class LiveKitWebhookService {
 		}
 
 		const {context} = parsed;
+		this.cancelPendingParticipantLeft(context.type, context.userId.toString(), context.connectionId);
 
 		try {
 			if (context.type === 'dm') {
@@ -183,7 +187,7 @@ export class LiveKitWebhookService {
 		}
 	}
 
-	async handleParticipantLeft(event: WebhookEvent): Promise<void> {
+	async handleParticipantLeft(event: WebhookEvent, apiKey: string): Promise<void> {
 		if (event.event !== 'participant_left') {
 			return;
 		}
@@ -201,6 +205,57 @@ export class LiveKitWebhookService {
 		}
 
 		const {context} = parsed;
+		const key = this.getParticipantTimerKey(context.type, context.userId.toString(), context.connectionId);
+		const existingTimer = this.pendingParticipantLeftTimers.get(key);
+		if (existingTimer) {
+			clearTimeout(existingTimer);
+		}
+
+		Logger.info(
+			{
+				type: context.type,
+				userId: context.userId.toString(),
+				channelId: context.channelId.toString(),
+				connectionId: context.connectionId,
+			},
+			'LiveKit participant_left - scheduling delayed voice disconnect',
+		);
+
+		const timer = setTimeout(() => {
+			this.pendingParticipantLeftTimers.delete(key);
+			void this.disconnectParticipantAfterLeftDelay(event, apiKey).catch((error) => {
+				Logger.error({error, type: context.type}, 'Error processing delayed participant_left');
+			});
+		}, PARTICIPANT_LEFT_DISCONNECT_DELAY_MS);
+		this.pendingParticipantLeftTimers.set(key, timer);
+	}
+
+	private async disconnectParticipantAfterLeftDelay(event: WebhookEvent, apiKey: string): Promise<void> {
+		const {participant} = event;
+		if (!participant?.metadata) {
+			return;
+		}
+
+		const parsed = parseParticipantMetadataWithRaw(participant.metadata);
+		if (!parsed) {
+			return;
+		}
+
+		const {context} = parsed;
+
+		if (await this.isParticipantStillPresent(parsed, participant.identity, apiKey)) {
+			Logger.info(
+				{
+					type: context.type,
+					userId: context.userId.toString(),
+					channelId: context.channelId.toString(),
+					connectionId: context.connectionId,
+					participantIdentity: participant.identity,
+				},
+				'LiveKit participant_left ignored because participant is present again',
+			);
+			return;
+		}
 
 		try {
 			if (context.type === 'dm') {
@@ -239,6 +294,86 @@ export class LiveKitWebhookService {
 		} catch (error) {
 			Logger.error({error, type: context.type}, 'Error processing participant_left');
 		}
+	}
+
+	private getParticipantTimerKey(type: 'dm' | 'guild', userId: string, connectionId: string): string {
+		return `${type}:${userId}:${connectionId}`;
+	}
+
+	private cancelPendingParticipantLeft(type: 'dm' | 'guild', userId: string, connectionId: string): void {
+		const key = this.getParticipantTimerKey(type, userId, connectionId);
+		const timer = this.pendingParticipantLeftTimers.get(key);
+		if (!timer) return;
+		clearTimeout(timer);
+		this.pendingParticipantLeftTimers.delete(key);
+	}
+
+	private async isParticipantStillPresent(
+		parsed: NonNullable<ReturnType<typeof parseParticipantMetadataWithRaw>>,
+		participantIdentity: string | undefined,
+		apiKey: string,
+	): Promise<boolean> {
+		const {context, raw} = parsed;
+		const serverInfo = await this.resolveServerForParticipantLeft(
+			context.type === 'guild' ? context.guildId : undefined,
+			context.channelId,
+			raw.region_id,
+			raw.server_id,
+			apiKey,
+		);
+		if (!serverInfo) {
+			Logger.warn(
+				{
+					type: context.type,
+					channelId: context.channelId.toString(),
+					connectionId: context.connectionId,
+				},
+				'LiveKit participant_left skipped because server info was unavailable',
+			);
+			return true;
+		}
+
+		const expectedIdentity = participantIdentity || `user_${context.userId}_${context.connectionId}`;
+		try {
+			const participants = await this.liveKitService.listParticipants({
+				guildId: context.type === 'guild' ? context.guildId : undefined,
+				channelId: context.channelId,
+				regionId: serverInfo.regionId,
+				serverId: serverInfo.serverId,
+				throwOnError: true,
+			});
+			return participants.some((participant) => participant.identity === expectedIdentity);
+		} catch (error) {
+			Logger.warn(
+				{error, type: context.type, channelId: context.channelId.toString(), connectionId: context.connectionId},
+				'LiveKit participant_left skipped because participant presence could not be verified',
+			);
+			return true;
+		}
+	}
+
+	private async resolveServerForParticipantLeft(
+		guildId: GuildID | undefined,
+		channelId: ChannelID,
+		regionId: string | undefined,
+		serverId: string | undefined,
+		apiKey: string,
+	): Promise<{regionId: string; serverId: string} | null> {
+		if (regionId && serverId) {
+			return {regionId, serverId};
+		}
+
+		const serverInfo = this.serverMap.get(apiKey);
+		if (serverInfo) {
+			return serverInfo;
+		}
+
+		const pinnedServer = await this.voiceRoomStore.getPinnedRoomServer(guildId, channelId);
+		if (pinnedServer) {
+			return {regionId: pinnedServer.regionId, serverId: pinnedServer.serverId};
+		}
+
+		return null;
 	}
 
 	async handleTrackPublished(event: WebhookEvent, apiKey: string): Promise<void> {
@@ -390,8 +525,10 @@ export class LiveKitWebhookService {
 				await this.handleParticipantJoined(event);
 				break;
 			case 'participant_left':
+				await this.handleParticipantLeft(event, apiKey);
+				break;
 			case 'participant_connection_aborted':
-				await this.handleParticipantLeft(event);
+				Logger.info({event: event.event}, 'Ignoring LiveKit aborted participant connection for voice state');
 				break;
 			case 'room_finished':
 				await this.handleRoomFinished(event);

@@ -106,6 +106,7 @@ import * as MessageSubmitUtils from '~/utils/MessageSubmitUtils';
 import * as PlaceholderUtils from '~/utils/PlaceholderUtils';
 import {sanitizeTextareaDisplayValue} from '~/utils/TextareaEmojiDisplayUtils';
 import {deleteEmojiAtCaret} from '~/utils/TextareaEmojiEditingUtils';
+import {scheduleSelectionRange} from '~/utils/textareaCaret';
 
 import wrapperStyles from './textarea/InputWrapper.module.css';
 import styles from './textarea/TextareaInput.module.css';
@@ -176,7 +177,6 @@ const ChannelTextareaContent = observer(
 				const delta = pendingLayoutDeltaRef.current;
 				pendingLayoutDeltaRef.current = 0;
 				if (!delta) return;
-				if (delta <= 0) return;
 
 				ComponentDispatch.dispatch('LAYOUT_RESIZED', {
 					channelId: channel.id,
@@ -227,10 +227,28 @@ const ChannelTextareaContent = observer(
 		const editingMessage = editingMobileMessageId ? MessageStore.getMessage(channel.id, editingMobileMessageId) : null;
 		const currentUser = UserStore.getCurrentUser();
 		const maxMessageLength = currentUser?.maxMessageLength ?? MAX_MESSAGE_LENGTH_NON_PREMIUM;
+		/*
+		 * MessageStore.version is a single global counter bumped by every message
+		 * event in every channel, so reading it inside this observer re-rendered the
+		 * whole composer (and its button row) on traffic the composer cannot show -
+		 * felt as input lag while typing in a busy account. Track this channel's own
+		 * ChannelMessages version instead: it is bumped by every mutation of this
+		 * channel, which is exactly what referencedMessage, editingMessage and
+		 * hasPendingOutgoingMessages below are derived from.
+		 */
+		const [channelMessagesVersion, setChannelMessagesVersion] = React.useState(
+			() => MessageStore.peekMessages(channel.id)?.version ?? -1,
+		);
+		React.useEffect(() => {
+			return MessageStore.subscribe(() => {
+				const next = MessageStore.peekMessages(channel.id)?.version ?? -1;
+				setChannelMessagesVersion((previous) => (previous === next ? previous : next));
+			});
+		}, [channel.id]);
 		const hasPendingOutgoingMessages = React.useMemo(() => {
 			const messages = MessageStore.getMessages(channel.id);
 			return messages.findNewest((message) => message.isCurrentUserAuthor() && message.isSending) != null;
-		}, [channel.id, MessageStore.version]);
+		}, [channel.id, channelMessagesVersion]);
 
 		const uploadAttachments = useTextareaAttachments(channel.id);
 		const {isSlowmodeActive} = useSlowmode(channel);
@@ -1349,18 +1367,16 @@ const ChannelTextareaContent = observer(
 														cursorPosition,
 														segmentManagerRef.current,
 													);
-													setValue(sanitizedResult.value);
 													previousValueRef.current = sanitizedResult.value;
+													React.startTransition(() => {
+														setValue(sanitizedResult.value);
+													});
 
 													if (sanitizedResult.changed) {
-														window.requestAnimationFrame(() => {
-															const node = textareaRef.current;
-															if (!node) {
-																return;
-															}
-
-															node.setSelectionRange(sanitizedResult.cursorPosition, sanitizedResult.cursorPosition);
-														});
+														scheduleSelectionRange(
+															() => textareaRef.current,
+															sanitizedResult.cursorPosition,
+														);
 													}
 												}}
 												onHeightChange={handleTextareaHeightChange}

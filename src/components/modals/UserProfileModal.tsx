@@ -17,8 +17,6 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {msg} from '@lingui/core/macro';
-import {i18n} from '@lingui/core';
 import {Plural, Trans, useLingui} from '@lingui/react/macro';
 
 import {
@@ -307,6 +305,12 @@ type ProfileMediaPreviewItem = {
 	icon: 'image' | 'video' | 'voice';
 };
 
+type ProfileMediaPreviewLabels = {
+	image: string;
+	video: string;
+	voice: string;
+};
+
 function formatMediaSize(bytes: number): string {
 	if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
 	const units = ['B', 'KB', 'MB', 'GB'];
@@ -322,7 +326,10 @@ function formatMediaDuration(seconds: number): string {
 	return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
 }
 
-function getMediaPreviewFromAttachment(attachment: MessageAttachment): ProfileMediaPreviewItem | null {
+function getMediaPreviewFromAttachment(
+	attachment: MessageAttachment,
+	labels: ProfileMediaPreviewLabels,
+): ProfileMediaPreviewItem | null {
 	const contentType = attachment.content_type ?? '';
 	const isVoiceAttachment =
 		(attachment.flags & MessageAttachmentFlags.IS_VOICE_MESSAGE) === MessageAttachmentFlags.IS_VOICE_MESSAGE ||
@@ -335,19 +342,10 @@ function getMediaPreviewFromAttachment(attachment: MessageAttachment): ProfileMe
 	}
 
 	const durationSeconds = attachment.duration_secs ?? attachment.duration;
-	const voiceLabel = i18n._(msg`Voice`);
-	const videoLabel = i18n._(msg`Video`);
-	const imageLabel = i18n._(msg`Image`);
+	const mediaTypeLabel = isVoiceAttachment ? labels.voice : isVideoAttachment ? labels.video : labels.image;
+	const mediaDetail = durationSeconds != null ? formatMediaDuration(durationSeconds) : formatMediaSize(attachment.size);
 
-	const info = isVoiceAttachment
-		? durationSeconds != null
-			? `${voiceLabel} - ${formatMediaDuration(durationSeconds)}`
-			: `${voiceLabel} - ${formatMediaSize(attachment.size)}`
-		: isVideoAttachment
-			? durationSeconds != null
-				? `${videoLabel} - ${formatMediaDuration(durationSeconds)}`
-				: `${videoLabel} - ${formatMediaSize(attachment.size)}`
-			: `${imageLabel} - ${formatMediaSize(attachment.size)}`;
+	const info = `${mediaTypeLabel} - ${mediaDetail}`;
 
 	return {
 		key: attachment.id,
@@ -358,6 +356,7 @@ function getMediaPreviewFromAttachment(attachment: MessageAttachment): ProfileMe
 }
 
 const ProfileContent: React.FC<ProfileContentProps> = observer(({profile, user, userNote, autoFocusNote, noteRef}) => {
+	const {t} = useLingui();
 	const currentUserId = AuthenticationStore.currentUserId;
 	const normalizedCurrentUserId = currentUserId ?? '';
 	const guildMember = GuildMemberStore.getMember(profile?.guildId ?? '', user.id);
@@ -377,6 +376,14 @@ const ProfileContent: React.FC<ProfileContentProps> = observer(({profile, user, 
 	const customStatus = PresenceStore.getCustomStatus(user.id);
 	const showGiftShowcase = isGiftShowcaseCustomStatus(customStatus);
 	const isCurrentUserProfile = user.id === currentUserId;
+	const mediaPreviewLabels = React.useMemo(
+		() => ({
+			image: t`Image`,
+			video: t`Video`,
+			voice: t`Voice`,
+		}),
+		[t],
+	);
 
 	const handleOpenGiftInventory = () => {
 		ModalActionCreators.push(modal(() => <UserSettingsModal initialTab="gift_inventory" />));
@@ -389,7 +396,7 @@ const ProfileContent: React.FC<ProfileContentProps> = observer(({profile, user, 
 		}
 
 		for (const attachment of message.attachments) {
-			const preview = getMediaPreviewFromAttachment(attachment);
+			const preview = getMediaPreviewFromAttachment(attachment, mediaPreviewLabels);
 			if (!preview) continue;
 
 			mediaPreviewItems.push({
@@ -444,7 +451,7 @@ const ProfileContent: React.FC<ProfileContentProps> = observer(({profile, user, 
 				<UserNoteEditor userId={user.id} initialNote={userNote} autoFocus={autoFocusNote} noteRef={noteRef} />
 				<div className={userProfileModalStyles.mediaPreviewSection}>
 					<h3 className={userProfileModalStyles.mediaPreviewTitle}>
-						<Trans>Media Messages Preview</Trans>
+						<Trans>Media preview</Trans>
 					</h3>
 					<div className={userProfileModalStyles.mediaPreviewList}>
 						{mediaPreviewItems.map((item) => (

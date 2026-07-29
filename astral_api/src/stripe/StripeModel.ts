@@ -53,6 +53,8 @@ export const GiftCodeResponse = z.object({
 	duration_months: z.number().int(),
 	redeemed: z.boolean(),
 	created_by: z.lazy(() => UserPartialResponse).nullish(),
+	emoji: z.string().nullish(),
+	background: z.string().nullish(),
 });
 
 export type GiftCodeResponse = z.infer<typeof GiftCodeResponse>;
@@ -125,6 +127,8 @@ export const mapGiftCodeToResponse = async ({
 		duration_months: giftCode.durationMonths,
 		redeemed: !!giftCode.redeemedAt,
 		created_by: createdBy,
+		emoji: giftCode.emoji ?? null,
+		background: giftCode.background ?? null,
 	};
 };
 

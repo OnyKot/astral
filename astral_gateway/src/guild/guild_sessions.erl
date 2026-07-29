@@ -127,7 +127,11 @@ handle_session_down(Ref, State) ->
             Session ->
                 UserId = maps:get(user_id, Session),
                 SessionId = maps:get(session_id, Session),
-                StateAfterPresence = unsubscribe_from_user_presence(UserId, State),
+                % Clean up voice states for this user when their session dies.
+                % Without this, closing a tab leaves a ghost participant because
+                % the client never sends VOICE_STATE_UPDATE with channel_id=null.
+                StateAfterVoice = guild_voice_disconnect:cleanup_user_voice_states(UserId, State),
+                StateAfterPresence = unsubscribe_from_user_presence(UserId, StateAfterVoice),
                 StateAfterMemberList = guild_member_list:unsubscribe_session(
                     SessionId, StateAfterPresence
                 ),

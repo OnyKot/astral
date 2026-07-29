@@ -1,7 +1,7 @@
 import '~/instrument';
 
 import {basename} from 'node:path';
-import {PutObjectCommand, S3Client} from '@aws-sdk/client-s3';
+import {GetObjectCommand, PutObjectCommand, S3Client, S3ServiceException} from '@aws-sdk/client-s3';
 
 type Channel = 'stable' | 'canary';
 type Platform = 'win32' | 'darwin' | 'linux';
@@ -16,6 +16,59 @@ interface CliOptions {
 	version: string;
 	publishedAt: string;
 	format: 'setup' | 'dmg' | 'zip' | 'appimage' | 'deb' | 'rpm' | 'tar_gz';
+}
+
+type DesktopFormat = CliOptions['format'];
+
+type DesktopFiles = Record<DesktopFormat, string>;
+
+interface DesktopManifest {
+	channel: Channel;
+	platform: Platform;
+	arch: Arch;
+	version: string;
+	pub_date: string;
+	files?: Partial<DesktopFiles>;
+}
+
+const emptyFiles = (): DesktopFiles => ({
+	setup: '',
+	dmg: '',
+	zip: '',
+	appimage: '',
+	deb: '',
+	rpm: '',
+	tar_gz: '',
+});
+
+async function streamToString(body: unknown): Promise<string> {
+	if (body && typeof body === 'object' && 'transformToString' in body) {
+		return await (body as {transformToString(): Promise<string>}).transformToString();
+	}
+
+	const stream = body as NodeJS.ReadableStream;
+	const chunks: Array<Buffer> = [];
+	for await (const chunk of stream) {
+		chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+	}
+	return Buffer.concat(chunks).toString('utf8');
+}
+
+async function readExistingManifest(
+	client: S3Client,
+	bucket: string,
+	key: string,
+): Promise<DesktopManifest | null> {
+	try {
+		const result = await client.send(new GetObjectCommand({Bucket: bucket, Key: key}));
+		if (!result.Body) return null;
+		return JSON.parse(await streamToString(result.Body)) as DesktopManifest;
+	} catch (error) {
+		if (error instanceof S3ServiceException && (error.name === 'NoSuchKey' || error.name === 'NotFound')) {
+			return null;
+		}
+		throw error;
+	}
 }
 
 function parseOptions(argv: Array<string>): CliOptions {
@@ -113,15 +166,8 @@ async function main(): Promise<void> {
 	const fileName = basename(options.file);
 	const objectPrefix = `desktop/${options.channel}/${options.platform}/${options.arch}`;
 	const manifestKey = `${objectPrefix}/manifest.json`;
-	const files = {
-		setup: '',
-		dmg: '',
-		zip: '',
-		appimage: '',
-		deb: '',
-		rpm: '',
-		tar_gz: '',
-	};
+	const existingManifest = await readExistingManifest(client, Config.s3.buckets.downloads, manifestKey);
+	const files = {...emptyFiles(), ...(existingManifest?.files ?? {})};
 	files[options.format] = fileName;
 
 	await client.send(

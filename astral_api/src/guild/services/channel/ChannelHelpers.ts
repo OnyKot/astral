@@ -18,8 +18,8 @@
  */
 
 import type {ChannelID} from '~/BrandedTypes';
-import {ChannelTypes} from '~/Constants';
-import {InputValidationError} from '~/Errors';
+import {ChannelTypes, isGuildRtcChannelType} from '~/Constants';
+import {InputValidationError} from '~/errors/InputValidationError';
 import type {Channel} from '~/Models';
 import {serializeChannelForAudit as serializeChannelForAuditUtil} from '~/utils/AuditSerializationUtils';
 import {toIdString} from '~/utils/IdUtils';
@@ -37,7 +37,7 @@ export class ChannelHelpers {
 	}
 
 	private static isVoiceChannel(channel: Pick<Channel, 'type'>): boolean {
-		return channel.type === ChannelTypes.GUILD_VOICE;
+		return isGuildRtcChannelType(channel.type);
 	}
 
 	static getNextGlobalChannelPosition(
@@ -62,9 +62,9 @@ export class ChannelHelpers {
 		const textChannels = channelsInCategory.filter(
 			(c) => c.type === ChannelTypes.GUILD_TEXT || c.type === ChannelTypes.GUILD_LINK,
 		);
-		const voiceChannels = channelsInCategory.filter((c) => c.type === ChannelTypes.GUILD_VOICE);
+		const voiceChannels = channelsInCategory.filter((c) => ChannelHelpers.isVoiceChannel(c));
 
-		if (channelType === ChannelTypes.GUILD_VOICE) {
+		if (isGuildRtcChannelType(channelType)) {
 			if (voiceChannels.length > 0) {
 				return Math.max(...voiceChannels.map((c) => c.position || 0)) + 1;
 			} else if (textChannels.length > 0) {
@@ -146,7 +146,7 @@ export class ChannelHelpers {
 			if (parentId === null) continue;
 			let encounteredVoice = false;
 			for (const sibling of siblings) {
-				if (sibling.type === ChannelTypes.GUILD_VOICE) {
+				if (ChannelHelpers.isVoiceChannel(sibling)) {
 					encounteredVoice = true;
 					continue;
 				}

@@ -24,7 +24,7 @@ import type {GuildAuditLog, GuildBan} from '~/Models';
 
 export abstract class IGuildModerationRepository {
 	abstract getBan(guildId: GuildID, userId: UserID): Promise<GuildBan | null>;
-	abstract listBans(guildId: GuildID): Promise<Array<GuildBan>>;
+	abstract listBans(guildId: GuildID, options?: {limit?: number}): Promise<Array<GuildBan>>;
 	abstract upsertBan(data: GuildBanRow): Promise<GuildBan>;
 	abstract deleteBan(guildId: GuildID, userId: UserID): Promise<void>;
 	abstract createAuditLog(data: GuildAuditLogRow): Promise<GuildAuditLog>;

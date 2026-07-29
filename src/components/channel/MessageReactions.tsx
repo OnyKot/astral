@@ -21,7 +21,7 @@ import {useLingui} from '@lingui/react/macro';
 
 import {SmileyIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
-import {AnimatePresence, motion} from 'framer-motion';
+import {AnimatePresence, motion, useReducedMotion} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
 import React, {useEffect} from 'react';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
@@ -33,17 +33,15 @@ import styles from '~/components/channel/MessageReactions.module.css';
 import {createMessageActionHandlers, useMessagePermissions} from '~/components/channel/messageActionUtils';
 import {LongPressable} from '~/components/LongPressable';
 import {ExpressionPickerSheet} from '~/components/modals/ExpressionPickerSheet';
-import {EmojiPickerPopout} from '~/components/popouts/EmojiPickerPopout';
 import UnicodeEmojis from '~/lib/UnicodeEmojis';
 import {ReactionTooltip} from '~/components/popouts/ReactionTooltip';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
-import {Popout} from '~/components/uikit/Popout/Popout';
 import {useHover} from '~/hooks/useHover';
 import type {MessageReaction, MessageRecord} from '~/records/MessageRecord';
 import KeyboardModeStore from '~/stores/KeyboardModeStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import {applyEmojiVisualNormalization} from '~/utils/EmojiUtils';
-import {getEmojiName, getReactionKey, useEmojiURL} from '~/utils/ReactionUtils';
+import {canAddNewReactionTypeToMessage, getEmojiName, getReactionKey, useEmojiURL} from '~/utils/ReactionUtils';
 
 interface EmojiInfoData {
 	id?: string;
@@ -262,6 +260,8 @@ export const MessageReactions = observer(
 		const permissions = useMessagePermissions(message);
 		const handlers = createMessageActionHandlers(message);
 		const keyboardModeEnabled = KeyboardModeStore.keyboardModeEnabled;
+		const isSelfMessage = message.isCurrentUserAuthor();
+		const reducedMotion = useReducedMotion();
 
 		const blurReactionTrigger = React.useCallback(() => {
 			if (keyboardModeEnabled) {
@@ -294,6 +294,7 @@ export const MessageReactions = observer(
 
 		const hasReactions = message.reactions.length > 0;
 		const isMobileLayout = MobileLayoutStore.enabled;
+		const canOpenReactionPicker = permissions.canAddReactions && canAddNewReactionTypeToMessage(message);
 		const addReactionButton = (
 			<FocusRing offset={-2}>
 				<button
@@ -301,7 +302,7 @@ export const MessageReactions = observer(
 					type="button"
 					className={clsx(styles.addReactionButton, emojiPickerOpen && styles.addReactionButtonActive)}
 					aria-label={t`Add Reaction`}
-					data-action="message-add-reaction-button"
+					data-action="message-add-reaction-inline-button"
 					onClick={isMobileLayout ? handleEmojiPickerOpen : undefined}
 				>
 					<SmileyIcon size={20} weight="fill" />
@@ -309,8 +310,34 @@ export const MessageReactions = observer(
 			</FocusRing>
 		);
 
+		const reactionItems = message.reactions.map((reaction) => {
+			const key = getReactionKey(message.id, reaction.emoji);
+			const item = <MessageReactionItem message={message} reaction={reaction} isPreview={isPreview} />;
+			const shouldPlayIntro =
+				!reducedMotion && ReactionActionCreators.shouldAnimateReactionAddIntro(message.id, reaction.emoji);
+
+			return (
+				<motion.div
+					key={key}
+					className={styles.reactionMotionItem}
+					layout
+					initial={shouldPlayIntro ? {opacity: 0, scale: 0.66, y: 8} : false}
+					animate={{opacity: 1, scale: 1, y: 0}}
+					exit={{opacity: 0, scale: 0.4, transition: {duration: 0.15, ease: 'easeIn' as const}}}
+					transition={{
+						type: 'spring' as const,
+						stiffness: shouldPlayIntro ? 680 : 520,
+						damping: shouldPlayIntro ? 20 : 18,
+						mass: shouldPlayIntro ? 0.48 : 0.55,
+					}}
+				>
+					{item}
+				</motion.div>
+			);
+		});
+
 		return (
-			<div className={styles.reactionsGrid}>
+			<div className={clsx(styles.reactionsGrid, isSelfMessage && styles.reactionsGridSelf)}>
 				{/*
 				 * AnimatePresence with `initial={false}` so reactions already
 				 * present when the message renders (historical reactions loaded
@@ -319,26 +346,8 @@ export const MessageReactions = observer(
 				 * a motion.div with scale-punch spring that mimics how other
 				 * chat clients make reactions feel alive.
 				 */}
-				<AnimatePresence initial={false}>
-					{message.reactions.map((reaction) => (
-						<motion.div
-							key={getReactionKey(message.id, reaction.emoji)}
-							layout
-							initial={{opacity: 0, scale: 0.4}}
-							animate={{opacity: 1, scale: 1}}
-							exit={{opacity: 0, scale: 0.4, transition: {duration: 0.15, ease: 'easeIn' as const}}}
-							transition={{
-								type: 'spring' as const,
-								stiffness: 520,
-								damping: 18,
-								mass: 0.55,
-							}}
-						>
-							<MessageReactionItem message={message} reaction={reaction} isPreview={isPreview} />
-						</motion.div>
-					))}
-				</AnimatePresence>
-				{hasReactions && permissions.canAddReactions && !isPreview && isMobileLayout && (
+				<AnimatePresence>{reactionItems}</AnimatePresence>
+				{hasReactions && canOpenReactionPicker && !isPreview && isMobileLayout && (
 					<>
 						{addReactionButton}
 						<ExpressionPickerSheet
@@ -353,24 +362,6 @@ export const MessageReactions = observer(
 							reactionPicker={true}
 						/>
 					</>
-				)}
-				{hasReactions && permissions.canAddReactions && !isPreview && !isMobileLayout && (
-					<Popout
-						render={({onClose}) => (
-							<EmojiPickerPopout
-								channelId={message.channelId}
-								handleSelect={handlers.handleEmojiSelect}
-								onClose={onClose}
-							/>
-						)}
-						position="right-start"
-						uniqueId={`emoji-picker-reactions-${message.id}`}
-						animationType="none"
-						onOpen={handleEmojiPickerOpen}
-						onClose={handleEmojiPickerClose}
-					>
-						{addReactionButton}
-					</Popout>
 				)}
 			</div>
 		);

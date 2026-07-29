@@ -22,6 +22,7 @@ import type {IChannelRepository} from '~/channel/IChannelRepository';
 import type {ChannelService} from '~/channel/services/ChannelService';
 import type {
 	GuildCreateRequest,
+	GuildCountsResponse,
 	GuildDiscoveryResponse,
 	GuildPartialResponse,
 	GuildResponse,
@@ -90,6 +91,10 @@ export class GuildDataService {
 
 	async getGuild({userId, guildId}: {userId: UserID; guildId: GuildID}): Promise<GuildResponse> {
 		return this.operationsService.getGuild({userId, guildId});
+	}
+
+	async getGuildCounts({userId, guildId}: {userId: UserID; guildId: GuildID}): Promise<GuildCountsResponse> {
+		return this.operationsService.getGuildCounts({userId, guildId});
 	}
 
 	async getUserGuilds(userId: UserID): Promise<Array<GuildResponse>> {

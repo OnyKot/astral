@@ -20,6 +20,8 @@
 .attachmentWrapper {
 	margin-top: 0.25rem;
 	position: relative;
+	max-width: 100%;
+	min-width: 0;
 }
 
 .attachmentWrapper:first-child {
@@ -29,6 +31,8 @@
 .expired {
 	display: grid;
 	gap: 0.15rem;
+	max-width: 100%;
+	min-width: 0;
 	padding: 0.75rem;
 	border: 1px solid var(--border-color);
 	border-radius: 0.5rem;
@@ -90,4 +94,6 @@
 	filter: grayscale(0.8);
 	opacity: 0.5;
 	pointer-events: none;
+	max-width: 100%;
+	min-width: 0;
 }

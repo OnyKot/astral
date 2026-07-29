@@ -187,6 +187,7 @@ export async function mapChannelToResponse({
 			response = serializeGuildTextChannel(channel);
 			break;
 		case ChannelTypes.GUILD_VOICE:
+		case ChannelTypes.GUILD_STAGE:
 			response = serializeGuildVoiceChannel(channel);
 			break;
 		case ChannelTypes.GUILD_CATEGORY:

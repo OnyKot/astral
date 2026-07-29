@@ -59,7 +59,14 @@ export class VirusScanService implements IVirusScanService {
 		}
 		try {
 			const tempDir = os.tmpdir();
-			const tempFilePath = path.join(tempDir, `scan_${Date.now()}_${filename}`);
+			// `filename` is attacker-controlled (it comes from the uploaded
+			// attachment name, which is only length-validated, not sanitized).
+			// path.join() resolves `../` segments, so a name like
+			// "../../etc/x" would write (and later unlink) outside os.tmpdir().
+			// Strip to basename and drop path separators / NULs so the temp
+			// file always lands inside tempDir.
+			const safeFilename = path.basename(filename).replace(/[/\\]/g, '_').replace(/\0/g, '').slice(0, 200) || 'attachment';
+			const tempFilePath = path.join(tempDir, `scan_${Date.now()}_${safeFilename}`);
 			await fs.writeFile(tempFilePath, buffer);
 			try {
 				const scanResult = await this.clamav.scanFile(tempFilePath);

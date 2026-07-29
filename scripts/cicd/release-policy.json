@@ -1,0 +1,9 @@
+{
+  "desktop": {
+    "minVersion": "1.6.0"
+  },
+  "android": {
+    "minVersionCode": 1600
+  },
+  "notes": "Astral 1.6.0 release\n\nDesktop:\n- New Windows installer is available from the stable download endpoint.\n- Linux x64 packages are available as AppImage, .deb, and tar.gz.\n\nAndroid:\n- New Android APK is available from the stable mobile download endpoint.\n\nThis release raises the required desktop version to 1.6.0 and Android versionCode to 1600."
+}

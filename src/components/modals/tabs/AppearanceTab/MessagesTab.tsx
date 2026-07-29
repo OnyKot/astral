@@ -36,7 +36,7 @@ import AccessibilityStore from '~/stores/AccessibilityStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import UserSettingsStore from '~/stores/UserSettingsStore';
 import UserStore from '~/stores/UserStore';
-import {isNewMessageGroup} from '~/utils/MessageGroupingUtils';
+import {shouldContinueVisualMessageBlock} from '~/utils/MessageGroupingUtils';
 import appearanceTabStyles from '../AppearanceTab.module.css';
 import {ChatFontScalingTabContent} from './ScalingTab';
 import styles from './MessagesTab.module.css';
@@ -112,8 +112,9 @@ export const AppearanceTabPreview = observer(() => {
 				<div className={appearanceTabStyles.previewMessagesContainer} key="appearance-messages-preview-scroller">
 					{fakeMessages.map((message, index) => {
 						const prevMessage = index > 0 ? fakeMessages[index - 1] : undefined;
-						const isNewGroup = isNewMessageGroup(fakeChannel, prevMessage, message);
-						const shouldGroup = !messageDisplayCompact && !isNewGroup;
+						const nextMessage = index < fakeMessages.length - 1 ? fakeMessages[index + 1] : undefined;
+						const shouldGroup = !messageDisplayCompact && shouldContinueVisualMessageBlock(prevMessage, message);
+						const isGroupEnd = !shouldContinueVisualMessageBlock(message, nextMessage);
 						return (
 							<Message
 								key={message.id}
@@ -122,6 +123,8 @@ export const AppearanceTabPreview = observer(() => {
 								prevMessage={prevMessage}
 								previewContext={MessagePreviewContext.SETTINGS}
 								shouldGroup={shouldGroup}
+								isGroupEnd={isGroupEnd}
+								showAvatar={!shouldGroup}
 							/>
 						);
 					})}

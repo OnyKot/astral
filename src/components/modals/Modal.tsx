@@ -28,7 +28,7 @@ import * as PopoutActionCreators from '~/actions/PopoutActionCreators';
 import styles from '~/components/modals/Modal.module.css';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
 import FocusRingManager from '~/components/uikit/FocusRing/FocusRingManager';
-import {getDesktopModalMotion} from '~/utils/motion/MotionPresets';
+import {getDesktopModalMotion, getLegacyDesktopModalMotion} from '~/utils/motion/MotionPresets';
 import FocusRingScope from '~/components/uikit/FocusRing/FocusRingScope';
 import {Scroller, type ScrollerHandle} from '~/components/uikit/Scroller';
 import KeyboardModeStore from '~/stores/KeyboardModeStore';
@@ -135,19 +135,38 @@ const RootComponent = React.forwardRef<HTMLDivElement, ModalProps>(
 			[ref],
 		);
 
-		const mobileFullscreenAnimations = prefersReducedMotion
-			? {
+		const isLegacyTransition = transitionPreset === 'legacy';
+		const mobileFullscreenAnimations = React.useMemo(() => {
+			if (prefersReducedMotion) {
+				return {
 					initial: {opacity: 0},
 					animate: {opacity: 1},
 					exit: {opacity: 0},
-				}
-			: {
+				};
+			}
+
+			if (isLegacyTransition) {
+				return {
 					initial: {opacity: 0, y: 8, scale: 0.996},
 					animate: {opacity: 1, y: 0, scale: 1},
 					exit: {opacity: 0, y: 6, scale: 0.998},
 				};
+			}
 
-		const desktopModalMotion = React.useMemo(() => getDesktopModalMotion(prefersReducedMotion), [prefersReducedMotion]);
+			return {
+				initial: {opacity: 0},
+				animate: {opacity: 1},
+				exit: {opacity: 0},
+			};
+		}, [isLegacyTransition, prefersReducedMotion]);
+
+		const desktopModalMotion = React.useMemo(
+			() =>
+				isLegacyTransition
+					? getLegacyDesktopModalMotion(prefersReducedMotion)
+					: getDesktopModalMotion(prefersReducedMotion),
+			[isLegacyTransition, prefersReducedMotion],
+		);
 
 		const defaultAnimations = prefersReducedMotion
 			? {
@@ -281,6 +300,19 @@ const RootComponent = React.forwardRef<HTMLDivElement, ModalProps>(
 
 		const shouldInstantBackdrop = isMobile && !prefersReducedMotion;
 		const isInstantTransition = transitionPreset === 'instant';
+		const modalTransition = prefersReducedMotion || isInstantTransition
+			? {duration: 0.03}
+			: isFullscreenOnMobile
+				? {duration: isLegacyTransition ? 0.12 : 0.18, ease: [0.22, 1, 0.36, 1] as [number, number, number, number]}
+				: isLegacyTransition
+					? {
+							type: 'spring' as const,
+							stiffness: 420,
+							damping: 34,
+							mass: 0.62,
+							restDelta: 0.002,
+						}
+					: desktopModalMotion.transition;
 
 		return (
 			<FloatingPortal>
@@ -388,19 +420,7 @@ const RootComponent = React.forwardRef<HTMLDivElement, ModalProps>(
 												}
 											}}
 											{...animations}
-											transition={
-												prefersReducedMotion || transitionPreset === 'instant'
-													? {duration: 0.03}
-													: isFullscreenOnMobile
-														? {duration: 0.12, ease: [0.22, 1, 0.36, 1]}
-														: {
-																type: 'spring',
-																stiffness: 420,
-																damping: 34,
-																mass: 0.62,
-																restDelta: 0.002,
-															}
-											}
+											transition={modalTransition}
 											onAnimationStart={handleAnimationStart}
 											onAnimationComplete={handleAnimationComplete}
 											ref={setMotionElementRef}

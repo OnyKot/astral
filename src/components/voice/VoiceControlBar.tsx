@@ -115,7 +115,7 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 	const isGuildDeafened = voiceState?.deaf ?? false;
 
 	const muteReason = MediaEngineStore.getMuteReason(voiceState);
-	const effectiveMuted = muteReason !== null || isMuted;
+	const effectiveMuted = muteReason !== null;
 	const connectedChannel = ChannelStore.getChannel(MediaEngineStore.channelId ?? '');
 	const canSpeakInChannel = connectedChannel ? (!connectedChannel.guildId || PermissionStore.can(Permissions.SPEAK, connectedChannel)) : true;
 	const isBroadcastMode = connectedChannel ? MediaEngineStore.isVoiceChannelStageLike(connectedChannel.id) : false;
@@ -158,6 +158,16 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 					echoCancellation: voiceSettings.echoCancellation,
 					noiseSuppression: voiceSettings.noiseSuppression,
 					autoGainControl: voiceSettings.autoGainControl,
+				});
+
+				const shouldMuteAfterSettingsSync =
+					LocalVoiceStateStore.getSelfDeaf() ||
+					LocalVoiceStateStore.getSelfMute() ||
+					(KeybindStore.isPushToTalkEnabled() && !KeybindStore.pushToTalkHeld);
+				localParticipant.audioTrackPublications.forEach((publication) => {
+					const track = publication.track;
+					if (!track) return;
+					void (shouldMuteAfterSettingsSync ? track.mute() : track.unmute());
 				});
 			})
 			.catch((error) => {

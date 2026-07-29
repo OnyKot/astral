@@ -26,6 +26,7 @@ import {modal} from '~/actions/ModalActionCreators';
 import {GatewayConnectionBanner} from '~/components/app/GatewayConnectionBanner';
 import {MobileUiWelcome} from '~/components/app/MobileUiWelcome';
 import {NewDesktopDesignNotice} from '~/components/app/NewDesktopDesignNotice';
+import {WhatsNewGate} from '~/components/app/WhatsNewGate';
 import {OnboardingChecklist} from '~/components/app/OnboardingChecklist';
 import {TelegramWebViewWarning} from '~/components/app/TelegramWebViewWarning';
 import {UpdateBanner} from '~/components/app/UpdateBanner';
@@ -91,6 +92,7 @@ export const AppLayout = observer(({children}: {children: React.ReactNode}) => {
 			<div className={clsx(styles.appLayout, appState.isStandalone && styles.appLayoutStandalone)}>
 				{isAuthenticated && <UpdateBanner />}
 				{isAuthenticated && <NewDesktopDesignNotice />}
+				{isAuthenticated && <WhatsNewGate />}
 				{isAuthenticated && <MobileUiWelcome />}
 				{isAuthenticated && <GatewayConnectionBanner />}
 				{isAuthenticated && <OnboardingChecklist />}

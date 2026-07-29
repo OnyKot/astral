@@ -32,6 +32,7 @@ import {Tooltip} from '~/components/uikit/Tooltip/Tooltip';
 import {useMergeRefs} from '~/hooks/useMergeRefs';
 import {useReactionTooltip} from '~/hooks/useReactionTooltip';
 import {type CustomStatus, getCustomStatusText, isGiftShowcaseCustomStatus, normalizeCustomStatus} from '~/lib/customStatus';
+import {getStatusGifEmoji, getStatusGifEmojiDisplayName, isStatusGifEmojiName} from '~/lib/statusGifEmojis';
 import UnicodeEmojis from '~/lib/UnicodeEmojis';
 import EmojiStore from '~/stores/EmojiStore';
 import GuildStore from '~/stores/GuildStore';
@@ -120,6 +121,9 @@ const getTooltipEmojiUrl = (status: CustomStatus): string | null => {
 		const isAnimated = emoji?.animated ?? status.emojiAnimated ?? false;
 		return `${AvatarUtils.getEmojiURL({id: status.emojiId, animated: isAnimated})}?size=96&quality=lossless`;
 	}
+	if (isStatusGifEmojiName(status.emojiName)) {
+		return getStatusGifEmoji(status.emojiName)?.url ?? null;
+	}
 	if (status.emojiName && !shouldUseNativeEmoji) {
 		return getEmojiURL(status.emojiName);
 	}
@@ -136,16 +140,23 @@ interface StatusEmojiWithTooltipProps {
 const StatusEmojiWithTooltip = observer(
 	({status, children, onClick, isButton = false}: StatusEmojiWithTooltipProps) => {
 		const tooltipPortalRoot = useTooltipPortalRoot();
+		const {t} = useLingui();
 		const {targetRef, tooltipRef, state, updatePosition, handlers, tooltipHandlers} = useReactionTooltip(500);
 		const emoji = status.emojiId ? EmojiStore.getEmojiById(status.emojiId) : null;
-		const attribution = getEmojiAttribution({
-			emojiId: status.emojiId,
-			guildId: emoji?.guildId ?? null,
-			guild: emoji?.guildId ? GuildStore.getGuild(emoji.guildId) : null,
-			emojiName: status.emojiName,
-		});
+		const statusGifEmoji = getStatusGifEmoji(status.emojiName);
+		const attribution = statusGifEmoji
+			? null
+			: getEmojiAttribution({
+					emojiId: status.emojiId,
+					guildId: emoji?.guildId ?? null,
+					guild: emoji?.guildId ? GuildStore.getGuild(emoji.guildId) : null,
+					emojiName: status.emojiName,
+				});
 
 		const getEmojiDisplayName = (): string => {
+			if (statusGifEmoji) {
+				return getStatusGifEmojiDisplayName(status.emojiName);
+			}
 			if (status.emojiId) {
 				return `:${status.emojiName}:`;
 			}
@@ -207,16 +218,20 @@ const StatusEmojiWithTooltip = observer(
 									emojiAlt={status.emojiName ?? undefined}
 									primaryContent={emojiName}
 									subtext={
-										<EmojiAttributionSubtext
-											attribution={attribution}
-											classes={{
-												container: styles.emojiTooltipSubtext,
-												guildRow: styles.emojiTooltipGuildRow,
-												guildIcon: styles.emojiTooltipGuildIcon,
-												guildName: styles.emojiTooltipGuildName,
-												verifiedIcon: styles.emojiTooltipVerifiedIcon,
-											}}
-										/>
+										statusGifEmoji ? (
+											<span className={styles.emojiTooltipSubtext}>{t`Astral animated status`}</span>
+										) : attribution ? (
+											<EmojiAttributionSubtext
+												attribution={attribution}
+												classes={{
+													container: styles.emojiTooltipSubtext,
+													guildRow: styles.emojiTooltipGuildRow,
+													guildIcon: styles.emojiTooltipGuildIcon,
+													guildName: styles.emojiTooltipGuildName,
+													verifiedIcon: styles.emojiTooltipVerifiedIcon,
+												}}
+											/>
+										) : null
 									}
 								/>
 							</motion.div>
@@ -300,6 +315,21 @@ const renderStatusEmoji = (
 	}
 
 	if (status.emojiName) {
+		const statusGifEmoji = getStatusGifEmoji(status.emojiName);
+		if (statusGifEmoji) {
+			return {
+				node: (
+					<img
+						src={statusGifEmoji.url}
+						alt={statusGifEmoji.name}
+						draggable={false}
+						className={clsx(styles.statusEmoji, emojiClassName)}
+					/>
+				),
+				altText: getStatusGifEmojiDisplayName(status.emojiName),
+			};
+		}
+
 		const altText = status.emojiName;
 
 		if (!shouldUseNativeEmoji) {
@@ -452,7 +482,7 @@ export const CustomStatusDisplay = observer(
 				return;
 			}
 			const emoji = EmojiStore.getEmojiById(normalized.emojiId ?? '');
-			const shouldAnimate = emoji?.animated ?? normalized.emojiAnimated ?? false;
+			const shouldAnimate = isStatusGifEmojiName(normalized.emojiName) || (emoji?.animated ?? normalized.emojiAnimated ?? false);
 			onEmojiPress({
 				id: normalized.emojiId,
 				name: normalized.emojiName ?? '',

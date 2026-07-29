@@ -36,6 +36,7 @@ import {
 	TRUSTED_APP_ORIGINS,
 } from '../common/constants.js';
 import {registerSpellcheck} from './spellcheck.js';
+import {evaluateDesktopVersionGate} from './version-gate.js';
 import {refreshWindowsBadgeOverlay} from './windows-badge.js';
 
 const VISIBILITY_MARGIN = 32;
@@ -309,7 +310,90 @@ export function getMainWindow(): BrowserWindow | null {
 	return mainWindow;
 }
 
-export function createWindow(): BrowserWindow {
+const CRASH_RELOAD_WINDOW_MS = 60000;
+const CRASH_RELOAD_MAX_ATTEMPTS = 3;
+const UNRESPONSIVE_RELOAD_DELAY_MS = 8000;
+
+/**
+ * Keep the desktop shell alive when the Chromium renderer dies.
+ *
+ * Without this, a `render-process-gone` (OOM, GPU crash, sad-tab) or a hung
+ * renderer leaves the user staring at a blank/white window with no way back
+ * except manually killing the app. We reload the last known URL, but cap the
+ * number of automatic reloads within a rolling window so a genuinely broken
+ * page can't spin in an infinite crash→reload loop.
+ */
+function setupCrashRecovery(window: BrowserWindow, fallbackUrl: string): void {
+	const webContents = window.webContents;
+	let recentReloads: Array<number> = [];
+	let unresponsiveTimer: NodeJS.Timeout | null = null;
+
+	const clearUnresponsiveTimer = () => {
+		if (unresponsiveTimer) {
+			clearTimeout(unresponsiveTimer);
+			unresponsiveTimer = null;
+		}
+	};
+
+	const reloadRenderer = (cause: string) => {
+		if (!mainWindow || mainWindow.isDestroyed() || webContents.isDestroyed()) {
+			return;
+		}
+
+		const now = Date.now();
+		recentReloads = recentReloads.filter((ts) => now - ts < CRASH_RELOAD_WINDOW_MS);
+		if (recentReloads.length >= CRASH_RELOAD_MAX_ATTEMPTS) {
+			log.error(`[CrashRecovery] Too many reloads after ${cause}; leaving window as-is to avoid a reload loop`);
+			return;
+		}
+		recentReloads.push(now);
+
+		const targetUrl = webContents.getURL() || fallbackUrl;
+		log.warn(`[CrashRecovery] Reloading renderer after ${cause}`, {targetUrl, attempt: recentReloads.length});
+
+		webContents.loadURL(targetUrl).catch((error) => {
+			log.error('[CrashRecovery] Reload failed, falling back to entry URL', error);
+			webContents.loadURL(fallbackUrl).catch((fallbackError) => {
+				log.error('[CrashRecovery] Fallback reload failed', fallbackError);
+			});
+		});
+
+		// If the crash happened before the window ever became visible, make sure
+		// the user can see the recovered window instead of a hidden process.
+		if (!mainWindow.isVisible()) {
+			mainWindow.show();
+		}
+	};
+
+	webContents.on('render-process-gone', (_event, details) => {
+		clearUnresponsiveTimer();
+		if (details.reason === 'clean-exit') {
+			return;
+		}
+		log.error('[CrashRecovery] render-process-gone', details);
+		reloadRenderer(`render-process-gone (${details.reason})`);
+	});
+
+	webContents.on('unresponsive', () => {
+		log.warn('[CrashRecovery] Renderer became unresponsive');
+		clearUnresponsiveTimer();
+		unresponsiveTimer = setTimeout(() => {
+			unresponsiveTimer = null;
+			if (webContents.isDestroyed()) return;
+			log.error('[CrashRecovery] Renderer still unresponsive, forcing reload');
+			reloadRenderer('unresponsive');
+		}, UNRESPONSIVE_RELOAD_DELAY_MS);
+	});
+
+	webContents.on('responsive', () => {
+		log.info('[CrashRecovery] Renderer recovered responsiveness');
+		clearUnresponsiveTimer();
+	});
+
+	webContents.on('destroyed', clearUnresponsiveTimer);
+}
+
+export async function createWindow(): Promise<BrowserWindow> {
 	const isCanary = BUILD_CHANNEL === 'canary';
 
 	const primaryDisplay = screen.getPrimaryDisplay();
@@ -558,9 +642,20 @@ export function createWindow(): BrowserWindow {
 	const appUrl = isCanary ? CANARY_APP_URL : STABLE_APP_URL;
 	const entryUrl = getAuthEntryUrl(appUrl);
 
+	const versionGate = await evaluateDesktopVersionGate(appUrl);
+	if (!versionGate.allowed && versionGate.blockedPageHtml) {
+		const blockedUrl = `data:text/html;charset=utf-8,${encodeURIComponent(versionGate.blockedPageHtml)}`;
+		mainWindow.loadURL(blockedUrl).catch((error) => {
+			console.error('Failed to load version gate page:', error);
+		});
+		return mainWindow;
+	}
+
 	mainWindow.loadURL(entryUrl).catch((error) => {
 		console.error('Failed to load app URL:', error);
 	});
+
+	setupCrashRecovery(mainWindow, entryUrl);
 
 	webContents.on('will-navigate', (event, url) => {
 		event.preventDefault();

@@ -496,6 +496,34 @@
 	flex-shrink: 1;
 }
 
+.dmIdentity {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 0.01rem;
+	min-width: 0;
+	max-width: 100%;
+	overflow: hidden;
+}
+
+.dmPresenceLabel {
+	display: block;
+	min-width: 0;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.7rem;
+	font-weight: 640;
+	line-height: 0.92rem;
+	letter-spacing: 0;
+	color: color-mix(in srgb, var(--text-primary-muted) 86%, var(--text-primary) 14%);
+}
+
+.dmPresenceLabelOnline {
+	color: color-mix(in srgb, var(--status-online) 72%, var(--text-primary-muted) 28%);
+}
+
 
 .channelCapsuleBody {
 	display: flex;

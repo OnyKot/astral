@@ -55,14 +55,11 @@ const dark_hover = "hover:bg-white/[0.11]"
 
 const dark_helper = "text-sm text-[hsl(var(--muted-foreground))]"
 
-const btn_base =
-  "astral-button download-link flex flex-col items-start justify-center gap-1 px-6 py-5 md:px-8 md:py-6"
+const btn_base = "astral-button download-link flex flex-col items-start justify-center gap-1 px-6 py-5 md:px-8 md:py-6"
 
-const chevron_base =
-  "astral-button overlay-toggle flex items-center self-stretch px-4"
+const chevron_base = "astral-button overlay-toggle flex items-center self-stretch px-4"
 
-const mobile_btn_base =
-  "astral-button download-link inline-flex flex-col items-center justify-center gap-1 px-6 py-5 md:px-8 md:py-6"
+const mobile_btn_base = "astral-button download-link inline-flex flex-col items-center justify-center gap-1 px-6 py-5 md:px-8 md:py-6"
 
 fn channel_segment(ctx: Context) -> String {
   case web.is_canary(ctx) {
@@ -194,7 +191,9 @@ fn default_architecture(ctx: Context, platform: Platform) -> String {
   }
 }
 
-pub fn get_platform_download_info(ctx: Context) -> #(String, String, Element(a)) {
+pub fn get_platform_download_info(
+  ctx: Context,
+) -> #(String, String, Element(a)) {
   let i18n_ctx = i18n.get_context(ctx.i18n_db, ctx.locale)
 
   case ctx.platform {
@@ -297,7 +296,10 @@ pub fn render_with_overlay(ctx: Context) -> Element(a) {
   }
 }
 
-fn render_mobile_redirect_button(ctx: Context, style: ButtonStyle) -> Element(a) {
+fn render_mobile_redirect_button(
+  ctx: Context,
+  style: ButtonStyle,
+) -> Element(a) {
   let i18n_ctx = i18n.get_context(ctx.i18n_db, ctx.locale)
   let #(btn_class, helper_class) = get_mobile_btn_classes(style)
 
@@ -316,7 +318,7 @@ fn render_mobile_redirect_button(ctx: Context, style: ButtonStyle) -> Element(a)
       html.span([attribute.class(helper_class)], [
         html.text(g_(
           i18n_ctx,
-          "Windows installer and Android APK are available now",
+          "Windows installer, Android APK, and Linux builds are available now",
         )),
       ]),
     ],
@@ -326,17 +328,8 @@ fn render_mobile_redirect_button(ctx: Context, style: ButtonStyle) -> Element(a)
 fn linux_download_options(ctx: Context) -> List(#(String, String, String)) {
   [
     #("x64", "AppImage", desktop_redirect_url(ctx, "linux", "x64", "appimage")),
-    #(
-      "arm64",
-      "AppImage",
-      desktop_redirect_url(ctx, "linux", "arm64", "appimage"),
-    ),
     #("x64", "DEB", desktop_redirect_url(ctx, "linux", "x64", "deb")),
-    #("arm64", "DEB", desktop_redirect_url(ctx, "linux", "arm64", "deb")),
-    #("x64", "RPM", desktop_redirect_url(ctx, "linux", "x64", "rpm")),
-    #("arm64", "RPM", desktop_redirect_url(ctx, "linux", "arm64", "rpm")),
     #("x64", "tar.gz", desktop_redirect_url(ctx, "linux", "x64", "tar_gz")),
-    #("arm64", "tar.gz", desktop_redirect_url(ctx, "linux", "arm64", "tar_gz")),
   ]
 }
 
@@ -466,12 +459,9 @@ pub fn render_desktop_button(
       [
         html.div([attribute.class("flex items-center gap-3")], [
           icon,
-          html.span(
-            [attribute.class("text-base md:text-lg font-semibold")],
-            [
-              html.text(button_label),
-            ],
-          ),
+          html.span([attribute.class("text-base md:text-lg font-semibold")], [
+            html.text(button_label),
+          ]),
         ]),
         html.span([attribute.class(helper_class)], [
           html.text(helper_text),
@@ -485,10 +475,7 @@ pub fn render_desktop_button(
       html.button(
         [
           attribute.class(chevron_class),
-          attribute.attribute(
-            "data-overlay-target",
-            platform_id <> "-overlay",
-          ),
+          attribute.attribute("data-overlay-target", platform_id <> "-overlay"),
           attribute.attribute(
             "aria-label",
             g_(i18n_ctx, "Show download options"),
@@ -555,7 +542,7 @@ pub fn render_mobile_button(
     Android ->
       attrs
       |> list.append([
-        attribute.download("Astral-android-1.5.0-release.apk"),
+        attribute.download("Astral-android-1.6-release.apk"),
       ])
     _ -> attrs
   }

@@ -1,6 +1,7 @@
 .statusIcon {
 	display: inline-flex;
 	align-items: center;
+	justify-content: center;
 	margin-left: 4px;
 	vertical-align: middle;
 	flex-shrink: 0;
@@ -35,6 +36,13 @@
 
 @media (max-width: 767px), (pointer: coarse) {
 	.statusIcon {
-		display: none;
+		width: 13px;
+		height: 13px;
+		margin-left: 2px;
+	}
+
+	.statusIcon svg {
+		width: 13px;
+		height: 13px;
 	}
 }

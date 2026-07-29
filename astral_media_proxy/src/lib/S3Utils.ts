@@ -18,6 +18,8 @@
  */
 
 import assert from 'node:assert/strict';
+import {Agent as HttpAgent} from 'node:http';
+import {Agent as HttpsAgent} from 'node:https';
 import {PassThrough, Stream} from 'node:stream';
 import {GetObjectCommand, HeadObjectCommand, S3Client, S3ServiceException} from '@aws-sdk/client-s3';
 import {HTTPException} from 'hono/http-exception';
@@ -26,9 +28,21 @@ import * as metrics from '~/lib/MetricsClient';
 
 const MAX_STREAM_BYTES = 500 * 1024 * 1024;
 
+// Keep-alive agents with a wide socket pool. `scheduling: 'lifo'` reuses the most
+// recently used socket first, which keeps idle connections warm and lets the rest
+// be reaped. Shared between http (MinIO over plain HTTP) and https endpoints.
+const agentOptions = {
+	keepAlive: true,
+	keepAliveMsecs: 30_000,
+	maxSockets: Config.S3_MAX_SOCKETS,
+	maxFreeSockets: Math.max(16, Math.floor(Config.S3_MAX_SOCKETS / 4)),
+	scheduling: 'lifo' as const,
+	timeout: Config.S3_REQUEST_TIMEOUT_MS,
+};
+
 export const s3Client = new S3Client({
 	endpoint: Config.AWS_S3_ENDPOINT,
-	region: 'us-east-1',
+	region: Config.AWS_S3_REGION,
 	forcePathStyle: true,
 	credentials: {
 		accessKeyId: Config.AWS_ACCESS_KEY_ID,
@@ -36,6 +50,18 @@ export const s3Client = new S3Client({
 	},
 	requestChecksumCalculation: 'WHEN_REQUIRED',
 	responseChecksumValidation: 'WHEN_REQUIRED',
+	// The SDK defaults to maxSockets=50 with no request timeout, so a few stalled
+	// MinIO reads exhaust the pool and wedge all media. Passing handler options
+	// (not a constructed instance) keeps the smithy handler a transitive dep.
+	requestHandler: {
+		connectionTimeout: Config.S3_CONNECTION_TIMEOUT_MS,
+		requestTimeout: Config.S3_REQUEST_TIMEOUT_MS,
+		httpAgent: new HttpAgent(agentOptions),
+		httpsAgent: new HttpsAgent(agentOptions),
+	},
+	// Retry transient upstream/network blips instead of surfacing them as 5xx.
+	maxAttempts: Config.S3_MAX_ATTEMPTS,
+	retryMode: 'adaptive',
 });
 
 export interface S3HeadResult {

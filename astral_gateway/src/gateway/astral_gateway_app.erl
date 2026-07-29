@@ -24,6 +24,7 @@ start(_StartType, _StartArgs) ->
 
     WsPort = astral_gateway_env:get(ws_port),
     RpcPort = astral_gateway_env:get(rpc_port),
+    RpcBind = astral_gateway_env:get(rpc_bind),
 
     Dispatch = cowboy_router:compile([
         {'_', [
@@ -37,16 +38,40 @@ start(_StartType, _StartArgs) ->
         max_frame_size => 4096
     }),
 
-    RpcDispatch = cowboy_router:compile([
-        {'_', [
-            {<<"/_rpc">>, gateway_rpc_http_handler, []},
-            {<<"/_admin/reload">>, hot_reload_handler, []}
-        ]}
-    ]),
+    %% The RPC/admin HTTP listener serves the internal RPC endpoint and
+    %% the hot-reload code-loading endpoint. It must never bind to a
+    %% public interface: the RPC secret authenticates _requests_ but the
+    %% endpoint still exposes privileged cluster operations, and
+    %% hot-reload is remote code execution. Bind to loopback only.
+    %%
+    %% hot_reload is an RCE surface (it loads arbitrary BEAM binaries).
+    %% It is only mounted when GATEWAY_HOT_RELOAD_ENABLED=true is set
+    %% explicitly, and even then requires GATEWAY_ADMIN_SECRET. In
+    %% production it should stay disabled.
+    HotReloadEnabled = astral_gateway_env:get(hot_reload_enabled),
 
-    {ok, _} = cowboy:start_clear(rpc_http, [{port, RpcPort}], #{
-        env => #{dispatch => RpcDispatch}
-    }),
+    RpcRoutes = case HotReloadEnabled of
+        true ->
+            [
+                {<<"/_rpc">>, gateway_rpc_http_handler, []},
+                {<<"/_admin/reload">>, hot_reload_handler, []}
+            ];
+        _ ->
+            [
+                {<<"/_rpc">>, gateway_rpc_http_handler, []}
+            ]
+    end,
+
+    RpcDispatch = cowboy_router:compile([{'_', RpcRoutes}]),
+
+    {ok, _} = cowboy:start_clear(
+        rpc_http,
+        [
+            {ip, RpcBind},
+            {port, RpcPort}
+        ],
+        #{env => #{dispatch => RpcDispatch}}
+    ),
 
     astral_gateway_sup:start_link().
 

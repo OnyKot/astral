@@ -564,13 +564,16 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 	const isCurrentUser = currentUser?.id === participantUser?.id;
 
 	const isSpeaking = useIsSpeaking(participant);
+	const isLocalParticipant = Boolean((participant as Participant)?.isLocal);
 
 	const voiceState = MediaEngineStore.getVoiceStateByConnectionId(connectionId);
 	const connectionParticipant = MediaEngineStore.getParticipantByUserIdAndConnectionId(userId, connectionId);
 
 	const isGuildMuted = voiceState?.mute ?? false;
-	const isSelfMuted =
+	const rawSelfMuted =
 		voiceState?.self_mute ?? (connectionParticipant ? !connectionParticipant.isMicrophoneEnabled : false);
+	const muteReason = isLocalParticipant ? MediaEngineStore.getMuteReason(voiceState) : null;
+	const isSelfMuted = isLocalParticipant ? muteReason !== null : rawSelfMuted;
 	const isSelfDeafened = voiceState?.self_deaf ?? false;
 
 	const isActuallySpeaking = isSpeaking && !isSelfMuted && !isGuildMuted;
@@ -578,7 +581,6 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 	const isMobileExperience = isMobileExperienceEnabled();
 	const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
 
-	const isLocalParticipant = Boolean((participant as Participant)?.isLocal);
 	const isWindowFocused = useWindowFocus();
 
 	const sourceAttr = getSourceDataAttr(trackRef.source);
@@ -1104,11 +1106,20 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 					<div className={voiceCallStyles.lkParticipantMetadata}>
 						<div className={voiceCallStyles.lkParticipantMetadataItem}>
 							<div className={voiceCallStyles.lkParticipantIcons}>
-								{((voiceState?.mute ?? false) || isSelfMuted) && (
-									<Tooltip text={voiceState?.mute ? t`Community Muted` : t`Muted`} position="top">
+								{(isGuildMuted || isSelfMuted) && (
+									<Tooltip
+										text={
+											isGuildMuted
+												? t`Community Muted`
+												: muteReason === 'push_to_talk'
+													? t`Push-to-Talk: hold shortcut to speak`
+													: t`Muted`
+										}
+										position="top"
+									>
 										<MicrophoneSlashIcon
 											weight="fill"
-											className={voiceState?.mute ? styles.participantIconRed : styles.participantIconMuted}
+											className={isGuildMuted ? styles.participantIconRed : styles.participantIconMuted}
 										/>
 									</Tooltip>
 								)}

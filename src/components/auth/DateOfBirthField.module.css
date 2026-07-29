@@ -139,20 +139,22 @@
 
 :global([data-auth-cosmic]) .legend {
 	font-family: var(--auth-font-body, var(--font-sans));
-	font-size: 0.75rem;
-	font-weight: 600;
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
-	color: #b4b4c4;
+	font-size: 0.82rem;
+	font-weight: 620;
+	letter-spacing: 0;
+	text-transform: none;
+	color: rgb(216 218 228 / 0.88);
 }
 
 :global([data-auth-cosmic]) .nativeDateInput {
-	border-radius: 1rem;
+	border-radius: var(--auth-control-radius, 0.75rem);
 	border-color: rgb(255 255 255 / 0.1);
 	background-color: rgb(10 10 12 / 0.6);
 	color: #efeff4;
 	font-family: var(--auth-font-body, var(--font-sans));
 	font-size: 0.95rem;
+	font-weight: 480;
+	letter-spacing: 0;
 }
 
 :global([data-auth-cosmic]) .nativeDateInput:focus {
@@ -162,6 +164,7 @@
 }
 
 :global([data-auth-cosmic]) .errorText {
-	font-size: 0.78rem;
+	font-size: 0.8rem;
+	line-height: 1.25;
 	color: #f6a9b2;
 }

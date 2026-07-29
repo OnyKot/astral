@@ -57,6 +57,33 @@ const FETCH_GUILD_IDS_BY_OWNER_QUERY = GuildsByOwnerId.select({
 });
 
 export class GuildDataRepository extends IGuildDataRepository {
+	// Scylla rejects `WHERE pk IN (...)` queries when the IN list grows past 100 entries
+	// (see `--max-partition-key-restrictions-per-query`, default 100). Users on this
+	// instance routinely exceed that — we saw 116 in production and the discovery
+	// path silently fell back to a slower code path. Chunk the IN list at the driver
+	// level so the SELECT works no matter how many guilds the caller passes.
+	static readonly MAX_GUILD_IN_LIST = 100;
+
+	private async fetchGuildRowsByIds(guildIds: Array<GuildID>): Promise<Array<GuildRow>> {
+		if (guildIds.length === 0) {
+			return [];
+		}
+		if (guildIds.length <= GuildDataRepository.MAX_GUILD_IN_LIST) {
+			return await fetchMany<GuildRow>(FETCH_GUILDS_BY_IDS_QUERY, {guild_ids: guildIds});
+		}
+
+		const chunks: Array<Array<GuildID>> = [];
+		for (let i = 0; i < guildIds.length; i += GuildDataRepository.MAX_GUILD_IN_LIST) {
+			chunks.push(guildIds.slice(i, i + GuildDataRepository.MAX_GUILD_IN_LIST));
+		}
+		// Run chunks concurrently — each shard SELECT is independent. Cassandra driver
+		// pool plus Scylla can comfortably handle <=10 in-flight token-aware reads.
+		const batches = await Promise.all(
+			chunks.map((chunk) => fetchMany<GuildRow>(FETCH_GUILDS_BY_IDS_QUERY, {guild_ids: chunk})),
+		);
+		return batches.flat();
+	}
+
 	async findUnique(guildId: GuildID): Promise<Guild | null> {
 		const guild = await fetchOne<GuildRow>(FETCH_GUILD_BY_ID_QUERY, {
 			guild_id: guildId,
@@ -65,11 +92,7 @@ export class GuildDataRepository extends IGuildDataRepository {
 	}
 
 	async listGuilds(guildIds: Array<GuildID>): Promise<Array<Guild>> {
-		if (guildIds.length === 0) {
-			return [];
-		}
-
-		const guilds = await fetchMany<GuildRow>(FETCH_GUILDS_BY_IDS_QUERY, {guild_ids: guildIds});
+		const guilds = await this.fetchGuildRowsByIds(guildIds);
 		return guilds.map((guild) => new Guild(guild));
 	}
 
@@ -99,7 +122,7 @@ export class GuildDataRepository extends IGuildDataRepository {
 		}
 
 		const guildIds = guildMemberships.map((m) => m.guild_id);
-		const guilds = await fetchMany<GuildRow>(FETCH_GUILDS_BY_IDS_QUERY, {guild_ids: guildIds});
+		const guilds = await this.fetchGuildRowsByIds(guildIds);
 		return guilds.map((guild) => new Guild(guild));
 	}
 

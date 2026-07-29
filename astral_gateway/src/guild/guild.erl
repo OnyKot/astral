@@ -209,7 +209,14 @@ handle_call({reload, NewData}, _From, State) ->
         Pids
     ),
 
-    NewState = cleanup_removed_member_subscriptions(OldData, NewData, NewState0),
+    StateAfterCleanup = cleanup_removed_member_subscriptions(OldData, NewData, NewState0),
+
+    %% A full data replace can revoke channel visibility without emitting a role or
+    %% channel event, and the dispatch path below only prunes on events that can
+    %% remove visibility, so the prune has to run here as well. Skipping it would
+    %% leave member presence subscriptions alive for members the session can no
+    %% longer see.
+    NewState = prune_invalid_member_subscriptions(StateAfterCleanup),
 
     {reply, ok, NewState};
 handle_call({dispatch, Request}, _From, State) ->
@@ -220,7 +227,17 @@ handle_call({dispatch, Request}, _From, State) ->
             false -> EventData
         end,
     {noreply, NewState} = handle_dispatch(Event, ParsedEventData, State),
-    StateAfterPrune = prune_invalid_member_subscriptions(NewState),
+    %% The prune recomputes viewable channels for every session AND for every
+    %% member each session subscribes to, so it must only run on events that can
+    %% actually REMOVE visibility. Message, typing, reaction, pin, emoji and
+    %% sticker traffic never can (update_state/3 only rewrites last_message_id /
+    %% last_pin_timestamp for those), and paying for the prune there put the whole
+    %% scan inside the API's synchronous message-send call.
+    StateAfterPrune =
+        case needs_subscription_prune(Event) of
+            true -> prune_invalid_member_subscriptions(NewState);
+            false -> NewState
+        end,
     {reply, ok, StateAfterPrune};
 handle_call({terminate}, _From, State) ->
     {stop, normal, ok, State};
@@ -416,6 +433,25 @@ has_shared_channels(SessionChannels, MemberId, State) ->
     CandidateChannels = guild_visibility:viewable_channel_set(MemberId, State),
     not sets:is_empty(sets:intersection(SessionChannels, CandidateChannels)).
 
+%% Superset of guild_state:needs_visibility_check/1: a member's viewable channel
+%% set also changes when the guild owner changes (ALL_PERMISSIONS), when members
+%% join or leave, and over the whole channel lifecycle. guild_member_update is
+%% required here - omitting it would keep presence subscriptions alive after a
+%% role revoke.
+needs_subscription_prune(guild_update) -> true;
+needs_subscription_prune(guild_role_create) -> true;
+needs_subscription_prune(guild_role_update) -> true;
+needs_subscription_prune(guild_role_update_bulk) -> true;
+needs_subscription_prune(guild_role_delete) -> true;
+needs_subscription_prune(guild_member_add) -> true;
+needs_subscription_prune(guild_member_update) -> true;
+needs_subscription_prune(guild_member_remove) -> true;
+needs_subscription_prune(channel_create) -> true;
+needs_subscription_prune(channel_update) -> true;
+needs_subscription_prune(channel_update_bulk) -> true;
+needs_subscription_prune(channel_delete) -> true;
+needs_subscription_prune(_) -> false.
+
 prune_invalid_member_subscriptions(State) ->
     MemberSubs = maps:get(member_subscriptions, State, guild_subscriptions:init_state()),
     Sessions = maps:get(sessions, State, #{}),
@@ -432,12 +468,15 @@ build_invalid_subscription_pairs(MemberSubs, Sessions, State) ->
     lists:foldl(
         fun({SessionId, SessionData}, Acc) ->
             SessionUserId = maps:get(user_id, SessionData, undefined),
-            case SessionUserId of
-                undefined ->
+            SubscriptionIds = guild_subscriptions:get_user_ids_for_session(SessionId, MemberSubs),
+            %% Resolve the subscription set FIRST: a session with no member
+            %% subscriptions can never contribute an invalid pair, so it must not
+            %% pay for a full viewable_channel_set scan.
+            case SessionUserId =/= undefined andalso not sets:is_empty(SubscriptionIds) of
+                false ->
                     Acc;
-                _ ->
+                true ->
                     SessionChannels = guild_visibility:viewable_channel_set(SessionUserId, State),
-                    SubscriptionIds = guild_subscriptions:get_user_ids_for_session(SessionId, MemberSubs),
                     InvalidIds =
                         [MemberId
                          || MemberId <- sets:to_list(SubscriptionIds),

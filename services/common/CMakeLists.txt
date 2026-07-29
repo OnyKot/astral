@@ -3,6 +3,12 @@
 # Usage in a service CMakeLists.txt:
 #   add_subdirectory(${CMAKE_SOURCE_DIR}/../common ${CMAKE_BINARY_DIR}/common)
 #   target_link_libraries(<target> PRIVATE astral::common)
+#
+# Astral SDK components:
+#   #include <astral/sdk/scylla.hpp>
+#   #include <astral/sdk/logging.hpp>
+#   #include <astral/sdk/metrics.hpp>
+#   #include <astral/sdk/contracts/invite.hpp>
 
 cmake_minimum_required(VERSION 3.22)
 
@@ -36,3 +42,9 @@ target_compile_definitions(astral_common INTERFACE
     ASTRAL_COMMIT="${ASTRAL_COMMIT}"
     ASTRAL_VERSION="${ASTRAL_VERSION}"
 )
+
+# ============================================================================
+# Astral SDK alias (for convenience)
+# Usage: target_link_libraries(<target> PRIVATE astral::sdk)
+# ============================================================================
+add_library(astral::sdk ALIAS astral_common)

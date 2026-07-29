@@ -43,6 +43,7 @@ import type {MessageProcessingService} from './MessageProcessingService';
 import type {MessageSearchService} from './MessageSearchService';
 import {MessageSendService} from './MessageSendService';
 import type {MessageValidationService} from './MessageValidationService';
+import {LargeMessageTxtService} from './LargeMessageTxtService';
 
 export class MessageOperationsService {
 	private readonly sendService: MessageSendService;
@@ -107,6 +108,7 @@ export class MessageOperationsService {
 			operationsHelpers: this.operationsHelpers,
 			deleteMessageAfterModeration: this.deleteService.deleteMessageAfterModeration.bind(this.deleteService),
 			grokService,
+			largeMessageTxtService: new LargeMessageTxtService(storageService),
 		});
 
 		this.editService = new MessageEditService({

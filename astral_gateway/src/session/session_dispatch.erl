@@ -38,6 +38,11 @@ handle_dispatch(Event, Data, State) ->
                     NewSeq = Seq + 1,
                     Request = #{event => Event, data => Data, seq => NewSeq},
 
+                    %% The resume buffer is kept newest-first: appending with ++ copied
+                    %% the whole buffer on every dispatched event (O(n^2) per heartbeat
+                    %% window). session:handle_call({resume, ...}) reverses it, and the
+                    %% heartbeat_ack filter is order-preserving, so the events replayed
+                    %% to the client stay in ascending seq order.
                     NewBuffer =
                         case Event of
                             message_reaction_add ->
@@ -45,7 +50,7 @@ handle_dispatch(Event, Data, State) ->
                             message_reaction_remove ->
                                 Buffer;
                             _ ->
-                                Buffer ++ [Request]
+                                [Request | Buffer]
                         end,
 
                     case SocketPid of
@@ -69,7 +74,17 @@ handle_dispatch(Event, Data, State) ->
                         seq => NewSeq, buffer => NewBuffer
                     }),
                     StateWithPending = maybe_flush_pending_presences(Event, Data, StateAfterMain),
-                    FinalState = sync_presence_targets(StateWithPending),
+                    %% Only re-sync the presence targets when this event can actually
+                    %% have changed the channels / relationships maps: the presence
+                    %% process diffs the full friend list and group-DM recipient map on
+                    %% every sync (O(F^2) + O(G^2) list subtractions), and those maps are
+                    %% only ever written by update_channels_map/3 and
+                    %% update_relationships_map/3 below (plus session:init/1).
+                    FinalState =
+                        case affects_presence_targets(Event) of
+                            true -> sync_presence_targets(StateWithPending);
+                            false -> StateWithPending
+                        end,
                     {noreply, FinalState}
             end
     end.
@@ -171,7 +186,8 @@ dispatch_presence_now(P, State) ->
 
     NewSeq = Seq + 1,
     Request = #{event => Event, data => Data, seq => NewSeq},
-    NewBuffer = Buffer ++ [Request],
+    %% Newest-first, same as handle_dispatch/3 above.
+    NewBuffer = [Request | Buffer],
 
     case SocketPid of
         undefined ->
@@ -393,6 +409,19 @@ upsert_relationship(Data, State) ->
             NewRelationships = maps:put(UserId, Type, Relationships),
             maps:put(relationships, NewRelationships, State)
     end.
+
+%% Mirror of the events handled by update_channels_map/3 and
+%% update_relationships_map/3: no other event can change the friend list or the
+%% group-DM recipient map, so no other event needs a presence-target sync.
+affects_presence_targets(channel_create) -> true;
+affects_presence_targets(channel_update) -> true;
+affects_presence_targets(channel_delete) -> true;
+affects_presence_targets(channel_recipient_add) -> true;
+affects_presence_targets(channel_recipient_remove) -> true;
+affects_presence_targets(relationship_add) -> true;
+affects_presence_targets(relationship_update) -> true;
+affects_presence_targets(relationship_remove) -> true;
+affects_presence_targets(_) -> false.
 
 sync_presence_targets(State) ->
     PresencePid = maps:get(presence_pid, State, undefined),

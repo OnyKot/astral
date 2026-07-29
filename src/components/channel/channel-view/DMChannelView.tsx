@@ -582,17 +582,24 @@ export const DMChannelView = observer(({channelId}: DMChannelViewProps) => {
 	const isSelfMuted = LocalVoiceStateStore.selfMute;
 	const isSelfDeafened = LocalVoiceStateStore.selfDeaf;
 	const isSelfScreenSharing = LocalVoiceStateStore.selfStream;
+	const voiceState = MediaEngineStore.getCurrentUserVoiceState();
+	const muteReason = MediaEngineStore.getMuteReason(voiceState);
+	const effectiveSelfMuted = muteReason !== null;
+	const muteButtonDisabled = false;
+	const muteButtonLabel =
+		muteReason === 'push_to_talk' ? t`Push-to-Talk: hold shortcut to speak` : effectiveSelfMuted ? t`Unmute` : t`Mute`;
 	const dmCallControls = React.useMemo(
 		() => (
 			<div className={dmStyles.dmCallControls} role="group" aria-label={t`Call controls`}>
 				<button
 					type="button"
-					className={clsx(dmStyles.dmCallControlButton, isSelfMuted && dmStyles.dmCallControlButtonActive)}
-					onClick={handleToggleMute}
-					aria-label={isSelfMuted ? t`Unmute` : t`Mute`}
-					title={isSelfMuted ? t`Unmute` : t`Mute`}
+					className={clsx(dmStyles.dmCallControlButton, effectiveSelfMuted && dmStyles.dmCallControlButtonActive)}
+					onClick={muteButtonDisabled ? undefined : handleToggleMute}
+					aria-label={muteButtonLabel}
+					title={muteButtonLabel}
+					disabled={muteButtonDisabled}
 				>
-					{isSelfMuted ? (
+					{effectiveSelfMuted ? (
 						<MicrophoneSlashIcon weight="fill" className={dmStyles.dmCallControlIcon} />
 					) : (
 						<MicrophoneIcon weight="fill" className={dmStyles.dmCallControlIcon} />
@@ -636,9 +643,11 @@ export const DMChannelView = observer(({channelId}: DMChannelViewProps) => {
 			handleToggleDeafen,
 			handleToggleMute,
 			handleToggleScreenShare,
+			effectiveSelfMuted,
 			isSelfDeafened,
-			isSelfMuted,
 			isSelfScreenSharing,
+			muteButtonDisabled,
+			muteButtonLabel,
 			t,
 		],
 	);

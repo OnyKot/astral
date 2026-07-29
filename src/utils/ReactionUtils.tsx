@@ -38,6 +38,10 @@ export interface ReactionEmoji {
 	animated?: boolean;
 }
 
+type ReactionEmojiInput = UnicodeEmoji | ReactionEmoji | {id?: string; name: string; animated?: boolean; surrogates?: string};
+
+export const MAX_REACTION_TYPES_PER_MESSAGE = 10;
+
 const reactionUnicodeSurrogateCache = new Map<string, string>();
 const reactionEmojiUrlCache = new Map<string, string | null>();
 
@@ -88,14 +92,20 @@ export const getReactionTooltip = (message: MessageRecord, emoji: ReactionEmoji)
 		: i18n._(msg`${emojiName} reacted by ${othersCount} others`);
 };
 
-const isCustomEmoji = (emoji: UnicodeEmoji | ReactionEmoji): emoji is ReactionEmoji =>
+const isCustomEmoji = (emoji: ReactionEmojiInput): emoji is ReactionEmoji =>
 	'id' in emoji && emoji.id != null;
 
-export const toReactionEmoji = (emoji: UnicodeEmoji | ReactionEmoji) =>
-	isCustomEmoji(emoji) ? emoji : {name: emoji.surrogates};
+export const toReactionEmoji = (emoji: ReactionEmojiInput): ReactionEmoji =>
+	isCustomEmoji(emoji) ? emoji : {name: emoji.surrogates ?? emoji.name};
 
-export const emojiEquals = (reactionEmoji: ReactionEmoji, emoji: UnicodeEmoji | ReactionEmoji) =>
+export const emojiEquals = (reactionEmoji: ReactionEmoji, emoji: ReactionEmojiInput) =>
 	isCustomEmoji(emoji) ? emoji.id === reactionEmoji.id : reactionEmoji.id == null && emoji.name === reactionEmoji.name;
+
+export const canAddNewReactionTypeToMessage = (message?: MessageRecord | null): boolean =>
+	message == null || message.reactions.length < MAX_REACTION_TYPES_PER_MESSAGE;
+
+export const canAddReactionEmojiToMessage = (message: MessageRecord | undefined | null, emoji: ReactionEmojiInput): boolean =>
+	canAddNewReactionTypeToMessage(message) || message?.getReaction(toReactionEmoji(emoji)) != null;
 
 export const getReactionKey = (messageId: string, emoji: ReactionEmoji) =>
 	`${messageId}:${emoji.name}:${emoji.id || ''}`;

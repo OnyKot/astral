@@ -18,9 +18,9 @@
  */
 
 import type {UserID} from '~/BrandedTypes';
-import {BatchBuilder, fetchMany, fetchOne, upsertOne} from '~/database/Cassandra';
+import {BatchBuilder, Db, executeConditional, fetchMany, fetchOne} from '~/database/Cassandra';
 import type {VisionarySlotRow} from '~/database/CassandraTypes';
-import {CannotShrinkReservedSlotsError} from '~/Errors';
+import {CannotShrinkReservedSlotsError, NoVisionarySlotsAvailableError} from '~/Errors';
 import {VisionarySlot} from '~/Models';
 import {VisionarySlots} from '~/Tables';
 
@@ -74,41 +74,45 @@ export class VisionarySlotRepository {
 	}
 
 	async reserveVisionarySlot(slotIndex: number, userId: UserID): Promise<void> {
-		const existingSlot = await fetchOne<VisionarySlotRow>(FETCH_VISIONARY_SLOT_QUERY, {
-			slot_index: slotIndex,
-		});
-
-		if (!existingSlot) {
-			await upsertOne(
-				VisionarySlots.upsertAll({
-					slot_index: slotIndex,
-					user_id: userId,
-				}),
-			);
-		} else {
-			await upsertOne(
-				VisionarySlots.upsertAll({
-					slot_index: slotIndex,
-					user_id: userId,
-				}),
-			);
-		}
-	}
-
-	async unreserveVisionarySlot(slotIndex: number, userId: UserID): Promise<void> {
-		const existingSlot = await fetchOne<VisionarySlotRow>(FETCH_VISIONARY_SLOT_QUERY, {
-			slot_index: slotIndex,
-		});
-
-		if (!existingSlot || existingSlot.user_id !== userId) {
+		// CAS: only the first claimer of a free slot may win. Unconditional
+		// upsert previously allowed concurrent lifetime grants to overwrite
+		// each other's user_id (last-write-wins oversell).
+		const claimFree = await executeConditional(
+			VisionarySlots.patchByPkIf(
+				{slot_index: slotIndex},
+				{user_id: Db.set(userId)},
+				{col: 'user_id', expectedParam: 'expected_user_id', expectedValue: null},
+			),
+		);
+		if (claimFree.applied) {
 			return;
 		}
 
-		await upsertOne(
-			VisionarySlots.upsertAll({
-				slot_index: slotIndex,
-				user_id: null,
-			}),
+		const existingSlot = await fetchOne<VisionarySlotRow>(FETCH_VISIONARY_SLOT_QUERY, {
+			slot_index: slotIndex,
+		});
+		if (!existingSlot) {
+			const created = await executeConditional(
+				VisionarySlots.insertIfNotExists({
+					slot_index: slotIndex,
+					user_id: userId,
+				}),
+			);
+			if (created.applied) {
+				return;
+			}
+		}
+
+		throw new NoVisionarySlotsAvailableError();
+	}
+
+	async unreserveVisionarySlot(slotIndex: number, userId: UserID): Promise<void> {
+		await executeConditional(
+			VisionarySlots.patchByPkIf(
+				{slot_index: slotIndex},
+				{user_id: Db.set(null)},
+				{col: 'user_id', expectedParam: 'expected_user_id', expectedValue: userId},
+			),
 		);
 	}
 }

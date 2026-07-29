@@ -376,6 +376,7 @@ const harvestUserData: Task = async (payload, helpers) => {
 						explicit_content_filter: userSettings.explicitContentFilter,
 						friend_source_flags: userSettings.friendSourceFlags,
 						default_guilds_restricted: userSettings.defaultGuildsRestricted,
+						hide_online_time: userSettings.hideOnlineTime,
 						restricted_guilds: Array.from(userSettings.restrictedGuilds).map((id) => id.toString()),
 						guild_positions: userSettings.guildPositions.map((id) => id.toString()),
 						guild_folders: userSettings.guildFolders,

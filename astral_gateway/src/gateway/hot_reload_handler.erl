@@ -46,8 +46,8 @@ handle_post(Req0, State) ->
     end.
 
 authorize(Req0) ->
-    case cowboy_req:header(<<"authorization">>, Req0) of
-        undefined ->
+    case cowboy_req:header(<<"authorization">>, Req0, <<>>) of
+        <<>> ->
             Req = cowboy_req:reply(
                 401,
                 ?JSON_HEADERS,
@@ -62,6 +62,16 @@ authorize(Req0) ->
                         500,
                         ?JSON_HEADERS,
                         jsx:encode(#{<<"error">> => <<"GATEWAY_ADMIN_SECRET not configured">>}),
+                        Req0
+                    ),
+                    {error, Req};
+                Secret when length(Secret) < 16 ->
+                    %% A short/empty secret would make this RCE endpoint
+                    %% trivially brute-forceable. Refuse to serve it.
+                    Req = cowboy_req:reply(
+                        500,
+                        ?JSON_HEADERS,
+                        jsx:encode(#{<<"error">> => <<"GATEWAY_ADMIN_SECRET too short (minimum 16 chars)">>}),
                         Req0
                     ),
                     {error, Req};

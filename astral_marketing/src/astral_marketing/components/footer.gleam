@@ -54,6 +54,19 @@ pub fn render(ctx: Context) -> Element(a) {
                 ],
                 [html.text("Astral")],
               ),
+              html.p(
+                [attribute.class("mt-4 body-lg text-zinc-300")],
+                [html.text(tr(ctx, "Поддержка", "Support"))],
+              ),
+              html.a(
+                [
+                  attribute.href("mailto:support@astraof.com"),
+                  attribute.class(
+                    "mt-1 inline-block body-lg font-medium text-white hover:underline transition-colors",
+                  ),
+                ],
+                [html.text("support@astraof.com")],
+              ),
             ]),
             html.div(
               [
@@ -194,23 +207,27 @@ pub fn render(ctx: Context) -> Element(a) {
                     html.li([], [
                       html.a(
                         [
+                          attribute.href("mailto:support@astraof.com"),
+                          attribute.class(
+                            "body-lg font-medium text-white hover:underline transition-colors",
+                          ),
+                        ],
+                        [
+                          html.text(
+                            tr(ctx, "Поддержка: support@astraof.com", "Support: support@astraof.com"),
+                          ),
+                        ],
+                      ),
+                    ]),
+                    html.li([], [
+                      html.a(
+                        [
                           attribute.href("mailto:press@astraof.com"),
                           attribute.class(
                             "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
                           ),
                         ],
                         [html.text("press@astraof.com")],
-                      ),
-                    ]),
-                    html.li([], [
-                      html.a(
-                        [
-                          attribute.href("mailto:support@astraof.com"),
-                          attribute.class(
-                            "body-lg text-zinc-300 hover:text-white hover:underline transition-colors",
-                          ),
-                        ],
-                        [html.text("support@astraof.com")],
                       ),
                     ]),
                     html.li([], [
@@ -231,28 +248,47 @@ pub fn render(ctx: Context) -> Element(a) {
           ],
         ),
         html.div([attribute.class("mt-12 border-t border-zinc-700/70 pt-8")], [
-          html.div([attribute.class("flex flex-col gap-2")], [
-            html.p([attribute.class("body-sm text-zinc-400")], [
-              html.text("© Astral Platform"),
-            ]),
-            html.p([attribute.class("body-sm text-zinc-400")], [
-              html.text(tr(
-                ctx,
-                "Этот продукт использует GeoLite2 Data, созданные MaxMind и доступные на ",
-                "This product includes GeoLite2 Data created by MaxMind, available from ",
-              )),
-              html.a(
-                [
-                  attribute.href("https://www.maxmind.com"),
-                  attribute.target("_blank"),
-                  attribute.rel("noopener noreferrer"),
-                  attribute.class("hover:underline"),
-                ],
-                [html.text("MaxMind")],
+          html.div(
+            [
+              attribute.class(
+                "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
               ),
-              html.text("."),
-            ]),
-          ]),
+            ],
+            [
+              html.div([attribute.class("flex flex-col gap-2")], [
+                html.p([attribute.class("body-sm text-zinc-400")], [
+                  html.text("© Astral Platform"),
+                ]),
+                html.p([attribute.class("body-sm text-zinc-400")], [
+                  html.text(tr(
+                    ctx,
+                    "Этот продукт использует GeoLite2 Data, созданные MaxMind и доступные на ",
+                    "This product includes GeoLite2 Data created by MaxMind, available from ",
+                  )),
+                  html.a(
+                    [
+                      attribute.href("https://www.maxmind.com"),
+                      attribute.target("_blank"),
+                      attribute.rel("noopener noreferrer"),
+                      attribute.class("hover:underline"),
+                    ],
+                    [html.text("MaxMind")],
+                  ),
+                  html.text("."),
+                ]),
+              ]),
+              html.p([attribute.class("body-sm text-zinc-300")], [
+                html.text(tr(ctx, "Поддержка: ", "Support: ")),
+                html.a(
+                  [
+                    attribute.href("mailto:support@astraof.com"),
+                    attribute.class("font-medium text-white hover:underline"),
+                  ],
+                  [html.text("support@astraof.com")],
+                ),
+              ]),
+            ],
+          ),
         ]),
       ]),
     ],

@@ -115,7 +115,7 @@ export const ShareThemeModal = observer(({themeCss}: {themeCss: string}) => {
 
 			await MessageActionCreators.send(targetChannelId, {
 				content: `${t`Check out my custom theme!`}\n${themeUrl}`,
-				nonce: SnowflakeUtils.fromTimestamp(Date.now()),
+				nonce: SnowflakeUtils.nextClientNonce(),
 			});
 
 			setSentTo((prev) => new Map(prev).set(userId, true));

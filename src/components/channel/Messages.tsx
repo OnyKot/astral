@@ -22,7 +22,7 @@ import {AnimatePresence, motion, useReducedMotion} from 'framer-motion';
 import {runInAction} from 'mobx';
 import {observer, useLocalObservable} from 'mobx-react-lite';
 import type React from 'react';
-import {useCallback, useEffect, useLayoutEffect, useMemo, useRef} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import * as ChannelPinsActionCreators from '~/actions/ChannelPinsActionCreators';
 import * as MessageActionCreators from '~/actions/MessageActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
@@ -50,6 +50,7 @@ import type {ChannelRecord} from '~/records/ChannelRecord';
 import type {MessageRecord} from '~/records/MessageRecord';
 import AccessibilityStore from '~/stores/AccessibilityStore';
 import ConnectionStore from '~/stores/ConnectionStore';
+import DimensionStore from '~/stores/DimensionStore';
 import GuildVerificationStore from '~/stores/GuildVerificationStore';
 import KeyboardModeStore from '~/stores/KeyboardModeStore';
 import MessageEditStore from '~/stores/MessageEditStore';
@@ -63,12 +64,20 @@ import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import UserSettingsStore from '~/stores/UserSettingsStore';
 import UserStore from '~/stores/UserStore';
 import WindowStore from '~/stores/WindowStore';
-import {type ChannelStreamItem, ChannelStreamType, createChannelStream} from '~/utils/MessageGroupingUtils';
+import {
+	type ChannelStreamItem,
+	ChannelStreamType,
+	createChannelStream,
+	shouldContinueVisualMessageBlock,
+} from '~/utils/MessageGroupingUtils';
 import {buildMessageJumpLink} from '~/utils/messageLinkUtils';
 import SnowflakeUtils from '~/utils/SnowflakeUtil';
 import styles from './Messages.module.css';
 import {NewMessagesBar} from './NewMessagesBar';
 import {ScrollToBottomButton} from './ScrollToBottomButton';
+
+const MOBILE_INITIAL_MESSAGE_RENDER_LIMIT = 24;
+const MOBILE_INITIAL_MESSAGE_FETCH_LIMIT = 36;
 
 const isSystemMessage = (message: MessageRecord | undefined): boolean => {
 	if (!message) return false;
@@ -125,7 +134,92 @@ function shallowEqual<T extends Record<string, unknown>>(a: T, b: T): boolean {
 	return true;
 }
 
-export const Messages = observer(function Messages({channel}: {channel: ChannelRecord}) {
+function arraysAreIdentical<T>(a: ReadonlyArray<T>, b: ReadonlyArray<T>): boolean {
+	if (a.length !== b.length) return false;
+	for (let i = 0; i < a.length; i++) {
+		if (a[i] !== b[i]) return false;
+	}
+	return true;
+}
+
+function isStructurallyEqual(a: unknown, b: unknown): boolean {
+	if (a === b) return true;
+	if (a == null || b == null) return false;
+	if (typeof a !== 'object' || typeof b !== 'object') return false;
+
+	if (a instanceof Date || b instanceof Date) {
+		return a instanceof Date && b instanceof Date && a.getTime() === b.getTime();
+	}
+
+	if (Array.isArray(a) || Array.isArray(b)) {
+		if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+		for (let i = 0; i < a.length; i++) {
+			if (!isStructurallyEqual(a[i], b[i])) return false;
+		}
+		return true;
+	}
+
+	const aFields = a as Record<string, unknown>;
+	const bFields = b as Record<string, unknown>;
+	const aKeys = Object.keys(aFields);
+	if (aKeys.length !== Object.keys(bFields).length) return false;
+	for (const key of aKeys) {
+		if (!Object.hasOwn(bFields, key)) return false;
+		if (!isStructurallyEqual(aFields[key], bFields[key])) return false;
+	}
+	return true;
+}
+
+/*
+ * ChannelStore.handleMessageCreate mints a brand new ChannelRecord for every
+ * incoming message purely to move `last_message_id` forward. That fresh identity
+ * used to fail MessageGroup's memo comparator and every Message's shallow prop
+ * compare, so a single message re-rendered all ~200 loaded rows and re-parsed all
+ * of their markdown - the dominant source of scroll jank and typing stutter in a
+ * busy channel.
+ *
+ * Nothing rendered under Messages reads channel.lastMessageId (the DM list, quick
+ * switcher and read-state actions all read it straight from ChannelStore), so we
+ * keep serving the previous instance while the two records are otherwise
+ * structurally identical. The comparison walks Object.keys rather than a
+ * hand-written field list so a field added to ChannelRecord later is compared
+ * automatically, and a differing key set just means "not equal" - it can never
+ * start masking a real change.
+ */
+function channelDiffersOnlyByLastMessageId(previous: ChannelRecord, next: ChannelRecord): boolean {
+	if (previous.id !== next.id) return false;
+
+	const previousFields = previous as unknown as Record<string, unknown>;
+	const nextFields = next as unknown as Record<string, unknown>;
+	const previousKeys = Object.keys(previousFields);
+	if (previousKeys.length !== Object.keys(nextFields).length) return false;
+
+	for (const key of previousKeys) {
+		if (key === 'lastMessageId') continue;
+		if (!Object.hasOwn(nextFields, key)) return false;
+		if (!isStructurallyEqual(previousFields[key], nextFields[key])) return false;
+	}
+
+	return true;
+}
+
+function useStableChannel(channel: ChannelRecord): ChannelRecord {
+	const stableChannelRef = useRef(channel);
+	if (stableChannelRef.current !== channel && !channelDiffersOnlyByLastMessageId(stableChannelRef.current, channel)) {
+		stableChannelRef.current = channel;
+	}
+	return stableChannelRef.current;
+}
+
+interface MessageGroupCacheEntry {
+	messages: Array<MessageRecord>;
+	unreadDividerFlags: Array<boolean>;
+}
+
+type MessageGroupCache = Map<string, MessageGroupCacheEntry>;
+
+export const Messages = observer(function Messages({channel: channelProp}: {channel: ChannelRecord}) {
+	const channel = useStableChannel(channelProp);
 	const {t, i18n} = useLingui();
 
 	const messagesWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -142,6 +236,13 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 	});
 
 	const windowId = WindowStore.windowId;
+	const isMobileLayout = MobileLayoutStore.enabled;
+	const initialMessageFetchLimit = isMobileLayout ? MOBILE_INITIAL_MESSAGE_FETCH_LIMIT : MAX_MESSAGES_PER_CHANNEL;
+	const [mobileFullStreamReady, setMobileFullStreamReady] = useState(() => {
+		if (!MobileLayoutStore.enabled) return true;
+		if (MessageStore.peekMessages(channel.id)?.ready) return true;
+		return DimensionStore.getChannelDimensions(channel.id) != null;
+	});
 	const isWindowFocused = WindowStore.isFocused();
 	const isModalOpen = ModalStore.hasModalOpen();
 	const keyboardModeEnabled = KeyboardModeStore.keyboardModeEnabled;
@@ -172,6 +273,27 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 		additionalMessagePadding: 48,
 		canAutoAck,
 	});
+
+	useEffect(() => {
+		const hasRestorableMobilePosition = DimensionStore.getChannelDimensions(channel.id) != null;
+		const hasWarmMessages = MessageStore.peekMessages(channel.id)?.ready ?? false;
+
+		if (!isMobileLayout || hasWarmMessages || hasRestorableMobilePosition) {
+			setMobileFullStreamReady(true);
+			return;
+		}
+
+		setMobileFullStreamReady(false);
+		let frameId = window.requestAnimationFrame(() => {
+			frameId = window.requestAnimationFrame(() => {
+				setMobileFullStreamReady(true);
+			});
+		});
+
+		return () => {
+			window.cancelAnimationFrame(frameId);
+		};
+	}, [channel.id, isMobileLayout]);
 
 	useEffect(() => {
 		const node = messagesWrapperRef.current;
@@ -276,8 +398,8 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 		if (channel.guildId) {
 			ConnectionStore.syncGuildIfNeeded(channel.guildId, 'messages-retry');
 		}
-		void MessageActionCreators.fetchMessages(channel.id, null, null, MAX_MESSAGES_PER_CHANNEL);
-	}, [channel.guildId, channel.id]);
+		void MessageActionCreators.fetchMessages(channel.id, null, null, initialMessageFetchLimit);
+	}, [channel.guildId, channel.id, initialMessageFetchLimit]);
 
 	useEffect(() => {
 		if (!ConnectionStore.isReady || !ConnectionStore.isConnected) return;
@@ -287,10 +409,11 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 			ConnectionStore.syncGuildIfNeeded(channel.guildId, 'messages-autoload');
 		}
 
-		void MessageActionCreators.fetchMessages(channel.id, null, null, MAX_MESSAGES_PER_CHANNEL);
+		void MessageActionCreators.fetchMessages(channel.id, null, null, initialMessageFetchLimit);
 	}, [
 		channel.guildId,
 		channel.id,
+		initialMessageFetchLimit,
 		safeMessages.error,
 		safeMessages.loadingMore,
 		safeMessages.ready,
@@ -671,24 +794,37 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 
 	const channelStream = useMemo<Array<ChannelStreamItem>>(() => {
 		if (!state.messages?.ready) return [];
+		const shouldStageMobileStream =
+			isMobileLayout && !mobileFullStreamReady && !state.messages.jumpTargetId && !state.messages.hasMoreAfter;
 
 		return createChannelStream({
 			channel,
 			messages: state.messages,
 			oldestUnreadMessageId: state.visualUnreadMessageId,
+			presentWindow: shouldStageMobileStream ? {limit: MOBILE_INITIAL_MESSAGE_RENDER_LIMIT} : undefined,
 			treatSpam: false,
 		});
-	}, [channel, state.messages?.ready, state.messageVersion, state.visualUnreadMessageId]);
+	}, [channel, isMobileLayout, mobileFullStreamReady, state.messages?.ready, state.messageVersion, state.visualUnreadMessageId]);
 
 	const {canAttachFiles} = useMemo(
 		() => checkPermissions(channel),
 		[channel.id, channel.guildId, state.permissionVersion],
 	);
 
+	/*
+	 * Group arrays are carried across rebuilds so MessageGroup's memo comparator
+	 * (which keys on the array identity) can actually bail. A fresh Map per rebuild
+	 * doubles as the prune: only groups still present in the stream survive.
+	 */
+	const messageGroupCacheRef = useRef<MessageGroupCache>(new Map());
+
 	const streamMarkup = useMemo(() => {
 		if (!state.messages?.ready) return null;
 
-		return renderChannelStream({
+		const previousGroupCache = messageGroupCacheRef.current;
+		const nextGroupCache: MessageGroupCache = new Map();
+
+		const markup = renderChannelStream({
 			channelStream,
 			messages: state.messages,
 			channel,
@@ -699,7 +835,12 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 			revealedMessageId: state.revealedMessageId,
 			onMessageEdit,
 			onReveal,
+			previousGroupCache,
+			nextGroupCache,
 		});
+
+		messageGroupCacheRef.current = nextGroupCache;
+		return markup;
 	}, [
 		channelStream,
 		state.messages?.ready,
@@ -740,13 +881,14 @@ export const Messages = observer(function Messages({channel}: {channel: ChannelR
 	) : null;
 
 	const readyMessages = state.messages?.ready ? state.messages : null;
-	const isMobileLayout = MobileLayoutStore.enabled;
+	const isMobileStagedStream =
+		Boolean(readyMessages) && isMobileLayout && !mobileFullStreamReady && !readyMessages?.jumpTargetId && !readyMessages?.hasMoreAfter;
 
 	const scrollerContentRef = useRef<HTMLDivElement>(null);
 
 	const scrollerInner = readyMessages ? (
 		<>
-			{!readyMessages.hasMoreBefore && <ChannelWelcomeSection channel={channel} />}
+			{!isMobileStagedStream && !readyMessages.hasMoreBefore && <ChannelWelcomeSection channel={channel} />}
 			{readyMessages.hasMoreBefore && (
 				<>
 					<div className={styles.placeholderSpacer} />
@@ -826,6 +968,8 @@ function renderChannelStream(props: {
 	revealedMessageId: string | null;
 	onMessageEdit: (target: HTMLElement) => void;
 	onReveal: (messageId: string | null) => void;
+	previousGroupCache: MessageGroupCache;
+	nextGroupCache: MessageGroupCache;
 }): Array<React.ReactNode> {
 	const {
 		channelStream,
@@ -837,6 +981,8 @@ function renderChannelStream(props: {
 		revealedMessageId,
 		onMessageEdit,
 		onReveal,
+		previousGroupCache,
+		nextGroupCache,
 	} = props;
 
 	const nodes: Array<React.ReactNode> = [];
@@ -846,6 +992,7 @@ function renderChannelStream(props: {
 	let pendingGroupId: string | undefined;
 	let pendingFlashKey: number | undefined;
 	let lastRenderedGroupKind: MessageGroupKind | null = null;
+	let lastFlushedMessage: MessageRecord | undefined;
 	let spacerCounter = 0;
 	const usedGroupKeys = new Map<string, number>();
 
@@ -859,17 +1006,26 @@ function renderChannelStream(props: {
 		nodes.push(<div key={`group-spacer-${keyBase}-${spacerCounter++}`} className={spacerClass} aria-hidden="true" />);
 	};
 
-	const flushPendingGroup = () => {
+	const flushPendingGroup = (nextMessage?: MessageRecord) => {
 		if (pendingMessages.length === 0) return;
 
 		const groupKey = pendingMessages[0].nonce ?? pendingGroupId ?? pendingMessages[0].id;
 		const groupKind = getMessageGroupKind(pendingMessages[0]);
 		const streamItemsMap = new Map(pendingStreamItems.map((item) => [(item.content as MessageRecord).id, item]));
-		const firstMessageHasUnreadDivider = streamItemsMap.get(pendingMessages[0].id)?.showUnreadDividerBefore ?? false;
-		pushSpacerIfNeeded(groupKind, groupKey, firstMessageHasUnreadDivider);
+		const unreadDividerFlags = pendingMessages.map(
+			(message) => streamItemsMap.get(message.id)?.showUnreadDividerBefore ?? false,
+		);
+		const firstMessageHasUnreadDivider = unreadDividerFlags[0] ?? false;
+		const continuesVisualBlock =
+			!firstMessageHasUnreadDivider && shouldContinueVisualMessageBlock(lastFlushedMessage, pendingMessages[0]);
+		if (!continuesVisualBlock) {
+			pushSpacerIfNeeded(groupKind, groupKey, firstMessageHasUnreadDivider);
+		}
 		const keyUseCount = usedGroupKeys.get(groupKey) ?? 0;
 		usedGroupKeys.set(groupKey, keyUseCount + 1);
 		const renderGroupKey = keyUseCount === 0 ? groupKey : `${groupKey}-${keyUseCount}`;
+		const previousMessage = lastFlushedMessage;
+		const groupLastMessage = pendingMessages[pendingMessages.length - 1]!;
 
 		const getUnreadDividerVisibility = (messageId: string, position: 'before' | 'after') => {
 			if (position === 'before') {
@@ -880,11 +1036,31 @@ function renderChannelStream(props: {
 			return false;
 		};
 
+		/*
+		 * Hand MessageGroup the previous array when this group's rendered output is
+		 * provably unchanged, so its memo comparator (MessageGroup.tsx, which keys on
+		 * `messages` identity) can bail instead of re-rendering every row.
+		 *
+		 * The divider flags are part of the guard on purpose: the comparator does NOT
+		 * look at getUnreadDividerVisibility, so reusing the array while a divider
+		 * moved would freeze the red "new messages" line at its old position.
+		 */
+		const cachedGroup = previousGroupCache.get(renderGroupKey);
+		const groupMessages =
+			cachedGroup != null &&
+			arraysAreIdentical(cachedGroup.messages, pendingMessages) &&
+			arraysAreIdentical(cachedGroup.unreadDividerFlags, unreadDividerFlags)
+				? cachedGroup.messages
+				: pendingMessages;
+		nextGroupCache.set(renderGroupKey, {messages: groupMessages, unreadDividerFlags});
+
 		nodes.push(
 			<MessageGroup
 				key={renderGroupKey}
-				messages={pendingMessages}
+				messages={groupMessages}
 				channel={channel}
+				previousMessage={previousMessage}
+				nextMessage={nextMessage}
 				onEdit={onMessageEdit}
 				highlightedMessageId={highlightedMessageId}
 				messageDisplayCompact={messageDisplayCompact}
@@ -895,6 +1071,7 @@ function renderChannelStream(props: {
 		);
 
 		lastRenderedGroupKind = groupKind;
+		lastFlushedMessage = groupLastMessage;
 		pendingMessages = [];
 		pendingStreamItems = [];
 		pendingGroupId = undefined;
@@ -923,6 +1100,7 @@ function renderChannelStream(props: {
 					</Divider>,
 				);
 				lastRenderedGroupKind = null;
+				lastFlushedMessage = undefined;
 				continue;
 			}
 
@@ -940,9 +1118,11 @@ function renderChannelStream(props: {
 					/>,
 				);
 				lastRenderedGroupKind = 'regular';
+				lastFlushedMessage = undefined;
 				continue;
 			}
 
+			lastFlushedMessage = undefined;
 			continue;
 		}
 
@@ -950,7 +1130,11 @@ function renderChannelStream(props: {
 		const itemGroupId = item.groupId ?? message.id;
 
 		if (pendingGroupId && pendingGroupId !== itemGroupId) {
-			flushPendingGroup();
+			const breakVisualBlockForUnread = item.showUnreadDividerBefore ?? false;
+			flushPendingGroup(breakVisualBlockForUnread ? undefined : message);
+			if (breakVisualBlockForUnread) {
+				lastFlushedMessage = undefined;
+			}
 		}
 
 		if (!pendingGroupId) {

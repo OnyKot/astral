@@ -55,8 +55,8 @@ export const InputTabContent: React.FC = observer(() => {
 	return (
 		<>
 			<SettingsTabSection
-				title="Expression Autocomplete (Colon Autocomplete)"
-				description="Control what appears in the expression autocomplete when you type colon. Customize what suggestions show up to match your preferences."
+				title={t`Expression Autocomplete (Colon Autocomplete)`}
+				description={t`Control what appears in the expression autocomplete when you type colon. Customize what suggestions show up to match your preferences.`}
 			>
 				<div className={styles.sectionContent}>
 					<SwitchGroup>
@@ -90,8 +90,8 @@ export const InputTabContent: React.FC = observer(() => {
 
 			{!mobileLayout.enabled && (
 				<SettingsTabSection
-					title="Message Input Buttons"
-					description="Customize which buttons are visible in the message input area. Keyboard shortcuts will continue to work even if buttons are hidden."
+					title={t`Message Input Buttons`}
+					description={t`Customize which buttons are visible in the message input area. Keyboard shortcuts will continue to work even if buttons are hidden.`}
 				>
 					<div className={styles.sectionContent}>
 						<SwitchGroup>
@@ -153,7 +153,7 @@ export const InputTabContent: React.FC = observer(() => {
 								label={t`Show Send Button`}
 								value={showMessageSendButton}
 								onChange={(value) => AccessibilityActionCreators.update({showMessageSendButton: value})}
-								shortcut={<KeyboardKey>↵</KeyboardKey>}
+								shortcut={<KeyboardKey>Enter</KeyboardKey>}
 							/>
 						</SwitchGroup>
 					</div>

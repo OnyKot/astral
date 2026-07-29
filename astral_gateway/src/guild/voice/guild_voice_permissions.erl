@@ -34,6 +34,17 @@
 ) ->
     {ok, allowed} | {error, atom(), atom()}.
 check_voice_permissions_and_limits(UserId, ChannelIdValue, Channel, VoiceStates, State, IsUpdate) ->
+    ChannelType = maps:get(<<"type">>, Channel, 0),
+    case constants:is_guild_rtc_channel_type(ChannelType) of
+        false ->
+            gateway_errors:error(voice_channel_not_voice);
+        true ->
+            check_member_voice_permissions_and_limits(
+                UserId, ChannelIdValue, Channel, VoiceStates, State, IsUpdate
+            )
+    end.
+
+check_member_voice_permissions_and_limits(UserId, ChannelIdValue, Channel, VoiceStates, State, IsUpdate) ->
     case is_member_timed_out(UserId, State) of
         true ->
             gateway_errors:error(voice_member_timed_out);

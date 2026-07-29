@@ -25,7 +25,7 @@ import type {IGrokService} from '~/infrastructure/IGrokService';
 import type {PackService} from '~/pack/PackService';
 import type {z} from '~/Schema';
 import type {IUserAccountRepository} from '~/user/repositories/IUserAccountRepository';
-import type {CustomStatusPayload} from '~/user/UserTypes';
+import {isStatusGifEmojiName, type CustomStatusPayload} from '~/user/UserTypes';
 
 export interface ValidatedCustomStatus {
 	text: string | null;
@@ -90,6 +90,7 @@ export class CustomStatusValidator {
 			emojiAnimated = emoji.isAnimated;
 		} else if (payload.emoji_name != null) {
 			emojiName = payload.emoji_name;
+			emojiAnimated = isStatusGifEmojiName(payload.emoji_name);
 		}
 
 		return {

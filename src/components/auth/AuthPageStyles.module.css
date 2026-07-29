@@ -28,93 +28,78 @@
 
 .loadingCard {
 	display: flex;
-	width: min(100%, 26rem);
+	width: min(100%, 16rem);
 	flex-direction: column;
-	gap: 0.95rem;
-	padding: 1rem;
-	border-radius: 1.35rem;
-	border: 1px solid rgb(255 255 255 / 0.06);
-	background:
-		radial-gradient(100% 120% at 0% 0%, rgb(99 102 241 / 0.14) 0%, transparent 58%),
-		linear-gradient(180deg, rgb(17 22 38 / 0.96) 0%, rgb(11 15 28 / 0.98) 100%);
-	box-shadow:
-		0 18px 38px rgb(0 0 0 / 0.24),
-		inset 0 1px 0 rgb(255 255 255 / 0.04);
-}
-
-.loadingBadge {
-	display: inline-flex;
-	width: fit-content;
-	align-items: center;
-	padding: 0.42rem 0.72rem;
-	border-radius: 999px;
-	background: rgb(255 255 255 / 0.05);
-	border: 1px solid rgb(255 255 255 / 0.06);
-	font-size: 0.72rem;
-	font-weight: 700;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-	color: rgb(225 229 248 / 0.88);
+	gap: 0.62rem;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
 }
 
 .loadingHeader {
 	display: flex;
 	align-items: center;
-	gap: 0.9rem;
-}
-
-.loadingSpinnerWrap {
-	display: inline-flex;
-	align-items: center;
 	justify-content: center;
-	width: 3.1rem;
-	height: 3.1rem;
-	flex-shrink: 0;
-	border-radius: 1rem;
-	background: rgb(102 108 255 / 0.14);
-	color: rgb(230 233 255);
 }
 
 .loadingBody {
 	display: flex;
 	min-width: 0;
 	flex-direction: column;
-	gap: 0.2rem;
+	gap: 0.16rem;
+	align-items: center;
 }
 
 .loadingTitle {
-	font-size: 1rem;
-	font-weight: 700;
+	font-size: 0.94rem;
+	font-weight: 650;
 	line-height: 1.2;
 	color: rgb(248 249 255 / 0.98);
+	text-align: center;
 }
 
 .loadingText {
-	font-size: 0.83rem;
+	font-size: 0.8rem;
 	line-height: 1.45;
-	color: rgb(190 196 220 / 0.82);
+	color: rgb(190 196 220 / 0.76);
 }
 
-.loadingStatusRow {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.5rem;
-	font-size: 0.78rem;
-	font-weight: 600;
-	color: rgb(218 222 242 / 0.84);
-}
-
-.loadingStatusDot {
-	width: 0.5rem;
-	height: 0.5rem;
-	flex-shrink: 0;
+.loadingProgressTrack {
+	position: relative;
+	height: 3px;
+	overflow: hidden;
 	border-radius: 999px;
-	background: linear-gradient(180deg, rgb(110 118 255) 0%, rgb(71 82 212) 100%);
-	box-shadow: 0 0 0 4px rgb(99 102 241 / 0.12);
+	background: rgb(255 255 255 / 0.08);
 }
 
-.loadingStatusLabel {
-	min-width: 0;
+.loadingProgressBar {
+	position: absolute;
+	inset: 0 auto 0 0;
+	width: 38%;
+	border-radius: 999px;
+	background: rgb(235 235 245 / 0.72);
+	animation: authLoadingProgress 920ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes authLoadingProgress {
+	0% {
+		transform: translateX(-105%);
+	}
+	52% {
+		transform: translateX(78%);
+	}
+	100% {
+		transform: translateX(270%);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.loadingProgressBar {
+		animation: none;
+		width: 100%;
+		opacity: 0.72;
+	}
 }
 
 .errorContainer {
@@ -360,12 +345,11 @@
 
 @media (max-width: 480px) {
 	.loadingCard {
-		padding: 0.9rem;
-		border-radius: 1.2rem;
+		width: min(100%, 12rem);
 	}
 
 	.loadingHeader {
-		align-items: flex-start;
+		align-items: center;
 	}
 }
 
@@ -480,14 +464,47 @@
 }
 
 .title {
-	margin-bottom: 1.4rem;
+	margin-bottom: 1.05rem;
 	text-align: center;
-	font-family: var(--auth-font-display, 'Unbounded', var(--font-sans));
-	font-size: clamp(1.4rem, 3vw, 1.65rem);
-	line-height: 1.18;
-	font-weight: 500;
-	letter-spacing: -0.018em;
-	color: rgb(235 235 245 / 75%);
+	font-family: var(--auth-font-display, var(--font-sans));
+	font-size: clamp(1.55rem, 3vw, 1.9rem);
+	line-height: 1.06;
+	font-weight: 760;
+	letter-spacing: 0;
+	color: rgb(245 246 252 / 0.94);
+	text-wrap: balance;
+}
+
+.loginTitle {
+}
+
+.brandTitle {
+	margin-bottom: 1.15rem;
+	padding-top: 0.08em;
+	font-family: 'Unbounded', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	font-size: clamp(2.05rem, 4vw, 2.45rem);
+	font-weight: 700;
+	line-height: 1.12;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	background: linear-gradient(135deg, #f3f4fb 4%, #c5c9e2 44%, #9097c2 96%);
+	background-size: 220% 220%;
+	background-clip: text;
+	-webkit-background-clip: text;
+	color: transparent;
+	text-shadow:
+		0 0 18px rgb(255 255 255 / 0.08),
+		0 0 28px rgb(174 187 255 / 0.08);
+}
+
+@media (max-width: 860px) {
+	.brandTitle {
+		display: none;
+	}
+
+	.loginTitle {
+		display: none;
+	}
 }
 
 .betaCodeHint {

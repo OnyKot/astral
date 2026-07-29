@@ -59,6 +59,8 @@ class MessageStore {
 	pendingMessageJump: PendingMessageJump | null = null;
 	updateCounter = 0;
 	private pendingFullHydration = false;
+	/** Live/optimistic messages that arrived while the channel history was still loading. */
+	private pendingIncomingByChannel = new Map<ChannelId, Map<MessageId, Message>>();
 
 	// Обратный индекс: userId -> Set<channelId> для O(k) обновлений вместо O(N)
 	private userChannelIndex = new Map<string, Set<ChannelId>>();
@@ -181,6 +183,7 @@ class MessageStore {
 		}
 		this.pendingMessageJump = null;
 		this.pendingFullHydration = true;
+		this.pendingIncomingByChannel.clear();
 		this.notifyChange();
 		return true;
 	}
@@ -445,7 +448,21 @@ class MessageStore {
 		cached?: boolean;
 		messages: Array<Message>;
 	}): boolean {
-		const messages = ChannelMessages.getOrCreate(action.channelId).loadComplete({
+		const previous = ChannelMessages.get(action.channelId);
+		const preservedLocals =
+			previous && ((!action.isBefore && !action.isAfter) || !!action.jump || !previous.ready)
+				? previous
+						.toArray()
+						.filter(
+							(message) =>
+								message.state === MessageStates.SENDING ||
+								message.state === MessageStates.FAILED ||
+								(message.nonce != null && message.id === message.nonce),
+						)
+						.map((message) => message.toJSON())
+				: [];
+
+		let messages = ChannelMessages.getOrCreate(action.channelId).loadComplete({
 			newMessages: action.messages,
 			isBefore: action.isBefore,
 			isAfter: action.isAfter,
@@ -460,6 +477,16 @@ class MessageStore {
 			for (const msg of action.messages) {
 				this.indexMessage(msg, action.channelId);
 			}
+		}
+
+		const pending = this.pendingIncomingByChannel.get(action.channelId);
+		this.pendingIncomingByChannel.delete(action.channelId);
+		const toReapply = [...preservedLocals, ...(pending ? [...pending.values()] : [])];
+
+		for (const message of toReapply) {
+			if (messages.has(message.id, true)) continue;
+			messages = messages.receiveMessage(message, false);
+			this.indexMessage(message, action.channelId);
 		}
 
 		ChannelMessages.commit(messages);
@@ -480,13 +507,32 @@ class MessageStore {
 		ChannelStore.handleMessageCreate({message: action.message});
 
 		const existing = ChannelMessages.get(action.channelId);
+		const isOptimisticLocal =
+			action.message.state === MessageStates.SENDING ||
+			action.message.state === MessageStates.FAILED ||
+			(action.message.nonce != null && action.message.id === action.message.nonce);
+
 		if (!existing?.ready) {
+			// Keep optimistic sends visible during history load; buffer other live events.
+			if (!isOptimisticLocal) {
+				const pending = this.pendingIncomingByChannel.get(action.channelId) ?? new Map();
+				pending.set(action.message.id, action.message);
+				this.pendingIncomingByChannel.set(action.channelId, pending);
+				return false;
+			}
+
+			const provisional = ChannelMessages.getOrCreate(action.channelId);
+			const updatedOptimistic = provisional.receiveMessage(
+				action.message,
+				DimensionStore.isAtBottom(action.channelId),
+			);
+			ChannelMessages.commit(updatedOptimistic);
+			this.indexMessage(action.message, action.channelId);
+			this.notifyChange();
 			return false;
 		}
 
-		const isCurrentUserMessage = action.message.author.id === UserStore.currentUser?.id;
-		const shouldKeepBottom = isCurrentUserMessage || DimensionStore.isAtBottom(action.channelId);
-		const updated = existing.receiveMessage(action.message, shouldKeepBottom);
+		const updated = existing.receiveMessage(action.message, DimensionStore.isAtBottom(action.channelId));
 		ChannelMessages.commit(updated);
 
 		// Индексируем для обратного индекса

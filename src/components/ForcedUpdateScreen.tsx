@@ -34,15 +34,13 @@ interface ForcedUpdateScreenProps {
 }
 
 export const ForcedUpdateScreen: React.FC<ForcedUpdateScreenProps> = ({
-	currentVersion,
-	requiredVersion,
 	downloadUrl,
 	platform = 'desktop',
-	notes,
 	onReload,
 }) => {
 	const isAndroid = platform === 'android';
 	const isWeb = platform === 'web';
+	const updateTitle = isAndroid ? <Trans>Phone update</Trans> : isWeb ? <Trans>Browser update</Trans> : <Trans>PC update</Trans>;
 
 	const [reloading, setReloading] = React.useState(false);
 
@@ -67,42 +65,19 @@ export const ForcedUpdateScreen: React.FC<ForcedUpdateScreenProps> = ({
 			<AstralIcon className={styles.errorFallbackIcon} />
 			<div className={styles.errorFallbackContent}>
 				<h1 className={styles.errorFallbackTitle}>
-					<Trans>Update Required</Trans>
+					{updateTitle}
 				</h1>
 				{isAndroid ? (
 					<p className={styles.errorFallbackDescription}>
-						<Trans>This app version is no longer supported. Install the latest Astral update to keep messaging, calls, and Astral Music working correctly.</Trans>
+						<Trans>Astral 1.5.0 is ready for your phone.</Trans>
 					</p>
 				) : isWeb ? (
 					<p className={styles.errorFallbackDescription}>
-						<Trans>Your browser is running an outdated Astral build. Refresh to load the latest version.</Trans>
+						<Trans>Astral 1.5.0 is ready for your browser.</Trans>
 					</p>
 				) : (
 					<p className={styles.errorFallbackDescription}>
-						<Trans>This desktop build is no longer supported. Install the latest Astral update to keep messaging, calls, and Astral Music working correctly.</Trans>
-					</p>
-				)}
-				<p className={styles.errorFallbackDescription}>
-					<Trans>
-						Your version: {currentVersion ?? 'unknown'}.
-						<br />
-						Required version: {requiredVersion}.
-					</Trans>
-				</p>
-				{notes ? (
-					<p className={styles.errorFallbackDescription}>{notes}</p>
-				) : null}
-				{isAndroid ? (
-					<p className={styles.errorFallbackDescription}>
-						<Trans>Download the latest version, finish installing it, then reopen Astral.</Trans>
-					</p>
-				) : isWeb ? (
-					<p className={styles.errorFallbackDescription}>
-						<Trans>Click the button below to reload Astral with the latest web bundle.</Trans>
-					</p>
-				) : (
-					<p className={styles.errorFallbackDescription}>
-						<Trans>Download the new installer, finish the update, then reopen Astral.</Trans>
+						<Trans>Astral 1.5.0 is ready for PC clients.</Trans>
 					</p>
 				)}
 			</div>

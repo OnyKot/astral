@@ -21,6 +21,7 @@ import type {GuildID, UserID} from '~/BrandedTypes';
 import {Permissions} from '~/Constants';
 import {AuditLogActionType} from '~/constants/AuditLogActionType';
 import {BannedFromGuildError, InputValidationError, IpBannedFromGuildError, MissingPermissionsError} from '~/Errors';
+import {assertNotProtectedTarget} from '~/admin/ProtectedRootUsers';
 import type {GuildBanResponse} from '~/guild/GuildModel';
 import {mapGuildBansToResponse} from '~/guild/GuildModel';
 import type {IGatewayService} from '~/infrastructure/IGatewayService';
@@ -55,6 +56,10 @@ export class GuildModerationService {
 		auditLogReason?: string | null,
 	): Promise<void> {
 		const {userId, guildId, targetId, deleteMessageDays, reason, banDurationSeconds} = params;
+
+		// Hard-stop: protected root operators (instance founders) cannot be banned
+		// from any guild, ever — not even by the guild owner.
+		assertNotProtectedTarget(targetId);
 
 		const hasPermission = await this.gatewayService.checkPermission({
 			guildId,
@@ -149,7 +154,8 @@ export class GuildModerationService {
 		});
 		if (!hasPermission) throw new MissingPermissionsError();
 
-		const bans = await this.guildRepository.listBans(guildId);
+		const MAX_BANS_PER_RESPONSE = 5000;
+		const bans = await this.guildRepository.listBans(guildId, {limit: MAX_BANS_PER_RESPONSE});
 		return await mapGuildBansToResponse(bans, this.userCacheService, requestCache);
 	}
 
@@ -195,15 +201,23 @@ export class GuildModerationService {
 	async checkUserBanStatus(params: {userId: UserID; guildId: GuildID}): Promise<void> {
 		const {userId, guildId} = params;
 
-		const bans = await this.guildRepository.listBans(guildId);
-		const user = await this.userRepository.findUnique(userId);
-		const userIp = user?.lastActiveIp;
+		const [directBan, user] = await Promise.all([
+			this.guildRepository.getBan(guildId, userId),
+			this.userRepository.findUnique(userId),
+		]);
+		if (directBan) {
+			throw new BannedFromGuildError();
+		}
 
+		const userIp = user?.lastActiveIp;
+		if (!userIp) {
+			return;
+		}
+
+		// IP bans still require a partition scan until an IP secondary index exists.
+		const bans = await this.guildRepository.listBans(guildId);
 		for (const ban of bans) {
-			if (ban.userId === userId) {
-				throw new BannedFromGuildError();
-			}
-			if (userIp && ban.ipAddress && ban.ipAddress === userIp) {
+			if (ban.ipAddress && ban.ipAddress === userIp) {
 				throw new IpBannedFromGuildError();
 			}
 		}

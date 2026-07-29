@@ -52,6 +52,8 @@ export const UserPartialResponse = z.object({
 	bot: z.boolean().optional(),
 	system: z.boolean().optional(),
 	flags: z.number().int(),
+	profile_accent_effect: z.string().nullish(),
+	channel_list_name_effect: z.string().nullish(),
 });
 
 export type UserPartialResponse = z.infer<typeof UserPartialResponse>;
@@ -107,6 +109,8 @@ export const UserProfileResponse = z.object({
 	banner: z.string().nullish(),
 	banner_color: z.number().int().nullish(),
 	accent_color: z.number().int().nullish(),
+	profile_accent_effect: z.string().nullish(),
+	channel_list_name_effect: z.string().nullish(),
 });
 
 export type UserProfileResponse = z.infer<typeof UserProfileResponse>;
@@ -124,6 +128,8 @@ export const UserUpdateRequest = z
 		bio: createStringType(1, 320).nullish(),
 		pronouns: createStringType(1, 40).nullish(),
 		accent_color: ColorType.nullish(),
+		profile_accent_effect: z.enum(['none', 'rgb-neon', 'nebula', 'stellar', 'solar']).nullish(),
+		channel_list_name_effect: z.enum(['none', 'rainbow', 'gold', 'neon']).nullish(),
 		premium_badge_hidden: z.boolean(),
 		premium_badge_masked: z.boolean(),
 		premium_badge_timestamp_hidden: z.boolean(),
@@ -170,12 +176,25 @@ const isUnicodeEmoji = (value: string): boolean => {
 	return Boolean(match && match[0] === value);
 };
 
+export const STATUS_GIF_EMOJI_COUNT = 259;
+export const STATUS_GIF_EMOJI_PREFIX = 'ast:';
+
+export const isStatusGifEmojiName = (value: string): boolean => {
+	if (!value.startsWith(STATUS_GIF_EMOJI_PREFIX)) {
+		return false;
+	}
+
+	const id = Number.parseInt(value.slice(STATUS_GIF_EMOJI_PREFIX.length), 10);
+	return Number.isInteger(id) && id >= 1 && id <= STATUS_GIF_EMOJI_COUNT && value === `${STATUS_GIF_EMOJI_PREFIX}${id}`;
+};
+
 export const CustomStatusPayload = z
 	.object({
 		text: createStringType(1, 128).nullish(),
 		expires_at: DateTimeType.nullish(),
 		emoji_id: Int64Type.nullish(),
 		emoji_name: createStringType(1, 32).nullish(),
+		emoji_animated: z.boolean().nullish(),
 	})
 	.transform((value) => {
 		if (value.emoji_id != null) {
@@ -183,8 +202,8 @@ export const CustomStatusPayload = z
 		}
 		return value;
 	})
-	.refine((value) => value.emoji_name == null || isUnicodeEmoji(value.emoji_name), {
-		message: 'Emoji name must be a valid Unicode emoji',
+	.refine((value) => value.emoji_name == null || isUnicodeEmoji(value.emoji_name) || isStatusGifEmojiName(value.emoji_name), {
+		message: 'Emoji name must be a valid Unicode emoji or Astral animated status emoji',
 		path: ['emoji_name'],
 	});
 
@@ -197,6 +216,7 @@ export const UserSettingsResponse = z.object({
 	locale: z.string(),
 	restricted_guilds: z.array(z.string()),
 	default_guilds_restricted: z.boolean(),
+	hide_online_time: z.boolean(),
 	inline_attachment_media: z.boolean(),
 	inline_embed_media: z.boolean(),
 	gif_auto_play: z.boolean(),
@@ -235,6 +255,7 @@ export const UserSettingsUpdateRequest = z
 			.transform((ids) => [...new Set(ids)])
 			.refine((ids) => ids.length <= MAX_GUILDS_PREMIUM, `Maximum ${MAX_GUILDS_PREMIUM} guilds allowed`),
 		default_guilds_restricted: z.boolean(),
+		hide_online_time: z.boolean(),
 		inline_attachment_media: z.boolean(),
 		inline_embed_media: z.boolean(),
 		gif_auto_play: z.boolean(),
@@ -269,6 +290,14 @@ export const UserSettingsUpdateRequest = z
 	.partial();
 
 export type UserSettingsUpdateRequest = z.infer<typeof UserSettingsUpdateRequest>;
+
+export const UserActivityResponse = z.object({
+	user_id: z.string(),
+	last_active_at: z.iso.datetime().nullish(),
+	hidden: z.boolean(),
+});
+
+export type UserActivityResponse = z.infer<typeof UserActivityResponse>;
 
 export const RelationshipResponse = z.object({
 	id: z.string(),

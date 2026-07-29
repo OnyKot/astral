@@ -17,11 +17,35 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
+.sheetRoot {
+	height: 100dvh;
+	background-color: var(--background-primary);
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+	box-shadow: none;
+}
+
+.sheetHandle {
+	padding-top: calc(10px + max(var(--safe-area-top, 0px), 6px));
+	padding-bottom: 8px;
+	background-color: var(--background-primary);
+}
+
+.sheetHandle > * {
+	width: 42px;
+	height: 4px;
+	opacity: 0.38;
+}
+
+.sheetContent {
+	background-color: var(--background-primary);
+}
+
 .container {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
-	background-color: var(--background-secondary);
+	background-color: var(--background-primary);
 	padding: 0;
 	gap: 12px;
 }

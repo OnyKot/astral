@@ -19,9 +19,9 @@
 
 import {createIpAuthorizationToken, type UserID} from '~/BrandedTypes';
 import {UserFlags} from '~/Constants';
-import {Db, deleteOneOrMany, fetchMany, fetchOne, upsertOne} from '~/database/Cassandra';
+import {deleteOneOrMany, fetchMany, fetchOne, upsertOne} from '~/database/Cassandra';
 import type {AuthorizedIpRow, IpAuthorizationTokenRow} from '~/database/CassandraTypes';
-import {AuthorizedIps, IpAuthorizationTokens, Users} from '~/Tables';
+import {AuthorizedIps, IpAuthorizationTokens} from '~/Tables';
 import type {IUserAccountRepository} from '../IUserAccountRepository';
 
 export {IpAuthorizationTokens};
@@ -87,17 +87,19 @@ export class IpAuthorizationRepository {
 		return {userId: result.user_id, email: result.email};
 	}
 
+	/*
+	 * Delegates instead of issuing its own `UPDATE users SET last_active_at, last_active_ip`: this
+	 * repository and UserDataRepository.updateLastActiveAt used to hold two byte-identical writes of
+	 * the same two columns, and UserMiddleware fired both on every authenticated request. The
+	 * middleware now only drives the UserDataRepository one; keeping a single statement behind both
+	 * entry points means the duplicate cannot quietly come back through this passthrough.
+	 */
 	async updateUserActivity(userId: UserID, clientIp: string): Promise<void> {
-		const now = new Date();
-		await upsertOne(
-			Users.patchByPk(
-				{user_id: userId},
-				{
-					last_active_at: Db.set(now),
-					last_active_ip: Db.set(clientIp),
-				},
-			),
-		);
+		await this.userAccountRepository.updateLastActiveAt({
+			userId,
+			lastActiveAt: new Date(),
+			lastActiveIp: clientIp,
+		});
 	}
 
 	async getAuthorizedIps(userId: UserID): Promise<Array<{ip: string}>> {

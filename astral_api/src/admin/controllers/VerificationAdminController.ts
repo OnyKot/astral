@@ -25,6 +25,11 @@ import {RateLimitMiddleware} from '~/middleware/RateLimitMiddleware';
 import {RateLimitConfigs} from '~/RateLimitConfig';
 import {Int64Type, z} from '~/Schema';
 import {Validator} from '~/Validator';
+import {
+	ADMIN_RESPONSE_CACHE_TTL_SECONDS,
+	adminResponseCacheKey,
+	cachedAdminResponse,
+} from '../AdminResponseCache';
 
 export const VerificationAdminController = (app: HonoApp) => {
 	app.post(
@@ -34,8 +39,18 @@ export const VerificationAdminController = (app: HonoApp) => {
 		Validator('json', z.object({limit: z.number().default(100)})),
 		async (ctx) => {
 			const adminService = ctx.get('adminService');
+			const cacheService = ctx.get('cacheService');
+			const adminId = ctx.get('user').id.toString();
 			const {limit} = ctx.req.valid('json');
-			return ctx.json(await adminService.listPendingVerifications(limit));
+			const key = adminResponseCacheKey({
+				endpoint: 'pending-verifications-list',
+				adminUserId: adminId,
+				suffix: String(limit),
+			});
+			const body = await cachedAdminResponse(cacheService, key, ADMIN_RESPONSE_CACHE_TTL_SECONDS, async () =>
+				adminService.listPendingVerifications(limit),
+			);
+			return ctx.json(body);
 		},
 	);
 

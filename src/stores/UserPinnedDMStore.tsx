@@ -29,9 +29,26 @@ class UserPinnedDMStore {
 		makeAutoObservable(this, {}, {autoBind: true});
 	}
 
-	setPinnedDMs(pinnedDMs: Array<string>): void {
-		this.pinnedDMsArray = pinnedDMs;
-		logger.debug(`Set pinned DMs: ${pinnedDMs.length} channels`);
+	private normalizePinnedDMs(pinnedDMs: ReadonlyArray<string>): Array<string> {
+		return [...new Set(pinnedDMs.filter(Boolean))];
+	}
+
+	setPinnedDMs(pinnedDMs: ReadonlyArray<string>): void {
+		const normalizedPinnedDMs = this.normalizePinnedDMs(pinnedDMs);
+		this.pinnedDMsArray = normalizedPinnedDMs;
+		logger.debug(`Set pinned DMs: ${normalizedPinnedDMs.length} channels`);
+	}
+
+	pin(channelId: string): void {
+		if (!channelId || this.isPinned(channelId)) {
+			return;
+		}
+
+		this.pinnedDMsArray = [...this.pinnedDMsArray, channelId];
+	}
+
+	unpin(channelId: string): void {
+		this.pinnedDMsArray = this.pinnedDMsArray.filter((id) => id !== channelId);
 	}
 
 	isPinned(channelId: string): boolean {

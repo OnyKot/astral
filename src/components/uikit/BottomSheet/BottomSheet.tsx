@@ -45,7 +45,7 @@ interface BottomSheetProps {
 	backdropOpacity?: number;
 	showBackdrop?: boolean;
 	disableBackdropBlur?: boolean;
-	animationPreset?: 'default' | 'keyboard-replacement';
+	animationPreset?: 'default' | 'keyboard-replacement' | 'content-replacement';
 }
 
 export const BottomSheet: React.FC<BottomSheetProps> = observer(

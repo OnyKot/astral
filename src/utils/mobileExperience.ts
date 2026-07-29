@@ -18,6 +18,7 @@
  */
 
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
+import {isAndroidFastMode} from '~/utils/AndroidWebViewUtils';
 
 export const isMobileExperienceEnabled = (): boolean => {
 	return MobileLayoutStore.platformMobileDetected || MobileLayoutStore.isMobileLayout();
@@ -42,4 +43,8 @@ export const isLowEndMobileExperience = (): boolean => {
 	if (typeof nav.deviceMemory === 'number' && nav.deviceMemory <= 3) return true;
 	if (typeof nav.hardwareConcurrency === 'number' && nav.hardwareConcurrency <= 4) return true;
 	return false;
+};
+
+export const isFastMobileExperience = (): boolean => {
+	return isAndroidFastMode() || isLowEndMobileExperience();
 };

@@ -135,7 +135,7 @@ export const fetchScheduledMessages = async (): Promise<Array<ScheduledMessageRe
 
 export const scheduleMessage = async (i18n: I18n, params: ScheduleMessageParams): Promise<ScheduledMessageRecord> => {
 	logger.debug('Scheduling message', params);
-	const nonce = SnowflakeUtils.fromTimestamp(Date.now());
+	const nonce = SnowflakeUtils.nextClientNonce();
 	const normalized = normalizeMessageContent(params.content, params.favoriteMemeId);
 	const allowedMentions: AllowedMentions = {replied_user: params.replyMentioning ?? true};
 

@@ -31,6 +31,8 @@ import {GuildAdminController} from './GuildAdminController';
 import {InstanceConfigAdminController} from './InstanceConfigAdminController';
 import {MessageAdminController} from './MessageAdminController';
 import {MetricsAdminController} from './MetricsAdminController';
+import {OpsAdminController} from './OpsAdminController';
+import {PremiumWaitlistAdminController} from './PremiumWaitlistAdminController';
 import {ReportAdminController} from './ReportAdminController';
 import {SearchAdminController} from './SearchAdminController';
 import {SnowflakeReservationAdminController} from './SnowflakeReservationAdminController';
@@ -48,6 +50,8 @@ export const registerAdminControllers = (app: HonoApp) => {
 	SnowflakeReservationAdminController(app);
 	MessageAdminController(app);
 	MetricsAdminController(app);
+	OpsAdminController(app);
+	PremiumWaitlistAdminController(app);
 	BulkAdminController(app);
 	AuditLogAdminController(app);
 	ArchiveAdminController(app);

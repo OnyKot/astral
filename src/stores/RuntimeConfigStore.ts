@@ -31,6 +31,7 @@ export interface InstanceFeatures {
 	sms_mfa_enabled: boolean;
 	voice_enabled: boolean;
 	stripe_enabled: boolean;
+	billing_enabled: boolean;
 	self_hosted: boolean;
 }
 
@@ -99,6 +100,9 @@ class RuntimeConfigStore {
 	private _resolveInit!: () => void;
 	private _rejectInit!: (err: Error) => void;
 
+	private _hydrationPromise: Promise<void>;
+	private _resolveHydration!: () => void;
+
 	private _connectSeq = 0;
 
 	apiEndpoint: string = '';
@@ -121,6 +125,7 @@ class RuntimeConfigStore {
 		sms_mfa_enabled: false,
 		voice_enabled: false,
 		stripe_enabled: false,
+		billing_enabled: false,
 		self_hosted: false,
 	};
 	publicPushVapidKey: string | null = null;
@@ -130,6 +135,10 @@ class RuntimeConfigStore {
 		this._initPromise = new Promise<void>((resolve, reject) => {
 			this._resolveInit = resolve;
 			this._rejectInit = reject;
+		});
+
+		this._hydrationPromise = new Promise<void>((resolve) => {
+			this._resolveHydration = resolve;
 		});
 
 		makeAutoObservable(this, {}, {autoBind: true});
@@ -168,10 +177,54 @@ class RuntimeConfigStore {
 				'publicPushVapidKey',
 				'spotifyClientId',
 			]);
+		} catch (error) {
+			// Defensive: makePersistent swallows its own errors today, but if that
+			// ever changes, boot has to fail loudly instead of hanging on a promise
+			// that never settles.
+			const err = error instanceof Error ? error : new Error(String(error));
+			runInAction(() => {
+				this._initState = 'error';
+				this._initError = err;
+			});
+			this._rejectInit(err);
+			return;
+		} finally {
+			// makePersistent is localStorage-backed, so hydration completes in
+			// microseconds. Signal it before /instance is even attempted: boot work
+			// that only needs the persisted endpoints (the gateway handshake) must
+			// not wait on a network round trip.
+			this._resolveHydration();
+		}
 
-			const bootstrapEndpoint = this.apiEndpoint || Config.PUBLIC_BOOTSTRAP_API_ENDPOINT;
+		const useCachedSnapshot = this.hasUsableSnapshot;
+		const bootstrapEndpoint = this.apiEndpoint || Config.PUBLIC_BOOTSTRAP_API_ENDPOINT;
+		const refresh = this.connectToEndpoint(bootstrapEndpoint);
 
-			await this.connectToEndpoint(bootstrapEndpoint);
+		if (useCachedSnapshot) {
+			// First paint must not hard-block on GET /instance when the entire
+			// runtime-config snapshot was just rehydrated from localStorage: serve
+			// the cached values and refresh in the background instead.
+			refresh.catch((error) => {
+				const err = error instanceof Error ? error : new Error(String(error));
+				runInAction(() => {
+					this._initError = err;
+				});
+				// console.warn rather than console.error: a failed background refresh
+				// is the expected outcome while offline and must not page anyone.
+				console.warn('Runtime config background refresh failed; keeping cached snapshot:', err);
+			});
+
+			runInAction(() => {
+				this._initState = 'ready';
+				this._initError = null;
+			});
+
+			this._resolveInit();
+			return;
+		}
+
+		try {
+			await refresh;
 
 			runInAction(() => {
 				this._initState = 'ready';
@@ -189,8 +242,28 @@ class RuntimeConfigStore {
 		}
 	}
 
+	/**
+	 * Whether the rehydrated snapshot is complete enough to run on without first
+	 * re-reading /instance. Requires both endpoints the shell needs (REST and
+	 * gateway) plus a code version at least as new as this client's: a snapshot
+	 * written by an older server still has to be re-validated over the network
+	 * before we render, so incompatible-server detection stays fail-closed.
+	 */
+	get hasUsableSnapshot(): boolean {
+		return Boolean(this.apiEndpoint) && Boolean(this.gatewayEndpoint) && this.apiCodeVersion >= API_CODE_VERSION;
+	}
+
 	waitForInit(): Promise<void> {
 		return this._initPromise;
+	}
+
+	/**
+	 * Resolves as soon as the persisted snapshot has been read back out of
+	 * localStorage, without waiting for the /instance refresh. Boot uses this to
+	 * start the gateway handshake in parallel with the rest of the waterfall.
+	 */
+	waitForHydration(): Promise<void> {
+		return this._hydrationPromise;
 	}
 
 	get initialized(): boolean {
@@ -340,7 +413,10 @@ class RuntimeConfigStore {
 			this.turnstileSiteKey = instance.captcha.turnstile_site_key;
 
 			this.apiCodeVersion = instance.api_code_version;
-			this.features = instance.features;
+			this.features = {
+				...instance.features,
+				billing_enabled: instance.features.billing_enabled ?? false,
+			};
 			this.publicPushVapidKey = instance.push?.public_vapid_key ?? null;
 			this.spotifyClientId = instance.music?.spotify_client_id ?? null;
 		});

@@ -28,7 +28,9 @@ import {EmojiPicker} from '~/components/channel/EmojiPicker';
 import {GifPicker} from '~/components/channel/pickers/gif/GifPicker';
 import {MemesPicker} from '~/components/channel/pickers/memes/MemesPicker';
 import {StickersPicker} from '~/components/channel/StickersPicker';
+import {StatusGifEmojiPicker} from '~/components/modals/StatusGifEmojiPicker';
 import * as StickerSendUtils from '~/lib/StickerSendUtils';
+import type {StatusGifEmoji} from '~/lib/statusGifEmojis';
 import type {Emoji} from '~/stores/EmojiStore';
 import ExpressionPickerStore from '~/stores/ExpressionPickerStore';
 import styles from './ExpressionPickerPopout.module.css';
@@ -51,7 +53,7 @@ export const ExpressionPickerHeaderPortal = ({children}: {children: React.ReactN
 	return ReactDOM.createPortal(children, context.headerPortalElement);
 };
 
-export type ExpressionPickerTabType = 'gifs' | 'memes' | 'stickers' | 'emojis';
+export type ExpressionPickerTabType = 'gifs' | 'memes' | 'stickers' | 'emojis' | 'status-gif-emojis';
 
 interface ExpressionPickerCategory {
 	type: ExpressionPickerTabType;
@@ -60,6 +62,8 @@ interface ExpressionPickerCategory {
 		channelId?: string;
 		onSelect: (emoji: Emoji, shiftKey?: boolean) => void;
 		onClose?: () => void;
+		onStatusGifEmojiSelect?: (emoji: StatusGifEmoji) => void;
+		selectedStatusGifEmojiValue?: string | null;
 	}) => React.ReactNode;
 }
 
@@ -95,6 +99,20 @@ const createAllCategories = (i18n: ReturnType<typeof useLingui>['i18n']): Array<
 		label: i18n._(msg`Emojis`),
 		renderComponent: ({channelId, onSelect}) => <EmojiPicker channelId={channelId} handleSelect={onSelect} />,
 	},
+	{
+		type: 'status-gif-emojis' as const,
+		label: i18n._(msg`Animated`),
+		renderComponent: ({onClose, onStatusGifEmojiSelect, selectedStatusGifEmojiValue}) => (
+			<StatusGifEmojiPicker
+				selectedValue={selectedStatusGifEmojiValue ?? null}
+				onSelect={(emoji) => {
+					onStatusGifEmojiSelect?.(emoji);
+					onClose?.();
+				}}
+				compact
+			/>
+		),
+	},
 ];
 
 interface ExpressionPickerPopoutProps {
@@ -105,6 +123,8 @@ interface ExpressionPickerPopoutProps {
 	visibleTabs?: Array<ExpressionPickerTabType>;
 	selectedTab?: ExpressionPickerTabType;
 	onTabChange?: (tab: ExpressionPickerTabType) => void;
+	onStatusGifEmojiSelect?: (emoji: StatusGifEmoji) => void;
+	selectedStatusGifEmojiValue?: string | null;
 }
 
 export const ExpressionPickerPopout = observer(
@@ -116,6 +136,8 @@ export const ExpressionPickerPopout = observer(
 		visibleTabs = ['gifs', 'memes', 'stickers', 'emojis'],
 		selectedTab: controlledSelectedTab,
 		onTabChange,
+		onStatusGifEmojiSelect,
+		selectedStatusGifEmojiValue,
 	}: ExpressionPickerPopoutProps) => {
 		const {t, i18n} = useLingui();
 
@@ -128,8 +150,13 @@ export const ExpressionPickerPopout = observer(
 			() => categories[0]?.type || 'emojis',
 		);
 
-		const storeSelectedTab = ExpressionPickerStore.selectedTab;
-		const selectedTab = storeSelectedTab ?? controlledSelectedTab ?? internalSelectedTab;
+		const canUseStoreTab = Boolean(channelId && ExpressionPickerStore.channelId === channelId);
+		const preferredSelectedTab = canUseStoreTab
+			? ExpressionPickerStore.selectedTab
+			: controlledSelectedTab ?? internalSelectedTab;
+		const selectedTab = categories.some((category) => category.type === preferredSelectedTab)
+			? preferredSelectedTab
+			: categories[0]?.type || 'emojis';
 
 		const setSelectedTab = React.useCallback(
 			(tab: ExpressionPickerTabType) => {
@@ -142,14 +169,13 @@ export const ExpressionPickerPopout = observer(
 					return;
 				}
 
-				const pickerChannelId = ExpressionPickerStore.channelId;
-				if (pickerChannelId) {
-					ExpressionPickerActionCreators.toggle(pickerChannelId, tab);
+				if (canUseStoreTab && channelId) {
+					ExpressionPickerActionCreators.toggle(channelId, tab);
 				} else {
 					setInternalSelectedTab(tab);
 				}
 			},
-			[onTabChange, selectedTab],
+			[canUseStoreTab, channelId, onTabChange, selectedTab],
 		);
 
 		const selectedCategory = categories.find((category) => category.type === selectedTab) || categories[0];
@@ -215,7 +241,13 @@ export const ExpressionPickerPopout = observer(
 						<div ref={headerPortalCallback} className={styles.headerPortal} />
 					</div>
 					<div className={styles.content}>
-						{selectedCategory.renderComponent({channelId, onSelect: handleEmojiSelect, onClose})}
+						{selectedCategory.renderComponent({
+							channelId,
+							onSelect: handleEmojiSelect,
+							onClose,
+							onStatusGifEmojiSelect,
+							selectedStatusGifEmojiValue,
+						})}
 					</div>
 				</div>
 			</ExpressionPickerHeaderContext.Provider>

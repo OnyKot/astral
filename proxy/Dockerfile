@@ -2,16 +2,16 @@ FROM golang:1.25.5-alpine AS build
 
 WORKDIR /build
 
-COPY astral_app/proxy/go.mod ./
-COPY astral_app/proxy/go.sum* ./
+COPY proxy/go.mod ./
+COPY proxy/go.sum* ./
 RUN go mod download
 
-COPY astral_app/proxy/ .
+COPY proxy/ .
 
-COPY astral_app/dist/index.html assets/index.html
-COPY astral_app/dist/manifest.json assets/manifest.json
-COPY astral_app/dist/sw.js* assets/
-COPY astral_app/dist/version.json assets/version.json
+COPY dist/index.html assets/index.html
+COPY dist/manifest.json assets/manifest.json
+COPY dist/sw.js* assets/
+COPY dist/version.json assets/version.json
 
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64

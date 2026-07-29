@@ -99,6 +99,7 @@ export class UserAccountSettingsService {
 		if (data.default_guilds_restricted !== undefined) {
 			updatedRowData.default_guilds_restricted = data.default_guilds_restricted;
 		}
+		if (data.hide_online_time !== undefined) updatedRowData.hide_online_time = data.hide_online_time;
 		if (data.inline_attachment_media !== undefined) {
 			updatedRowData.inline_attachment_media = data.inline_attachment_media;
 		}

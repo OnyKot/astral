@@ -20,12 +20,35 @@
 import type {Redis} from 'ioredis';
 import {ICacheService} from './ICacheService';
 
+/**
+ * `defineCommand` attaches scripts straight onto the client instance, where the `Redis` type cannot
+ * see them, so calls to our own scripts go through this narrowed view.
+ */
+type RedisWithScripts = Redis & {
+	incrWithWindow(key: string, windowMs: string): Promise<[number, number]>;
+};
+
 export class RedisCacheService extends ICacheService {
+	/**
+	 * The expiry is armed only when the counter is created, so a burst of concurrent callers can
+	 * neither lose increments nor keep pushing the window forward and stay limited forever.
+	 */
+	private static readonly INCR_WINDOW = `
+		local n = redis.call('INCR', KEYS[1])
+		if n == 1 then
+			redis.call('PEXPIRE', KEYS[1], ARGV[1])
+		end
+		return {n, redis.call('PTTL', KEYS[1])}
+	`;
+
 	private redis: Redis;
 
 	constructor(redis: Redis) {
 		super();
 		this.redis = redis;
+		// Registering the script makes ioredis dispatch it with EVALSHA and only fall back to EVAL when
+		// the server has dropped it from its script cache, instead of shipping the body on every call.
+		this.redis.defineCommand('incrWithWindow', {numberOfKeys: 1, lua: RedisCacheService.INCR_WINDOW});
 	}
 
 	async get<T>(key: string): Promise<T | null> {
@@ -142,11 +165,28 @@ export class RedisCacheService extends ICacheService {
 
 	async deletePattern(pattern: string): Promise<number> {
 		const redisPattern = pattern.replace(/\*/g, '*');
-		const keys = await this.redis.keys(redisPattern);
-		if (keys.length === 0) return 0;
+		let cursor = '0';
+		let deleted = 0;
+		const batchSize = 500;
 
-		await this.redis.del(...keys);
-		return keys.length;
+		do {
+			const [nextCursor, keys] = await this.redis.scan(cursor, 'MATCH', redisPattern, 'COUNT', batchSize);
+			cursor = nextCursor;
+
+			for (let index = 0; index < keys.length; index += batchSize) {
+				const batch = keys.slice(index, index + batchSize);
+				if (batch.length === 0) continue;
+
+				deleted += batch.length;
+				if (typeof this.redis.unlink === 'function') {
+					await this.redis.unlink(...batch);
+				} else {
+					await this.redis.del(...batch);
+				}
+			}
+		} while (cursor !== '0');
+
+		return deleted;
 	}
 
 	async acquireLock(key: string, ttlSeconds: number): Promise<string | null> {
@@ -170,6 +210,14 @@ export class RedisCacheService extends ICacheService {
 
 		const result = (await this.redis.eval(luaScript, 1, lockKey, token)) as number;
 		return result === 1;
+	}
+
+	async incrWithWindow(key: string, windowMs: number): Promise<{count: number; pttlMs: number}> {
+		// PEXPIRE refuses non-integers and treats anything <= 0 as "delete now", which would leave the
+		// counter without a window and effectively disable the limit.
+		const pexpireMs = Math.max(1, Math.ceil(windowMs));
+		const [count, pttlMs] = await (this.redis as RedisWithScripts).incrWithWindow(key, String(pexpireMs));
+		return {count, pttlMs};
 	}
 
 	async getAndRenewTtl<T>(key: string, newTtlSeconds: number): Promise<T | null> {

@@ -20,16 +20,20 @@
 import {useCallback, useMemo, useState} from 'react';
 import * as AuthenticationActionCreators from '~/actions/AuthenticationActionCreators';
 
-export type DesktopHandoffMode = 'idle' | 'selecting' | 'login' | 'generating' | 'displaying' | 'error';
+export type DesktopHandoffMode = 'idle' | 'selecting' | 'login' | 'generating' | 'displaying' | 'error' | 'done';
 
 type Options = {
 	enabled: boolean;
 	hasStoredAccounts: boolean;
-
+	handoffCodeFromUrl?: string | null;
 	initialMode?: DesktopHandoffMode;
 };
 
-export function useDesktopHandoffFlow({enabled, hasStoredAccounts, initialMode}: Options) {
+function normalizeHandoffCode(raw: string): string {
+	return raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+}
+
+export function useDesktopHandoffFlow({enabled, hasStoredAccounts, handoffCodeFromUrl, initialMode}: Options) {
 	const derivedInitial = useMemo<DesktopHandoffMode>(() => {
 		if (!enabled) return 'idle';
 		if (initialMode) return initialMode;
@@ -44,26 +48,34 @@ export function useDesktopHandoffFlow({enabled, hasStoredAccounts, initialMode}:
 		async ({token, userId}: {token: string; userId: string}) => {
 			if (!enabled) return;
 
+			const rawCode = handoffCodeFromUrl?.trim() || '';
+			const normalized = normalizeHandoffCode(rawCode);
+			if (normalized.length !== 8) {
+				setMode('error');
+				setError('Missing handoff code from desktop. Open the browser link from the desktop app and try again.');
+				return;
+			}
+
 			setMode('generating');
 			setError(null);
 			setCode(null);
 
 			try {
-				const result = await AuthenticationActionCreators.initiateDesktopHandoff();
+				const formatted = `${normalized.slice(0, 4)}-${normalized.slice(4)}`;
 				await AuthenticationActionCreators.completeDesktopHandoff({
-					code: result.code,
+					code: formatted,
 					token,
 					userId,
 				});
 
-				setCode(result.code);
-				setMode('displaying');
+				setCode(formatted);
+				setMode('done');
 			} catch (e) {
 				setMode('error');
 				setError(e instanceof Error ? e.message : String(e));
 			}
 		},
-		[enabled],
+		[enabled, handoffCodeFromUrl],
 	);
 
 	const switchToLogin = useCallback(() => {

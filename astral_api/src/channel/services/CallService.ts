@@ -26,6 +26,7 @@ import type {CallData, IGatewayService} from '~/infrastructure/IGatewayService';
 import type {IMediaService} from '~/infrastructure/IMediaService';
 import type {SnowflakeService} from '~/infrastructure/SnowflakeService';
 import type {UserCacheService} from '~/infrastructure/UserCacheService';
+import {notifyTelegram} from '~/telegram/TelegramNotificationsService';
 import type {RequestCache} from '~/middleware/RequestCacheMiddleware';
 import type {ReadStateService} from '~/read_state/ReadStateService';
 import type {IUserRepository} from '~/user/IUserRepository';
@@ -50,6 +51,7 @@ export class CallService {
 		private mediaService: IMediaService,
 		private snowflakeService: SnowflakeService,
 		private readStateService: ReadStateService,
+		private getChannelAuthenticated: (params: {userId: UserID; channelId: ChannelID}) => Promise<unknown>,
 		private voiceAvailabilityService?: VoiceAvailabilityService,
 	) {
 		this.dmPermissionValidator = new DMPermissionValidator({
@@ -65,6 +67,11 @@ export class CallService {
 		userId: UserID;
 		channelId: ChannelID;
 	}): Promise<{ringable: boolean; silent?: boolean}> {
+		// Authorize the caller against the channel before reading any call
+		// state — without this, any user who knows a DM/group-DM channel id
+		// could probe another user's incoming-call privacy flags (BOLA).
+		await this.getChannelAuthenticated({userId, channelId});
+
 		const channel = await this.channelRepository.findUnique(channelId);
 		if (!channel) throw new UnknownChannelError();
 
@@ -262,7 +269,11 @@ export class CallService {
 		return call;
 	}
 
-	async updateCall({channelId, region}: {userId: UserID; channelId: ChannelID; region?: string}): Promise<void> {
+	async updateCall({channelId, region, userId}: {userId: UserID; channelId: ChannelID; region?: string}): Promise<void> {
+		// Authorize before mutating call state — otherwise a non-member who
+		// knows a channel id with an active call could change its RTC region.
+		await this.getChannelAuthenticated({userId, channelId});
+
 		const channel = await this.channelRepository.findUnique(channelId);
 		if (!channel) throw new UnknownChannelError();
 
@@ -295,6 +306,11 @@ export class CallService {
 		latitude?: string;
 		longitude?: string;
 	}): Promise<void> {
+		// Authorize before ringing — otherwise a non-member could ring
+		// arbitrary users on a channel they don't belong to, sending push
+		// notifications and creating a CALL system message in that channel.
+		await this.getChannelAuthenticated({userId, channelId});
+
 		const channel = await this.channelRepository.findUnique(channelId);
 		if (!channel) throw new UnknownChannelError();
 
@@ -408,6 +424,37 @@ export class CallService {
 				recipientsToRing.map((id) => id.toString()),
 			);
 		}
+
+		// Telegram bridge: push an incoming-call notification to ringing
+		// recipients. Fire-and-forget — never blocks the call setup.
+		// If the recipient is online in Astral they'll just see the
+		// in-app ring; if not, they get the Telegram nudge with a
+		// 'Open Astral' button to jump straight into the channel.
+		if (recipientsToRing.length > 0) {
+			void this.notifyIncomingCall(userId, channelId, recipientsToRing);
+		}
+	}
+
+	private async notifyIncomingCall(
+		callerId: UserID,
+		channelId: ChannelID,
+		ringingIds: Array<UserID>,
+	): Promise<void> {
+		try {
+			const caller = await this.userRepository.findUnique(callerId);
+			const callerName = caller?.username ?? 'Кто-то';
+			const url = `https://astraof.com/channels/@me/${channelId}`;
+			for (const recipientId of ringingIds) {
+				void notifyTelegram(recipientId, {
+					kind: 'calls',
+					title: '📞 Входящий звонок',
+					body: `<b>${callerName}</b> звонит вам в Astral.`,
+					url,
+				});
+			}
+		} catch {
+			// non-fatal
+		}
 	}
 
 	async stopRingingCallRecipients({
@@ -419,6 +466,10 @@ export class CallService {
 		channelId: ChannelID;
 		recipients?: Array<UserID>;
 	}): Promise<void> {
+		// Authorize before stopping ringing — otherwise a non-member could
+		// cancel incoming-call notifications for a channel they don't belong to.
+		await this.getChannelAuthenticated({userId, channelId});
+
 		const channel = await this.channelRepository.findUnique(channelId);
 		if (!channel) throw new UnknownChannelError();
 

@@ -526,6 +526,7 @@ export const initiateDesktopHandoff = async (): Promise<DesktopHandoffInitiateRe
 
 export const pollDesktopHandoffStatus = async (
 	code: string,
+	controlToken: string,
 	customApiEndpoint?: string,
 ): Promise<DesktopHandoffStatusResponse> => {
 	const url = customApiEndpoint
@@ -534,6 +535,9 @@ export const pollDesktopHandoffStatus = async (
 	const response = await http.get<DesktopHandoffStatusResponse>({
 		url,
 		skipAuth: true,
+		headers: {
+			'X-Astral-Handoff-Control': controlToken,
+		},
 	});
 	return response.body;
 };

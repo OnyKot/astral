@@ -18,7 +18,7 @@
  */
 
 import type {ChannelID, GuildID, UserID} from '~/BrandedTypes';
-import {ChannelTypes} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType} from '~/Constants';
 import type {IChannelRepository} from '~/channel/IChannelRepository';
 import {
 	FeatureTemporarilyDisabledError,
@@ -31,6 +31,7 @@ import {
 import type {IGuildRepository} from '~/guild/IGuildRepository';
 import type {LiveKitService} from '~/infrastructure/LiveKitService';
 import {getMetricsService} from '~/infrastructure/MetricsService';
+import type {TurnService, IceServer} from '~/infrastructure/TurnService';
 import type {VoiceRoomStore} from '~/infrastructure/VoiceRoomStore';
 import {Logger} from '~/Logger';
 import type {IUserRepository} from '~/user/IUserRepository';
@@ -46,6 +47,7 @@ interface GetVoiceTokenParams {
 	connectionId?: string;
 	latitude?: string;
 	longitude?: string;
+	ip?: string;
 	canSpeak?: boolean;
 	canStream?: boolean;
 	canVideo?: boolean;
@@ -84,6 +86,7 @@ export class VoiceService {
 		private channelRepository: IChannelRepository,
 		private voiceRoomStore: VoiceRoomStore,
 		private voiceAvailabilityService: VoiceAvailabilityService,
+		private turnService?: TurnService,
 	) {}
 
 	private findClosestRegion(
@@ -116,8 +119,9 @@ export class VoiceService {
 		token: string;
 		endpoint: string;
 		connectionId: string;
+		iceServers?: Array<IceServer>;
 	}> {
-		const {guildId, channelId, userId, connectionId: providedConnectionId} = params;
+		const {guildId, channelId, userId, connectionId: providedConnectionId, ip} = params;
 
 		const user = await this.userRepository.findUnique(userId);
 		if (!user) {
@@ -162,7 +166,7 @@ export class VoiceService {
 				throw new UnclaimedAccountRestrictedError('join 1:1 voice calls');
 			}
 
-			if (channel.type === ChannelTypes.GUILD_VOICE) {
+			if (isGuildRtcChannelType(channel.type)) {
 				const guild = guildId ? await this.guildRepository.findUnique(guildId) : null;
 				const isOwner = guild?.ownerId === userId;
 				if (!isOwner) {
@@ -361,7 +365,28 @@ export class VoiceService {
 				});
 		}
 
-		return {token, endpoint, connectionId};
+		// Cloudflare TURN relay for users behind restrictive NATs/firewalls.
+		// Gated by GeoIP on the server (excluded countries, e.g. RU, get no
+		// iceServers). Fail-open: if TURN is disabled or credential
+		// generation fails, iceServers is simply omitted and the client
+		// falls back to LiveKit's default ICE. Run it after the token is
+		// minted so a TURN failure never blocks the call.
+		let iceServers: Array<IceServer> | undefined;
+		if (this.turnService) {
+			try {
+				const servers = await this.turnService.getIceServersForUser(userId, ip);
+				if (servers && servers.length > 0) {
+					iceServers = servers;
+				}
+			} catch (error) {
+				Logger.warn(
+					{error, userId: userId.toString(), context: 'turn'},
+					'voice_get_token: TURN credential generation failed (continuing without relay)',
+				);
+			}
+		}
+
+		return {token, endpoint, connectionId, ...(iceServers ? {iceServers} : {})};
 	}
 
 	private determineRegionPreference({

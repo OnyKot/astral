@@ -71,10 +71,17 @@ export class UserAuthRepository implements IUserAuthRepository {
 		return this.authSessionRepository.createAuthSession(sessionData);
 	}
 
+	/*
+	 * Straight passthrough. The only caller is UserMiddleware (via AuthService -> AuthSessionService),
+	 * which has just resolved this very session, so the existence re-read that used to sit here bought
+	 * nothing but a second Cassandra round trip on every authenticated request — and it never closed
+	 * the race it looked like it closed, since read-then-update is not atomic either. The residual
+	 * hazard (a plain UPDATE recreating a bare row whose session was revoked in between) is handled
+	 * where it can actually do damage: `readAuthSession` in UserMiddleware rejects rows without a
+	 * `user_id`, so such a row authenticates nobody.
+	 */
 	async updateAuthSessionLastUsed(sessionIdHash: Buffer): Promise<void> {
-		const session = await this.getAuthSessionByToken(sessionIdHash);
-		if (!session) return;
-		await this.authSessionRepository.updateAuthSessionLastUsed(sessionIdHash);
+		return this.authSessionRepository.updateAuthSessionLastUsed(sessionIdHash);
 	}
 
 	async deleteAuthSessions(userId: UserID, sessionIdHashes: Array<Buffer>): Promise<void> {
@@ -103,7 +110,7 @@ export class UserAuthRepository implements IUserAuthRepository {
 		return this.mfaBackupCodeRepository.clearMfaBackupCodes(userId);
 	}
 
-	async consumeMfaBackupCode(userId: UserID, code: string): Promise<void> {
+	async consumeMfaBackupCode(userId: UserID, code: string): Promise<boolean> {
 		return this.mfaBackupCodeRepository.consumeMfaBackupCode(userId, code);
 	}
 

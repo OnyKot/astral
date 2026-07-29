@@ -33,12 +33,14 @@ import AuthenticationStore from '~/stores/AuthenticationStore';
 import ConnectionStore from '~/stores/ConnectionStore';
 import MessageReactionsStore from '~/stores/MessageReactionsStore';
 import MessageStore from '~/stores/MessageStore';
-import {getReactionKey, type ReactionEmoji} from '~/utils/ReactionUtils';
+import {canAddReactionEmojiToMessage, getReactionKey, type ReactionEmoji} from '~/utils/ReactionUtils';
 
 const logger = new Logger('MessageReactions');
 
 const MAX_RETRIES = 3;
+const REACTION_ADD_INTRO_ANIMATION_WINDOW_MS = 1200;
 const pendingReactionActions = new Set<string>();
+const pendingReactionAddIntroAnimations = new Map<string, number>();
 
 const getPendingReactionActionKey = (
 	action: 'MESSAGE_REACTION_ADD' | 'MESSAGE_REACTION_REMOVE',
@@ -46,6 +48,33 @@ const getPendingReactionActionKey = (
 	emoji: ReactionEmoji,
 	userId: string,
 ): string => `${action}:${getReactionKey(messageId, emoji)}:${userId}`;
+
+const markReactionAddIntroAnimation = (messageId: string, emoji: ReactionEmoji): void => {
+	const key = getReactionKey(messageId, emoji);
+	const expiresAt = Date.now() + REACTION_ADD_INTRO_ANIMATION_WINDOW_MS;
+	pendingReactionAddIntroAnimations.set(key, expiresAt);
+
+	setTimeout(() => {
+		if (pendingReactionAddIntroAnimations.get(key) === expiresAt) {
+			pendingReactionAddIntroAnimations.delete(key);
+		}
+	}, REACTION_ADD_INTRO_ANIMATION_WINDOW_MS);
+};
+
+export const shouldAnimateReactionAddIntro = (messageId: string, emoji: ReactionEmoji): boolean => {
+	const key = getReactionKey(messageId, emoji);
+	const expiresAt = pendingReactionAddIntroAnimations.get(key);
+	if (expiresAt == null) {
+		return false;
+	}
+
+	if (expiresAt <= Date.now()) {
+		pendingReactionAddIntroAnimations.delete(key);
+		return false;
+	}
+
+	return true;
+};
 
 const checkReactionResponse = (i18n: I18n, error: any, retry: () => void): boolean => {
 	if (error.status === 403) {
@@ -194,6 +223,13 @@ const performReactionAction = (
 		logger.debug(`Skipping duplicate reaction add for message ${messageId}`);
 		return;
 	}
+	if (type === 'MESSAGE_REACTION_ADD' && !canAddReactionEmojiToMessage(message, emoji)) {
+		ToastActionCreators.createToast({
+			type: 'info',
+			children: i18n._(msg`This message already has 10 different reactions.`),
+		});
+		return;
+	}
 	if (type === 'MESSAGE_REACTION_REMOVE' && userId == null && !existingReaction?.me) {
 		logger.debug(`Skipping duplicate reaction remove for message ${messageId}`);
 		return;
@@ -205,6 +241,10 @@ const performReactionAction = (
 		return;
 	}
 	pendingReactionActions.add(pendingKey);
+
+	if (type === 'MESSAGE_REACTION_ADD' && existingReaction == null) {
+		markReactionAddIntroAnimation(messageId, emoji);
+	}
 
 	optimisticUpdate(type, channelId, messageId, emoji, userId);
 

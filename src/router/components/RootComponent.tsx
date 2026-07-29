@@ -40,6 +40,7 @@ import MobileNavigationStore from '~/stores/MobileNavigationStore';
 import ModalStore from '~/stores/ModalStore';
 import UserStore from '~/stores/UserStore';
 import {navigateToWithMobileHistory} from '~/utils/MobileNavigation';
+import {isFastMobileExperience} from '~/utils/mobileExperience';
 import {shouldRunEntranceMotion} from '~/utils/motion/MotionPresets';
 import {captureReferralCodeFromSearchParams} from '~/utils/ReferralUtils';
 import * as RouterUtils from '~/utils/RouterUtils';
@@ -497,7 +498,10 @@ const RootComponent: React.FC<{children?: React.ReactNode}> = observer(({childre
 	const showMobileNavigation =
 		mobileLayoutState.enabled && Boolean(currentUser) && !isAuthRoute && !isSettingsOpen;
 	const shouldAnimateMobileRoute =
-		shouldRunEntranceMotion() && mobileLayoutState.enabled && Routes.isMobileBottomNavRoute(location.pathname);
+		!isFastMobileExperience() &&
+		shouldRunEntranceMotion() &&
+		mobileLayoutState.enabled &&
+		Routes.isMobileBottomNavRoute(location.pathname);
 	const previousMobileRouteRef = React.useRef(location.pathname);
 	const content = showMobileNavigation ? (
 		<div className={styles.mobileNavigationPushLayer}>{children}</div>

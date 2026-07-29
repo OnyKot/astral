@@ -25,8 +25,15 @@ import {IMediaService, type MediaProxyMetadataRequest, type MediaProxyMetadataRe
 
 type MediaProxyRequestBody = MediaProxyMetadataRequest | {type: 'upload'; upload_filename: string};
 
+const PROXY_URL_MEMO_MAX = 5_000;
+
 export class MediaService extends IMediaService {
 	private readonly proxyURL: URL;
+	// Memoize signed proxy URLs: `getExternalMediaProxyURL` is a pure function
+	// of (url, endpoint, secret), and the latter two are fixed per process.
+	// A single message-history page re-signs the same author icons, emojis and
+	// thumbnails hundreds of times — each call does a URL parse + SHA-256 HMAC.
+	private readonly proxyURLMemo = new Map<string, string>();
 
 	constructor() {
 		super();
@@ -63,6 +70,25 @@ export class MediaService extends IMediaService {
 	}
 
 	getExternalMediaProxyURL(url: string): string {
+		const memoized = this.proxyURLMemo.get(url);
+		if (memoized !== undefined) {
+			return memoized;
+		}
+
+		const resolved = this.computeExternalMediaProxyURL(url);
+
+		if (this.proxyURLMemo.size >= PROXY_URL_MEMO_MAX) {
+			// Bounded FIFO eviction — drop the oldest inserted entry.
+			const oldestKey = this.proxyURLMemo.keys().next().value;
+			if (oldestKey !== undefined) {
+				this.proxyURLMemo.delete(oldestKey);
+			}
+		}
+		this.proxyURLMemo.set(url, resolved);
+		return resolved;
+	}
+
+	private computeExternalMediaProxyURL(url: string): string {
 		let urlObj: URL;
 		try {
 			urlObj = new URL(url);

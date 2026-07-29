@@ -44,6 +44,7 @@ interface UseEdgeSwipeBackResult {
 	containerRef: (element: HTMLElement | null) => void;
 	stageStyle: React.CSSProperties;
 	isActive: boolean;
+	isPreviewVisible: boolean;
 	progress: number;
 	offset: number;
 	reset: () => void;
@@ -63,6 +64,7 @@ export function useEdgeSwipeBack({
 }: UseEdgeSwipeBackOptions): UseEdgeSwipeBackResult {
 	const [offset, setOffset] = React.useState(0);
 	const [isCommitting, setIsCommitting] = React.useState(false);
+	const [isTrackingEdgeGesture, setIsTrackingEdgeGesture] = React.useState(false);
 	const gestureRef = React.useRef<SwipeGestureState | null>(null);
 	const commitTimeoutRef = React.useRef<number | null>(null);
 	const offsetRef = React.useRef(0);
@@ -89,6 +91,7 @@ export function useEdgeSwipeBack({
 		}
 		gestureRef.current = null;
 		offsetRef.current = 0;
+		setIsTrackingEdgeGesture(false);
 		setIsCommitting(false);
 		setOffset(0);
 	}, []);
@@ -122,12 +125,14 @@ export function useEdgeSwipeBack({
 		(event: React.TouchEvent<HTMLElement>) => {
 			if (!enabled || event.touches.length !== 1) {
 				gestureRef.current = null;
+				setIsTrackingEdgeGesture(false);
 				return;
 			}
 
 			const target = event.target;
 			if (target instanceof Element && target.closest(ignoreSelector)) {
 				gestureRef.current = null;
+				setIsTrackingEdgeGesture(false);
 				return;
 			}
 
@@ -135,9 +140,11 @@ export function useEdgeSwipeBack({
 			const bounds = event.currentTarget.getBoundingClientRect();
 			if (touch.clientX - bounds.left > edgeZonePx) {
 				gestureRef.current = null;
+				setIsTrackingEdgeGesture(false);
 				return;
 			}
 
+			setIsTrackingEdgeGesture(true);
 			gestureRef.current = {
 				startX: touch.clientX,
 				startY: touch.clientY,
@@ -260,6 +267,7 @@ export function useEdgeSwipeBack({
 
 		if (shouldNavigateBack) {
 			gestureRef.current = null;
+			setIsTrackingEdgeGesture(false);
 			const commitOffset = Math.max(maxOffsetPx, event.currentTarget.clientWidth || window.innerWidth || maxOffsetPx);
 			setIsCommitting(true);
 			offsetRef.current = commitOffset;
@@ -275,6 +283,7 @@ export function useEdgeSwipeBack({
 		}
 
 		gestureRef.current = null;
+		setIsTrackingEdgeGesture(false);
 		setIsCommitting(true);
 		offsetRef.current = 0;
 		setOffset(0);
@@ -293,6 +302,8 @@ export function useEdgeSwipeBack({
 	]);
 
 	const progress = Math.min(offset / triggerPx, 1);
+	const isActive = offset > 0;
+	const isPreviewVisible = isTrackingEdgeGesture || isActive || isCommitting;
 	const stageStyle: React.CSSProperties =
 		offset > 0 || isCommitting
 			? {
@@ -313,7 +324,8 @@ export function useEdgeSwipeBack({
 		},
 		containerRef,
 		stageStyle,
-		isActive: offset > 0,
+		isActive,
+		isPreviewVisible,
 		progress,
 		offset,
 		reset,

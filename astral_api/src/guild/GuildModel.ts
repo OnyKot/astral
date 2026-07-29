@@ -126,6 +126,14 @@ export const GuildDiscoveryResponse = z.object({
 
 export type GuildDiscoveryResponse = z.infer<typeof GuildDiscoveryResponse>;
 
+export const GuildCountsResponse = z.object({
+	guild_id: z.string(),
+	member_count: z.number().int(),
+	presence_count: z.number().int(),
+});
+
+export type GuildCountsResponse = z.infer<typeof GuildCountsResponse>;
+
 export const GuildCreateRequest = z.object({
 	name: createStringType(1, 100),
 	icon: createBase64StringType(1, AVATAR_MAX_SIZE * 1.33).nullish(),

@@ -204,7 +204,7 @@ if (!gotTheLock) {
 			log.error('[Init] Failed to register tray IPC handlers:', error);
 		}
 
-		const mainWindow = createWindow();
+		const mainWindow = await createWindow();
 		const registerPrivilegedServicesOnNavigation = (): void => {
 			const currentUrl = mainWindow.webContents.getURL();
 			if (!isAuthOnlyPath(currentUrl)) {
@@ -221,10 +221,10 @@ if (!gotTheLock) {
 			});
 		}
 
-		app.on('activate', () => {
+		app.on('activate', async () => {
 			const mainWindow = getMainWindow();
 			if (mainWindow === null || mainWindow.isDestroyed()) {
-				const newWindow = createWindow();
+				const newWindow = await createWindow();
 				const registerPrivilegedServicesOnNavigation = (): void => {
 					const currentUrl = newWindow.webContents.getURL();
 					if (!isAuthOnlyPath(currentUrl)) {

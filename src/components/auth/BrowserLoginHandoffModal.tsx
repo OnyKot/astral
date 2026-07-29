@@ -54,8 +54,7 @@ interface ValidatedInstance {
 
 type ModalView = 'main' | 'instance';
 
-const CODE_LENGTH = 8;
-const VALID_CODE_PATTERN = /^[A-Za-z0-9]{8}$/;
+const POLL_INTERVAL_MS = 1500;
 
 const normalizeEndpoint = (input: string): string => {
 	const trimmed = input.trim();
@@ -80,7 +79,7 @@ const formatCodeForDisplay = (raw: string): string => {
 	const cleaned = raw
 		.replace(/[^A-Za-z0-9]/g, '')
 		.toUpperCase()
-		.slice(0, CODE_LENGTH);
+		.slice(0, 8);
 
 	if (cleaned.length <= 4) {
 		return cleaned;
@@ -88,22 +87,16 @@ const formatCodeForDisplay = (raw: string): string => {
 	return `${cleaned.slice(0, 4)}-${cleaned.slice(4)}`;
 };
 
-const extractRawCode = (formatted: string): string => {
-	return formatted
-		.replace(/[^A-Za-z0-9]/g, '')
-		.toUpperCase()
-		.slice(0, CODE_LENGTH);
-};
-
 const BrowserLoginHandoffModal = observer(
 	({onSuccess, targetWebAppUrl, prefillEmail}: BrowserLoginHandoffModalProps) => {
 		const {i18n} = useLingui();
 
 		const [view, setView] = React.useState<ModalView>('main');
-		const [code, setCode] = React.useState('');
-		const [isSubmitting, setIsSubmitting] = React.useState(false);
 		const [error, setError] = React.useState<string | null>(null);
-		const inputRef = React.useRef<HTMLInputElement | null>(null);
+		const [isInitiating, setIsInitiating] = React.useState(true);
+		const [isWaiting, setIsWaiting] = React.useState(false);
+		const [handoffCode, setHandoffCode] = React.useState<string | null>(null);
+		const [controlToken, setControlToken] = React.useState<string | null>(null);
 
 		const [customInstance, setCustomInstance] = React.useState('');
 		const [instanceValidating, setInstanceValidating] = React.useState(false);
@@ -111,69 +104,106 @@ const BrowserLoginHandoffModal = observer(
 		const [validatedInstance, setValidatedInstance] = React.useState<ValidatedInstance | null>(null);
 
 		const showInstanceOption = IS_DEV || isDesktop();
+		const pollCancelledRef = React.useRef(false);
 
-		const handleSubmit = React.useCallback(
-			async (rawCode: string) => {
-				if (!VALID_CODE_PATTERN.test(rawCode)) {
-					return;
-				}
+		React.useEffect(() => {
+			let cancelled = false;
+			pollCancelledRef.current = false;
 
-				setIsSubmitting(true);
+			const run = async () => {
+				setIsInitiating(true);
 				setError(null);
-
 				try {
-					const customApiEndpoint = validatedInstance?.apiEndpoint;
-					const result = await AuthenticationActionCreators.pollDesktopHandoffStatus(rawCode, customApiEndpoint);
-
-					if (result.status === 'completed' && result.token && result.user_id) {
-						if (customApiEndpoint) {
-							await RuntimeConfigStore.connectToEndpoint(customApiEndpoint);
-						}
-						await onSuccess({token: result.token, userId: result.user_id});
-						ModalActionCreators.pop();
-						return;
+					const result = await AuthenticationActionCreators.initiateDesktopHandoff();
+					if (cancelled) return;
+					if (!result.control_token) {
+						throw new Error('Missing handoff control token');
 					}
-
-					if (result.status === 'pending') {
-						setError(i18n._(msg`This code hasn't been used yet. Please complete login in your browser first.`));
-					} else {
-						setError(i18n._(msg`Invalid or expired code. Please try again.`));
-					}
+					setHandoffCode(result.code);
+					setControlToken(result.control_token);
+					setIsWaiting(true);
 				} catch (err) {
+					if (cancelled) return;
 					const message = err instanceof Error ? err.message : String(err);
 					setError(message);
 				} finally {
-					setIsSubmitting(false);
+					if (!cancelled) {
+						setIsInitiating(false);
+					}
 				}
-			},
-			[i18n, onSuccess, validatedInstance],
-		);
+			};
 
-		const handleCodeChange = React.useCallback(
-			(e: React.ChangeEvent<HTMLInputElement>) => {
-				const rawCode = extractRawCode(e.target.value);
-				setCode(rawCode);
-				setError(null);
+			void run();
+			return () => {
+				cancelled = true;
+				pollCancelledRef.current = true;
+			};
+		}, []);
 
-				if (VALID_CODE_PATTERN.test(rawCode)) {
-					void handleSubmit(rawCode);
+		React.useEffect(() => {
+			if (!isWaiting || !handoffCode || !controlToken) return;
+
+			let active = true;
+			pollCancelledRef.current = false;
+
+			const poll = async () => {
+				while (active && !pollCancelledRef.current) {
+					try {
+						const customApiEndpoint = validatedInstance?.apiEndpoint;
+						const result = await AuthenticationActionCreators.pollDesktopHandoffStatus(
+							handoffCode,
+							controlToken,
+							customApiEndpoint,
+						);
+
+						if (!active || pollCancelledRef.current) return;
+
+						if (result.status === 'completed' && result.token && result.user_id) {
+							if (customApiEndpoint) {
+								await RuntimeConfigStore.connectToEndpoint(customApiEndpoint);
+							}
+							await onSuccess({token: result.token, userId: result.user_id});
+							ModalActionCreators.pop();
+							return;
+						}
+
+						if (result.status === 'expired') {
+							// Still pending from our POV if we just initiated; keep polling until TTL.
+						}
+					} catch (err) {
+						if (!active || pollCancelledRef.current) return;
+						const message = err instanceof Error ? err.message : String(err);
+						setError(message);
+						setIsWaiting(false);
+						return;
+					}
+
+					await new Promise((resolve) => window.setTimeout(resolve, POLL_INTERVAL_MS));
 				}
-			},
-			[handleSubmit],
-		);
+			};
+
+			void poll();
+			return () => {
+				active = false;
+				pollCancelledRef.current = true;
+			};
+		}, [controlToken, handoffCode, isWaiting, onSuccess, validatedInstance]);
 
 		const handleOpenBrowser = React.useCallback(async () => {
+			if (!handoffCode) return;
+
 			const currentWebAppUrl = RuntimeConfigStore.webAppBaseUrl;
 			const baseUrl = validatedInstance?.webAppUrl || targetWebAppUrl || currentWebAppUrl;
+			const rawCode = handoffCode.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
 
-			const params = new URLSearchParams({desktop_handoff: '1'});
+			const params = new URLSearchParams({desktop_handoff: '1', handoff_code: rawCode});
 			if (prefillEmail) {
 				params.set('email', prefillEmail);
 			}
 
 			const url = `${baseUrl}/login?${params.toString()}`;
 			await openExternalUrl(url);
-		}, [prefillEmail, targetWebAppUrl, validatedInstance]);
+		}, [handoffCode, prefillEmail, targetWebAppUrl, validatedInstance]);
 
 		const handleShowInstanceView = React.useCallback(() => {
 			setView('instance');
@@ -226,12 +256,6 @@ const BrowserLoginHandoffModal = observer(
 			setInstanceError(null);
 		}, []);
 
-		React.useEffect(() => {
-			if (view === 'main') {
-				inputRef.current?.focus();
-			}
-		}, [view]);
-
 		if (view === 'instance') {
 			return (
 				<Modal.Root size="small" centered onClose={ModalActionCreators.pop}>
@@ -279,18 +303,25 @@ const BrowserLoginHandoffModal = observer(
 				<Modal.Header title={i18n._(msg`Add account`)} />
 				<Modal.Content className={styles.content}>
 					<p className={styles.description}>
-						<Trans>Log in using your browser, then enter the code shown to add the account.</Trans>
+						<Trans>
+							Open the browser to log in. This app keeps a private control token so only it can finish the session.
+						</Trans>
 					</p>
 
 					<div className={styles.codeInputSection}>
 						<Input
-							ref={inputRef}
 							label={i18n._(msg`Login code`)}
-							value={formatCodeForDisplay(code)}
-							onChange={handleCodeChange}
+							value={handoffCode ? formatCodeForDisplay(handoffCode) : ''}
+							readOnly
 							error={error ?? undefined}
-							disabled={isSubmitting}
-							autoComplete="off"
+							disabled={isInitiating}
+							footer={
+								isWaiting ? (
+									<p className={styles.inputHelper}>
+										<Trans>Waiting for browser login…</Trans>
+									</p>
+								) : null
+							}
 						/>
 					</div>
 
@@ -318,10 +349,15 @@ const BrowserLoginHandoffModal = observer(
 				</Modal.Content>
 
 				<Modal.Footer>
-					<Button variant="secondary" onClick={ModalActionCreators.pop} disabled={isSubmitting}>
+					<Button variant="secondary" onClick={ModalActionCreators.pop} disabled={isInitiating}>
 						<Trans>Cancel</Trans>
 					</Button>
-					<Button variant="primary" onClick={handleOpenBrowser} submitting={isSubmitting}>
+					<Button
+						variant="primary"
+						onClick={handleOpenBrowser}
+						disabled={isInitiating || !handoffCode}
+						submitting={isWaiting}
+					>
 						<ArrowSquareOutIcon size={16} weight="bold" />
 						<Trans>Open browser</Trans>
 					</Button>

@@ -44,6 +44,7 @@ class IpBanCache {
 	private singleIpBans: FamilyMap<SingleCacheEntry>;
 	private rangeIpBans: FamilyMap<RangeCacheEntry>;
 	private isInitialized = false;
+	private initPromise: Promise<void> | null = null;
 	private adminRepository = new AdminRepository();
 	private consecutiveFailures = 0;
 	private maxConsecutiveFailures = 5;
@@ -61,10 +62,13 @@ class IpBanCache {
 
 	async initialize(): Promise<void> {
 		if (this.isInitialized) return;
+		if (this.initPromise) return this.initPromise;
 
-		await this.refresh();
-		this.isInitialized = true;
-		this.setupSubscriber();
+		this.initPromise = this.refresh().then(() => {
+			this.isInitialized = true;
+			this.setupSubscriber();
+		});
+		return this.initPromise;
 	}
 
 	private setupSubscriber(): void {

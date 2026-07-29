@@ -43,6 +43,8 @@ export class User {
 	readonly bannerColor: number | null;
 	readonly bio: string | null;
 	readonly pronouns: string | null;
+	readonly profileAccentEffect: string | null;
+	readonly channelListNameEffect: string | null;
 	readonly accentColor: number | null;
 	readonly dateOfBirth: string | null;
 	readonly locale: string | null;
@@ -99,6 +101,8 @@ export class User {
 		this.bannerColor = row.banner_color ?? null;
 		this.bio = row.bio ?? null;
 		this.pronouns = row.pronouns ?? null;
+		this.profileAccentEffect = row.profile_accent_effect ?? null;
+		this.channelListNameEffect = row.channel_list_name_effect ?? null;
 		this.accentColor = row.accent_color ?? null;
 		this.dateOfBirth = row.date_of_birth ? row.date_of_birth.toString() : null;
 		this.locale = row.locale ?? null;
@@ -169,6 +173,8 @@ export class User {
 			banner_color: this.bannerColor,
 			bio: this.bio,
 			pronouns: this.pronouns,
+			profile_accent_effect: this.profileAccentEffect,
+			channel_list_name_effect: this.channelListNameEffect,
 			accent_color: this.accentColor,
 			date_of_birth: this.dateOfBirth ? types.LocalDate.fromString(this.dateOfBirth) : null,
 			locale: this.locale,

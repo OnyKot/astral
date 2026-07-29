@@ -316,15 +316,52 @@ export class ScrollManager {
 		this.setAutomaticAnchor(null);
 	}
 
+	/*
+	 * Same result as getAnchorData, but with the per-call DOM lookups the caller can
+	 * hoist passed in: one getElementById, one offsetHeight read and one element
+	 * rect instead of also re-reading the (loop-invariant) container rect and
+	 * re-resolving the scroller node on every row. offsetHeight is still read from
+	 * the element so getAnchorFixData keeps comparing like with like.
+	 */
+	private measureAnchor(messageId: string, doc: Document, containerTop: number, scrollTop: number): AnchorData | null {
+		const element = doc.getElementById(`chat-messages-${this.props.channel.id}-${messageId}`);
+		if (!element) return null;
+
+		const offsetHeight = element.offsetHeight;
+		const offsetTop = scrollTop + (element.getBoundingClientRect().top - containerTop);
+
+		return {
+			id: messageId,
+			offsetFromTop: offsetTop - scrollTop,
+			offsetTop,
+			offsetHeight,
+			clamped: false,
+		};
+	}
+
 	findTopVisibleAnchor(): AnchorData | null {
 		const {messages, hasUnreads, channel} = this.props;
+		const scrollerNode = this.ref.current?.getScrollerNode();
+		const doc = scrollerNode?.ownerDocument;
+		if (!scrollerNode || !doc) {
+			// Matches the previous behaviour, where every getAnchorData call returned
+			// null and the walk left bottomAnchor cleared.
+			this.bottomAnchor = null;
+			return null;
+		}
+
 		const state = this.getScrollerState();
 		const {scrollTop, offsetHeight} = state;
 
 		const buffer = hasUnreads && scrollTop >= this.getNewMessageBarBuffer() ? this.getNewMessageBarBuffer() : 0;
 
+		/*
+		 * The loop performs reads only, so the container rect cannot move while it
+		 * runs and is read once up front.
+		 */
+		const containerTop = scrollerNode.getBoundingClientRect().top;
+
 		let anchor: AnchorData | null = null;
-		let index = -1;
 		let foundAnchor = false;
 
 		const getMessageId = (idx: number): string | undefined => {
@@ -334,11 +371,39 @@ export class ScrollManager {
 			return messages.getByIndex(idx)?.id;
 		};
 
+		/*
+		 * The walk used to start at the top of the loaded window, so sitting at the
+		 * bottom of a full 200-message channel measured ~190 rows that are provably
+		 * above the viewport before reaching the first visible one. Gallop up from the
+		 * newest row instead to find some row that is above `scrollTop + buffer`, and
+		 * start the (unchanged) ascending walk there.
+		 *
+		 * offsetTop is monotonically non-decreasing in message index - static block
+		 * layout in DOM order, which is the same assumption the ascending walk's own
+		 * early break already relies on - so every row before that probe is above the
+		 * viewport too and can only have been skipped. Rows without an element
+		 * (blocked/unrevealed groups render under a different id prefix) tell us
+		 * nothing, so the gallop keeps climbing past them and falls back to the
+		 * original start when it never finds a usable probe.
+		 */
+		let index = -1;
+		for (let probeOffset = 0; probeOffset < messages.length; probeOffset = probeOffset === 0 ? 1 : probeOffset * 2) {
+			const probeIndex = messages.length - 1 - probeOffset;
+			const probeMessageId = getMessageId(probeIndex);
+			if (!probeMessageId) continue;
+
+			const probeData = this.measureAnchor(probeMessageId, doc, containerTop, scrollTop);
+			if (probeData != null && probeData.offsetTop < scrollTop + buffer) {
+				index = probeIndex;
+				break;
+			}
+		}
+
 		while (true) {
 			const messageId = getMessageId(index);
 			if (!messageId) break;
 
-			const anchorData = this.getAnchorData(messageId, scrollTop);
+			const anchorData = this.measureAnchor(messageId, doc, containerTop, scrollTop);
 			this.bottomAnchor = anchorData;
 
 			if (foundAnchor && anchorData != null && anchorData.offsetTop > scrollTop + buffer + offsetHeight) {
@@ -610,10 +675,13 @@ export class ScrollManager {
 				scrollHeight,
 			};
 			this.lastMessageLoadDirection = 'before';
+			/*
+			 * findLoadMoreAnchor(true) already evaluates `findTopVisibleAnchor() ??
+			 * automaticAnchor`, so the old null-retry here re-ran the identical scan -
+			 * and in exactly the case where that scan is most expensive (a null result
+			 * means it walked the whole loaded window).
+			 */
 			this.messageFetchAnchor = this.findLoadMoreAnchor(true);
-			if (!this.messageFetchAnchor) {
-				this.messageFetchAnchor = this.findTopVisibleAnchor() ?? this.automaticAnchor;
-			}
 			if (scrollTop <= this.props.placeholderHeight && offsetHeight > 0) {
 				const safeTop = Math.max(0, Math.min(this.getOffsetToPreventLoading('top'), scrollHeight - offsetHeight));
 				if (safeTop > scrollTop) {
@@ -1330,6 +1398,7 @@ export class ScrollManager {
 	}
 
 	cleanup(): void {
+		this.updateStoreDimensionsDebounced.flush();
 		this.isDisposed = true;
 		this.updateStoreDimensionsDebounced.cancel();
 

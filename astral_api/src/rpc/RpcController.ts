@@ -22,10 +22,20 @@ import {createMiddleware} from 'hono/factory';
 import type {HonoApp, HonoEnv} from '~/App';
 import {Config} from '~/Config';
 import {UnauthorizedError} from '~/Errors';
+import {Logger} from '~/Logger';
 import {RpcRequest} from '~/rpc/RpcModel';
+import {getIncomingRemoteAddress, isPrivateIp} from '~/utils/IpUtils';
 import {Validator} from '~/Validator';
 
 const InternalNetworkRequired = createMiddleware<HonoEnv>(async (ctx, next) => {
+	// The bearer secret alone is not enough if it leaks — gateway must reach
+	// this route from the private Docker network, not the public internet.
+	const remoteAddress = getIncomingRemoteAddress(ctx);
+	if (!remoteAddress || !isPrivateIp(remoteAddress)) {
+		Logger.warn({path: ctx.req.path, remoteAddress}, 'Rejected RPC request from non-internal network');
+		throw new UnauthorizedError();
+	}
+
 	const authHeader = ctx.req.header('Authorization');
 	const expectedAuth = `Bearer ${Config.gateway.rpcSecret}`;
 	if (!authHeader) {

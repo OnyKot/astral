@@ -43,7 +43,7 @@ ensureEnv('ASTRAL_GATEWAY_ENDPOINT', 'https://gateway.test');
 ensureEnv('ASTRAL_MEDIA_ENDPOINT', 'https://media.test');
 ensureEnv('ASTRAL_CDN_ENDPOINT', 'https://cdn.test');
 ensureEnv('ASTRAL_MARKETING_ENDPOINT', 'https://marketing.test');
-ensureEnv('ASTRAL_PATH_MARKETING', '/marketing');
+ensureEnv('ASTRAL_PATH_MARKETING', '/');
 ensureEnv('ASTRAL_ADMIN_ENDPOINT', 'https://admin.test');
 ensureEnv('ASTRAL_PATH_ADMIN', '/admin');
 ensureEnv('ASTRAL_INVITE_ENDPOINT', 'https://invite.test');

@@ -20,6 +20,7 @@
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
+import {ChatTopBanners} from '~/components/channel/ChatTopBanners';
 import {SlowmodeIndicator} from '~/components/channel/SlowmodeIndicator';
 import {useSlowmode} from '~/hooks/useSlowmode';
 import type {ChannelRecord} from '~/records/ChannelRecord';
@@ -58,6 +59,7 @@ export const ChannelChatLayout = observer(({channel, messages, textarea}: Channe
 				isDesktopPrivateChannel && styles.containerPrivateDesktop,
 			)}
 		>
+			<ChatTopBanners channel={channel} />
 			<div className={styles.messagesArea}>{messages}</div>
 			<div className={clsx(styles.typingArea, hasTopBar && styles.typingAreaWithTopBar)}>
 				<div className={styles.typingContent}>

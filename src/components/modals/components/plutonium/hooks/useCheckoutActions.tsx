@@ -64,13 +64,13 @@ export const useCheckoutActions = (priceIds: PriceIds | null, isGiftSubscription
 				const errorCode = (error.body as any)?.code as string | undefined;
 				if (errorCode === APIErrorCodes.PREMIUM_PURCHASE_BLOCKED) {
 					ToastActionCreators.error(
-						t`У вас уже есть Lifetime. Оформить новую подписку нельзя, но вы всё ещё можете покупать подарки для других.`,
+						t`You already have Lifetime. You can't start a new subscription, but you can still buy gifts for others.`,
 					);
 					return;
 				}
 			}
 
-			ToastActionCreators.error(t`Не удалось открыть оплату. Попробуйте ещё раз.`);
+			ToastActionCreators.error(t`Failed to open checkout. Please try again.`);
 		},
 		[t],
 	);
@@ -83,14 +83,14 @@ export const useCheckoutActions = (priceIds: PriceIds | null, isGiftSubscription
 
 			if (isGiftSubscription && (plan === 'monthly' || plan === 'yearly')) {
 				ToastActionCreators.error(
-					t`Сейчас у вас подарочная подписка. Она не продлевается автоматически. Вы можете активировать ещё один gift-код, чтобы продлить её, или перейти на Visionary уже сейчас. Обычную автопродляемую подписку можно будет оформить после окончания gift-времени.`,
+					t`You currently have a gift subscription. It does not renew automatically. You can redeem another gift code to extend it, or upgrade to Visionary now. A regular auto-renewing subscription can be started after your gift time ends.`,
 				);
 				return;
 			}
 
 			if (!priceIds) {
 				logger.error('Price IDs not loaded yet');
-				ToastActionCreators.error(t`Дождитесь загрузки цен и попробуйте снова.`);
+				ToastActionCreators.error(t`Wait for prices to load and try again.`);
 				return;
 			}
 
@@ -109,7 +109,7 @@ export const useCheckoutActions = (priceIds: PriceIds | null, isGiftSubscription
 
 			if (!priceId) {
 				logger.error('Price ID not available for plan', {plan});
-				ToastActionCreators.error(t`Этот тариф сейчас недоступен. Напишите в поддержку.`);
+				ToastActionCreators.error(t`This plan is unavailable right now. Please contact support.`);
 				return;
 			}
 
@@ -124,11 +124,11 @@ export const useCheckoutActions = (priceIds: PriceIds | null, isGiftSubscription
 					ModalActionCreators.push(
 						modal(() => (
 							<ConfirmModal
-								title={t`Переход к оплате`}
-								description={t`Сейчас откроется страница оплаты. После завершения просто вернитесь в Astral.`}
-								primaryText={t`Продолжить`}
+								title={t`Opening checkout`}
+								description={t`The checkout page will open now. After finishing, just return to Astral.`}
+								primaryText={t`Continue`}
 								primaryVariant="primary"
-								secondaryText={t`Отмена`}
+								secondaryText={t`Cancel`}
 								onPrimary={() => {
 									void openCheckoutUrl(checkoutUrl);
 								}}

@@ -8,6 +8,7 @@ export interface ForwardedStoryPreviewData {
 	authorName: string;
 	summary: string;
 	mediaUrl: string | null;
+	mediaTransform: StoryPreviewTransform | null;
 	comment: string | null;
 	isVideo: boolean;
 	storyId: string | null;
@@ -16,8 +17,17 @@ export interface ForwardedStoryPreviewData {
 	background: string | null;
 	textAlign: 'left' | 'center' | 'right' | null;
 	textTone: 'light' | 'dark' | 'accent' | null;
+	textScale: number | null;
+	textTransform: StoryPreviewTransform | null;
 	emojis: Array<StoryPreviewEmoji>;
 	drawings: Array<StoryPreviewDrawing>;
+}
+
+export interface StoryPreviewTransform {
+	x?: number;
+	y?: number;
+	scale?: number;
+	rotate?: number;
 }
 
 export interface StoryPreviewEmoji {
@@ -25,12 +35,7 @@ export interface StoryPreviewEmoji {
 	name: string;
 	url?: string;
 	native?: string;
-	transform?: {
-		x?: number;
-		y?: number;
-		scale?: number;
-		rotate?: number;
-	};
+	transform?: StoryPreviewTransform;
 }
 
 export interface StoryPreviewDrawing {
@@ -44,6 +49,7 @@ export interface StoryForwardPayloadInput {
 	authorName: string;
 	summary: string;
 	mediaUrl?: string | null;
+	mediaTransform?: StoryPreviewTransform | null;
 	mediaType?: string | null;
 	comment?: string | null;
 	storyId?: string | null;
@@ -52,6 +58,8 @@ export interface StoryForwardPayloadInput {
 	background?: string | null;
 	textAlign?: 'left' | 'center' | 'right' | null;
 	textTone?: 'light' | 'dark' | 'accent' | null;
+	textScale?: number | null;
+	textTransform?: StoryPreviewTransform | null;
 	emojis?: Array<StoryPreviewEmoji> | null;
 	drawings?: Array<StoryPreviewDrawing> | null;
 }
@@ -102,6 +110,7 @@ export function encodeStoryForwardPayload(payload: StoryForwardPayloadInput): st
 			authorName: payload.authorName,
 			summary: payload.summary,
 			mediaUrl: sanitizeStoryMediaUrl(payload.mediaUrl),
+			mediaTransform: sanitizePreviewTransform(payload.mediaTransform, {minScale: 1, maxScale: 4}),
 			mediaType: payload.mediaType || null,
 			comment: payload.comment?.trim() || null,
 			storyId: payload.storyId?.trim() || null,
@@ -110,10 +119,39 @@ export function encodeStoryForwardPayload(payload: StoryForwardPayloadInput): st
 			background: payload.background?.trim() || null,
 			textAlign: payload.textAlign ?? null,
 			textTone: payload.textTone ?? null,
+			textScale: sanitizePreviewScale(payload.textScale, 0.6, 2.8),
+			textTransform: sanitizePreviewTransform(payload.textTransform, {minScale: 0.6, maxScale: 2.8}),
 			emojis: sanitizePreviewEmojis(payload.emojis),
 			drawings: sanitizePreviewDrawings(payload.drawings),
 		}),
 	)}`;
+}
+
+function sanitizePreviewScale(value: number | null | undefined, min: number, max: number): number | null {
+	if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+	return Math.max(min, Math.min(max, Number(value.toFixed(3))));
+}
+
+function sanitizePreviewTransform(
+	transform: StoryPreviewTransform | null | undefined,
+	{minScale, maxScale}: {minScale: number; maxScale: number},
+): StoryPreviewTransform | null {
+	if (!transform || typeof transform !== 'object') return null;
+	const next: StoryPreviewTransform = {};
+	if (typeof transform.x === 'number' && Number.isFinite(transform.x)) {
+		next.x = Math.max(-480, Math.min(480, Math.round(transform.x)));
+	}
+	if (typeof transform.y === 'number' && Number.isFinite(transform.y)) {
+		next.y = Math.max(-560, Math.min(560, Math.round(transform.y)));
+	}
+	const scale = sanitizePreviewScale(transform.scale, minScale, maxScale);
+	if (scale != null) {
+		next.scale = scale;
+	}
+	if (typeof transform.rotate === 'number' && Number.isFinite(transform.rotate)) {
+		next.rotate = Math.max(-180, Math.min(180, Math.round(transform.rotate)));
+	}
+	return Object.keys(next).length > 0 ? next : null;
 }
 
 function sanitizePreviewEmojis(emojis: Array<StoryPreviewEmoji> | null | undefined): Array<StoryPreviewEmoji> {
@@ -123,14 +161,7 @@ function sanitizePreviewEmojis(emojis: Array<StoryPreviewEmoji> | null | undefin
 		name: typeof emoji.name === 'string' ? emoji.name : 'emoji',
 		url: typeof emoji.url === 'string' && emoji.url ? emoji.url : undefined,
 		native: typeof emoji.native === 'string' && emoji.native ? emoji.native : undefined,
-		transform: emoji.transform
-			? {
-					x: typeof emoji.transform.x === 'number' ? emoji.transform.x : undefined,
-					y: typeof emoji.transform.y === 'number' ? emoji.transform.y : undefined,
-					scale: typeof emoji.transform.scale === 'number' ? emoji.transform.scale : undefined,
-					rotate: typeof emoji.transform.rotate === 'number' ? emoji.transform.rotate : undefined,
-				}
-			: undefined,
+		transform: sanitizePreviewTransform(emoji.transform, {minScale: 0.5, maxScale: 3.2}) ?? undefined,
 	}));
 }
 
@@ -165,6 +196,7 @@ function normalizeStoryForwardPayload(payload: unknown): ForwardedStoryPreviewDa
 		authorName?: unknown;
 		summary?: unknown;
 		mediaUrl?: unknown;
+		mediaTransform?: unknown;
 		mediaType?: unknown;
 		comment?: unknown;
 		storyId?: unknown;
@@ -173,6 +205,8 @@ function normalizeStoryForwardPayload(payload: unknown): ForwardedStoryPreviewDa
 		background?: unknown;
 		textAlign?: unknown;
 		textTone?: unknown;
+		textScale?: unknown;
+		textTransform?: unknown;
 		emojis?: unknown;
 		drawings?: unknown;
 	};
@@ -181,6 +215,7 @@ function normalizeStoryForwardPayload(payload: unknown): ForwardedStoryPreviewDa
 		authorName: typeof record.authorName === 'string' && record.authorName.trim() ? record.authorName.trim() : 'Story',
 		summary: typeof record.summary === 'string' && record.summary.trim() ? record.summary.trim() : 'Story',
 		mediaUrl,
+		mediaTransform: sanitizePreviewTransform(record.mediaTransform as StoryPreviewTransform | null | undefined, {minScale: 1, maxScale: 4}),
 		comment: typeof record.comment === 'string' && record.comment.trim() ? record.comment.trim() : null,
 		isVideo: record.mediaType === 'video' || (mediaUrl ? VIDEO_EXTENSION_PATTERN.test(mediaUrl) : false),
 		storyId: typeof record.storyId === 'string' && record.storyId.trim() ? record.storyId.trim() : null,
@@ -195,6 +230,8 @@ function normalizeStoryForwardPayload(payload: unknown): ForwardedStoryPreviewDa
 			record.textTone === 'light' || record.textTone === 'dark' || record.textTone === 'accent'
 				? record.textTone
 				: null,
+		textScale: sanitizePreviewScale(record.textScale as number | null | undefined, 0.6, 2.8),
+		textTransform: sanitizePreviewTransform(record.textTransform as StoryPreviewTransform | null | undefined, {minScale: 0.6, maxScale: 2.8}),
 		emojis: sanitizePreviewEmojis(record.emojis as Array<StoryPreviewEmoji> | null | undefined),
 		drawings: sanitizePreviewDrawings(record.drawings as Array<StoryPreviewDrawing> | null | undefined),
 	};
@@ -246,6 +283,7 @@ function parseAccessibleStoryForwardText(content: string): ForwardedStoryPreview
 		authorName: authorName || 'Story',
 		summary,
 		mediaUrl: null,
+		mediaTransform: null,
 		comment: commentLines.length > 0 ? commentLines.join('\n') : null,
 		isVideo: false,
 		storyId: null,
@@ -254,6 +292,8 @@ function parseAccessibleStoryForwardText(content: string): ForwardedStoryPreview
 		background: null,
 		textAlign: null,
 		textTone: null,
+		textScale: null,
+		textTransform: null,
 		emojis: [],
 		drawings: [],
 	};
@@ -279,6 +319,7 @@ export function createStoryPreviewComponents(
 					author_name: preview.authorName,
 					summary: preview.summary,
 					media_url: preview.mediaUrl,
+					media_transform: preview.mediaTransform,
 					comment: preview.comment,
 					is_video: preview.isVideo,
 					story_id: preview.storyId,
@@ -287,6 +328,8 @@ export function createStoryPreviewComponents(
 					background: preview.background,
 					text_align: preview.textAlign,
 					text_tone: preview.textTone,
+					text_scale: preview.textScale,
+					text_transform: preview.textTransform,
 					emojis: preview.emojis,
 					drawings: preview.drawings,
 				},
@@ -356,6 +399,7 @@ export function parseForwardedStoryPreview(content: string | null | undefined): 
 		authorName: authorName || 'Story',
 		summary: summary || 'Story',
 		mediaUrl,
+		mediaTransform: null,
 		comment: commentLines.length > 0 ? commentLines.join('\n') : null,
 		isVideo: mediaUrl ? VIDEO_EXTENSION_PATTERN.test(mediaUrl) : false,
 		storyId: null,
@@ -364,6 +408,8 @@ export function parseForwardedStoryPreview(content: string | null | undefined): 
 		background: null,
 		textAlign: null,
 		textTone: null,
+		textScale: null,
+		textTransform: null,
 		emojis: [],
 		drawings: [],
 	};
@@ -378,6 +424,7 @@ function normalizeStoryPreviewComponent(component: StoryPreviewComponent): Forwa
 		authorName: component.author_name || 'Story',
 		summary: component.summary || 'Story',
 		mediaUrl: component.media_url?.trim() || null,
+		mediaTransform: sanitizePreviewTransform(component.media_transform, {minScale: 1, maxScale: 4}),
 		comment: component.comment?.trim() || null,
 		isVideo: !!component.is_video,
 		storyId: component.story_id?.trim() || null,
@@ -386,6 +433,8 @@ function normalizeStoryPreviewComponent(component: StoryPreviewComponent): Forwa
 		background: component.background?.trim() || null,
 		textAlign: component.text_align ?? null,
 		textTone: component.text_tone ?? null,
+		textScale: sanitizePreviewScale(component.text_scale, 0.6, 2.8),
+		textTransform: sanitizePreviewTransform(component.text_transform, {minScale: 0.6, maxScale: 2.8}),
 		emojis: sanitizePreviewEmojis(component.emojis),
 		drawings: sanitizePreviewDrawings(component.drawings),
 	};

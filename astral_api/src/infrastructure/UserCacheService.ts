@@ -65,9 +65,18 @@ function forgetMissing(userId: UserID): void {
 	negativeCache.delete(userId.toString());
 }
 
-export class UserCacheService {
-	private coalescer = new InMemoryCoalescer();
+/**
+ * Process-wide, deliberately NOT an instance field: `ServiceMiddleware`
+ * constructs a fresh `UserCacheService` for every request, so a per-instance
+ * coalescer only ever deduped fetches inside one request and gave zero
+ * stampede protection where it matters — a cold `user:partial:*` key on a busy
+ * channel used to send one repo read per concurrent request. The key space
+ * (`user:partial:<id>`) is global and the repositories are interchangeable, so
+ * sharing across requests is safe.
+ */
+const partialCoalescer = new InMemoryCoalescer();
 
+export class UserCacheService {
 	constructor(
 		public readonly cacheService: ICacheService,
 		private userRepository: IUserRepository,
@@ -91,8 +100,18 @@ export class UserCacheService {
 			return redisCached;
 		}
 
+		return this.fetchAndCachePartial(userId, requestCache);
+	}
+
+	/**
+	 * Repo-backed load + cache write shared by the single and batched read
+	 * paths. Coalesces concurrent fetches for the same id and records the
+	 * negative-cache mark on `UnknownUserError` so both paths behave the same.
+	 */
+	private async fetchAndCachePartial(userId: UserID, requestCache: RequestCache): Promise<UserPartialResponse> {
+		const cacheKey = `user:partial:${userId}`;
 		try {
-			const userPartialResponse = await this.coalescer.coalesce(cacheKey, async () => {
+			const userPartialResponse = await partialCoalescer.coalesce(cacheKey, async () => {
 				const user = await this.userRepository.findUnique(userId);
 				if (!user) {
 					throw new UnknownUserError();
@@ -103,7 +122,11 @@ export class UserCacheService {
 				return mapUserToPartialResponse(user);
 			});
 
-			await this.cacheService.set(cacheKey, userPartialResponse, 300);
+			// Cache population is not something the caller waits on: the value it
+			// needs is already in hand, and the SET is handed to Redis at the same
+			// moment either way (so an invalidation issued right after this call
+			// still lands after the SET). Matches `mapUserToPartialResponseWithCache`.
+			Promise.resolve(this.cacheService.set(cacheKey, userPartialResponse, 300)).catch(() => {});
 			requestCache.userPartials.set(userId, userPartialResponse);
 			return userPartialResponse;
 		} catch (error) {
@@ -129,25 +152,75 @@ export class UserCacheService {
 	): Promise<Map<UserID, UserPartialResponse>> {
 		const results = new Map<UserID, UserPartialResponse>();
 
-		// Per-user error isolation. Previously one UnknownUserError in a
-		// batch of 100 (e.g. deleted account that's still in a cached
-		// member list) rejected the whole Promise.all and propagated up,
-		// killing whichever mapper called this (guild members, emoji
-		// author list, message author fan-out). Caller-side now sees a
-		// partial map: missing ids become missing keys in the Map, which
-		// every existing call site was already defensive about anyway —
-		// except the `!`-assertion lookups that we're patching in
-		// GuildModel alongside this change.
-		const promises = userIds.map(async (userId) => {
-			try {
-				const userResponse = await this.getUserPartialResponse(userId, requestCache);
-				results.set(userId, userResponse);
-			} catch {
-				// swallow — caller handles the missing entry
+		// Dedupe ids up front and resolve everything we can without touching
+		// Redis: the per-request cache and the in-process negative cache. The
+		// remaining ids are fetched from Redis in a single `mget` instead of
+		// one round-trip per id (previously this fanned out N `getAndRenewTtl`
+		// calls, which dominated latency on READY / message-history fan-out).
+		const pending = new Map<string, UserID>();
+		for (const userId of userIds) {
+			const key = userId.toString();
+			if (results.has(userId) || pending.has(key)) {
+				continue;
 			}
-		});
+			const cached = requestCache.userPartials.get(userId);
+			if (cached) {
+				results.set(userId, cached);
+				continue;
+			}
+			if (isKnownMissing(userId)) {
+				continue;
+			}
+			pending.set(key, userId);
+		}
 
-		await Promise.all(promises);
+		if (pending.size === 0) {
+			return results;
+		}
+
+		// Per-user error isolation: a single missing id (e.g. a deleted account
+		// still referenced by a cached member list) becomes a missing key in the
+		// returned map rather than rejecting the whole batch. Every call site is
+		// already defensive about absent entries.
+		const pendingIds = [...pending.values()];
+		const cacheKeys = pendingIds.map((userId) => `user:partial:${userId}`);
+		const redisValues = await this.cacheService.mget<UserPartialResponse>(cacheKeys);
+
+		const misses: Array<UserID> = [];
+		const renewals: Array<string> = [];
+		for (let index = 0; index < pendingIds.length; index += 1) {
+			const userId = pendingIds[index]!;
+			const value = redisValues[index];
+			if (value) {
+				requestCache.userPartials.set(userId, value);
+				results.set(userId, value);
+				renewals.push(cacheKeys[index]!);
+			} else {
+				misses.push(userId);
+			}
+		}
+
+		// Sliding-window renewal is EXPIRE, not a rewrite: `mset` re-serialized and
+		// re-sent every payload we had just read (and would resurrect a key another
+		// request had concurrently invalidated). The commands are issued in one tick
+		// so ioredis writes them together, and nobody waits on the result.
+		if (renewals.length > 0) {
+			Promise.all(renewals.map((key) => this.cacheService.expire(key, 300))).catch(() => {});
+		}
+
+		if (misses.length > 0) {
+			await Promise.all(
+				misses.map(async (userId) => {
+					try {
+						const userResponse = await this.fetchAndCachePartial(userId, requestCache);
+						results.set(userId, userResponse);
+					} catch {
+						// swallow — caller handles the missing entry
+					}
+				}),
+			);
+		}
+
 		return results;
 	}
 }

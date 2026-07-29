@@ -87,7 +87,7 @@ const ForgotPasswordPage = observer(function ForgotPasswordPage() {
 				<Trans>Enter your email address and we'll send you a link to reset your password.</Trans>
 			</p>
 
-			<form className={styles.form} onSubmit={form.handleSubmit}>
+			<form className={styles.form} onSubmit={form.handleSubmit} data-auth-cosmic>
 				<FormField
 					id={emailId}
 					name="email"
@@ -100,7 +100,7 @@ const ForgotPasswordPage = observer(function ForgotPasswordPage() {
 					error={form.getError('email')}
 				/>
 
-				<Button type="submit" fitContainer disabled={form.isSubmitting}>
+				<Button type="submit" fitContainer variant="secondary" className={styles.submitButton} disabled={form.isSubmitting}>
 					<Trans>Send reset link</Trans>
 				</Button>
 			</form>

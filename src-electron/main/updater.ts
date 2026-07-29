@@ -32,6 +32,14 @@ export type UpdaterEvent =
 	| {type: 'available'; context: UpdaterContext; version?: string | null}
 	| {type: 'not-available'; context: UpdaterContext}
 	| {type: 'downloaded'; context: UpdaterContext; version?: string | null}
+	| {
+			type: 'progress';
+			context: UpdaterContext;
+			percent: number;
+			transferred: number;
+			total: number;
+			bytesPerSecond: number;
+	  }
 	| {type: 'error'; context: UpdaterContext; message: string};
 
 let lastContext: UpdaterContext = 'background';
@@ -158,6 +166,24 @@ export function registerUpdater(getMainWindow: () => BrowserWindow | null) {
 	autoUpdater.on('update-downloaded', (_event, _releaseNotes, releaseName) => {
 		const context = finishActiveCheck();
 		send(getMainWindow(), {type: 'downloaded', context, version: releaseName ?? null});
+	});
+
+	const autoUpdaterWithProgress = autoUpdater as typeof autoUpdater & {
+		on(
+			event: 'download-progress',
+			listener: (progress: {percent?: number; transferred?: number; total?: number; bytesPerSecond?: number}) => void,
+		): typeof autoUpdater;
+	};
+
+	autoUpdaterWithProgress.on('download-progress', (progress) => {
+		send(getMainWindow(), {
+			type: 'progress',
+			context: activeCheckContext ?? lastContext,
+			percent: progress.percent ?? 0,
+			transferred: progress.transferred ?? 0,
+			total: progress.total ?? 0,
+			bytesPerSecond: progress.bytesPerSecond ?? 0,
+		});
 	});
 
 	autoUpdater.on('error', (err: Error) => {

@@ -71,11 +71,16 @@
 }
 
 .keyboardReplacementSheet {
-	height: var(--mobile-expression-picker-height, clamp(280px, 42dvh, 380px)) !important;
-	max-height: min(62dvh, 460px) !important;
+	height: var(--mobile-expression-picker-sheet-height, clamp(280px, 42dvh, 380px)) !important;
+	max-height: var(--mobile-expression-picker-sheet-height, clamp(280px, 42dvh, 380px)) !important;
 	border-top-left-radius: 14px;
 	border-top-right-radius: 14px;
 	box-shadow: 0 -8px 24px rgb(0 0 0 / 0.18);
+	transform: translateZ(0);
+	will-change: height, transform;
+	transition:
+		height 220ms cubic-bezier(0.22, 1, 0.36, 1),
+		transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .keyboardReplacementSheet .container {
@@ -83,11 +88,11 @@
 }
 
 .reactionPickerSheet {
-	height: 100dvh !important;
-	max-height: 100dvh !important;
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
-	box-shadow: none;
+	height: clamp(320px, 56dvh, 520px) !important;
+	max-height: 64dvh !important;
+	border-top-left-radius: 18px;
+	border-top-right-radius: 18px;
+	box-shadow: 0 -10px 28px rgb(0 0 0 / 0.24);
 }
 
 .reactionPickerSheet .container {

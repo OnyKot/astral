@@ -491,17 +491,34 @@ dispatch_global_presence(TargetId, Payload, State) ->
         true ->
             {noreply, State};
         false ->
-            cache_if_visible(TargetId, Payload),
+            %% Invisible must look exactly like offline to everyone else. The guild path already
+            %% does this (guild_presence:normalize_presence_status/1); the friend / group-DM path
+            %% forwarded the raw payload, so "invisible" travelled to other users verbatim and any
+            %% client could tell an online-but-hidden user from a genuinely offline one.
+            VisiblePayload = hide_invisible_status(Payload),
+            cache_if_visible(TargetId, VisiblePayload),
             Sessions = maps:get(sessions, State),
             SessionPids = [maps:get(pid, S) || S <- maps:values(Sessions)],
             lists:foreach(
                 fun(Pid) when is_pid(Pid) ->
-                    gen_server:cast(Pid, {dispatch, presence_update, Payload})
+                    gen_server:cast(Pid, {dispatch, presence_update, VisiblePayload})
                 end,
                 SessionPids
             ),
             {noreply, State}
     end.
+
+%% Presence of *another* user as seen by this one: invisible is indistinguishable from offline.
+%% Custom status and music activity are dropped with it, since both would otherwise reveal
+%% activity the user asked to hide.
+hide_invisible_status(#{<<"status">> := <<"invisible">>} = Payload) ->
+    Payload#{
+        <<"status">> => <<"offline">>,
+        <<"custom_status">> => null,
+        <<"music_activity">> => null
+    };
+hide_invisible_status(Payload) ->
+    Payload.
 
 sync_friend_subscriptions(FriendIds, State) ->
     case maps:get(is_bot, State, false) of

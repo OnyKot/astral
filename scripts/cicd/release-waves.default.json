@@ -1,0 +1,8 @@
+{
+  "waves": [
+    {"wave": 1, "percent": 5, "label": "canary"},
+    {"wave": 2, "percent": 25, "label": "early"},
+    {"wave": 3, "percent": 50, "label": "half"},
+    {"wave": 4, "percent": 100, "label": "full"}
+  ]
+}

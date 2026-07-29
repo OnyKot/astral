@@ -35,6 +35,7 @@ import {TypingUtils} from '~/utils/TypingUtils';
 
 const MENTION_EVERYONE_THRESHOLD = import.meta.env.DEV ? 0 : 50;
 const ROLE_MENTION_PATTERN = /<@&(\d+)>/g;
+const MASS_MENTION_HINT_PATTERN = /@(?:everyone|here)|<@&\d+>/;
 type MentionType = '@everyone' | '@here' | 'role';
 const mentionTypePriority: Record<MentionType, number> = {
 	'@everyone': 3,
@@ -87,6 +88,10 @@ export const useTextareaSubmit = ({
 	const checkMentionConfirmation = React.useCallback(
 		(content: string, tts?: boolean): boolean => {
 			if (!guildId || !onMentionConfirmationNeeded) {
+				return false;
+			}
+
+			if (!MASS_MENTION_HINT_PATTERN.test(content)) {
 				return false;
 			}
 

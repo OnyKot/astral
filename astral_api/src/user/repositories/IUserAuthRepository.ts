@@ -46,7 +46,7 @@ export interface IUserAuthRepository {
 	listMfaBackupCodes(userId: UserID): Promise<Array<MfaBackupCode>>;
 	createMfaBackupCodes(userId: UserID, codes: Array<string>): Promise<Array<MfaBackupCode>>;
 	clearMfaBackupCodes(userId: UserID): Promise<void>;
-	consumeMfaBackupCode(userId: UserID, code: string): Promise<void>;
+	consumeMfaBackupCode(userId: UserID, code: string): Promise<boolean>;
 	deleteAllMfaBackupCodes(userId: UserID): Promise<void>;
 
 	getEmailVerificationToken(token: string): Promise<EmailVerificationToken | null>;

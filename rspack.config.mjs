@@ -19,7 +19,7 @@
 
 import path, { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CopyRspackPlugin, DefinePlugin, HtmlRspackPlugin, SwcJsMinimizerRspackPlugin } from '@rspack/core';
+import {CopyRspackPlugin, DefinePlugin, HtmlRspackPlugin, SwcJsMinimizerRspackPlugin} from '@rspack/core';
 import ReactRefreshPlugin from '@rspack/plugin-react-refresh';
 import { createPoFileRule, getLinguiSwcPluginConfig } from './scripts/build/rspack/lingui.mjs';
 import { staticFilesPlugin } from './scripts/build/rspack/static-files.mjs';
@@ -413,8 +413,16 @@ export default () => {
              * actually emit standalone chunks that the browser can
              * parallel-fetch and cache independently.
              */
-            moduleIds: 'named',
-            chunkIds: 'named',
+            /*
+             * `named` embeds every module's full source path into the bundle as
+             * a string key. That is what we want while debugging, but in a
+             * production build with ~1700 modules it is pure payload and it
+             * also defeats mangling of the id references. `deterministic`
+             * keeps ids stable across builds (so vendor chunks stay cacheable)
+             * without shipping the paths.
+             */
+            moduleIds: isProduction ? 'deterministic' : 'named',
+            chunkIds: isProduction ? 'deterministic' : 'named',
             minimize: isProduction,
             minimizer: [
                 new SwcJsMinimizerRspackPlugin({
@@ -422,6 +430,24 @@ export default () => {
                     mangle: true,
                     format: { comments: false },
                 }),
+                /*
+                 * NOTE: CSS is deliberately NOT minified here.
+                 *
+                 * Overriding `optimization.minimizer` replaces rspack's
+                 * defaults wholesale, which is why the emitted stylesheet used
+                 * to ship unminified (~1.85 MB). The obvious fix —
+                 * `new LightningCssMinimizerRspackPlugin()` — cannot be used:
+                 * rspack 1.6.2 bundles lightningcss 1.0.0-alpha.68, which
+                 * panics on our stylesheet ("internal error: entered
+                 * unreachable code", values/percentage.rs:30) and takes the
+                 * whole build down.
+                 *
+                 * CSS is instead minified after emit by
+                 * `scripts/minify-css-dist.mjs`, which uses the (much newer)
+                 * `lightningcss` npm package and degrades per file instead of
+                 * killing the build. Revisit when rspack ships a lightningcss
+                 * release without that panic.
+                 */
             ],
         },
 
@@ -433,7 +459,7 @@ export default () => {
             allowedHosts: 'all',
             // The previous `'auto://0.0.0.0:0/ws'` shorthand is broken on
             // Windows where webpack-dev-server can't resolve the 0.0.0.0
-            // bind back to an addressable host — the browser ends up trying
+            // bind back to an addressable host - the browser ends up trying
             // to reach `ws://[::]:0` and gives the "WebSocket failed" spam.
             // Spelling out the pieces explicitly fixes it for every OS.
             client: disableDevServerClient ?

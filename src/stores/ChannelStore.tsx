@@ -31,17 +31,32 @@ import * as ChannelUtils from '~/utils/ChannelUtils';
 import * as RouterUtils from '~/utils/RouterUtils';
 import * as SnowflakeUtils from '~/utils/SnowflakeUtils';
 
-const sortDMs = (a: ChannelRecord, b: ChannelRecord) => {
-	const aTimestamp = a.lastMessageId ? SnowflakeUtils.extractTimestamp(a.lastMessageId) : null;
-	const bTimestamp = b.lastMessageId ? SnowflakeUtils.extractTimestamp(b.lastMessageId) : null;
+/*
+ * Sort keys are decorated onto each channel before sorting: `extractTimestamp`
+ * runs a regex plus BigInt shift, and `createdAt` allocates a Date, so doing
+ * that inside the comparator repeats the work O(n log n) times for a list that
+ * can hold thousands of DMs.
+ */
+type DMSortEntry = {
+	channel: ChannelRecord;
+	lastMessageTimestamp: number | null;
+	createdAtTimestamp: number;
+};
 
-	if (aTimestamp != null && bTimestamp != null) {
-		return bTimestamp - aTimestamp;
+const decorateDMForSort = (channel: ChannelRecord): DMSortEntry => ({
+	channel,
+	lastMessageTimestamp: channel.lastMessageId ? SnowflakeUtils.extractTimestamp(channel.lastMessageId) : null,
+	createdAtTimestamp: channel.createdAt.getTime(),
+});
+
+const sortDMs = (a: DMSortEntry, b: DMSortEntry) => {
+	if (a.lastMessageTimestamp != null && b.lastMessageTimestamp != null) {
+		return b.lastMessageTimestamp - a.lastMessageTimestamp;
 	}
-	if (aTimestamp != null) return -1;
-	if (bTimestamp != null) return 1;
+	if (a.lastMessageTimestamp != null) return -1;
+	if (b.lastMessageTimestamp != null) return 1;
 
-	return b.createdAt.getTime() - a.createdAt.getTime();
+	return b.createdAtTimestamp - a.createdAtTimestamp;
 };
 
 class ChannelStore {
@@ -61,11 +76,15 @@ class ChannelStore {
 	}
 
 	get dmChannels(): ReadonlyArray<ChannelRecord> {
-		return this.channels
+		const decorated = this.channels
 			.filter(
 				(channel) => !channel.guildId && (channel.type === ChannelTypes.DM || channel.type === ChannelTypes.GROUP_DM),
 			)
-			.sort(sortDMs);
+			.map(decorateDMForSort);
+
+		decorated.sort(sortDMs);
+
+		return decorated.map((entry) => entry.channel);
 	}
 
 	getChannel(channelId: string): ChannelRecord | undefined {

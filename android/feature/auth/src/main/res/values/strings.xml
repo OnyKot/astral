@@ -1,0 +1,57 @@
+<resources>
+    <string name="auth_title_login">Welcome back</string>
+    <string name="auth_title_register">Create Astral ID</string>
+    <string name="auth_title_mfa">Two-factor verification</string>
+
+    <string name="auth_subtitle_login">Secure native access to Astral.</string>
+    <string name="auth_subtitle_register">Reserve your native account for Astral mobile.</string>
+    <string name="auth_subtitle_mfa">Enter your security code to continue.</string>
+
+    <string name="auth_tab_login">Login</string>
+    <string name="auth_tab_register">Register</string>
+
+    <string name="auth_label_email">Email</string>
+    <string name="auth_label_password">Password</string>
+    <string name="auth_label_display_name">Display name</string>
+    <string name="auth_label_username_optional">Username (optional)</string>
+    <string name="auth_label_beta_code">Invite / beta code</string>
+    <string name="auth_label_birth_date">Date of birth</string>
+    <string name="auth_placeholder_birth_date">YYYY-MM-DD</string>
+    <string name="auth_label_totp_code">Authenticator code</string>
+    <string name="auth_label_sms_code">SMS code</string>
+
+    <string name="auth_consent">I accept Astral terms</string>
+    <string name="auth_mfa_totp">Authenticator</string>
+    <string name="auth_mfa_sms">SMS</string>
+    <string name="auth_send_sms_code">Send SMS code</string>
+
+    <string name="auth_action_login">Log in</string>
+    <string name="auth_action_create_account">Create account</string>
+    <string name="auth_action_verify_code">Verify code</string>
+
+    <string name="auth_error_invalid_email">Enter a valid email.</string>
+    <string name="auth_error_password_short">Password must be at least 6 characters.</string>
+    <string name="auth_error_beta_required">Invite / beta code is required.</string>
+    <string name="auth_error_birth_date_required">Select your date of birth.</string>
+    <string name="auth_error_birth_date_invalid">Date of birth format: YYYY-MM-DD.</string>
+    <string name="auth_error_consent_required">Accept Astral terms to continue.</string>
+    <string name="auth_error_mfa_code_required">Enter your verification code.</string>
+    <string name="auth_error_mfa_code_invalid">Enter a valid numeric code.</string>
+
+    <string name="auth_info_mfa_required">MFA is enabled for this account.</string>
+    <string name="auth_info_ip_authorization">Authorize this login from your email.</string>
+    <string name="auth_info_pending_verification">Account created. Check your email to verify it.</string>
+
+    <string name="welcome_logo_content_description">Astral app logo</string>
+    <string name="welcome_brand">Astral</string>
+    <string name="welcome_native_mobile">Native mobile</string>
+    <string name="welcome_badge_beta">Beta</string>
+    <string name="welcome_hero_subtitle">voice, friends, spaces</string>
+    <string name="welcome_panel_title">Step into your orbit</string>
+    <string name="welcome_panel_description">A cleaner native start for chat, voice rooms, and communities. Sign in fast, then continue in the classic web interface.</string>
+    <string name="welcome_feature_encrypted">Encrypted-ready</string>
+    <string name="welcome_feature_low_friction">Low friction</string>
+    <string name="welcome_action_continue">Continue</string>
+    <string name="welcome_action_create_account">Create account</string>
+    <string name="welcome_footer_hint">Already have access? Continue opens login.</string>
+</resources>

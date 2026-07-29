@@ -100,7 +100,10 @@ export const GroupedVoiceParticipant = observer(function GroupedVoiceParticipant
 			const connectionId = state.connection_id ?? '';
 			const participant = MediaEngineStore.getParticipantByUserIdAndConnectionId(user.id, connectionId);
 
-			const selfMuted = state.self_mute ?? (participant ? !participant.isMicrophoneEnabled : false);
+			const isLocalConnection = isCurrentUser && connectionId === currentConnectionId;
+			const rawSelfMuted = state.self_mute ?? (participant ? !participant.isMicrophoneEnabled : false);
+			const muteReason = isLocalConnection ? MediaEngineStore.getMuteReason(state) : null;
+			const selfMuted = isLocalConnection ? muteReason !== null : rawSelfMuted;
 			const selfDeaf = !!state.self_deaf;
 			const camera = state.self_video === true || (participant ? participant.isCameraEnabled : false);
 			const live = state.self_stream === true || (participant ? participant.isScreenShareEnabled : false);
@@ -123,14 +126,17 @@ export const GroupedVoiceParticipant = observer(function GroupedVoiceParticipant
 			for (const state of voiceStates) {
 				const connectionId = state.connection_id ?? '';
 				const participant = MediaEngineStore.getParticipantByUserIdAndConnectionId(user.id, connectionId);
-				const selfMuted = state.self_mute ?? (participant ? !participant.isMicrophoneEnabled : false);
+				const isLocalConnection = isCurrentUser && connectionId === currentConnectionId;
+				const rawSelfMuted = state.self_mute ?? (participant ? !participant.isMicrophoneEnabled : false);
+				const muteReason = isLocalConnection ? MediaEngineStore.getMuteReason(state) : null;
+				const selfMuted = isLocalConnection ? muteReason !== null : rawSelfMuted;
 				const speaking = !!(participant?.isSpeaking && !selfMuted && !(state.mute ?? false));
 				anySpeaking = anySpeaking || speaking;
 			}
 		}
 
 		return {anySpeaking, anyCameraOn, anyLive, guildMuted, guildDeaf, allSelfMuted, allSelfDeaf};
-	}, [voiceStates, user.id, isCurrentUser, localSelfVideo, localSelfStream, propAnySpeaking]);
+	}, [voiceStates, user.id, isCurrentUser, currentConnectionId, localSelfVideo, localSelfStream, propAnySpeaking]);
 
 	return (
 		<div className={styles.container}>

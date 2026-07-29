@@ -53,12 +53,31 @@ export const THEME_GRADIENT_STYLES = [
 	'forest',
 	'ember',
 	'nebula',
+	'magenta',
+	'orchid',
+	'coral',
+	'lime',
 	'custom',
 ] as const;
 export type ThemeGradientStyle = (typeof THEME_GRADIENT_STYLES)[number];
 
 export const BUTTON_MOTION_STYLES = ['default', 'soft', 'snappy', 'static'] as const;
 export type ButtonMotionStyle = (typeof BUTTON_MOTION_STYLES)[number];
+
+export const MESSAGE_GRADIENT_STYLES = [
+	'theme',
+	'soft',
+	'aurora',
+	'sunset',
+	'ocean',
+	'forest',
+	'ember',
+	'nebula',
+	'magenta',
+	'custom',
+	'mono',
+] as const;
+export type MessageGradientStyle = (typeof MESSAGE_GRADIENT_STYLES)[number];
 
 export const DEFAULT_CUSTOM_THEME_GRADIENT: Readonly<{
 	start: string;
@@ -79,6 +98,9 @@ const isThemeGradientStyle = (value: unknown): value is ThemeGradientStyle =>
 
 const isButtonMotionStyle = (value: unknown): value is ButtonMotionStyle =>
 	typeof value === 'string' && (BUTTON_MOTION_STYLES as readonly string[]).includes(value);
+
+const isMessageGradientStyle = (value: unknown): value is MessageGradientStyle =>
+	typeof value === 'string' && (MESSAGE_GRADIENT_STYLES as readonly string[]).includes(value);
 
 const isHexColor = (value: unknown): value is string =>
 	typeof value === 'string' && /^#[0-9A-Fa-f]{6}$/.test(value.trim());
@@ -145,6 +167,7 @@ export interface AccessibilitySettings {
 	customThemeGradientAngle: number;
 	customThemeGradientGlow: number;
 	chatBackgroundId: ChatBackgroundId;
+	messageGradientStyle: MessageGradientStyle;
 	showFavorites: boolean;
 	zoomLevel: number;
 	dmMessagePreviewMode: DMMessagePreviewMode;
@@ -220,6 +243,7 @@ class AccessibilityStore {
 	customThemeGradientAngle = DEFAULT_CUSTOM_THEME_GRADIENT.angle;
 	customThemeGradientGlow = DEFAULT_CUSTOM_THEME_GRADIENT.glow;
 	chatBackgroundId: ChatBackgroundId = 'none';
+	messageGradientStyle: MessageGradientStyle = 'theme';
 	showFavorites = true;
 	zoomLevel = 1.0;
 	dmMessagePreviewMode: DMMessagePreviewMode = getDefaultDmMessagePreviewMode();
@@ -308,6 +332,7 @@ class AccessibilityStore {
 			'customThemeGradientAngle',
 			'customThemeGradientGlow',
 			'chatBackgroundId',
+			'messageGradientStyle',
 			'showFavorites',
 			'zoomLevel',
 			'dmMessagePreviewMode',
@@ -462,6 +487,7 @@ class AccessibilityStore {
 			this.customThemeGradientAngle = validated.customThemeGradientAngle;
 		if (validated.customThemeGradientGlow !== undefined) this.customThemeGradientGlow = validated.customThemeGradientGlow;
 		if (validated.chatBackgroundId !== undefined) this.chatBackgroundId = validated.chatBackgroundId;
+		if (validated.messageGradientStyle !== undefined) this.messageGradientStyle = validated.messageGradientStyle;
 		if (validated.showFavorites !== undefined) this.showFavorites = validated.showFavorites;
 		if (validated.zoomLevel !== undefined) {
 			this.zoomLevel = validated.zoomLevel;
@@ -564,6 +590,9 @@ class AccessibilityStore {
 				Math.min(100, Math.round(data.customThemeGradientGlow ?? this.customThemeGradientGlow)),
 			),
 			chatBackgroundId: isChatBackgroundId(data.chatBackgroundId) ? data.chatBackgroundId : this.chatBackgroundId,
+			messageGradientStyle: isMessageGradientStyle(data.messageGradientStyle)
+				? data.messageGradientStyle
+				: this.messageGradientStyle,
 			showFavorites: data.showFavorites ?? this.showFavorites,
 			zoomLevel: Math.max(0.5, Math.min(2.0, data.zoomLevel ?? this.zoomLevel)),
 			dmMessagePreviewMode: data.dmMessagePreviewMode ?? this.dmMessagePreviewMode,

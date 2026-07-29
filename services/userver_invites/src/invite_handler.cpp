@@ -1,3 +1,7 @@
+// Invite handler - fast path with Node.js upstream
+// This version uses HTTP upstream but is ready for direct ScyllaDB integration
+// when the cassandra driver is available in the Docker image
+
 #include "invite_handler.hpp"
 
 #include <algorithm>

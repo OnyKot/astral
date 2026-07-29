@@ -29,6 +29,7 @@
 		background-color var(--motion-dur-short) var(--motion-ease-snap),
 		transform var(--motion-dur-short) var(--motion-ease-smooth);
 	appearance: none;
+	touch-action: manipulation;
 	-webkit-tap-highlight-color: transparent;
 }
 

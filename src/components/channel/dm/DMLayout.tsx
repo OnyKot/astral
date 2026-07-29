@@ -68,6 +68,7 @@ export const DMLayout = observer(({children}: {children?: React.ReactNode}) => {
 		containerRef: edgeSwipeContainerRef,
 		stageStyle,
 		isActive: isEdgeSwipeActive,
+		isPreviewVisible: isEdgeSwipePreviewVisible,
 		progress: edgeSwipeProgress,
 	} = useEdgeSwipeBack({
 		enabled: isMobileContentView && location.pathname !== Routes.ME,
@@ -125,8 +126,8 @@ export const DMLayout = observer(({children}: {children?: React.ReactNode}) => {
 				style={mobileSwipePreviewStyle}
 				{...gestureProps}
 			>
-				{isEdgeSwipeActive && (
-					<div className={styles.mobileSwipePreview} aria-hidden={!isEdgeSwipeActive}>
+				{isEdgeSwipePreviewVisible && (
+					<div className={styles.mobileSwipePreview} aria-hidden={!isEdgeSwipePreviewVisible}>
 						<DMList />
 					</div>
 				)}

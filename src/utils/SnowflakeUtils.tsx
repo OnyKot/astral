@@ -112,3 +112,15 @@ export class SnowflakeSequence {
 		this.seq = 0;
 	}
 }
+
+/** Client-side message nonces must be unique within the same millisecond. */
+let clientNonceTimestamp = 0;
+const clientNonceSequence = new SnowflakeSequence();
+
+export function nextClientNonce(timestamp: number = Date.now()): string {
+	if (timestamp !== clientNonceTimestamp) {
+		clientNonceTimestamp = timestamp;
+		clientNonceSequence.reset();
+	}
+	return fromTimestampWithSequence(timestamp, clientNonceSequence);
+}

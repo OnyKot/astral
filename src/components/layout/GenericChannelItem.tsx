@@ -40,6 +40,8 @@ interface GenericChannelItemProps {
 	onClick?: () => void;
 	onContextMenu?: (event: React.MouseEvent) => void;
 	onKeyDown?: (event: React.KeyboardEvent) => void;
+	onPointerDown?: (event: React.PointerEvent<HTMLDivElement>) => void;
+	onPointerEnter?: (event: React.PointerEvent<HTMLDivElement>) => void;
 	onFocus?: () => void;
 	onBlur?: () => void;
 	onLongPress?: () => void;
@@ -75,6 +77,8 @@ export const GenericChannelItem = React.forwardRef<HTMLDivElement, GenericChanne
 			onClick,
 			onContextMenu,
 			onKeyDown,
+			onPointerDown,
+			onPointerEnter,
 			onFocus,
 			onBlur,
 			onLongPress,
@@ -114,6 +118,8 @@ export const GenericChannelItem = React.forwardRef<HTMLDivElement, GenericChanne
 						onClick={onClick}
 						onContextMenu={onContextMenu}
 						onKeyDown={onKeyDown}
+						onPointerDown={onPointerDown}
+						onPointerEnter={onPointerEnter}
 						onFocus={onFocus}
 						onBlur={onBlur}
 						role={role}

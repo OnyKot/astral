@@ -21,6 +21,7 @@ import {createMiddleware} from 'hono/factory';
 import {HTTPException} from 'hono/http-exception';
 import type {HonoEnv} from '~/App';
 import {Logger} from '~/Logger';
+import {getIncomingRemoteAddress, isPrivateIp} from '~/utils/IpUtils';
 
 interface RequireXForwardedForOptions {
 	exemptPaths?: Array<string>;
@@ -47,22 +48,6 @@ const defaultExemptPaths: Array<string> = [
 	'/v1/payments/wata/notification',
 ];
 
-function isTrustedInternalHost(host: string | undefined): boolean {
-	if (!host) {
-		return false;
-	}
-
-	const normalized = host.trim().toLowerCase();
-	return (
-		normalized === 'api' ||
-		normalized.startsWith('api:') ||
-		normalized === 'localhost' ||
-		normalized.startsWith('localhost:') ||
-		normalized === '127.0.0.1' ||
-		normalized.startsWith('127.0.0.1:')
-	);
-}
-
 export const RequireXForwardedForMiddleware = ({exemptPaths = defaultExemptPaths}: RequireXForwardedForOptions = {}) =>
 	createMiddleware<HonoEnv>(async (ctx, next) => {
 		const path = ctx.req.path;
@@ -71,15 +56,21 @@ export const RequireXForwardedForMiddleware = ({exemptPaths = defaultExemptPaths
 			return;
 		}
 
-		const host = ctx.req.header('host');
-		if (isTrustedInternalHost(host)) {
+		// Trust the request's source only when it is a private/loopback address
+		// — i.e. the connection originated inside the Docker network (gateway ->
+		// api, media -> api). The Host header is client-controlled and must not
+		// be used as a trust signal: an external attacker who reaches the API
+		// port directly could otherwise spoof `Host: api` to bypass the
+		// X-Forwarded-For requirement.
+		const remoteAddress = getIncomingRemoteAddress(ctx);
+		if (remoteAddress && isPrivateIp(remoteAddress)) {
 			await next();
 			return;
 		}
 
 		const headerValue = ctx.req.header('x-forwarded-for');
 		if (!headerValue || headerValue.trim() === '') {
-			Logger.warn({path, host}, 'Rejected request without X-Forwarded-For header');
+			Logger.warn({path, remoteAddress}, 'Rejected request without X-Forwarded-For header');
 			throw new HTTPException(403, {message: 'Forbidden'});
 		}
 

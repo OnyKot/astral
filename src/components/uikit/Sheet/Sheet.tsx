@@ -35,7 +35,7 @@ const DRAG_DISMISS_VELOCITY_PX_PER_MS = 0.72;
 const DRAG_EASE_THRESHOLD_PX = 220;
 
 type Surface = 'primary' | 'secondary' | 'tertiary';
-type AnimationPreset = 'default' | 'keyboard-replacement';
+type AnimationPreset = 'default' | 'keyboard-replacement' | 'content-replacement';
 
 interface RootProps {
 	isOpen: boolean;
@@ -158,19 +158,23 @@ const RootComponent: React.FC<RootProps> = ({
 
 	const zIndex = explicitZIndex ?? acquiredZIndex ?? OverlayStackStore.peek();
 	const isKeyboardReplacement = animationPreset === 'keyboard-replacement';
+	const isContentReplacement = animationPreset === 'content-replacement';
+	const shouldBlurBackdrop = !disableBackdropBlur && !isMobileLayout;
 	const initialMotion = prefersReducedMotion
 		? {opacity: 0}
-		: {y: isKeyboardReplacement ? 14 : '6%', opacity: isKeyboardReplacement ? 0.94 : 0.98};
+		: isContentReplacement
+			? {y: 0, opacity: 0}
+			: {y: isKeyboardReplacement ? 14 : '6%', opacity: isKeyboardReplacement ? 0.94 : 0.98};
 	const enterTransition = prefersReducedMotion
 		? {duration: 0.06}
 		: {
-				duration: isKeyboardReplacement ? 0.22 : 0.28,
+				duration: isContentReplacement ? 0.18 : isKeyboardReplacement ? 0.22 : 0.28,
 				ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
 			};
 	const exitTransition = prefersReducedMotion
 		? {duration: 0.06}
 		: {
-				duration: isKeyboardReplacement ? 0.14 : 0.18,
+				duration: isContentReplacement ? 0.12 : isKeyboardReplacement ? 0.14 : 0.18,
 				ease: [0.4, 0, 1, 1] as [number, number, number, number],
 			};
 
@@ -329,8 +333,8 @@ const RootComponent: React.FC<RootProps> = ({
 									position: 'absolute',
 									inset: 0,
 									background: `linear-gradient(160deg, rgba(3, 8, 20, ${Math.max(backdropOpacity - 0.2, 0)}) 0%, rgba(3, 8, 20, ${backdropOpacity}) 100%)`,
-									backdropFilter: disableBackdropBlur ? 'none' : 'blur(10px) saturate(118%)',
-									WebkitBackdropFilter: disableBackdropBlur ? 'none' : 'blur(10px) saturate(118%)',
+									backdropFilter: shouldBlurBackdrop ? 'blur(10px) saturate(118%)' : 'none',
+									WebkitBackdropFilter: shouldBlurBackdrop ? 'blur(10px) saturate(118%)' : 'none',
 								}}
 							/>
 						)}

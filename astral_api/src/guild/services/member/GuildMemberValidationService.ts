@@ -98,15 +98,22 @@ export class GuildMemberValidationService {
 	}
 
 	async checkUserBanStatus({userId, guildId}: {userId: UserID; guildId: GuildID}): Promise<void> {
-		const bans = await this.guildRepository.listBans(guildId);
-		const user = await this.userRepository.findUnique(userId);
-		const userIp = user?.lastActiveIp;
+		const [directBan, user] = await Promise.all([
+			this.guildRepository.getBan(guildId, userId),
+			this.userRepository.findUnique(userId),
+		]);
+		if (directBan) {
+			throw new BannedFromGuildError();
+		}
 
+		const userIp = user?.lastActiveIp;
+		if (!userIp) {
+			return;
+		}
+
+		const bans = await this.guildRepository.listBans(guildId);
 		for (const ban of bans) {
-			if (ban.userId === userId) {
-				throw new BannedFromGuildError();
-			}
-			if (userIp && ban.ipAddress && ban.ipAddress === userIp) {
+			if (ban.ipAddress && ban.ipAddress === userIp) {
 				throw new IpBannedFromGuildError();
 			}
 		}

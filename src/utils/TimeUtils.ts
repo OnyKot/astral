@@ -19,6 +19,28 @@
 
 import {DateTime} from 'luxon';
 
+export function formatDmListTimestamp(timestamp: number, locale?: string): string {
+	const date = DateTime.fromMillis(timestamp);
+	if (!date.isValid) {
+		return '';
+	}
+
+	const now = DateTime.now();
+	if (date.hasSame(now, 'day')) {
+		return date.toFormat('HH:mm');
+	}
+
+	const dayDiff = now.startOf('day').diff(date.startOf('day'), 'days').days;
+	if (dayDiff > 0 && dayDiff < 7) {
+		return date
+			.setLocale(locale || DateTime.local().locale)
+			.toLocaleString({weekday: 'short'})
+			.replace(/\.$/, '');
+	}
+
+	return date.toFormat('dd.MM.yyyy');
+}
+
 export function formatShortRelativeTime(timestamp: number): string {
 	const date = DateTime.fromMillis(timestamp);
 	const now = DateTime.now();

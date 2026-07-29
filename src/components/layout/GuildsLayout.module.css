@@ -26,6 +26,7 @@
     --desktop-dock-gap: 0px;
     --guild-channel-sidebar-width: var(--layout-sidebar-width);
     --classic-channel-dock-reserve: 0px;
+    --layout-mobile-community-dock-reserve: 0px;
     --guild-shell-top: var(--background-secondary);
     --guild-shell-bottom: var(--background-secondary);
     --guild-shell-card-top: color-mix(in srgb, var(--background-secondary-alt) 90%, var(--background-secondary) 10%);
@@ -130,6 +131,10 @@
     grid-template-columns: 1fr;
 }
 
+.guildsLayoutContainerMobileCommunityDock {
+    --layout-mobile-community-dock-reserve: calc(5.25rem + var(--safe-area-bottom, 0px));
+}
+
 .mobileFloatingVoiceWindow {
 	position: fixed;
 	right: max(0.75rem, env(safe-area-inset-right, 0px));
@@ -192,6 +197,191 @@
 	height: 1rem;
 }
 
+.mobileCommunityDock {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: calc(var(--z-index-elevated-1) + 20);
+    display: flex;
+    align-items: center;
+    gap: 0.58rem;
+    min-height: calc(4.85rem + var(--safe-area-bottom, 0px));
+    padding:
+        0.58rem max(0.85rem, var(--safe-area-right, 0px))
+        calc(0.56rem + var(--safe-area-bottom, 0px))
+        max(0.85rem, var(--safe-area-left, 0px));
+    background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
+    border-top: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent);
+    border-top-left-radius: 1.05rem;
+    border-top-right-radius: 1.05rem;
+    box-shadow: 0 -12px 26px rgb(0 0 0 / 0.18);
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+.mobileCommunityDockViewport {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 0.58rem;
+    min-width: 0;
+    padding: 0.04rem 0 0.1rem;
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+}
+
+.mobileCommunityDockViewport::-webkit-scrollbar {
+    display: none;
+}
+
+.mobileCommunityDockAddButton,
+.mobileCommunityDockItem {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 3rem;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    min-width: 3rem;
+    min-height: 3rem;
+    padding: 0;
+    border-radius: var(--radius-full);
+    border: 0;
+    outline: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobileCommunityDockAddButton {
+    color: color-mix(in srgb, var(--text-primary) 72%, var(--brand-primary) 28%);
+    background: color-mix(in srgb, var(--background-secondary-alt) 84%, var(--background-primary) 16%);
+    box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--text-primary) 6%, transparent),
+        0 8px 18px rgb(0 0 0 / 0.14);
+    transition:
+        background-color 140ms var(--motion-ease-smooth),
+        color 140ms var(--motion-ease-smooth),
+        transform 140ms var(--motion-ease-smooth);
+}
+
+.mobileCommunityDockAddButton:active {
+    transform: scale(0.96);
+}
+
+.mobileCommunityDockAddIcon {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+.mobileCommunityDockItem {
+    background: transparent;
+    color: var(--text-primary);
+    touch-action: pan-x;
+    transition:
+        opacity 150ms var(--motion-ease-smooth),
+        transform 170ms var(--motion-ease-smooth);
+}
+
+.mobileCommunityDockItemSelected {
+    transform: translateY(-2px);
+}
+
+.mobileCommunityDockItemDragging {
+    cursor: grabbing;
+}
+
+.mobileCommunityDockAvatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.86rem;
+    height: 2.86rem;
+    border-radius: var(--radius-full);
+    background:
+        color-mix(in srgb, var(--background-secondary-alt) 86%, var(--background-primary) 14%);
+    background-position: center;
+    background-size: cover;
+    color: var(--text-primary);
+    font-size: 0.86rem;
+    font-weight: 760;
+    line-height: 1;
+    overflow: hidden;
+    box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--text-primary) 6%, transparent),
+        0 8px 18px rgb(0 0 0 / 0.14);
+    transition:
+        border-radius 140ms var(--motion-ease-smooth),
+        box-shadow 140ms var(--motion-ease-smooth),
+        transform 140ms var(--motion-ease-smooth);
+}
+
+.mobileCommunityDockAvatarFallback {
+    background:
+        color-mix(in srgb, var(--brand-primary) 18%, var(--background-secondary-alt) 82%);
+}
+
+.mobileCommunityDockItemSelected .mobileCommunityDockAvatar {
+    border-radius: 30%;
+    box-shadow:
+        0 0 0 2px color-mix(in srgb, var(--brand-primary) 72%, transparent),
+        0 9px 20px rgb(0 0 0 / 0.16),
+        inset 0 1px 0 color-mix(in srgb, var(--text-primary) 7%, transparent);
+}
+
+.mobileCommunityDockItemPressed .mobileCommunityDockAvatar,
+.mobileCommunityDockItem:active .mobileCommunityDockAvatar {
+    transform: scale(0.96);
+}
+
+.mobileCommunityDockInitials {
+    display: block;
+    max-width: 76%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    letter-spacing: 0;
+}
+
+.mobileCommunityDockNotice {
+    position: absolute;
+    top: 0.12rem;
+    right: 0.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0.7rem;
+    height: 0.7rem;
+    min-width: 0.7rem;
+    padding: 0;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--brand-primary) 62%, var(--text-primary) 38%);
+    color: var(--background-primary);
+    font-family: var(--font-sans);
+    font-size: 0.52rem;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow:
+        0 0 0 2px color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%),
+        0 4px 10px color-mix(in srgb, var(--brand-primary) 22%, transparent);
+    pointer-events: none;
+}
+
+.mobileCommunityDockNoticeMention {
+    width: auto;
+    min-width: 0.95rem;
+    height: 0.95rem;
+    padding: 0 0.24rem;
+    background: color-mix(in srgb, var(--brand-primary) 70%, var(--background-floating) 30%);
+    color: white;
+    font-size: 0.56rem;
+}
+
 .guildListScrollContainer {
     grid-column: 2;
     grid-row: 1;
@@ -226,7 +416,8 @@
 .guildListMobileMenuButton {
 	flex: 0 0 auto;
 	margin-bottom: 0.25rem;
-	background: color-mix(in srgb, var(--background-secondary) 84%, var(--background-primary) 16%);
+	background: transparent;
+	box-shadow: none;
 }
 
 .guildListScrollContainerDocked {
@@ -2304,12 +2495,20 @@
     .desktopUtilityRailButtonDm::after,
     .desktopUtilityRailButtonAi::after,
     .desktopUtilityRailButtonPlutoniumHover::before {
-        animation: none !important;
+        /* `animation: none !important` cannot be used in a CSS module — rspack
+         * localizes the `important` keyword as a @keyframes name and emits
+         * invalid CSS. See UserProfileBadges.module.css for the full note. */
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
         opacity: 0 !important;
     }
     .desktopUtilityRailMenuGridVoice,
     .desktopUtilityRailMenuGridVoice > * {
-        animation: none !important;
+        /* `animation: none !important` cannot be used in a CSS module — rspack
+         * localizes the `important` keyword as a @keyframes name and emits
+         * invalid CSS. See UserProfileBadges.module.css for the full note. */
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
         opacity: 1 !important;
         filter: none !important;
     }
@@ -2322,7 +2521,11 @@
     .desktopUtilityRailAudioQuickActions,
     .desktopUtilityRailClassicVoice .desktopUtilityRailAudioQuickButton,
     .desktopUtilityRailClassicVoice .desktopUtilityRailMoreButton {
-        animation: none !important;
+        /* `animation: none !important` cannot be used in a CSS module — rspack
+         * localizes the `important` keyword as a @keyframes name and emits
+         * invalid CSS. See UserProfileBadges.module.css for the full note. */
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
         opacity: 1 !important;
         translate: 0 0 !important;
         scale: 1 !important;
@@ -2336,12 +2539,20 @@
     .desktopUtilityRailIconAi,
     .desktopUtilityRailIconSettings,
     .desktopUtilityRailVoiceButtonActive {
-        animation: none !important;
+        /* `animation: none !important` cannot be used in a CSS module — rspack
+         * localizes the `important` keyword as a @keyframes name and emits
+         * invalid CSS. See UserProfileBadges.module.css for the full note. */
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
         transform: none !important;
         filter: none !important;
     }
     .desktopUtilityRailPlutoniumHint {
-        animation: none !important;
+        /* `animation: none !important` cannot be used in a CSS module — rspack
+         * localizes the `important` keyword as a @keyframes name and emits
+         * invalid CSS. See UserProfileBadges.module.css for the full note. */
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
         opacity: 1;
     }
 }
@@ -2558,6 +2769,18 @@
     background-color: var(--brand-primary);
     color: white;
     border-radius: 30%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .dmUtilityShortcutButton:hover .dmUtilityShortcutIcon {
+        background: linear-gradient(180deg, color-mix(in srgb, var(--brand-primary) 84%, var(--background-floating) 16%), color-mix(in srgb, var(--brand-primary) 68%, var(--background-primary) 32%)), var(--brand-primary);
+        color: white;
+        border-radius: 30%;
+        transform: translateY(-1px) scale(1.035);
+        box-shadow:
+            0 8px 20px rgb(0 0 0 / 0.18),
+            inset 0 1px 0 color-mix(in srgb, white 15%, transparent);
+    }
 }
 
 .dmUtilityShortcutGlyph {

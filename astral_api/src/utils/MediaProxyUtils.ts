@@ -66,7 +66,15 @@ export const verifySignature = (
 	mediaProxySecretKey: string,
 ): boolean => {
 	const expectedSignature = createSignature(proxyUrlPath, mediaProxySecretKey);
-	return crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(providedSignature));
+	const expectedBuffer = Buffer.from(expectedSignature);
+	const providedBuffer = Buffer.from(providedSignature);
+	// timingSafeEqual throws RangeError on length mismatch, which would leak
+	// whether the length is correct via a 500 vs 401 and skip the constant-time
+	// path. Compare lengths first and return false on mismatch.
+	if (expectedBuffer.length !== providedBuffer.length) {
+		return false;
+	}
+	return crypto.timingSafeEqual(expectedBuffer, providedBuffer);
 };
 
 export const reconstructOriginalURL = (proxyUrlPath: string): string => {

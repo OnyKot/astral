@@ -85,17 +85,38 @@ const mergeStories = (
 	current: ReadonlyArray<StoryActionCreators.Story>,
 	incoming: ReadonlyArray<StoryActionCreators.Story>,
 ): Array<StoryActionCreators.Story> => {
-	return incoming.map((story) => {
+	const incomingIds = new Set(incoming.map((story) => story.id));
+	const mergedIncoming = incoming.map((story) => {
 		const existing = current.find((item) => item.id === story.id);
 		if (!existing) return story;
 		return mergeStory(existing, story);
 	});
+	const now = Date.now();
+	const preservedCurrent = current.filter((story) => !incomingIds.has(story.id) && story.expires_at > now);
+	return [...mergedIncoming, ...preservedCurrent];
 };
 
 const mergeStoryArray = <T,>(incoming: Array<T> | undefined, existing: Array<T> | undefined): Array<T> | undefined => {
 	if (incoming && incoming.length > 0) return incoming;
 	if (existing && existing.length > 0) return existing;
 	return incoming ?? existing;
+};
+
+const normalizeStoryReactions = (
+	reactions: Array<StoryActionCreators.StoryReaction> | undefined,
+): Array<StoryActionCreators.StoryReaction> | undefined => {
+	if (!reactions) return reactions;
+	let hasOwnReaction = false;
+	return reactions
+		.filter((reaction) => reaction.count > 0)
+		.map((reaction) => {
+			if (!reaction.me) return reaction;
+			if (!hasOwnReaction) {
+				hasOwnReaction = true;
+				return reaction;
+			}
+			return {...reaction, me: false};
+		});
 };
 
 const mergeStory = (
@@ -106,9 +127,16 @@ const mergeStory = (
 	...incoming,
 	media_url: incoming.media_url || existing.media_url,
 	media_transform: incoming.media_transform ?? existing.media_transform,
+	text: incoming.text || existing.text,
+	text_align: incoming.text_align ?? existing.text_align,
+	text_tone: incoming.text_tone ?? existing.text_tone,
+	text_scale: incoming.text_scale ?? existing.text_scale,
 	text_transform: incoming.text_transform ?? existing.text_transform,
 	emojis: mergeStoryArray(incoming.emojis, existing.emojis),
 	drawings: mergeStoryArray(incoming.drawings, existing.drawings),
+	background: incoming.background || existing.background,
+	duration_ms: incoming.duration_ms || existing.duration_ms,
+	reactions: normalizeStoryReactions(incoming.reactions ?? existing.reactions),
 });
 
 class StoryStoreImpl {
@@ -238,6 +266,14 @@ class StoryStoreImpl {
 		const reactions = [...(story.reactions ?? [])];
 		let previousReactionIndex = reactions.findIndex((reaction) => reaction.me);
 		if (previousReactionIndex >= 0 && reactions[previousReactionIndex].emoji === emoji) {
+			const previousReaction = reactions[previousReactionIndex];
+			const nextCount = Math.max(0, previousReaction.count - 1);
+			if (nextCount === 0) {
+				reactions.splice(previousReactionIndex, 1);
+			} else {
+				reactions[previousReactionIndex] = {...previousReaction, count: nextCount, me: false};
+			}
+			this.upsertStory({...story, reactions});
 			return;
 		}
 

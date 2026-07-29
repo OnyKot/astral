@@ -26,6 +26,7 @@ dependencies {
 
     implementation(project(":core:design"))
     implementation(project(":core:model"))
+    implementation("androidx.activity:activity-compose:1.9.3")
     implementation(composeBom)
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")

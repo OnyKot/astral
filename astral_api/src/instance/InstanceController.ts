@@ -22,7 +22,23 @@ import type {HonoEnv} from '~/App';
 import {Config} from '~/Config';
 import {API_CODE_VERSION} from '~/Constants';
 import {RateLimitMiddleware} from '~/middleware/RateLimitMiddleware';
+import {isBillingOnline} from '~/payments/BillingUtils';
 import {RateLimitConfigs} from '~/RateLimitConfig';
+import {isKnownAppOrigin} from '~/utils/AppOriginUtils';
+import {lookupGeoip} from '~/utils/IpUtils';
+
+// Reflect the request Origin back only when it is a known app origin. Echoing
+// an arbitrary Origin (or using '*') on endpoints that expose infrastructure
+// details lets any website read the response and fingerprint the instance.
+type CtxLike = {req: {header: (name: string) => string | undefined}; header: (k: string, v: string) => void};
+
+function applyKnownAppCors(ctx: CtxLike): void {
+	const requestOrigin = ctx.req.header('origin');
+	if (requestOrigin && isKnownAppOrigin(requestOrigin)) {
+		ctx.header('Access-Control-Allow-Origin', requestOrigin);
+		ctx.header('Vary', 'Origin');
+	}
+}
 
 type PublicServiceStatus = 'operational' | 'degraded' | 'outage' | 'unknown';
 
@@ -75,8 +91,20 @@ function normalizeMetricsHost(host: string): string {
 }
 
 export function InstanceController(app: Hono<HonoEnv>) {
+	app.get('/geoip', RateLimitMiddleware(RateLimitConfigs.INSTANCE_INFO), async (ctx) => {
+		applyKnownAppCors(ctx);
+		const geo = await lookupGeoip(ctx.req.raw);
+		return ctx.json({
+			countryCode: geo.countryCode ?? null,
+			regionCode: geo.region ?? null,
+			latitude: null,
+			longitude: null,
+			ageRestrictedGeos: [],
+			ageBlockedGeos: [],
+		});
+	});
+
 	app.get('/instance', RateLimitMiddleware(RateLimitConfigs.INSTANCE_INFO), async (ctx) => {
-		ctx.header('Access-Control-Allow-Origin', '*');
 
 		const apiClientEndpoint = Config.endpoints.apiClient;
 		const apiPublicEndpoint = Config.endpoints.apiPublic;
@@ -84,14 +112,12 @@ export function InstanceController(app: Hono<HonoEnv>) {
 		const response: Record<string, unknown> = {
 			api_code_version: API_CODE_VERSION,
 			endpoints: {
-				api: apiClientEndpoint,
 				api_client: apiClientEndpoint,
 				api_public: apiPublicEndpoint,
 				gateway: Config.endpoints.gateway,
 				media: Config.endpoints.media,
 				cdn: Config.endpoints.cdn,
 				marketing: Config.endpoints.marketing,
-				admin: Config.endpoints.admin,
 				invite: Config.endpoints.invite,
 				gift: Config.endpoints.gift,
 				webapp: Config.endpoints.webApp,
@@ -105,6 +131,7 @@ export function InstanceController(app: Hono<HonoEnv>) {
 				sms_mfa_enabled: Config.sms.enabled,
 				voice_enabled: Config.voice.enabled,
 				stripe_enabled: Config.stripe.enabled,
+				billing_enabled: isBillingOnline(),
 				self_hosted: Config.instance.selfHosted,
 			},
 			push: {
@@ -119,7 +146,7 @@ export function InstanceController(app: Hono<HonoEnv>) {
 	});
 
 	app.get('/status/summary', RateLimitMiddleware(RateLimitConfigs.INSTANCE_INFO), async (ctx) => {
-		ctx.header('Access-Control-Allow-Origin', '*');
+		applyKnownAppCors(ctx);
 
 		const services: Array<PublicStatusService> = [
 			{

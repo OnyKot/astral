@@ -55,6 +55,7 @@ export const StoryForwardModal = observer(({story, authorName}: {story: Story; a
 			authorName,
 			summary: storySummary,
 			mediaUrl: story.media_url || null,
+			mediaTransform: story.media_transform ?? null,
 			mediaType: story.media_type,
 			comment: comment.trim() || null,
 			storyId: story.id,
@@ -63,6 +64,8 @@ export const StoryForwardModal = observer(({story, authorName}: {story: Story; a
 			background: story.background,
 			textAlign: story.text_align,
 			textTone: story.text_tone,
+			textScale: story.text_scale,
+			textTransform: story.text_transform ?? null,
 			emojis: story.emojis,
 			drawings: story.drawings,
 		});
@@ -75,7 +78,7 @@ export const StoryForwardModal = observer(({story, authorName}: {story: Story; a
 			const channelId = item.channelId ?? (await PrivateChannelActionCreators.ensureDMChannel(item.user.id));
 			await MessageActionCreators.send(channelId, {
 				content: getStoryCardContent(),
-				nonce: SnowflakeUtils.fromTimestamp(Date.now()),
+				nonce: SnowflakeUtils.nextClientNonce(),
 				allowedMentions: {parse: []},
 			});
 			setSentTo((current) => new Map(current).set(userId, true));

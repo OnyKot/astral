@@ -78,6 +78,12 @@ export interface StoryPreviewComponent {
 	author_name: string;
 	summary: string;
 	media_url?: string | null;
+	media_transform?: {
+		x?: number;
+		y?: number;
+		scale?: number;
+		rotate?: number;
+	} | null;
 	comment?: string | null;
 	is_video?: boolean;
 	story_id?: string | null;
@@ -86,6 +92,13 @@ export interface StoryPreviewComponent {
 	background?: string | null;
 	text_align?: 'left' | 'center' | 'right' | null;
 	text_tone?: 'light' | 'dark' | 'accent' | null;
+	text_scale?: number | null;
+	text_transform?: {
+		x?: number;
+		y?: number;
+		scale?: number;
+		rotate?: number;
+	} | null;
 	emojis?: Array<{
 		id: string;
 		name: string;

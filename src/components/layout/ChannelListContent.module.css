@@ -206,7 +206,7 @@
 @media (max-width: 767px) {
 	.channelListScrollerWrapper,
 	.channelListScrollerWrapperCompact {
-		padding: 0 0.625rem 0.75rem;
+		padding: 0 0.625rem calc(0.75rem + var(--layout-mobile-community-dock-reserve, 0px));
 	}
 
 	.listControls {

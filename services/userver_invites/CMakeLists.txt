@@ -6,15 +6,21 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Find userver core components
 find_package(userver COMPONENTS core REQUIRED)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../common ${CMAKE_BINARY_DIR}/_common)
 
 add_executable(${PROJECT_NAME}
+    # Core handler with upstream fallback
     src/invite_handler.cpp
     src/invite_handler.hpp
+
+    # Upstream client (fallback to Node.js)
     src/invite_upstream_client.cpp
     src/invite_upstream_client.hpp
+
+    # Main entry point
     src/main.cpp
 )
 

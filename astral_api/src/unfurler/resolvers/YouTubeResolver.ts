@@ -76,15 +76,17 @@ export class YouTubeResolver extends BaseResolver {
 	}
 
 	async resolve(url: URL, _content: Uint8Array, isNSFWAllowed: boolean = false): Promise<Array<MessageEmbedResponse>> {
-		if (!Config.youtube.apiKey) {
-			Logger.debug('No Google API key configured');
-			return [];
-		}
-
 		const videoId = this.extractVideoId(url);
 		if (!videoId) {
 			Logger.error('No video ID found in URL');
 			return [];
+		}
+
+		// Without a Data API key we used to bail out entirely, which dropped every YouTube link to
+		// the DefaultResolver's plain link card. oEmbed needs no key and still gives us the title,
+		// channel and a thumbnail, so the embed stays rich either way.
+		if (!Config.youtube.apiKey) {
+			return this.resolveViaOEmbed(url, videoId, isNSFWAllowed);
 		}
 
 		try {
@@ -164,6 +166,75 @@ export class YouTubeResolver extends BaseResolver {
 			return [embed];
 		} catch (error) {
 			Logger.error({error, videoId: this.extractVideoId(url)}, 'Failed to resolve YouTube URL');
+			return [];
+		}
+	}
+
+	/**
+	 * Key-free path: YouTube's public oEmbed endpoint plus the predictable `img.youtube.com`
+	 * thumbnail URLs. oEmbed's own `thumbnail_url` is only hqdefault (480x360), so we prefer
+	 * maxresdefault and fall back when a video has none (older / low-res uploads return 404).
+	 */
+	private async resolveViaOEmbed(
+		url: URL,
+		videoId: string,
+		isNSFWAllowed: boolean,
+	): Promise<Array<MessageEmbedResponse>> {
+		try {
+			const timestamp = this.extractTimestamp(url);
+			const canonicalUrl = `https://www.youtube.com/watch?v=${videoId}`;
+			const oembedUrl = new URL('https://www.youtube.com/oembed');
+			oembedUrl.searchParams.set('url', canonicalUrl);
+			oembedUrl.searchParams.set('format', 'json');
+
+			const response = await FetchUtils.sendRequest({url: oembedUrl.toString()});
+			if (response.status !== 200) {
+				Logger.error({videoId, status: response.status}, 'YouTube oEmbed request failed');
+				return [];
+			}
+
+			const responseText = await FetchUtils.streamToString(response.stream);
+			const data = JSON.parse(responseText) as {
+				title?: string;
+				author_name?: string;
+				author_url?: string;
+				thumbnail_url?: string;
+			};
+
+			// maxresdefault first; getMetadata rejecting it means the video has no 1280x720 frame.
+			let thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+			let thumbnailMetadata = await this.mediaService
+				.getMetadata({type: 'external', url: thumbnailUrl, isNSFWAllowed})
+				.catch(() => null);
+			if (!thumbnailMetadata) {
+				thumbnailUrl = data.thumbnail_url ?? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+				thumbnailMetadata = await this.mediaService
+					.getMetadata({type: 'external', url: thumbnailUrl, isNSFWAllowed})
+					.catch(() => null);
+			}
+
+			const mainUrl = new URL(canonicalUrl);
+			const embedUrl = new URL(`https://www.youtube.com/embed/${videoId}`);
+			if (timestamp !== undefined) {
+				mainUrl.searchParams.set('start', timestamp.toString());
+				embedUrl.searchParams.set('start', timestamp.toString());
+			}
+
+			const embed: MessageEmbedResponse = {
+				type: 'video',
+				url: mainUrl.toString(),
+				title: data.title,
+				color: this.YOUTUBE_COLOR,
+				author: data.author_name ? {name: data.author_name, url: data.author_url} : undefined,
+				provider: {name: 'YouTube', url: 'https://www.youtube.com'},
+				thumbnail: thumbnailMetadata
+					? buildEmbedMediaPayload(thumbnailUrl, thumbnailMetadata, {width: 1280, height: 720})
+					: undefined,
+				video: {url: embedUrl.toString(), width: 1280, height: 720, flags: 0},
+			};
+			return [embed];
+		} catch (error) {
+			Logger.error({error, videoId}, 'Failed to resolve YouTube URL via oEmbed');
 			return [];
 		}
 	}

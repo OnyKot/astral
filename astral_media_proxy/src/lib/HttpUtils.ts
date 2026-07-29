@@ -42,14 +42,21 @@ export const setHeaders = (
 	const headers = {
 		'Accept-Ranges': 'bytes',
 		'Access-Control-Allow-Origin': '*',
+		// Media keys are content-addressed (snowflake + hash), so responses are
+		// immutable. `immutable` stops browsers/edge from revalidating, and
+		// `stale-while-revalidate` lets caches keep serving during a brief upstream
+		// hiccup instead of surfacing the error to the user.
 		'Cache-Control': isStreamableMedia
 			? 'public, max-age=31536000, no-transform, immutable'
-			: 'public, max-age=31536000',
+			: 'public, max-age=31536000, immutable, stale-while-revalidate=86400',
 		'Content-Type': contentType,
 		Date: new Date().toUTCString(),
 		Expires: new Date(Date.now() + 31536000000).toUTCString(),
 		'Last-Modified': lastModified?.toUTCString() ?? new Date().toUTCString(),
 		Vary: 'Accept-Encoding, Range',
+		// Defense-in-depth: even if a misconfigured upload stored an HTML/SVG
+		// payload, nosniff stops legacy browsers from sniffing and executing it.
+		'X-Content-Type-Options': 'nosniff',
 	};
 
 	Object.entries(headers).forEach(([k, v]) => {

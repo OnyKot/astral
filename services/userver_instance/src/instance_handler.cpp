@@ -29,14 +29,12 @@ std::string BuildResponseBody(const InstanceConfig& c) {
     // endpoints {...}
     {
         userver::formats::json::ValueBuilder endpoints;
-        endpoints["api"]        = c.api_client;
         endpoints["api_client"] = c.api_client;
         endpoints["api_public"] = c.api_public;
         endpoints["gateway"]    = c.gateway;
         endpoints["media"]      = c.media;
         endpoints["cdn"]        = c.cdn;
         endpoints["marketing"]  = c.marketing;
-        endpoints["admin"]      = c.admin;
         endpoints["invite"]     = c.invite;
         endpoints["gift"]       = c.gift;
         endpoints["webapp"]     = c.web_app;

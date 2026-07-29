@@ -66,6 +66,7 @@ import {PackService} from '~/pack/PackService';
 import {ReadStateRepository} from '~/read_state/ReadStateRepository';
 import {ReadStateService} from '~/read_state/ReadStateService';
 import {ReportRepository} from '~/report/ReportRepository';
+import {setAuthSessionCache} from '~/user/repositories/auth/AuthSessionRepository';
 import {PaymentRepository} from '~/user/repositories/PaymentRepository';
 import {UserDeletionEligibilityService} from '~/user/services/UserDeletionEligibilityService';
 import {UserHarvestRepository} from '~/user/UserHarvestRepository';
@@ -78,6 +79,8 @@ import {WorkerService} from './WorkerService';
 
 export interface WorkerDependencies {
 	redis: Redis;
+	/** Dedicated subscriber connection for feature-flag refreshes; closed on shutdown. */
+	featureFlagSubscriber: Redis;
 	snowflakeService: SnowflakeService;
 
 	userRepository: UserRepository;
@@ -148,8 +151,21 @@ export async function initializeWorkerDependencies(snowflakeService: SnowflakeSe
 	const userHarvestRepository = new UserHarvestRepository();
 
 	const cacheService = new RedisCacheService(redis);
+	/*
+	 * The worker reaches session revocation through user deletion, which invalidates the auth-session
+	 * cache. Without handing it this client, that path lazily opens a second Redis connection that
+	 * nothing ever closes — the API does the same injection in UserMiddleware.
+	 */
+	setAuthSessionCache(cacheService);
 	const featureFlagRepository = new FeatureFlagRepository();
-	const featureFlagService = new FeatureFlagService(featureFlagRepository, cacheService);
+	/*
+	 * A subscribed Redis connection cannot issue normal commands, so the refresh channel needs its own
+	 * client — the same split ServiceMiddleware makes for the API. Without it the worker's in-memory
+	 * flag cache was only ever populated at startup and no flag change reached a worker task until the
+	 * process was restarted.
+	 */
+	const featureFlagSubscriber = new Redis(Config.redis.url);
+	const featureFlagService = new FeatureFlagService(featureFlagRepository, cacheService, featureFlagSubscriber);
 	await featureFlagService.initialize();
 	const userCacheService = new UserCacheService(cacheService, userRepository);
 	const storageService = new StorageService();
@@ -259,6 +275,7 @@ export async function initializeWorkerDependencies(snowflakeService: SnowflakeSe
 
 	return {
 		redis,
+		featureFlagSubscriber,
 		snowflakeService,
 		userRepository,
 		channelRepository,
@@ -307,6 +324,9 @@ export async function initializeWorkerDependencies(snowflakeService: SnowflakeSe
 export async function shutdownWorkerDependencies(deps: WorkerDependencies): Promise<void> {
 	Logger.info('Shutting down worker dependencies...');
 	deps.featureFlagService.shutdown();
+	// Swallowed on purpose: shutdown runs from the signal handler, and a refused
+	// QUIT on the subscriber must not stop the rest of the teardown.
+	await deps.featureFlagSubscriber.quit().catch(() => {});
 	await deps.redis.quit();
 	Logger.info('Worker dependencies shut down successfully');
 }

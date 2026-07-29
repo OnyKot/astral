@@ -18,7 +18,7 @@
  */
 
 import type {UserID} from '~/BrandedTypes';
-import {BatchBuilder, Db, executeVersionedUpdate, fetchMany, fetchOne} from '~/database/Cassandra';
+import {BatchBuilder, Db, executeVersionedUpdate, fetchMany, fetchManyInChunks, fetchOne} from '~/database/Cassandra';
 import type {PaymentByReferrerRow, PaymentBySubscriptionRow, PaymentRow} from '~/database/CassandraTypes';
 import {Payment} from '~/Models';
 import {Payments, PaymentsByPaymentIntent, PaymentsByReferrer, PaymentsBySubscription, PaymentsByUser} from '~/Tables';
@@ -220,9 +220,11 @@ export class PaymentRepository {
 			user_id: userId,
 		});
 		if (paymentRefs.length === 0) return [];
-		const rows = await fetchMany<PaymentRow>(FETCH_PAYMENTS_BY_IDS_QUERY, {
-			checkout_session_ids: paymentRefs.map((r) => r.checkout_session_id),
-		});
+		const rows = await fetchManyInChunks<PaymentRow>(
+			FETCH_PAYMENTS_BY_IDS_QUERY,
+			paymentRefs.map((r) => r.checkout_session_id),
+			(chunk) => ({checkout_session_ids: chunk}),
+		);
 		return rows.map((r) => new Payment(r));
 	}
 
@@ -235,9 +237,11 @@ export class PaymentRepository {
 	async findPaymentsByReferrerUserId(referrerUserId: UserID): Promise<Array<Payment>> {
 		const paymentRefs = await this.findPaymentRefsByReferrerUserId(referrerUserId);
 		if (paymentRefs.length === 0) return [];
-		const rows = await fetchMany<PaymentRow>(FETCH_PAYMENTS_BY_IDS_QUERY, {
-			checkout_session_ids: paymentRefs.map((ref) => ref.checkout_session_id),
-		});
+		const rows = await fetchManyInChunks<PaymentRow>(
+			FETCH_PAYMENTS_BY_IDS_QUERY,
+			paymentRefs.map((ref) => ref.checkout_session_id),
+			(chunk) => ({checkout_session_ids: chunk}),
+		);
 		return rows.map((row) => new Payment(row));
 	}
 }

@@ -354,8 +354,9 @@ export class LiveKitService extends ILiveKitService {
 		channelId: ChannelID;
 		regionId: string;
 		serverId: string;
+		throwOnError?: boolean;
 	}): Promise<Array<{identity: string}>> {
-		const {guildId, channelId, regionId, serverId} = params;
+		const {guildId, channelId, regionId, serverId, throwOnError = false} = params;
 		const roomName = this.getRoomName(guildId, channelId);
 		const server = this.resolveServerClient(regionId, serverId);
 
@@ -366,6 +367,9 @@ export class LiveKitService extends ILiveKitService {
 			}));
 		} catch (error) {
 			Logger.error({error}, 'Error listing LiveKit participants');
+			if (throwOnError) {
+				throw error;
+			}
 			return [];
 		}
 	}

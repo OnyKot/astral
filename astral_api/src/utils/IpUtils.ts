@@ -58,42 +58,40 @@ export function __resetMaxmindReader(): void {
 }
 
 export function extractClientIp(req: Request): string | null {
-	// We prefer a public IP if it exists anywhere in the chain.
+	// X-Forwarded-For is client-supplied data. An attacker can prepend as many
+	// forged entries as they like, but they cannot append *after* the entry our
+	// own edge proxy adds (Caddy appends the socket peer it actually saw). So
+	// walk the chain right-to-left and take the right-most hop that is not one
+	// of our own proxies; if every hop is private (LAN, or the dev docker
+	// network when a cloudflared sidecar is in front) fall back to the
+	// right-most valid entry, which is the address our proxy actually saw.
 	//
-	// Some proxy stacks prepend internal addresses to X-Forwarded-For, while others append them.
-	// Picking the first *public* IP makes rate limits and audit logs more robust in both cases.
-	const headers = req.headers;
-	const cfConnectingIp = (headers.get('CF-Connecting-IP') ?? '').trim();
-	const xff = (headers.get('X-Forwarded-For') ?? '').trim();
-	const xRealIp = (headers.get('X-Real-IP') ?? '').trim();
+	// This mirrors extract_client_ip/1 + parse_forwarded_for/1 in
+	// astral_gateway/src/gateway/gateway_handler.erl, so both edges agree on the
+	// identity used for rate limits and IP bans, and keeps the trusted-hop set
+	// deliberately narrow (private ranges only) the same way the gateway does.
+	//
+	// CF-Connecting-IP and X-Real-IP are deliberately NOT consulted: nothing in
+	// the deployment sets them, Caddy does not strip them, and "first public IP
+	// anywhere in the chain" was fully attacker-controlled — one header handed
+	// every request a fresh rate-limit bucket and evaded every IP ban.
+	const xff = req.headers.get('X-Forwarded-For');
+	if (!xff) return null;
 
-	const candidates: Array<string> = [];
-	if (cfConnectingIp) candidates.push(cfConnectingIp);
-	if (xff) candidates.push(...xff.split(','));
-	if (xRealIp) candidates.push(xRealIp);
-
-	const normalized = candidates
+	const hops = xff
+		.split(',')
 		.map((value) => normalizeIpString(value))
-		.map((value) => value.trim())
-		.filter((value) => value.length > 0)
-		// Deduplicate while preserving order.
-		.filter((value, index, arr) => arr.indexOf(value) === index);
+		.filter((value) => isIPv4(value) || isIPv6(value));
+	if (hops.length === 0) return null;
 
-	// 1) Prefer the first public, valid IP
-	for (const value of normalized) {
-		if ((isIPv4(value) || isIPv6(value)) && !isPrivateIp(value)) {
-			return value;
+	for (let index = hops.length - 1; index >= 0; index--) {
+		const hop = hops[index];
+		if (!isPrivateIp(hop)) {
+			return hop;
 		}
 	}
 
-	// 2) Fallback to first valid IP (even if private)
-	for (const value of normalized) {
-		if (isIPv4(value) || isIPv6(value)) {
-			return value;
-		}
-	}
-
-	return null;
+	return hops[hops.length - 1];
 }
 
 export function requireClientIp(req: Request): string {
@@ -104,7 +102,12 @@ export function requireClientIp(req: Request): string {
 	return ip;
 }
 
-function isPrivateIp(value: string): boolean {
+export function getIncomingRemoteAddress(ctx: {env: unknown}): string | null {
+	const incoming = (ctx.env as {incoming?: {socket?: {remoteAddress?: string}}}).incoming;
+	return incoming?.socket?.remoteAddress ?? null;
+}
+
+export function isPrivateIp(value: string): boolean {
 	// IPv4-mapped IPv6 (e.g. ::ffff:192.168.0.1)
 	const lower = value.toLowerCase();
 	if (lower.startsWith('::ffff:')) {

@@ -66,6 +66,72 @@ export function getContentType(filename: string): string {
 	return mime.getType(filename) || 'application/octet-stream';
 }
 
+/*
+ * Content types that are dangerous to serve from the media/attachment
+ * origin because a browser will execute active content in them
+ * (stored XSS). Attachments with these extensions are forced to a safe,
+ * non-executable type. SVG is blocked entirely for user attachments
+ * (guild emojis/avatars are handled separately and served with a
+ * download disposition by the media proxy).
+ */
+const BLOCKED_ATTACHMENT_CONTENT_TYPES = new Set([
+	'text/html',
+	'application/xhtml+xml',
+	'image/svg+xml',
+	'text/xml',
+	'application/xml',
+]);
+
+const BLOCKED_ATTACHMENT_EXTENSIONS = new Set(['html', 'htm', 'xhtml', 'svg', 'xml']);
+
+export function getSafeAttachmentContentType(filename: string): string {
+	const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+	if (BLOCKED_ATTACHMENT_EXTENSIONS.has(ext)) {
+		return 'application/octet-stream';
+	}
+	const detected = mime.getType(filename) || 'application/octet-stream';
+	return BLOCKED_ATTACHMENT_CONTENT_TYPES.has(detected) ? 'application/octet-stream' : detected;
+}
+
+/*
+ * Sanitize a user-supplied filename for use as the final path segment of
+ * an S3 CDN key. Strips path separators, parent-directory sequences, null
+ * bytes and control characters so the filename can neither collide with /
+ * overwrite another attachment's key nor smuggle a different content type.
+ * Returns a non-empty safe name, falling back to a generic name when the
+ * input is empty or entirely unsafe.
+ */
+const SAFE_FILENAME_FALLBACK = 'file';
+
+export function sanitizeAttachmentFilename(filename: string | null | undefined): string {
+	if (!filename) return SAFE_FILENAME_FALLBACK;
+
+	// Normalize path separators and drop anything before the last segment.
+	let name = filename.replace(/\\/g, '/').split('/').pop() ?? '';
+
+	// Strip NUL and other control characters (C0 + DEL).
+	name = name.replace(/[\x00-\x1f\x7f]/g, '');
+
+	// Collapse ".." segments that survived and any leading dots.
+	name = name.replace(/\.\.+/g, '.').replace(/^\.+/, '');
+
+	// Trim whitespace and dots from the ends.
+	name = name.trim().replace(/[\s.]+$/g, '');
+
+	if (!name || name === '.' || name === '..') {
+		return SAFE_FILENAME_FALLBACK;
+	}
+
+	// Bound the length to keep keys reasonable (preserve extension).
+	if (name.length > 180) {
+		const ext = name.includes('.') ? name.split('.').pop() : '';
+		const base = ext ? name.slice(0, 170) : name.slice(0, 180);
+		name = ext ? `${base}.${ext}` : base;
+	}
+
+	return name;
+}
+
 export function validateAttachmentIds(attachments: Array<{id: bigint}>): void {
 	const ids = new Set(attachments.map((a) => a.id));
 	if (ids.size !== attachments.length) {
@@ -88,7 +154,7 @@ export function makeAttachmentCdnKey(
 	attachmentId: AttachmentID | bigint,
 	filename: string,
 ): string {
-	return `attachments/${channelId}/${attachmentId}/${filename}`;
+	return `attachments/${channelId}/${attachmentId}/${sanitizeAttachmentFilename(filename)}`;
 }
 
 export function makeAttachmentCdnUrl(

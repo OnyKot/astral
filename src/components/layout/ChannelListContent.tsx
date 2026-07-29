@@ -26,6 +26,7 @@ import React from 'react';
 import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators';
 import * as DimensionActionCreators from '~/actions/DimensionActionCreators';
 import * as GuildActionCreators from '~/actions/GuildActionCreators';
+import * as MessageActionCreators from '~/actions/MessageActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
 import * as UserGuildSettingsActionCreators from '~/actions/UserGuildSettingsActionCreators';
@@ -47,6 +48,7 @@ import UserGuildSettingsStore from '~/stores/UserGuildSettingsStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import ChannelListLayoutStore from '~/stores/ChannelListLayoutStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
+import SelectedChannelStore from '~/stores/SelectedChannelStore';
 import {ChannelItem} from './ChannelItem';
 import styles from './ChannelListContent.module.css';
 import {ChannelDragPreview} from './ChannelDragPreview';
@@ -62,6 +64,8 @@ const DESKTOP_HEADER_SCROLL_DEADZONE_PX = 1;
 const MOBILE_HEADER_COLLAPSE_SCROLL_PX = 80;
 const MOBILE_HEADER_SCROLL_DEADZONE_PX = 0.75;
 const MOBILE_HEADER_FULL_COLLAPSE_SCROLLABLE_MIN_PX = MOBILE_HEADER_COLLAPSE_SCROLL_PX * 2;
+const MOBILE_GUILD_CHANNEL_WARM_LIMIT = 36;
+const MOBILE_GUILD_CHANNEL_WARM_COUNT = 4;
 
 export const ChannelListContent = observer(({guild, scrollY}: {guild: GuildRecord; scrollY: MotionValue<number>}) => {
 	const {t} = useLingui();
@@ -122,6 +126,47 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: GuildRecor
 		[channels.length, ReadStateStore.version],
 	);
 	const isMobile = MobileLayoutStore.isMobileLayout();
+	const mobileWarmChannelIds = React.useMemo(() => {
+		if (!isMobile) return [];
+
+		const ids: Array<string> = [];
+		const seen = new Set<string>();
+		const add = (channelId: string | null | undefined) => {
+			if (!channelId || seen.has(channelId)) return;
+			const channel = ChannelStore.getChannel(channelId);
+			if (!channel || channel.guildId !== guild.id || channel.type !== ChannelTypes.GUILD_TEXT) return;
+			if (hideMutedChannels && UserGuildSettingsStore.isGuildOrChannelMuted(guild.id, channel.id)) return;
+			seen.add(channel.id);
+			ids.push(channel.id);
+		};
+
+		add(SelectedChannelStore.selectedChannelIds.get(guild.id));
+
+		for (const visit of SelectedChannelStore.recentChannelVisits) {
+			if (visit.guildId === guild.id) {
+				add(visit.channelId);
+			}
+			if (ids.length >= MOBILE_GUILD_CHANNEL_WARM_COUNT) break;
+		}
+
+		const textChannels = channels
+			.filter((channel) => channel.type === ChannelTypes.GUILD_TEXT)
+			.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+		for (const channel of textChannels) {
+			add(channel.id);
+			if (ids.length >= MOBILE_GUILD_CHANNEL_WARM_COUNT) break;
+		}
+
+		return ids.slice(0, MOBILE_GUILD_CHANNEL_WARM_COUNT);
+	}, [
+		channels,
+		guild.id,
+		hideMutedChannels,
+		isMobile,
+		SelectedChannelStore.recentlyVisitedChannels,
+		SelectedChannelStore.selectedChannelIds.get(guild.id),
+	]);
 	const prefersReducedMotion = useReducedMotion();
 	const channelRowTransition = React.useMemo(
 		() =>
@@ -133,6 +178,22 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: GuildRecor
 					},
 		[prefersReducedMotion],
 	);
+
+	React.useEffect(() => {
+		if (!isMobile || mobileWarmChannelIds.length === 0) return;
+
+		const timers: Array<number> = [];
+		mobileWarmChannelIds.forEach((channelId, index) => {
+			const timer = window.setTimeout(() => {
+				void MessageActionCreators.prefetchMessages(channelId, MOBILE_GUILD_CHANNEL_WARM_LIMIT).catch(() => {});
+			}, 90 + index * 140);
+			timers.push(timer);
+		});
+
+		return () => {
+			timers.forEach((timer) => window.clearTimeout(timer));
+		};
+	}, [isMobile, mobileWarmChannelIds]);
 
 	const syncHeaderScroll = React.useCallback(
 		(node: HTMLElement | null) => {
@@ -330,6 +391,32 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: GuildRecor
 		ModalActionCreators.push(ModalActionCreators.modal(() => <ChannelCreateModal guildId={guild.id} />));
 	}, [guild.id]);
 
+	const renderChannelRow = React.useCallback(
+		(key: string, children: React.ReactNode) => {
+			if (isMobile) {
+				return (
+					<div key={key} className={styles.channelRowMotion}>
+						{children}
+					</div>
+				);
+			}
+
+			return (
+				<motion.div
+					key={key}
+					className={styles.channelRowMotion}
+					initial={prefersReducedMotion ? false : {opacity: 0, height: 0}}
+					animate={{opacity: 1, height: 'auto'}}
+					exit={prefersReducedMotion ? {opacity: 0} : {opacity: 0, height: 0}}
+					transition={channelRowTransition}
+				>
+					{children}
+				</motion.div>
+			);
+		},
+		[channelRowTransition, isMobile, prefersReducedMotion],
+	);
+
 	return (
 		<ChannelListScrollbarProvider value={{hasScrollbar}}>
 			<div
@@ -442,6 +529,58 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: GuildRecor
 									}
 									return false;
 								});
+								const channelRows = visibleChannels.map((ch) => {
+									if (isTextChannel(ch)) {
+										return renderChannelRow(
+											`channel-row-${ch.id}`,
+											<ChannelItem
+												guild={guild}
+												channel={ch}
+												compactView={compactView}
+												sidebarCollapsed={sidebarCollapsed}
+												isDraggingAnything={isDraggingAnything}
+												activeDragItem={activeDragItem}
+												onChannelDrop={handleChannelDrop}
+												onDragStateChange={setActiveDragItem}
+											/>,
+										);
+									}
+
+									if (categoryIsCollapsed) {
+										if (sidebarCollapsed || !connectedChannelId || ch.id !== connectedChannelId) return null;
+									}
+
+									const channelRow = (
+										<ChannelItem
+											guild={guild}
+											channel={ch}
+											compactView={compactView}
+											sidebarCollapsed={sidebarCollapsed}
+											isDraggingAnything={isDraggingAnything}
+											activeDragItem={activeDragItem}
+											onChannelDrop={handleChannelDrop}
+											onDragStateChange={setActiveDragItem}
+										/>
+									);
+
+									if (categoryIsCollapsed && connectedChannelId && ch.id === connectedChannelId && !sidebarCollapsed) {
+										return renderChannelRow(
+											`channel-row-${ch.id}`,
+											<>
+												{channelRow}
+												<CollapsedChannelAvatarStack guild={guild} channel={ch} />
+											</>,
+										);
+									}
+
+									return renderChannelRow(
+										`channel-row-${ch.id}`,
+										<>
+											{channelRow}
+											{!categoryIsCollapsed && !sidebarCollapsed && <VoiceParticipantsList guild={guild} channel={ch} />}
+										</>,
+									);
+								});
 
 								return (
 									<div key={group.id} className={styles.channelGroup}>
@@ -465,80 +604,7 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: GuildRecor
 											<CollapsedCategoryVoiceParticipants guild={guild} voiceChannels={filterScopedVoiceChannels} />
 										)}
 
-										<AnimatePresence initial={false}>
-											{visibleChannels.map((ch) => {
-											if (isTextChannel(ch)) {
-												return (
-													<motion.div
-														key={`channel-row-${ch.id}`}
-														className={styles.channelRowMotion}
-														initial={prefersReducedMotion ? false : {opacity: 0, height: 0}}
-														animate={{opacity: 1, height: 'auto'}}
-														exit={prefersReducedMotion ? {opacity: 0} : {opacity: 0, height: 0}}
-														transition={channelRowTransition}
-													>
-														<ChannelItem
-															guild={guild}
-															channel={ch}
-															compactView={compactView}
-															sidebarCollapsed={sidebarCollapsed}
-															isDraggingAnything={isDraggingAnything}
-															activeDragItem={activeDragItem}
-															onChannelDrop={handleChannelDrop}
-															onDragStateChange={setActiveDragItem}
-														/>
-													</motion.div>
-												);
-											}
-
-											if (categoryIsCollapsed) {
-												if (sidebarCollapsed || !connectedChannelId || ch.id !== connectedChannelId) return null;
-											}
-
-											const channelRow = (
-												<ChannelItem
-													guild={guild}
-													channel={ch}
-													compactView={compactView}
-													sidebarCollapsed={sidebarCollapsed}
-													isDraggingAnything={isDraggingAnything}
-													activeDragItem={activeDragItem}
-													onChannelDrop={handleChannelDrop}
-													onDragStateChange={setActiveDragItem}
-												/>
-											);
-
-											if (categoryIsCollapsed && connectedChannelId && ch.id === connectedChannelId && !sidebarCollapsed) {
-												return (
-													<motion.div
-														key={`channel-row-${ch.id}`}
-														className={styles.channelRowMotion}
-														initial={prefersReducedMotion ? false : {opacity: 0, height: 0}}
-														animate={{opacity: 1, height: 'auto'}}
-														exit={prefersReducedMotion ? {opacity: 0} : {opacity: 0, height: 0}}
-														transition={channelRowTransition}
-													>
-														{channelRow}
-														<CollapsedChannelAvatarStack guild={guild} channel={ch} />
-													</motion.div>
-												);
-											}
-
-											return (
-												<motion.div
-													key={`channel-row-${ch.id}`}
-													className={styles.channelRowMotion}
-													initial={prefersReducedMotion ? false : {opacity: 0, height: 0}}
-													animate={{opacity: 1, height: 'auto'}}
-													exit={prefersReducedMotion ? {opacity: 0} : {opacity: 0, height: 0}}
-													transition={channelRowTransition}
-												>
-													{channelRow}
-													{!categoryIsCollapsed && !sidebarCollapsed && <VoiceParticipantsList guild={guild} channel={ch} />}
-												</motion.div>
-											);
-										})}
-										</AnimatePresence>
+										{isMobile ? <>{channelRows}</> : <AnimatePresence initial={false}>{channelRows}</AnimatePresence>}
 									</div>
 								);
 							})}

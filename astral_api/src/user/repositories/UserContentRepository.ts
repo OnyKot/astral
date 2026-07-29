@@ -112,6 +112,10 @@ export class UserContentRepository implements IUserContentRepository {
 		return this.giftCodeRepository.linkGiftCodeToCheckoutSession(code, checkoutSessionId);
 	}
 
+	async updateGiftMetadata(code: string, emoji: string | null, background: string | null): Promise<void> {
+		return this.giftCodeRepository.updateGiftMetadata(code, emoji, background);
+	}
+
 	async createPayment(data: {
 		checkout_session_id: string;
 		user_id: UserID;

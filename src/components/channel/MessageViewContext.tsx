@@ -31,6 +31,8 @@ export interface MessageViewContextValue {
 	channel: ChannelRecord;
 	message: MessageRecord;
 	shouldGroup: boolean;
+	isGroupEnd: boolean;
+	showAvatar: boolean;
 	isHovering: boolean;
 	previewContext?: keyof typeof MessagePreviewContext;
 	previewOverrides?: MessagePreviewOverrides;

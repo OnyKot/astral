@@ -306,6 +306,20 @@ export const DiscoveryPage = observer(() => {
 					return t`Health`;
 				case 'fitness':
 					return t`Fitness`;
+				case 'featured':
+					return t`Featured`;
+				case 'trending':
+					return t`Trending`;
+				case 'voice':
+					return t`Voice`;
+				case 'media':
+					return t`Media`;
+				case 'expressive':
+					return t`Expressive`;
+				case 'large':
+					return t`Large`;
+				case 'new':
+					return t`New`;
 				default:
 					return tag
 						.split(/[_-]+/)

@@ -24,6 +24,7 @@ import {
 	CompassIcon,
 	GearIcon,
 	ListIcon,
+	NotePencilIcon,
 	PlusIcon,
 	UserCircleIcon,
 } from '@phosphor-icons/react';
@@ -320,6 +321,9 @@ export const MobileNavigationDrawer = observer(({enableEdgeGesture = true}: Mobi
 		setCustomStatusSheetOpen(true);
 	}, []);
 
+	if (!user) return null;
+
+	const personalNotesPath = Routes.dmChannel(user.id);
 	const items = [
 		{
 			key: 'chats',
@@ -327,6 +331,14 @@ export const MobileNavigationDrawer = observer(({enableEdgeGesture = true}: Mobi
 			icon: ChatCircleDotsIcon,
 			onClick: () => navigate(Routes.ME),
 			active: activePath === Routes.ME,
+			badge: 0,
+		},
+		{
+			key: 'personal-notes',
+			label: t`Personal Notes`,
+			icon: NotePencilIcon,
+			onClick: () => navigate(personalNotesPath),
+			active: activePath === personalNotesPath,
 			badge: 0,
 		},
 		{
@@ -362,8 +374,6 @@ export const MobileNavigationDrawer = observer(({enableEdgeGesture = true}: Mobi
 			badge: 0,
 		},
 	];
-
-	if (!user) return null;
 
 	return (
 		<div className={clsx(styles.root, (isOpen || dragOffset != null) && styles.rootActive)}>

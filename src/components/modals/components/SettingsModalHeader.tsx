@@ -66,7 +66,7 @@ export const SettingsModalHeader: React.FC<SettingsModalHeaderProps> = observer(
 							initial={prefersReducedMotion ? {opacity: 1} : {opacity: 0}}
 							animate={{opacity: 1}}
 							exit={prefersReducedMotion ? {opacity: 1} : {opacity: 0}}
-							transition={prefersReducedMotion ? {duration: 0} : {duration: 0.25, ease: 'easeOut'}}
+							transition={prefersReducedMotion ? {duration: 0} : {duration: 0.14, ease: 'easeOut'}}
 							className={styles.bannerContent}
 						>
 							<div className={styles.bannerTextContainer}>
@@ -88,10 +88,10 @@ export const SettingsModalHeader: React.FC<SettingsModalHeaderProps> = observer(
 					) : (
 						<motion.div
 							key={title}
-							initial={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: prefersReducedMotion ? 0 : 6}}
-							animate={{opacity: 1, y: 0}}
-							exit={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: prefersReducedMotion ? 0 : -4}}
-							transition={prefersReducedMotion ? {duration: 0} : {duration: 0.22, ease: [0.22, 1, 0.36, 1]}}
+							initial={prefersReducedMotion ? {opacity: 1} : {opacity: 0}}
+							animate={{opacity: 1}}
+							exit={prefersReducedMotion ? {opacity: 1} : {opacity: 0}}
+							transition={prefersReducedMotion ? {duration: 0} : {duration: 0.14, ease: [0.22, 1, 0.36, 1]}}
 							className={styles.titleContent}
 						>
 							<h1 className={styles.title}>{title}</h1>

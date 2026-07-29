@@ -18,7 +18,7 @@
  */
 
 import {Endpoints} from '~/Endpoints';
-import http from '~/lib/HttpClient';
+import http, {HttpError} from '~/lib/HttpClient';
 import {Logger} from '~/lib/Logger';
 
 const logger = new Logger('Premium');
@@ -50,6 +50,35 @@ export interface ReferralProgramSummary {
 }
 
 export type PaymentReconcileStatus = 'pending' | 'completed' | 'failed' | 'refunded';
+
+export type PremiumWaitlistEntry = {
+	user_id: string;
+	plan: 'monthly' | 'yearly' | 'visionary';
+	comment: string | null;
+	created_at: string;
+	updated_at: string;
+};
+
+export const fetchPremiumWaitlist = async (): Promise<PremiumWaitlistEntry | null> => {
+	try {
+		const response = await http.get<PremiumWaitlistEntry>(Endpoints.PREMIUM_WAITLIST);
+		return response.body;
+	} catch (error) {
+		if (error instanceof HttpError && error.status === 404) return null;
+		throw error;
+	}
+};
+
+export const joinPremiumWaitlist = async (
+	plan: 'monthly' | 'yearly' | 'visionary',
+	comment?: string,
+): Promise<PremiumWaitlistEntry> => {
+	const response = await http.post<PremiumWaitlistEntry>(Endpoints.PREMIUM_WAITLIST, {
+		plan,
+		comment: comment ?? undefined,
+	});
+	return response.body;
+};
 
 export const fetchVisionarySlots = async (): Promise<VisionarySlots> => {
 	try {

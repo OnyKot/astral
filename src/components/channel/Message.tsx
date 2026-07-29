@@ -30,8 +30,8 @@ import * as ReactionActionCreators from '~/actions/ReactionActionCreators';
 import * as ReadStateActionCreators from '~/actions/ReadStateActionCreators';
 import {ASTRALBOT_ID, MessageEmbedTypes, MessageFlags, MessagePreviewContext, MessageStates, MessageTypes} from '~/Constants';
 import {MessageActionBar, MessageActionBarCore} from '~/components/channel/MessageActionBar';
-import {MessageActionBottomSheet} from '~/components/channel/MessageActionBottomSheet';
 import {useMessagePermissions} from '~/components/channel/messageActionUtils';
+import {MobileMessageActionPopover} from '~/components/channel/MobileMessageActionPopover';
 import {MessageContextMenu} from '~/components/uikit/ContextMenu/MessageContextMenu';
 import FocusRing from '~/components/uikit/FocusRing/FocusRing';
 import {ComponentDispatch} from '~/lib/ComponentDispatch';
@@ -62,7 +62,8 @@ import {
 	trackVelocitySample,
 } from '~/utils/motion/swipeGestures';
 import {getMessageComponent} from '~/utils/MessageComponentUtils';
-import {toReactionEmoji} from '~/utils/ReactionUtils';
+import {canAddNewReactionTypeToMessage, toReactionEmoji} from '~/utils/ReactionUtils';
+import {parseForwardedStoryPreview, resolveForwardedStoryPreview} from '~/utils/StoryForwardPayload';
 import {MessageViewContextProvider} from './MessageViewContext';
 
 const shouldApplyGroupedLayout = (message: MessageRecord, _prevMessage?: MessageRecord) => {
@@ -101,10 +102,96 @@ const handleDeleteMessage = (
 
 const PROFILE_TAP_IGNORE_SELECTOR =
 	'a, button, input, textarea, select, summary, [contenteditable="true"], [data-message-swipe-ignore="true"], [data-user-id], [role="button"]';
+const SELECTION_CONTROL_SELECTOR = '[data-message-selection-control="true"]';
+const MOBILE_MESSAGE_ACTION_HITBOX_SELECTOR = '[data-mobile-message-action-hitbox="bubble"]';
+
+/*
+ * ContextMenuStore and the capture-phase window scroll are observed once for the
+ * whole message list instead of once per rendered row. A channel holds up to
+ * MAX_LOADED_MESSAGES (200) rows, so the per-row versions meant 200 MobX
+ * reactions created/disposed per channel switch and re-running on every context
+ * menu open/close, plus 200 capture-phase scroll listeners registered on window
+ * (mobile only) that the browser had to walk on every scroll event. The
+ * per-listener work is unchanged - only the subscription is shared.
+ */
+type ContextMenuTargetListener = (target: HTMLElement | null) => void;
+
+const contextMenuTargetListeners = new Set<ContextMenuTargetListener>();
+let contextMenuTargetDisposer: (() => void) | null = null;
+
+const readContextMenuTarget = (): HTMLElement | null => {
+	const contextMenu = ContextMenuStore.contextMenu;
+	const target = contextMenu?.target?.target ?? null;
+	return contextMenu != null && isContextMenuNodeTarget(target) ? target : null;
+};
+
+const subscribeToContextMenuTarget = (listener: ContextMenuTargetListener): (() => void) => {
+	contextMenuTargetListeners.add(listener);
+
+	if (contextMenuTargetDisposer == null) {
+		// autorun runs synchronously on creation, which delivers this first
+		// listener's initial value exactly like the per-row autorun used to.
+		contextMenuTargetDisposer = autorun(() => {
+			const target = readContextMenuTarget();
+			for (const current of contextMenuTargetListeners) {
+				current(target);
+			}
+		});
+	} else {
+		// Later subscribers missed that first run, so hand them the current value.
+		listener(readContextMenuTarget());
+	}
+
+	return () => {
+		contextMenuTargetListeners.delete(listener);
+		if (contextMenuTargetListeners.size === 0 && contextMenuTargetDisposer != null) {
+			contextMenuTargetDisposer();
+			contextMenuTargetDisposer = null;
+		}
+	};
+};
+
+const windowScrollCaptureListeners = new Set<() => void>();
+let windowScrollCaptureHandler: (() => void) | null = null;
+
+const subscribeToWindowScrollCapture = (listener: () => void): (() => void) => {
+	windowScrollCaptureListeners.add(listener);
+
+	if (windowScrollCaptureHandler == null) {
+		windowScrollCaptureHandler = () => {
+			for (const current of windowScrollCaptureListeners) {
+				current();
+			}
+		};
+		window.addEventListener('scroll', windowScrollCaptureHandler, {capture: true, passive: true});
+	}
+
+	return () => {
+		windowScrollCaptureListeners.delete(listener);
+		if (windowScrollCaptureListeners.size === 0 && windowScrollCaptureHandler != null) {
+			window.removeEventListener('scroll', windowScrollCaptureHandler, {capture: true});
+			windowScrollCaptureHandler = null;
+		}
+	};
+};
 
 const isSelectionIgnoredTarget = (target: EventTarget | null): boolean => {
 	const element = target as HTMLElement | null;
 	return Boolean(element?.closest(PROFILE_TAP_IGNORE_SELECTOR));
+};
+
+const isSelectionControlTarget = (target: EventTarget | null): boolean => {
+	const element = target as HTMLElement | null;
+	return Boolean(element?.closest(SELECTION_CONTROL_SELECTOR));
+};
+
+const isMobileMessageActionHitTarget = (
+	target: EventTarget | null,
+	container: HTMLElement | null,
+): boolean => {
+	const element = target as HTMLElement | null;
+	const hitbox = element?.closest(MOBILE_MESSAGE_ACTION_HITBOX_SELECTOR);
+	return Boolean(hitbox && container?.contains(hitbox));
 };
 
 export type MessageBehaviorOverrides = Partial<{
@@ -132,6 +219,8 @@ interface MessageProps {
 	onEdit?: (targetNode: HTMLElement) => void;
 	previewContext?: keyof typeof MessagePreviewContext;
 	shouldGroup?: boolean;
+	isGroupEnd?: boolean;
+	showAvatar?: boolean;
 	previewOverrides?: {
 		usernameColor?: string;
 		displayName?: string;
@@ -155,6 +244,8 @@ function messagePropsAreEqual(prevProps: MessageProps, nextProps: MessageProps):
 	if (prevProps.message !== nextProps.message) return false;
 
 	if (prevProps.shouldGroup !== nextProps.shouldGroup) return false;
+	if (prevProps.isGroupEnd !== nextProps.isGroupEnd) return false;
+	if (prevProps.showAvatar !== nextProps.showAvatar) return false;
 	if (prevProps.removeTopSpacing !== nextProps.removeTopSpacing) return false;
 	if (prevProps.isJumpTarget !== nextProps.isJumpTarget) return false;
 	if (prevProps.previewContext !== nextProps.previewContext) return false;
@@ -202,6 +293,8 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 			onEdit,
 			previewContext,
 			shouldGroup = false,
+			isGroupEnd = true,
+			showAvatar,
 			previewOverrides,
 			removeTopSpacing = false,
 			isJumpTarget = false,
@@ -214,6 +307,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 	const {t, i18n} = useLingui();
 
 	const [showActionBar, setShowActionBar] = useState(false);
+	const [mobileActionPoint, setMobileActionPoint] = useState<{x: number; y: number} | null>(null);
 	const [isLongPressing, setIsLongPressing] = useState(false);
 	const [contextMenuOpen, setContextMenuOpen] = useState(behaviorOverrides?.contextMenuOpen ?? false);
 	const [isHoveringDesktop, setIsHoveringDesktop] = useState(false);
@@ -231,6 +325,10 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 	const swipeArmedRef = useRef(false);
 	const swipeVelocitySamplesRef = useRef<Array<{x: number; y: number; timestamp: number}>>([]);
 	const swipeRafRef = useRef<number | null>(null);
+	const suppressNextClickRef = useRef(false);
+	const selectionGestureHandledRef = useRef(false);
+	const selectionDragActiveRef = useRef(false);
+	const selectionDragLastMessageIdRef = useRef<string | null>(null);
 
 	const mobileLayoutEnabled = behaviorOverrides?.mobileLayoutEnabled ?? MobileLayoutStore.isEnabled();
 	const messageDisplayCompact =
@@ -254,6 +352,12 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		message.state === MessageStates.SENT &&
 		message.isUserMessage() &&
 		canSendMessages;
+	/*
+	 * Keyed on the channel identity's *contents*, not the record instance:
+	 * EmojiStore.search(channel, '') copies and sorts the whole emoji catalogue, and
+	 * a ChannelRecord instance is replaced on every incoming message, which used to
+	 * re-run that sort once per rendered row per message.
+	 */
 	const doubleClickReactionEmoji = useMemo(() => {
 		if (!canAddReactions) {
 			return null;
@@ -261,29 +365,56 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		const availableEmojis = EmojiStore.search(channel, '');
 		const [quickReaction] = EmojiPickerStore.getQuickReactionEmojis(availableEmojis, 1);
 		return quickReaction ?? null;
-	}, [canAddReactions, channel]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- channel is only read for its id/guildId here
+	}, [canAddReactions, channel.id, channel.guildId]);
 
-	const handleContextMenuUpdate = useCallback(() => {
-		const contextMenu = ContextMenuStore.contextMenu;
-		const contextMenuTarget = contextMenu?.target?.target ?? null;
+	const handleContextMenuUpdate = useCallback((contextMenuTarget: HTMLElement | null) => {
 		const messageElement = messageRef.current;
-		const isOpen =
-			Boolean(contextMenu) &&
-			isContextMenuNodeTarget(contextMenuTarget) &&
-			Boolean(messageElement?.contains(contextMenuTarget));
-		setContextMenuOpen(!!isOpen);
+		const isOpen = contextMenuTarget != null && Boolean(messageElement?.contains(contextMenuTarget));
+		setContextMenuOpen(isOpen);
 	}, []);
 
 	const handleAltClick = useCallback(
 		(event: React.MouseEvent) => {
-			if (selectionActive) {
+			if (suppressNextClickRef.current) {
+				suppressNextClickRef.current = false;
 				event.preventDefault();
 				event.stopPropagation();
 				return;
 			}
+			if (selectionActive) {
+				event.preventDefault();
+				event.stopPropagation();
+				if (canSelectMessage && !isSelectionControlTarget(event.target)) {
+					const changed = MessageSelectionStore.toggle(channel.id, message.id);
+					if (changed) {
+						hapticSelection();
+					}
+				}
+				return;
+			}
+			if (
+				mobileLayoutEnabled &&
+				!previewContext &&
+				!isEditing &&
+				message.state === MessageStates.SENT &&
+				message.isUserMessage() &&
+				!isSelectionIgnoredTarget(event.target) &&
+				isMobileMessageActionHitTarget(event.target, messageRef.current)
+			) {
+				const selection = window.getSelection();
+				if (selection && selection.type === 'Range' && selection.toString().trim().length > 0) {
+					return;
+				}
+				event.preventDefault();
+				event.stopPropagation();
+				setMobileActionPoint({x: event.clientX, y: event.clientY});
+				setShowActionBar(true);
+				return;
+			}
 			handleAltClickEvent(event, message);
 		},
-		[message, selectionActive],
+		[channel.id, message, selectionActive, canSelectMessage, mobileLayoutEnabled, previewContext, isEditing],
 	);
 	const handleAltKeyDown = useCallback(
 		(event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -341,6 +472,40 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		[i18n, message],
 	);
 
+	const beginSelectionDrag = useCallback(
+		(messageId: string, selected: boolean) => {
+			selectionDragActiveRef.current = true;
+			selectionDragLastMessageIdRef.current = messageId;
+			suppressNextClickRef.current = true;
+			setShowActionBar(false);
+			setMobileActionPoint(null);
+			const changed = MessageSelectionStore.startDrag(channel.id, messageId, selected);
+			if (changed) {
+				hapticSelection();
+			}
+			return changed;
+		},
+		[channel.id],
+	);
+
+	const applySelectionDrag = useCallback(
+		(messageId: string) => {
+			if (!selectionDragActiveRef.current || selectionDragLastMessageIdRef.current === messageId) {
+				return false;
+			}
+			selectionDragLastMessageIdRef.current = messageId;
+			return MessageSelectionStore.applyDrag(channel.id, messageId);
+		},
+		[channel.id],
+	);
+
+	const endSelectionDrag = useCallback(() => {
+		selectionGestureHandledRef.current = false;
+		selectionDragActiveRef.current = false;
+		selectionDragLastMessageIdRef.current = null;
+		MessageSelectionStore.endDrag();
+	}, []);
+
 	const handleContextMenu = useCallback(
 		(event: React.MouseEvent) => {
 			if (behaviorOverrides?.disableContextMenu) {
@@ -388,7 +553,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		],
 	);
 
-	const LONG_PRESS_DELAY = 500;
+	const LONG_PRESS_DELAY = 430;
 	/*
 	 * Swipe thresholds tuned for mobile touch input.
 	 *
@@ -404,8 +569,9 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 	 * For reference: iOS swipe-back uses ~5px activation / 30px trigger,
 	 * Android gesture nav uses ~10-15px / 80-100px, Discord uses ~20px.
 	 */
-	const MOVEMENT_THRESHOLD = 18;
-	const SWIPE_VELOCITY_THRESHOLD = 0.7;
+	const LONG_PRESS_CANCEL_DISTANCE = 30;
+	const LONG_PRESS_SCROLL_CANCEL_DISTANCE = 36;
+	const LONG_PRESS_VELOCITY_CANCEL_THRESHOLD = 1.05;
 	const HIGHLIGHT_DELAY = 100;
 	const SWIPE_ACTIVATION_DISTANCE = 14;
 	const SWIPE_MAX_VERTICAL_DRIFT = 48;
@@ -496,10 +662,17 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 			if (!touch) return;
 
 			if (selectionActive && canSelectMessage) {
+				if (isSelectionControlTarget(event.target)) {
+					return;
+				}
 				if (event.cancelable) {
 					event.preventDefault();
 				}
-				MessageSelectionStore.startDrag(channel.id, message.id, !isSelected);
+				event.stopPropagation();
+				if (!selectionGestureHandledRef.current) {
+					beginSelectionDrag(message.id, !isSelected);
+					selectionGestureHandledRef.current = true;
+				}
 				touchStartPos.current = {x: touch.clientX, y: touch.clientY};
 				return;
 			}
@@ -510,6 +683,9 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 					'input, textarea, select, summary, [contenteditable="true"], [data-message-swipe-ignore="true"], [data-user-id], [role="button"]',
 				),
 			);
+			if (interactiveTarget) {
+				return;
+			}
 
 			touchStartPos.current = {x: touch.clientX, y: touch.clientY};
 			swipeStartPosRef.current = {x: touch.clientX, y: touch.clientY};
@@ -535,7 +711,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 			longPressTimerRef.current = setTimeout(() => {
 				if (touchStartPos.current) {
 					if (canSelectMessage) {
-						MessageSelectionStore.startDrag(channel.id, message.id, true);
+						beginSelectionDrag(message.id, true);
 					} else {
 						setShowActionBar(true);
 					}
@@ -550,56 +726,84 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 			clearLongPressState,
 			canSwipeReply,
 			canSelectMessage,
-			channel.id,
 			message.id,
 			selectionActive,
 			isSelected,
+			beginSelectionDrag,
 		],
 	);
 
 	const handleSelectionPointerDown = useCallback(
 		(event: React.PointerEvent<HTMLDivElement>) => {
-			if (!selectionActive || !canSelectMessage || event.button !== 0 || isSelectionIgnoredTarget(event.target)) {
+			const isPrimaryPointer = event.pointerType === 'touch' || event.pointerType === 'pen' || event.button === 0;
+			if (
+				!selectionActive ||
+				!canSelectMessage ||
+				!isPrimaryPointer ||
+				event.isPrimary === false ||
+				isSelectionControlTarget(event.target)
+			) {
 				return;
 			}
 			if (event.cancelable) {
 				event.preventDefault();
 			}
 			event.stopPropagation();
-			MessageSelectionStore.startDrag(channel.id, message.id, !isSelected);
+			beginSelectionDrag(message.id, !isSelected);
+			if (event.pointerType === 'touch' || event.pointerType === 'pen') {
+				selectionGestureHandledRef.current = true;
+				touchStartPos.current = {x: event.clientX, y: event.clientY};
+			}
 		},
-		[channel.id, message.id, selectionActive, canSelectMessage, isSelected],
+		[message.id, selectionActive, canSelectMessage, isSelected, mobileLayoutEnabled, beginSelectionDrag],
+	);
+
+	const handleSelectionTouchStartCapture = useCallback(
+		(event: React.TouchEvent<HTMLDivElement>) => {
+			if (!selectionActive) return;
+			handleLongPressStart(event);
+		},
+		[handleLongPressStart, selectionActive],
 	);
 
 	const handleSelectionPointerEnter = useCallback(() => {
 		if (!selectionActive || !canSelectMessage) return;
-		MessageSelectionStore.applyDrag(channel.id, message.id);
-	}, [channel.id, message.id, selectionActive, canSelectMessage]);
+		applySelectionDrag(message.id);
+	}, [message.id, selectionActive, canSelectMessage, applySelectionDrag]);
 
 	const handleSelectionClick = useCallback(
 		(event: React.MouseEvent<HTMLButtonElement>) => {
 			event.preventDefault();
 			event.stopPropagation();
 			if (!canSelectMessage) return;
-			MessageSelectionStore.toggle(channel.id, message.id);
+			const changed = MessageSelectionStore.toggle(channel.id, message.id);
+			if (changed) {
+				hapticSelection();
+			}
 		},
 		[channel.id, message.id, canSelectMessage],
 	);
 
 	useEffect(() => {
 		if (!selectionActive) return;
-		const handlePointerUp = () => MessageSelectionStore.endDrag();
+		const handlePointerUp = () => {
+			endSelectionDrag();
+		};
 		window.addEventListener('pointerup', handlePointerUp, true);
 		window.addEventListener('pointercancel', handlePointerUp, true);
+		window.addEventListener('touchend', handlePointerUp, true);
+		window.addEventListener('touchcancel', handlePointerUp, true);
 		return () => {
 			window.removeEventListener('pointerup', handlePointerUp, true);
 			window.removeEventListener('pointercancel', handlePointerUp, true);
+			window.removeEventListener('touchend', handlePointerUp, true);
+			window.removeEventListener('touchcancel', handlePointerUp, true);
 		};
-	}, [selectionActive]);
+	}, [selectionActive, endSelectionDrag]);
 
 	const handleLongPressEnd = useCallback(() => {
-		if (selectionActive) {
-			MessageSelectionStore.endDrag();
+		if (selectionActive || selectionDragActiveRef.current) {
+			endSelectionDrag();
 			clearLongPressState();
 			return;
 		}
@@ -615,6 +819,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		const replyMentioning = !message.isCurrentUserAuthor() && channel.guildId != null;
 
 		if (isSwiping) {
+			suppressNextClickRef.current = true;
 			releaseSwipeGesture();
 			clearLongPressState();
 
@@ -638,18 +843,25 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		releaseSwipeGesture,
 		resetSwipeState,
 		selectionActive,
+		endSelectionDrag,
 	]);
 
 	const handleLongPressMove = useCallback(
-		(event: React.TouchEvent) => {
-			if (selectionActive) {
+		(event: TouchEvent) => {
+			if (selectionActive || selectionDragActiveRef.current) {
 				const touch = event.touches[0];
 				if (!touch) return;
 				const target = document.elementFromPoint(touch.clientX, touch.clientY);
 				const messageElement = target?.closest?.('[data-message-id][data-channel-id]') as HTMLElement | null;
-				if (messageElement?.dataset.channelId === channel.id && messageElement.dataset.messageId) {
-					event.preventDefault();
-					MessageSelectionStore.applyDrag(channel.id, messageElement.dataset.messageId);
+				if (
+					messageElement?.dataset.channelId === channel.id &&
+					messageElement.dataset.messageId &&
+					messageElement.dataset.messageState === MessageStates.SENT
+				) {
+					if (event.cancelable) {
+						event.preventDefault();
+					}
+					applySelectionDrag(messageElement.dataset.messageId);
 				}
 				return;
 			}
@@ -673,7 +885,9 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 					absDeltaY < SWIPE_MAX_VERTICAL_DRIFT;
 
 				if (isHorizontalSwipe || isSwiping) {
-					event.preventDefault();
+					if (event.cancelable) {
+						event.preventDefault();
+					}
 					clearLongPressTimers();
 					swipeVelocitySamplesRef.current = trackVelocitySample(
 						swipeVelocitySamplesRef.current,
@@ -705,17 +919,24 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 			const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
 			const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
 
-			if (deltaX > MOVEMENT_THRESHOLD || deltaY > MOVEMENT_THRESHOLD) {
+			const isIntentionalScroll =
+				deltaY > LONG_PRESS_SCROLL_CANCEL_DISTANCE && deltaY > deltaX * 1.15;
+			const isIntentionalSideMove =
+				deltaX > LONG_PRESS_CANCEL_DISTANCE && deltaX > deltaY * 1.35;
+			if (isIntentionalScroll || isIntentionalSideMove) {
 				clearLongPressState({preserveTouchStart: true});
 				return;
 			}
 
 			const velocity = calculateVelocity();
-			if (velocity > SWIPE_VELOCITY_THRESHOLD) {
+			if (velocity > LONG_PRESS_VELOCITY_CANCEL_THRESHOLD && Math.max(deltaX, deltaY) > 10) {
 				clearLongPressState({preserveTouchStart: true});
 			}
 		},
 		[
+			LONG_PRESS_CANCEL_DISTANCE,
+			LONG_PRESS_SCROLL_CANCEL_DISTANCE,
+			LONG_PRESS_VELOCITY_CANCEL_THRESHOLD,
 			SWIPE_ACTIVATION_DISTANCE,
 			SWIPE_MAX_DISTANCE,
 			SWIPE_MAX_VERTICAL_DRIFT,
@@ -726,19 +947,24 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 			commitSwipeOffset,
 			isSwiping,
 			selectionActive,
+			applySelectionDrag,
 		],
 	);
+
+	useEffect(() => {
+		if (!mobileLayoutEnabled || !messageRef.current) return;
+		const element = messageRef.current;
+		element.addEventListener('touchmove', handleLongPressMove, {passive: false});
+		return () => {
+			element.removeEventListener('touchmove', handleLongPressMove);
+		};
+	}, [mobileLayoutEnabled, handleLongPressMove]);
 
 	useEffect(() => {
 		if (behaviorOverrides?.disableContextMenuTracking) {
 			return;
 		}
-		const disposer = autorun(() => {
-			handleContextMenuUpdate();
-		});
-		return () => {
-			disposer();
-		};
+		return subscribeToContextMenuTarget(handleContextMenuUpdate);
 	}, [handleContextMenuUpdate, behaviorOverrides?.disableContextMenuTracking]);
 
 	useEffect(() => {
@@ -812,14 +1038,17 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		 * where scroll events race with touch move events).
 		 */
 		const handleScroll = () => {
+			if (selectionDragActiveRef.current || longPressTimerRef.current) {
+				return;
+			}
 			if (touchStartPos.current && !isSwiping) {
 				clearLongPressState();
 			}
 		};
 
-		window.addEventListener('scroll', handleScroll, {capture: true, passive: true});
+		const unsubscribe = subscribeToWindowScrollCapture(handleScroll);
 		return () => {
-			window.removeEventListener('scroll', handleScroll, {capture: true});
+			unsubscribe();
 			if (longPressTimerRef.current) {
 				clearTimeout(longPressTimerRef.current);
 			}
@@ -869,6 +1098,12 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 	const actionBarHoverState = previewMode
 		? true
 		: isHovering || (keyboardModeEnabled && isFocusedWithin) || isPopoutOpen;
+	const hasForwardedStoryPreview = useMemo(
+		() =>
+			resolveForwardedStoryPreview(message.content, message.components) != null ||
+			Boolean(message.messageSnapshots?.some((snapshot) => parseForwardedStoryPreview(snapshot.content) != null)),
+		[message.components, message.content, message.messageSnapshots],
+	);
 	const shouldForceUngroupedMediaLayout =
 		!messageDisplayCompact &&
 		shouldGroup &&
@@ -876,7 +1111,9 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		message.isUserMessage() &&
 		!message.content?.trim() &&
 		(message.attachments.length > 0 || message.embeds.some((embed) => embed.type === MessageEmbedTypes.IMAGE));
-	const resolvedShouldGroup = shouldForceUngroupedMediaLayout ? false : shouldGroup;
+	const resolvedShowAvatar = shouldForceUngroupedMediaLayout ? true : showAvatar ?? !shouldGroup;
+	const resolvedShouldGroup = shouldForceUngroupedMediaLayout || resolvedShowAvatar ? false : shouldGroup;
+	const resolvedIsGroupEnd = shouldForceUngroupedMediaLayout ? true : isGroupEnd;
 
 	const messageContextValue = useMemo(
 		() => ({
@@ -884,6 +1121,8 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 			message,
 			handleDelete,
 			shouldGroup: resolvedShouldGroup,
+			isGroupEnd: resolvedIsGroupEnd,
+			showAvatar: resolvedShowAvatar,
 			isHovering,
 			previewContext,
 			previewOverrides,
@@ -894,6 +1133,8 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 			message,
 			handleDelete,
 			resolvedShouldGroup,
+			resolvedIsGroupEnd,
+			resolvedShowAvatar,
 			isHovering,
 			previewContext,
 			previewOverrides,
@@ -962,6 +1203,8 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 	const isKeyboardFocused = keyboardModeEnabled && isFocusedWithin;
 	const shouldApplySpacing =
 		!resolvedShouldGroup && !removeTopSpacing && previewContext !== MessagePreviewContext.LIST_POPOUT;
+	const shouldShowBubbleTail =
+		resolvedIsGroupEnd && message.isUserMessage() && message.type !== MessageTypes.CLIENT_SYSTEM && !messageDisplayCompact;
 
 	const messageClasses = clsx(
 		messageDisplayCompact ? styles.messageCompact : styles.message,
@@ -1003,6 +1246,10 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		!previewContext &&
 		message.state !== MessageStates.SENDING &&
 		!isEditing;
+	const handleCloseMobileActions = useCallback(() => {
+		setShowActionBar(false);
+		setMobileActionPoint(null);
+	}, []);
 
 	return (
 		<>
@@ -1015,9 +1262,15 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 					data-message-state={message.state}
 					data-channel-private={channel.isPrivate() ? 'true' : undefined}
 					data-author-self={message.isCurrentUserAuthor() ? 'true' : undefined}
+					data-message-system={message.isSystemMessage() ? 'true' : undefined}
+					data-message-reaction-type-limit={canAddNewReactionTypeToMessage(message) ? undefined : 'true'}
 					data-message-bubble={
 						message.isUserMessage() && message.type !== MessageTypes.CLIENT_SYSTEM ? 'true' : undefined
 					}
+					data-message-tail={shouldShowBubbleTail ? 'true' : undefined}
+					data-message-visual-start={resolvedShowAvatar ? 'true' : undefined}
+					data-message-visual-end={resolvedIsGroupEnd ? 'true' : undefined}
+					data-message-story-preview={hasForwardedStoryPreview ? 'true' : undefined}
 					tabIndex={keyboardModeEnabled ? 0 : undefined}
 					className={messageClasses}
 					ref={messageRef}
@@ -1027,12 +1280,12 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 					onFocus={handleFocusWithin}
 					onBlur={handleBlurWithin}
 					onContextMenu={handleContextMenu}
-					onPointerDown={handleSelectionPointerDown}
+					onPointerDownCapture={handleSelectionPointerDown}
 					onPointerEnter={handleSelectionPointerEnter}
+					onTouchStartCapture={handleSelectionTouchStartCapture}
 					onTouchStart={handleLongPressStart}
 					onTouchEnd={handleLongPressEnd}
 					onTouchCancel={handleLongPressEnd}
-					onTouchMove={handleLongPressMove}
 					style={{
 						/*
 						 * touch-action controls which gestures the browser
@@ -1046,7 +1299,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 						 * vertical scroll and pinch-zoom without blocking
 						 * horizontal swipe detection.
 						 */
-						touchAction: isSwiping ? 'none' : canSwipeReply ? 'manipulation' : 'pan-y',
+						touchAction: selectionActive || isSwiping ? 'none' : canSwipeReply ? 'manipulation' : 'pan-y',
 						WebkitUserSelect: selectionActive ? 'none' : 'text',
 						userSelect: selectionActive ? 'none' : 'text',
 						marginTop: shouldApplySpacing && previewContext ? `${messageGroupSpacing}px` : undefined,
@@ -1062,6 +1315,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 							aria-pressed={isSelected}
 							onClick={handleSelectionClick}
 							data-message-swipe-ignore="true"
+							data-message-selection-control="true"
 						>
 							{isSelected ? (
 								<CheckCircleIcon className={styles.messageSelectionIcon} weight="fill" />
@@ -1084,7 +1338,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 								handleDelete={handleDelete}
 								permissions={{
 									canSendMessages: true,
-									canAddReactions: true,
+									canAddReactions: !message.isSystemMessage(),
 									canEditMessage: true,
 									canDeleteMessage: true,
 									canPinMessage: true,
@@ -1107,11 +1361,13 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 			</FocusRing>
 
 			{shouldShowBottomSheet && (
-				<MessageActionBottomSheet
+				<MobileMessageActionPopover
 					isOpen={shouldShowBottomSheet}
-					onClose={() => setShowActionBar(false)}
+					onClose={handleCloseMobileActions}
 					message={message}
 					handleDelete={handleDelete}
+					anchorRef={messageRef}
+					anchorPoint={mobileActionPoint}
 				/>
 			)}
 		</>

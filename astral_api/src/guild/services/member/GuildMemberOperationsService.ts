@@ -19,6 +19,7 @@
 
 import type {GuildID, RoleID, UserID} from '~/BrandedTypes';
 import {createChannelID, createRoleID} from '~/BrandedTypes';
+import {assertNotProtectedTarget} from '~/admin/ProtectedRootUsers';
 import {
 	GuildFeatures,
 	MAX_GUILD_MEMBERS,
@@ -120,23 +121,14 @@ export class GuildMemberOperationsService {
 	}): Promise<Array<GuildMemberResponse>> {
 		const {userId, guildId, requestCache} = params;
 		await this.authService.getGuildAuthenticated({userId, guildId});
-		const members = await this.guildRepository.listMembers(guildId);
-
-		// Hard cap on the HTTP response size. Before this, hitting the
-		// endpoint on a 100 k-member guild allocated 100 k GuildMember
-		// instances, fanned out 100 k UserPartial fetches through the
-		// cache, then serialised ~50 MB of JSON — enough to starve the
-		// event loop and trip the request timeout. Real UIs paginate,
-		// but older clients and internal tooling assume "give me
-		// everything". We preserve the contract but trim to a sane
-		// ceiling; the worker/broadcast paths that need full membership
-		// still use the repo method directly.
+		// Hard cap at the Cassandra read so a 100k-member guild never
+		// materialises the full partition for this HTTP path. Worker/
+		// broadcast paths that need full membership call listMembers()
+		// without a limit.
 		const MAX_MEMBERS_PER_RESPONSE = 5000;
-		const truncated = members.length > MAX_MEMBERS_PER_RESPONSE
-			? members.slice(0, MAX_MEMBERS_PER_RESPONSE)
-			: members;
+		const members = await this.guildRepository.listMembers(guildId, {limit: MAX_MEMBERS_PER_RESPONSE});
 
-		return await mapGuildMembersToResponse(truncated, this.userCacheService, requestCache);
+		return await mapGuildMembersToResponse(members, this.userCacheService, requestCache);
 	}
 
 	private async recordVoiceAuditLog(params: {
@@ -396,6 +388,8 @@ export class GuildMemberOperationsService {
 	async removeMember(params: {userId: UserID; targetId: UserID; guildId: GuildID}): Promise<void> {
 		try {
 			const {userId, targetId, guildId} = params;
+			// Hard-stop: protected root operators (instance founders) can't be kicked.
+			assertNotProtectedTarget(targetId);
 			const {guildData, checkTargetMember, checkPermission} = await this.authService.getGuildAuthenticated({
 				userId,
 				guildId,

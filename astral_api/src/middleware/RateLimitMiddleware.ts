@@ -70,7 +70,10 @@ function setRateLimitHeaders(ctx: Context<HonoEnv>, limit: number, remaining: nu
 
 export function RateLimitMiddleware(routeConfig: RouteRateLimitConfig): MiddlewareHandler<HonoEnv> {
 	return createMiddleware<HonoEnv>(async (ctx, next) => {
-		if (Config.dev.disableRateLimits || Config.dev.testModeEnabled || process.env.CI === 'true') {
+		// Never bypass rate limiting in production, even if ASTRAL_TEST_MODE or
+		// DISABLE_RATE_LIMITS is accidentally set there — an operator mistake
+		// would otherwise disable all brute-force protection.
+		if ((Config.dev.disableRateLimits || Config.dev.testModeEnabled) && Config.nodeEnv !== 'production') {
 			await next();
 			return;
 		}

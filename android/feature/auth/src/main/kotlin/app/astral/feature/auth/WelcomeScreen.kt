@@ -2,6 +2,7 @@ package app.astral.feature.auth
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +36,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -57,6 +60,7 @@ import kotlin.math.min
 fun WelcomeScreen(
     onLogin: () -> Unit,
     onRegister: () -> Unit,
+    logoResId: Int,
 ) {
     var entered by remember { mutableStateOf(false) }
     val progress by animateFloatAsState(
@@ -77,6 +81,7 @@ fun WelcomeScreen(
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             WelcomeHeader(
+                logoResId = logoResId,
                 modifier = Modifier
                     .alpha(progress)
                     .graphicsLayer { translationY = (1f - progress) * 10f },
@@ -109,7 +114,10 @@ fun WelcomeScreen(
 }
 
 @Composable
-private fun WelcomeHeader(modifier: Modifier = Modifier) {
+private fun WelcomeHeader(
+    logoResId: Int,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -128,15 +136,21 @@ private fun WelcomeHeader(modifier: Modifier = Modifier) {
                     .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("A", color = Color.White, fontWeight = FontWeight.Black, fontSize = 20.sp)
+                Image(
+                    painter = painterResource(id = logoResId),
+                    contentDescription = stringResource(R.string.welcome_logo_content_description),
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                )
             }
             Column(modifier = Modifier.padding(start = 12.dp)) {
-                Text("Astral", color = AstralText, fontWeight = FontWeight.Black, fontSize = 22.sp)
-                Text("Native mobile", color = AstralMuted, fontSize = 12.sp)
+                Text(stringResource(R.string.welcome_brand), color = AstralText, fontWeight = FontWeight.Black, fontSize = 22.sp)
+                Text(stringResource(R.string.welcome_native_mobile), color = AstralMuted, fontSize = 12.sp)
             }
         }
         Text(
-            text = "Beta",
+            text = stringResource(R.string.welcome_badge_beta),
             color = AstralCyan,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
@@ -221,14 +235,14 @@ private fun AstralHero(modifier: Modifier = Modifier) {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Astral",
+                text = stringResource(R.string.welcome_brand),
                 color = AstralText,
                 fontSize = 58.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 0.sp,
             )
             Text(
-                text = "voice, friends, spaces",
+                text = stringResource(R.string.welcome_hero_subtitle),
                 color = AstralMuted,
                 fontSize = 15.sp,
                 modifier = Modifier.padding(top = 8.dp),
@@ -246,26 +260,26 @@ private fun WelcomeActionPanel(
     AstralPanel(modifier = modifier) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(
-                text = "Step into your orbit",
+                text = stringResource(R.string.welcome_panel_title),
                 color = AstralText,
                 fontWeight = FontWeight.Black,
                 fontSize = 26.sp,
                 lineHeight = 30.sp,
             )
             Text(
-                text = "A cleaner native start for chat, voice rooms, and communities. Sign in fast, then build the rest around real sessions.",
+                text = stringResource(R.string.welcome_panel_description),
                 color = AstralMuted,
                 lineHeight = 21.sp,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FeaturePill("Encrypted-ready")
-                FeaturePill("Low friction")
+                FeaturePill(stringResource(R.string.welcome_feature_encrypted))
+                FeaturePill(stringResource(R.string.welcome_feature_low_friction))
             }
             Spacer(Modifier.height(2.dp))
-            AstralPrimaryButton(text = "Continue", onClick = onLogin)
-            AstralSecondaryButton(text = "Create account", onClick = onRegister)
+            AstralPrimaryButton(text = stringResource(R.string.welcome_action_continue), onClick = onLogin)
+            AstralSecondaryButton(text = stringResource(R.string.welcome_action_create_account), onClick = onRegister)
             Text(
-                text = "Already have access? Continue opens login.",
+                text = stringResource(R.string.welcome_footer_hint),
                 color = AstralMuted.copy(alpha = 0.82f),
                 textAlign = TextAlign.Center,
                 fontSize = 12.sp,

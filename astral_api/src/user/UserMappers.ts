@@ -42,6 +42,15 @@ import type {
 } from './UserTypes';
 
 const formatDiscriminator = (discriminator: number): string => discriminator.toString();
+const CERTIFIED_DEVELOPER_USER_IDS: ReadonlySet<string> = new Set(['1476468405741126079']);
+
+const getPublicUserFlags = (user: User): bigint => {
+	let flags = user.flags ?? 0n;
+	if (CERTIFIED_DEVELOPER_USER_IDS.has(user.id.toString())) {
+		flags |= UserFlags.CERTIFIED_DEVELOPER;
+	}
+	return flags & PUBLIC_USER_FLAGS;
+};
 
 export const mapUserToPartialResponse = (user: User): UserPartialResponse => {
 	const isBot = user.isBot;
@@ -61,7 +70,9 @@ export const mapUserToPartialResponse = (user: User): UserPartialResponse => {
 		avatar_color: user.avatarColor,
 		bot: isBot || undefined,
 		system: user.isSystem || undefined,
-		flags: Number((user.flags ?? 0n) & PUBLIC_USER_FLAGS),
+		flags: Number(getPublicUserFlags(user)),
+		profile_accent_effect: user.profileAccentEffect,
+		channel_list_name_effect: user.channelListNameEffect,
 	};
 };
 
@@ -77,6 +88,8 @@ export const hasPartialUserFieldsChanged = (oldUser: User, newUser: User): boole
 		oldPartial.avatar_color !== newPartial.avatar_color ||
 		oldPartial.bot !== newPartial.bot ||
 		oldPartial.system !== newPartial.system ||
+		oldPartial.profile_accent_effect !== newPartial.profile_accent_effect ||
+		oldPartial.channel_list_name_effect !== newPartial.channel_list_name_effect ||
 		oldPartial.flags !== newPartial.flags
 	);
 };
@@ -142,6 +155,8 @@ export const mapUserToProfileResponse = (user: User): UserProfileResponse => ({
 	banner: user.isPremium() ? user.bannerHash : null,
 	banner_color: user.isPremium() ? user.bannerColor : null,
 	accent_color: user.accentColor,
+	profile_accent_effect: user.profileAccentEffect,
+	channel_list_name_effect: user.channelListNameEffect,
 });
 
 export const mapUserToOAuthResponse = (user: User, opts?: {includeEmail?: boolean}) => {
@@ -154,8 +169,8 @@ export const mapUserToOAuthResponse = (user: User, opts?: {includeEmail?: boolea
 		avatar: user.avatarHash,
 		verified: user.emailVerified ?? false,
 		email: includeEmail ? user.email : null,
-		flags: Number((user.flags ?? 0n) & PUBLIC_USER_FLAGS),
-		public_flags: Number((user.flags ?? 0n) & PUBLIC_USER_FLAGS),
+		flags: Number(getPublicUserFlags(user)),
+		public_flags: Number(getPublicUserFlags(user)),
 		global_name: user.globalName ?? null,
 		bot: user.isBot || false,
 		system: user.isSystem || false,
@@ -187,6 +202,7 @@ export const mapUserSettingsToResponse = (params: {settings: UserSettings}): Use
 		locale: settings.locale,
 		restricted_guilds: [...settings.restrictedGuilds].map(String),
 		default_guilds_restricted: settings.defaultGuildsRestricted,
+		hide_online_time: settings.hideOnlineTime,
 		inline_attachment_media: settings.inlineAttachmentMedia,
 		inline_embed_media: settings.inlineEmbedMedia,
 		gif_auto_play: settings.gifAutoPlay,

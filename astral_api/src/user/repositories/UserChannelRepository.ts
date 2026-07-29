@@ -303,18 +303,17 @@ export class UserChannelRepository implements IUserChannelRepository {
 			}
 		>();
 
-		const openChannelRows = await fetchMetadataForSoftDeleted(channelIds, false);
+		// Open and soft-deleted metadata shares the same PK set; fetch in parallel.
+		const [openChannelRows, deletedChannelRows] = await Promise.all([
+			fetchMetadataForSoftDeleted(channelIds, false),
+			fetchMetadataForSoftDeleted(channelIds, true),
+		]);
 		for (const row of openChannelRows) {
 			channelMap.set(row.channel_id, row);
 		}
-
-		const missingChannelIds = channelIds.filter((id) => !channelMap.has(id));
-		if (missingChannelIds.length > 0) {
-			const deletedChannelRows = await fetchMetadataForSoftDeleted(missingChannelIds, true);
-			for (const row of deletedChannelRows) {
-				if (!channelMap.has(row.channel_id)) {
-					channelMap.set(row.channel_id, row);
-				}
+		for (const row of deletedChannelRows) {
+			if (!channelMap.has(row.channel_id)) {
+				channelMap.set(row.channel_id, row);
 			}
 		}
 

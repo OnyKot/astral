@@ -114,7 +114,7 @@ type SudoFailureHandler = (error: HttpError | HttpResponse | string | unknown) =
 
 type AuthTokenProvider = () => string | null;
 
-const RETRYABLE_STATUS_CODES = new Set([502, 504, 507, 598, 599, 522, 523, 524]);
+const RETRYABLE_STATUS_CODES = new Set([502, 503, 504, 507, 598, 599, 522, 523, 524]);
 
 function hasElectronProxy(): boolean {
 	return getElectronApiProxyBaseUrl() !== null;

@@ -416,6 +416,13 @@ export class OAuth2Service {
 			scope: refresh.scope,
 		});
 
+		// Refresh-token rotation (RFC 6749 §10.4): invalidate the presented
+		// refresh token once it has been exchanged. Without this a stolen refresh
+		// token can be replayed indefinitely even after the legitimate user has
+		// refreshed. Deleting after issuing the new pair keeps the grant working
+		// for the legitimate holder while revoking the old credential.
+		await this.tokens.deleteRefreshToken(params.refreshToken!, application.applicationId, refresh.userId);
+
 		return {
 			access_token: res.accessToken.token_,
 			token_type: 'Bearer',

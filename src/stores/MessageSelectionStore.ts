@@ -35,7 +35,7 @@ class MessageSelectionStore {
 	}
 
 	get active(): boolean {
-		return this.count > 0;
+		return this.count > 0 || this.dragIntent != null;
 	}
 
 	get ids(): Array<string> {
@@ -68,20 +68,25 @@ class MessageSelectionStore {
 		this.selectedIds.add(messageId);
 	}
 
-	setSelected(channelId: string, messageId: string, selected: boolean): void {
+	setSelected(channelId: string, messageId: string, selected: boolean): boolean {
 		this.ensureChannel(channelId);
+		const wasSelected = this.selectedIds.has(messageId);
+		if (wasSelected === selected) {
+			return false;
+		}
 		if (selected) {
 			this.selectedIds.add(messageId);
 		} else {
 			this.selectedIds.delete(messageId);
 		}
-		if (this.selectedIds.size === 0) {
+		if (this.selectedIds.size === 0 && this.dragIntent == null) {
 			this.clear();
 		}
+		return true;
 	}
 
-	toggle(channelId: string, messageId: string): void {
-		this.setSelected(channelId, messageId, !this.isSelected(channelId, messageId));
+	toggle(channelId: string, messageId: string): boolean {
+		return this.setSelected(channelId, messageId, !this.isSelected(channelId, messageId));
 	}
 
 	startSelection(channelId: string, messageId: string): void {
@@ -89,18 +94,21 @@ class MessageSelectionStore {
 		this.selectedIds.add(messageId);
 	}
 
-	startDrag(channelId: string, messageId: string, selected: boolean): void {
+	startDrag(channelId: string, messageId: string, selected: boolean): boolean {
 		this.dragIntent = selected;
-		this.setSelected(channelId, messageId, selected);
+		return this.setSelected(channelId, messageId, selected);
 	}
 
-	applyDrag(channelId: string, messageId: string): void {
-		if (this.dragIntent == null) return;
-		this.setSelected(channelId, messageId, this.dragIntent);
+	applyDrag(channelId: string, messageId: string): boolean {
+		if (this.dragIntent == null) return false;
+		return this.setSelected(channelId, messageId, this.dragIntent);
 	}
 
 	endDrag(): void {
 		this.dragIntent = null;
+		if (this.selectedIds.size === 0) {
+			this.clear();
+		}
 	}
 
 	getSelectedMessages(): Array<MessageRecord> {

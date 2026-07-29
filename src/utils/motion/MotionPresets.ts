@@ -25,6 +25,9 @@ export const ARC_EASE = [0.22, 1, 0.36, 1] as const;
 const STARTUP_ENTRANCE_MOTION_MS = 4500;
 
 export function shouldRunEntranceMotion(): boolean {
+	if (typeof document !== 'undefined' && document.documentElement.classList.contains('mobile-fast-mode')) {
+		return false;
+	}
 	if (typeof performance === 'undefined') {
 		return true;
 	}
@@ -55,7 +58,7 @@ export function getPageTransition(reducedMotion: boolean) {
 	if (reducedMotion) {
 		return {duration: 0};
 	}
-	return {duration: 0.18, ease: ARC_EASE};
+	return {duration: 0.12, ease: ARC_EASE};
 }
 
 export function getPageHeaderVariants(reducedMotion: boolean) {
@@ -67,14 +70,16 @@ export function getPageHeaderVariants(reducedMotion: boolean) {
 		};
 	}
 	return {
-		enter: (direction: PageDirection) => ({
+		enter: (_direction: PageDirection) => ({
 			opacity: 0,
-			x: direction === 'forward' ? 12 : -10,
+			x: 0,
+			y: 0,
 		}),
-		center: {opacity: 1, x: 0},
-		exit: (direction: PageDirection) => ({
+		center: {opacity: 1, x: 0, y: 0},
+		exit: (_direction: PageDirection) => ({
 			opacity: 0,
-			x: direction === 'forward' ? -8 : 10,
+			x: 0,
+			y: 0,
 		}),
 	};
 }
@@ -88,23 +93,26 @@ export function getPageContentVariants(reducedMotion: boolean) {
 		};
 	}
 	return {
-		enter: (direction: PageDirection) => ({
+		enter: (_direction: PageDirection) => ({
 			opacity: 0,
-			x: direction === 'forward' ? 24 : -14,
+			x: 0,
+			y: 0,
 			scale: 1,
-			zIndex: direction === 'forward' ? 2 : 0,
+			zIndex: 1,
 		}),
 		center: {
 			opacity: 1,
 			x: 0,
+			y: 0,
 			scale: 1,
 			zIndex: 1,
 		},
-		exit: (direction: PageDirection) => ({
+		exit: (_direction: PageDirection) => ({
 			opacity: 0,
-			x: direction === 'forward' ? -14 : 24,
+			x: 0,
+			y: 0,
 			scale: 1,
-			zIndex: direction === 'forward' ? 0 : 2,
+			zIndex: 1,
 		}),
 	};
 }
@@ -134,16 +142,16 @@ export function getDesktopPanelVariants(reducedMotion: boolean) {
 		};
 	}
 	return {
-		enter: (direction: PageDirection) => ({
+		enter: (_direction: PageDirection) => ({
 			opacity: 0,
-			x: direction === 'forward' ? 10 : -8,
-			y: 3,
+			x: 0,
+			y: 0,
 		}),
 		center: {opacity: 1, x: 0, y: 0},
-		exit: (direction: PageDirection) => ({
+		exit: (_direction: PageDirection) => ({
 			opacity: 0,
-			x: direction === 'forward' ? -7 : 9,
-			y: 2,
+			x: 0,
+			y: 0,
 		}),
 	};
 }
@@ -152,10 +160,27 @@ export function getDesktopPanelTransition(reducedMotion: boolean) {
 	if (reducedMotion) {
 		return {duration: 0};
 	}
-	return {duration: 0.16, ease: ARC_EASE};
+	return {duration: 0.12, ease: ARC_EASE};
 }
 
 export function getDesktopModalMotion(reducedMotion: boolean): MotionProps {
+	if (reducedMotion) {
+		return {
+			initial: {opacity: 0},
+			animate: {opacity: 1},
+			exit: {opacity: 0},
+			transition: {duration: 0.03},
+		};
+	}
+	return {
+		initial: {opacity: 0},
+		animate: {opacity: 1},
+		exit: {opacity: 0},
+		transition: {duration: 0.18, ease: ARC_EASE},
+	};
+}
+
+export function getLegacyDesktopModalMotion(reducedMotion: boolean): MotionProps {
 	if (shouldSkipEntranceMotion(reducedMotion)) {
 		return {
 			initial: false,

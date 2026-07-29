@@ -48,6 +48,7 @@ init(SessionData) ->
             false -> Ready0
         end,
     IgnoredEvents = build_ignored_events_map(maps:get(ignored_events, SessionData, [])),
+    PeerIp = maps:get(peer_ip, SessionData, undefined),
 
     Channels = load_private_channels(Ready),
     logger:debug("[session] Loaded ~p private channels into session state for user ~p", [
@@ -88,7 +89,8 @@ init(SessionData) ->
         relationships => load_relationships(Ready),
         suppress_presence_updates => true,
         pending_presences => [],
-        guild_connect_inflight => #{}
+        guild_connect_inflight => #{},
+        peer_ip => PeerIp
     },
 
     self() ! {presence_connect, 0},
@@ -132,7 +134,9 @@ handle_call({resume, Seq, SocketPid}, _From, State) ->
         Seq > CurrentSeq ->
             {reply, invalid_seq, State};
         true ->
-            MissedEvents = [Event || Event <- Buffer, maps:get(seq, Event) > Seq],
+            %% The buffer is stored newest-first (see session_dispatch:handle_dispatch/3),
+            %% so reverse it to replay the missed events in ascending seq order.
+            MissedEvents = lists:reverse([Event || Event <- Buffer, maps:get(seq, Event) > Seq]),
             NewState = maps:merge(State, #{
                 socket_pid => SocketPid,
                 socket_mref => monitor(process, SocketPid)
@@ -352,6 +356,12 @@ handle_info(bot_initial_ready, State) ->
         undefined -> {noreply, State};
         _ -> session_ready:dispatch_ready_data(State)
     end;
+%% session_monitor sends this with `!` when the socket process dies, but the only matching handler
+%% was handle_cast/2 — so it fell through to the catch-all below and was silently dropped, and the
+%% user stayed "online" until the 10s resume_timeout killed the session. Route it to the same place
+%% the cast goes.
+handle_info({presence_update, Update}, State) ->
+    handle_cast({presence_update, Update}, State);
 handle_info(resume_timeout, State) ->
     SocketPid = maps:get(socket_pid, State, undefined),
     case SocketPid of
@@ -383,7 +393,9 @@ serialize_state(State) ->
         afk => maps:get(afk, State),
         mobile => maps:get(mobile, State),
         music_activity => maps:get(music_activity, State, null),
-        buffer => maps:get(buffer, State),
+        %% Stored newest-first internally; exposed oldest-first so the serialized
+        %% shape is unchanged for consumers of {get_state}.
+        buffer => lists:reverse(maps:get(buffer, State)),
         ready => maps:get(ready, State),
         guilds => maps:get(guilds, State, #{}),
         collected_guild_states => maps:get(collected_guild_states, State),

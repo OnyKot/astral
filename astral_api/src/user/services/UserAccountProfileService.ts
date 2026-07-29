@@ -77,6 +77,14 @@ export class UserAccountProfileService {
 			await this.processAccentColorUpdate({user, accentColor: data.accent_color, updates});
 		}
 
+		if (data.profile_accent_effect !== undefined) {
+			this.processProfileAccentEffectUpdate({user, preset: data.profile_accent_effect, updates});
+		}
+
+		if (data.channel_list_name_effect !== undefined) {
+			this.processChannelListNameEffectUpdate({user, preset: data.channel_list_name_effect, updates});
+		}
+
 		if (data.avatar !== undefined) {
 			preparedAvatarUpload = await this.processAvatarUpdate({user, avatar: data.avatar, updates});
 		}
@@ -219,6 +227,36 @@ export class UserAccountProfileService {
 			}
 
 			updates.accent_color = accentColor;
+		}
+	}
+
+	private processProfileAccentEffectUpdate(params: {
+		user: User;
+		preset: string | null | undefined;
+		updates: UserFieldUpdates;
+	}): void {
+		const {user, preset, updates} = params;
+		const nextPreset = preset === 'none' || preset == null ? null : preset;
+		if (nextPreset && !user.isPremium()) {
+			throw InputValidationError.create('profile_accent_effect', 'Profile accent effects require premium');
+		}
+		if (nextPreset !== user.profileAccentEffect) {
+			updates.profile_accent_effect = nextPreset;
+		}
+	}
+
+	private processChannelListNameEffectUpdate(params: {
+		user: User;
+		preset: string | null | undefined;
+		updates: UserFieldUpdates;
+	}): void {
+		const {user, preset, updates} = params;
+		const nextPreset = preset === 'none' || preset == null ? null : preset;
+		if (nextPreset && !user.isPremium()) {
+			throw InputValidationError.create('channel_list_name_effect', 'Channel list name effects require premium');
+		}
+		if (nextPreset !== user.channelListNameEffect) {
+			updates.channel_list_name_effect = nextPreset;
 		}
 	}
 

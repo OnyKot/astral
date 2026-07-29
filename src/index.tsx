@@ -39,6 +39,8 @@ import {ForcedUpdateScreen} from '~/components/ForcedUpdateScreen';
 import {NetworkErrorScreen} from '~/components/NetworkErrorScreen';
 import {initI18n} from '~/i18n';
 import CaptchaInterceptor from '~/lib/CaptchaInterceptor';
+import SessionManager from '~/lib/SessionManager';
+import {isGatewayBypassPath} from '~/router/constants';
 import AccountManager from '~/stores/AccountManager';
 import ChannelDisplayNameStore from '~/stores/ChannelDisplayNameStore';
 import GeoIPStore from '~/stores/GeoIPStore';
@@ -47,6 +49,7 @@ import NewDeviceMonitoringStore from '~/stores/NewDeviceMonitoringStore';
 import NotificationStore from '~/stores/NotificationStore';
 import QuickSwitcherStore from '~/stores/QuickSwitcherStore';
 import RuntimeConfigStore from '~/stores/RuntimeConfigStore';
+import ConnectionStore from '~/stores/gateway/ConnectionStore';
 import MediaEngineFacade from '~/stores/voice/MediaEngineFacade';
 import * as PushSubscriptionService from '~/services/push/PushSubscriptionService';
 import {registerServiceWorker} from '~/sw/register';
@@ -68,11 +71,15 @@ import {
 } from '~/utils/BuildIdentityUtils';
 import {fetchReleaseManifest} from '~/utils/ReleaseClient';
 import {getWebUpdateGateInfo} from '~/utils/WebUpdateUtils';
+import {isChunkLoadError, recoverFromChunkLoadError} from '~/utils/chunkLoadRecovery';
 import {reloadAppHard} from '~/utils/factoryReset';
 import {navigateToWebUpdatePage} from '~/utils/WebUpdateNavigate';
+import {isAndroidFastMode} from '~/utils/AndroidWebViewUtils';
 import Config from './Config';
 
 preloadClientInfo();
+
+const androidFastModeAtBoot = isAndroidFastMode();
 
 const RESIZE_OBSERVER_LOOP_ERROR_PATTERN = /ResizeObserver loop (limit exceeded|completed with undelivered notifications)/i;
 
@@ -148,7 +155,7 @@ function buildRuntimeSentryDsn(): string | null {
 }
 
 const resolvedSentryDsn = Config.PUBLIC_SENTRY_DSN ?? buildRuntimeSentryDsn();
-const shouldInitializeSentry = Boolean(resolvedSentryDsn) && !isLocalDevelopmentHost();
+const shouldInitializeSentry = Boolean(resolvedSentryDsn) && !isLocalDevelopmentHost() && !androidFastModeAtBoot;
 
 if (shouldInitializeSentry) {
 	Sentry.init({
@@ -174,9 +181,11 @@ if (shouldInitializeSentry) {
 
 // Auto-recovery budget for transient render crashes. If the root error boundary
 // trips, we silently re-mount the app a couple of times before falling back to
-// the full crash screen. This absorbs one-off render glitches (stale chunk,
-// transient store state) without dumping the user onto the crash UI, while the
-// rolling window guarantees a genuinely broken build can't loop forever.
+// the full crash screen. This absorbs one-off render glitches (transient store
+// state, a racy effect) without dumping the user onto the crash UI, while the
+// rolling window guarantees a genuinely broken build can't loop forever. A
+// failed chunk download is handled separately below — re-mounting can never fix
+// one, so it does not belong in this budget.
 const AUTO_RECOVER_KEY = '__astral_auto_recover';
 const AUTO_RECOVER_MAX = 2;
 const AUTO_RECOVER_WINDOW_MS = 20000;
@@ -217,7 +226,26 @@ function RecoverableErrorFallback({
 	const attempted = useRef(false);
 
 	useEffect(() => {
-		if (showCrash || attempted.current) return;
+		if (attempted.current) return;
+
+		/*
+		 * A failed dynamic import is not the transient render glitch this budget
+		 * exists for: React.lazy memoises the rejected payload, so resetError()
+		 * re-renders straight into the same rejection and burns the retries without
+		 * ever re-issuing the request. Reload once instead — a chunk that 404s
+		 * means this tab is running an index.html from before a redeploy, and only
+		 * a fresh document knows the current chunk names.
+		 */
+		if (isChunkLoadError(error)) {
+			attempted.current = true;
+			if (recoverFromChunkLoadError()) return;
+			// A reload was already spent on this and the chunk is still missing;
+			// retrying cannot help, so hand the user the crash screen's actions.
+			setShowCrash(true);
+			return;
+		}
+
+		if (showCrash) return;
 		attempted.current = true;
 		recordAutoRecover();
 		const timer = window.setTimeout(() => {
@@ -228,7 +256,7 @@ function RecoverableErrorFallback({
 			}
 		}, 60);
 		return () => window.clearTimeout(timer);
-	}, [showCrash, resetError]);
+	}, [error, showCrash, resetError]);
 
 	if (!showCrash) {
 		return null;
@@ -241,11 +269,128 @@ function RecoverableErrorFallback({
 	);
 }
 
-async function bootstrap(): Promise<void> {
-	await initI18n();
+// True while a gateway session opened by bootstrap() is still owned by
+// bootstrap() — i.e. React has not mounted the app yet. Ownership is handed over
+// right before <App /> renders; until then any blocking screen we render instead
+// has to close the socket back down.
+let earlyGatewaySessionOwnedByBootstrap = false;
 
-	const clientInfo = await getClientInfo();
-	if (await isDesktopUpdateRequiredAsync(clientInfo)) {
+/**
+ * Opens the gateway socket during bootstrap so its handshake overlaps the rest
+ * of the boot work, instead of waiting for React to mount and flush an effect.
+ * READY carries guilds, channels, users and read states — everything the app
+ * paints — so it is the critical path, not a follow-up.
+ *
+ * Must only be called once the desktop/Android/web forced-update gates have all
+ * been cleared: a client that is going to be blocked has to stay off the gateway
+ * entirely, not connect and then be disconnected again.
+ */
+function startGatewaySessionIfPossible(): void {
+	// Unauthenticated visitors stay socket-less, exactly as before.
+	if (!SessionManager.isAuthenticated) {
+		return;
+	}
+
+	const token = SessionManager.token;
+	if (!token) {
+		return;
+	}
+
+	// The auth forms and the standalone invite/gift/theme/OAuth/report surfaces
+	// deliberately run without a socket even for a signed-in visitor (see the
+	// isAuthRoute bail-out in RootComponent), so pre-connecting there would be a
+	// behaviour change rather than a speed-up.
+	if (isGatewayBypassPath(window.location.pathname)) {
+		return;
+	}
+
+	// Needs the persisted endpoints. A first-ever visit has no snapshot yet (and
+	// gatewayEndpoint defaults to ''), so it falls back to the post-mount connect
+	// in RootComponent once /instance has answered.
+	if (!RuntimeConfigStore.hasUsableSnapshot) {
+		return;
+	}
+
+	earlyGatewaySessionOwnedByBootstrap = true;
+
+	// Deliberately not awaited — the handshake is meant to overlap the remaining
+	// boot legs. startSession flips isConnecting synchronously, so RootComponent's
+	// ensureSessionStarted effect degrades to an idempotent no-op fallback.
+	void ConnectionStore.startSession(token).catch((error) => {
+		console.error('Failed to start gateway session during bootstrap:', error);
+	});
+}
+
+function teardownEarlyGatewaySession(): void {
+	// A blocking screen must never sit in front of a live socket. The
+	// forced-update branches return before the session is ever started, so what is
+	// left to clean up here is the late failures: the runtime-config/GeoIP
+	// NetworkErrorScreen and the BootstrapErrorScreen.
+	if (!earlyGatewaySessionOwnedByBootstrap) {
+		return;
+	}
+
+	earlyGatewaySessionOwnedByBootstrap = false;
+	ConnectionStore.logout();
+}
+
+async function bootstrap(): Promise<void> {
+	// Fan out the mutually independent boot legs. /version.json above all must not
+	// sit behind the locale chunk: ReleaseClient asks for `cache: 'no-store'` and
+	// the edge answers `Cache-Control: no-cache`, so it costs a full round trip on
+	// every single web load, purely to decide whether to show ForcedUpdateScreen.
+	const i18nPromise = initI18n();
+	const clientInfoPromise = getClientInfo();
+	const desktopGatePromise = clientInfoPromise.then((info) => isDesktopUpdateRequiredAsync(info));
+	const androidGatePromise = getAndroidUpdateGateInfo();
+	const webGatePromise = getWebUpdateGateInfo();
+	// Local-only work (IndexedDB accounts + localStorage) that swallows its own
+	// errors, so overlapping it with the network legs above is free.
+	const accountPromise = AccountManager.bootstrap();
+	const runtimePromise = RuntimeConfigStore.waitForInit();
+
+	// Every promise above is awaited further down, but a rejection can land before
+	// we get there; park a no-op handler now so it cannot trip the global
+	// unhandledrejection listener. The later await still surfaces the error.
+	const pendingBootLegs: Array<Promise<unknown>> = [
+		clientInfoPromise,
+		desktopGatePromise,
+		androidGatePromise,
+		webGatePromise,
+		accountPromise,
+		runtimePromise,
+	];
+	for (const pending of pendingBootLegs) {
+		pending.catch(() => {});
+	}
+
+	// Both of these are storage reads, so awaiting them adds no latency while the
+	// network legs above stay in flight — and together they are everything the
+	// gateway handshake needs.
+	await accountPromise;
+	await RuntimeConfigStore.waitForHydration();
+
+	// READY handlers issue REST calls, so the auth-token provider has to be
+	// installed before the socket can get that far.
+	setupHttpClient();
+
+	// Hand the i18n singleton to every store that formats user-facing strings
+	// *before* the socket can dispatch anything: NotificationStore throws outright
+	// when it is unset. These are plain reference assignments — initI18n()
+	// activates the catalog separately and every lookup happens lazily at call
+	// time, so hoisting them above `await i18nPromise` changes nothing else.
+	QuickSwitcherStore.setI18n(i18n);
+	ChannelDisplayNameStore.setI18n(i18n);
+	KeybindStore.setI18n(i18n);
+	NewDeviceMonitoringStore.setI18n(i18n);
+	NotificationStore.setI18n(i18n);
+	MediaEngineFacade.setI18n(i18n);
+	CaptchaInterceptor.setI18n(i18n);
+
+	await i18nPromise;
+
+	const clientInfo = await clientInfoPromise;
+	if (await desktopGatePromise) {
 		const [requiredVersion, manifest] = await Promise.all([
 			resolveMinimumSupportedDesktopVersion(),
 			fetchReleaseManifest(),
@@ -264,7 +409,7 @@ async function bootstrap(): Promise<void> {
 		return;
 	}
 
-	const androidGate = await getAndroidUpdateGateInfo();
+	const androidGate = await androidGatePromise;
 	if (androidGate.required) {
 		const root = ReactDOM.createRoot(document.getElementById('root')!);
 		root.render(
@@ -280,7 +425,7 @@ async function bootstrap(): Promise<void> {
 		return;
 	}
 
-	const webGate = await getWebUpdateGateInfo();
+	const webGate = await webGatePromise;
 	if (webGate.required && webGate.liveSha) {
 		const root = ReactDOM.createRoot(document.getElementById('root')!);
 		root.render(
@@ -300,19 +445,31 @@ async function bootstrap(): Promise<void> {
 		return;
 	}
 
+	// Only now, with all three forced-update gates cleared, may this client join
+	// the gateway. A client that is about to be parked on ForcedUpdateScreen must
+	// never complete IDENTIFY: it would show up online to its friends and blink
+	// straight back offline, and READY/MESSAGE_CREATE would fire desktop
+	// notifications from behind the blocking screen. The gates were all kicked off
+	// in parallel at the top of bootstrap(), so they have normally resolved long
+	// before this line and awaiting them costs close to nothing — the handshake
+	// still overlaps the GeoIP fetch and the first React render below.
+	startGatewaySessionIfPossible();
+
 	PushSubscriptionService.initializeNativePushBridge();
 
-	QuickSwitcherStore.setI18n(i18n);
-	ChannelDisplayNameStore.setI18n(i18n);
-	KeybindStore.setI18n(i18n);
-	NewDeviceMonitoringStore.setI18n(i18n);
-	NotificationStore.setI18n(i18n);
-	MediaEngineFacade.setI18n(i18n);
-	CaptchaInterceptor.setI18n(i18n);
-
 	try {
-		await Promise.all([RuntimeConfigStore.waitForInit(), GeoIPStore.fetchGeoData()]);
+		// GeoIP has to stay chained *after* init rather than racing it: GeoIPStore
+		// reads RuntimeConfigStore.apiPublicEndpoint, which is what init fills in.
+		await runtimePromise;
+		if (androidFastModeAtBoot) {
+			void GeoIPStore.fetchGeoData().catch((error) => {
+				console.error('Failed to fetch GeoIP data:', error);
+			});
+		} else {
+			await GeoIPStore.fetchGeoData();
+		}
 	} catch (error) {
+		teardownEarlyGatewaySession();
 		console.error('Failed to initialize runtime config or fetch GeoIP data:', error);
 		const root = ReactDOM.createRoot(document.getElementById('root')!);
 		root.render(
@@ -323,9 +480,9 @@ async function bootstrap(): Promise<void> {
 		return;
 	}
 
-	await AccountManager.bootstrap();
-
-	setupHttpClient();
+	// The app owns the socket from here on: RootComponent's ensureSessionStarted
+	// effect keeps it alive and tears it down on the routes that must not hold one.
+	earlyGatewaySessionOwnedByBootstrap = false;
 
 	const root = ReactDOM.createRoot(document.getElementById('root')!);
 	root.render(
@@ -342,6 +499,7 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().catch(async (error) => {
+	teardownEarlyGatewaySession();
 	console.error('Failed to bootstrap app:', error);
 
 	try {

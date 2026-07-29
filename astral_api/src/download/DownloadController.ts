@@ -214,6 +214,30 @@ const readJsonObjectFromStorage = async <T>(ctx: Context, key: string): Promise<
 };
 
 export function DownloadController(routes: Hono<HonoEnv>): void {
+	// Squirrel Windows: autoUpdater fetches GET /dl/desktop/{channel}/win32/{arch}
+	// and expects a plain-text RELEASES file (Squirrel format)
+	routes.get(`${DESKTOP_REDIRECT_PREFIX}/:channel/win32/:arch`, async (ctx) => {
+		const channelRaw = ctx.req.param('channel') ?? '';
+		const archRaw = ctx.req.param('arch') ?? '';
+		if (!isDesktopChannel(channelRaw) || !isDesktopArch(archRaw)) {
+			return ctx.text('Not Found', 404);
+		}
+		const key = `desktop/${channelRaw}/win32/${archRaw}/RELEASES`;
+		try {
+			const storageService = ctx.get('storageService');
+			const result = await storageService.streamObject({bucket: Config.s3.buckets.downloads, key});
+			if (!result) return ctx.text('Not Found', 404);
+			const headers = buildDownloadHeaders(result);
+			headers.set('Content-Type', 'text/plain');
+			return new Response(Readable.toWeb(result.body) as BodyInit, {headers});
+		} catch (error) {
+			if (error instanceof S3ServiceException && (error.name === 'NoSuchKey' || error.name === 'NotFound')) {
+				return ctx.text('Not Found', 404);
+			}
+			throw error;
+		}
+	});
+
 	routes.get(`${DESKTOP_REDIRECT_PREFIX}/:channel/:plat/:arch/latest/:format`, async (ctx) => {
 		const channelRaw = ctx.req.param('channel') ?? '';
 		const platRaw = ctx.req.param('plat') ?? '';

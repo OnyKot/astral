@@ -46,9 +46,9 @@ dev
 **/.rebar
 **/.rebar3
 
-/astral_app/src/data/emojis.json
-/astral_app/src/locales/*/messages.js
-!astral_app/dist
-!astral_app/dist/**
+/src/data/emojis.json
+/src/locales/*/messages.js
+!dist
+!dist/**
 !astral_devops/cassandra/migrations
 !scripts/cassandra-migrate/Cargo.lock

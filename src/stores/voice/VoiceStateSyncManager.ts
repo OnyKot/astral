@@ -114,7 +114,7 @@ export class VoiceStateSyncManager {
 		}
 
 		logger.debug('[flush] Sending voice state update to server', this.pending);
-		syncVoiceStateToServer(this.pending.guild_id, this.pending.channel_id, this.pending.connection_id, {
+		const sent = syncVoiceStateToServer(this.pending.guild_id, this.pending.channel_id, this.pending.connection_id, {
 			self_mute: this.pending.self_mute,
 			self_deaf: this.pending.self_deaf,
 			self_video: this.pending.self_video,
@@ -122,6 +122,12 @@ export class VoiceStateSyncManager {
 			viewer_stream_key: this.pending.viewer_stream_key,
 			suppress: this.pending.suppress,
 		});
+
+		if (!sent) {
+			// Socket missing: keep pending and do not mark inFlight — otherwise
+			// mute/deafen toggles stay stuck until a confirm that never arrives.
+			return;
+		}
 
 		this.lastSent = this.pending;
 		this.inFlight = this.pending;

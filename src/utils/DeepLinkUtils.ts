@@ -362,3 +362,4 @@ export function parseMessageJumpLink(url: string): MessageJumpLink | null {
 		messageId,
 	};
 }
+

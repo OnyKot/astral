@@ -29,6 +29,23 @@ import ExpressionPickerStore from '~/stores/ExpressionPickerStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import PopoutStore from '~/stores/PopoutStore';
 
+const KEYBOARD_REPLACEMENT_INSET_THRESHOLD_PX = 120;
+
+const captureMobileExpressionPickerHeight = () => {
+	const root = document.documentElement;
+	const viewport = window.visualViewport;
+	const visibleBottom = viewport ? viewport.height + viewport.offsetTop : window.innerHeight;
+	const viewportInset = Math.max(0, Math.round(window.innerHeight - visibleBottom));
+	const cssInset = Number.parseFloat(
+		window.getComputedStyle(root).getPropertyValue('--mobile-keyboard-inset'),
+	);
+	const keyboardInset = Math.max(viewportInset, Number.isFinite(cssInset) ? cssInset : 0);
+
+	if (keyboardInset >= KEYBOARD_REPLACEMENT_INSET_THRESHOLD_PX) {
+		root.style.setProperty('--mobile-expression-picker-height', `${keyboardInset}px`);
+	}
+};
+
 interface UseTextareaExpressionPickerOptions {
 	channelId: string;
 	onEmojiSelect: (emoji: Emoji, shiftKey?: boolean) => void;
@@ -139,6 +156,7 @@ export const useTextareaExpressionPicker = ({
 				}
 
 				requestTypingFocusAfterPickerClose?.();
+				captureMobileExpressionPickerHeight();
 				const textarea = textareaRef.current as HTMLTextAreaElement | null;
 				textarea?.blur();
 				ExpressionPickerActionCreators.open(channelId, tab);

@@ -48,6 +48,7 @@ import type {Emoji} from '~/stores/EmojiStore';
 import EmojiStore from '~/stores/EmojiStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import SavedMessagesStore from '~/stores/SavedMessagesStore';
+import {canAddNewReactionTypeToMessage, canAddReactionEmojiToMessage} from '~/utils/ReactionUtils';
 
 interface MessageActionMenuOptions {
 	onOpenEmojiPicker?: () => void;
@@ -62,6 +63,7 @@ export interface MessageActionMenuData {
 	groups: Array<MenuGroupType>;
 	quickReactionEmojis: Array<Emoji>;
 	quickReactionRowVisible: boolean;
+	canOpenReactionPicker: boolean;
 	isFailed: boolean;
 	isSaved: boolean;
 }
@@ -88,9 +90,13 @@ export const useMessageActionMenuData = (
 	const isMobile = MobileLayoutStore.isMobileLayout();
 	const allEmojis = React.useMemo(() => EmojiStore.search(channel, ''), [channel]);
 	const quickReactionEmojis = React.useMemo(
-		() => EmojiPickerStore.getQuickReactionEmojis(allEmojis, quickReactionCount),
-		[allEmojis, quickReactionCount],
+		() =>
+			EmojiPickerStore.getQuickReactionEmojis(allEmojis, quickReactionCount).filter((emoji) =>
+				canAddReactionEmojiToMessage(message, emoji),
+			),
+		[allEmojis, message, quickReactionCount],
 	);
+	const canOpenReactionPicker = permissions.canAddReactions && canAddNewReactionTypeToMessage(message);
 
 	const groups = React.useMemo(() => {
 		const interactionActions: Array<MenuItemType> = [];
@@ -98,7 +104,7 @@ export const useMessageActionMenuData = (
 		const utilityActions: Array<MenuItemType> = [];
 
 		if (message.state === MessageStates.SENT) {
-			if (permissions.canAddReactions && onOpenEmojiPicker) {
+			if (canOpenReactionPicker && onOpenEmojiPicker) {
 				interactionActions.push({
 					id: 'add-reaction',
 					icon: <AddReactionIcon size={20} />,
@@ -229,7 +235,7 @@ export const useMessageActionMenuData = (
 		if (utilityActions.length > 0) groups.push({items: utilityActions});
 
 		return groups;
-	}, [message, handlers, isMobile, isSaved, onClose, onDelete, onOpenEmojiPicker, permissions]);
+	}, [message, handlers, isMobile, isSaved, onClose, onDelete, onOpenEmojiPicker, permissions, canOpenReactionPicker]);
 
 	const quickReactionRowVisible =
 		permissions.canAddReactions && message.state === MessageStates.SENT && quickReactionEmojis.length > 0;
@@ -240,6 +246,7 @@ export const useMessageActionMenuData = (
 		groups,
 		quickReactionEmojis,
 		quickReactionRowVisible,
+		canOpenReactionPicker,
 		isFailed: message.state === MessageStates.FAILED,
 		isSaved,
 	};

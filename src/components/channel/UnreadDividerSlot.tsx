@@ -18,9 +18,7 @@
  */
 
 import {Trans} from '@lingui/react/macro';
-import {AnimatePresence, motion} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
-import {entrance} from '~/lib/motion/effects';
 import dividerStyles from './Divider.module.css';
 import styles from './Messages.module.css';
 
@@ -58,17 +56,11 @@ export const UnreadDividerSlot = observer(function UnreadDividerSlot(props: Unre
 		>
 			<div className={dividerStyles.unreadContainer}>
 				<div className={dividerStyles.unreadLine} />
-				<AnimatePresence>
-					{props.visible && (
-						<motion.span
-							key="unread-badge"
-							className={dividerStyles.unreadBadge}
-							{...entrance('springPop')}
-						>
-							<Trans>New</Trans>
-						</motion.span>
-					)}
-				</AnimatePresence>
+				{props.visible && (
+					<span className={dividerStyles.unreadBadge}>
+						<Trans>New</Trans>
+					</span>
+				)}
 			</div>
 		</div>
 	);

@@ -19,7 +19,16 @@
 
 import type {ChannelID, MessageID, UserID} from '~/BrandedTypes';
 import {channelIdToMessageId} from '~/BrandedTypes';
-import {BatchBuilder, Db, defineTable, deleteOneOrMany, fetchMany, fetchOne, upsertOne} from '~/database/Cassandra';
+import {
+	BatchBuilder,
+	Db,
+	defineTable,
+	deleteOneOrMany,
+	fetchMany,
+	fetchManyInChunks,
+	fetchOne,
+	upsertOne,
+} from '~/database/Cassandra';
 import {READ_STATE_COLUMNS, type ReadStateRow} from '~/database/CassandraTypes';
 import type {ReadState} from '~/Models';
 import {ReadState as ReadStateModel} from '~/Models';
@@ -38,6 +47,10 @@ const FETCH_READ_STATES_CQL = ReadStates.selectCql({
 const FETCH_READ_STATE_BY_USER_AND_CHANNEL_CQL = ReadStates.selectCql({
 	where: [ReadStates.where.eq('user_id'), ReadStates.where.eq('channel_id')],
 	limit: 1,
+});
+
+const FETCH_READ_STATES_BY_USER_AND_CHANNELS_CQL = ReadStates.selectCql({
+	where: [ReadStates.where.eq('user_id'), ReadStates.where.in('channel_id', 'channel_ids')],
 });
 
 export class ReadStateRepository implements IReadStateRepository {
@@ -89,34 +102,57 @@ export class ReadStateRepository implements IReadStateRepository {
 			return;
 		}
 
-		const existingStates = await Promise.all(
-			updates.map(({userId, channelId}) =>
-				fetchOne<ReadStateRow>(FETCH_READ_STATE_BY_USER_AND_CHANNEL_CQL, {
-					user_id: userId,
-					channel_id: channelId,
-				}).then((state) => ({userId, channelId, state})),
-			),
+		// Group by user so we can fetch existing rows with IN(channel_id) instead of N point reads.
+		const channelIdsByUser = new Map<UserID, Array<ChannelID>>();
+		for (const {userId, channelId} of updates) {
+			const list = channelIdsByUser.get(userId);
+			if (list) {
+				list.push(channelId);
+			} else {
+				channelIdsByUser.set(userId, [channelId]);
+			}
+		}
+
+		const existingByKey = new Map<string, ReadStateRow>();
+		await Promise.all(
+			Array.from(channelIdsByUser.entries()).map(async ([userId, channelIds]) => {
+				const uniqueChannelIds = Array.from(new Set(channelIds));
+				const rows = await fetchManyInChunks<ReadStateRow>(
+					FETCH_READ_STATES_BY_USER_AND_CHANNELS_CQL,
+					uniqueChannelIds,
+					(chunk) => ({
+						user_id: userId,
+						channel_ids: chunk,
+					}),
+				);
+				for (const row of rows) {
+					existingByKey.set(`${row.user_id}:${row.channel_id}`, row);
+				}
+			}),
 		);
 
 		const batch = new BatchBuilder();
-		for (const {userId, channelId, state} of existingStates) {
+		for (const {userId, channelId} of updates) {
+			const state = existingByKey.get(`${userId}:${channelId}`);
 			if (state) {
+				const nextCount = (state.mention_count || 0) + 1;
+				state.mention_count = nextCount;
 				batch.addPrepared(
 					ReadStates.patchByPk(
 						{user_id: userId, channel_id: channelId},
-						{mention_count: Db.set((state.mention_count || 0) + 1)},
+						{mention_count: Db.set(nextCount)},
 					),
 				);
 			} else {
-				batch.addPrepared(
-					ReadStates.upsertAll({
-						user_id: userId,
-						channel_id: channelId,
-						message_id: channelIdToMessageId(channelId),
-						mention_count: 1,
-						last_pin_timestamp: null,
-					}),
-				);
+				const created: ReadStateRow = {
+					user_id: userId,
+					channel_id: channelId,
+					message_id: channelIdToMessageId(channelId),
+					mention_count: 1,
+					last_pin_timestamp: null,
+				};
+				existingByKey.set(`${userId}:${channelId}`, created);
+				batch.addPrepared(ReadStates.upsertAll(created));
 			}
 		}
 		await batch.execute();

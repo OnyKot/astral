@@ -34,6 +34,7 @@ export const UserFlags = {
 	CTP_MEMBER: 1n << 1n,
 	PARTNER: 1n << 2n,
 	BUG_HUNTER: 1n << 3n,
+	CERTIFIED_DEVELOPER: 1n << 4n,
 	HIGH_GLOBAL_RATE_LIMIT: 1n << 33n,
 	DELETED: 1n << 34n,
 	DISABLED_SUSPICIOUS_ACTIVITY: 1n << 35n,
@@ -58,7 +59,12 @@ export const UserFlags = {
 	HAS_DM_HISTORY_BACKFILLED: 1n << 54n,
 } as const;
 
-export const PUBLIC_USER_FLAGS = UserFlags.STAFF | UserFlags.CTP_MEMBER | UserFlags.PARTNER | UserFlags.BUG_HUNTER;
+export const PUBLIC_USER_FLAGS =
+	UserFlags.STAFF |
+	UserFlags.CTP_MEMBER |
+	UserFlags.PARTNER |
+	UserFlags.BUG_HUNTER |
+	UserFlags.CERTIFIED_DEVELOPER;
 
 export const SuspiciousActivityFlags = {
 	REQUIRE_VERIFIED_EMAIL: 1 << 0,

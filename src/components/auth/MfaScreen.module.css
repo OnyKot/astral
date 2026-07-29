@@ -23,19 +23,24 @@
 }
 
 .title {
-	margin-bottom: 0.5rem;
+	margin-bottom: 0.65rem;
 	text-align: center;
-	font-size: 1.25rem;
-	font-weight: 600;
-	letter-spacing: 0.025em;
-	color: var(--text-primary);
+	font-family: var(--auth-font-display, var(--font-sans));
+	font-size: clamp(1.42rem, 3vw, 1.72rem);
+	line-height: 1.08;
+	font-weight: 720;
+	letter-spacing: 0;
+	color: rgb(245 246 252 / 0.94);
+	text-wrap: balance;
 }
 
 .description {
-	margin-bottom: 2rem;
+	margin: 0 auto 1.45rem;
+	max-width: 25rem;
 	text-align: center;
-	font-size: 0.875rem;
-	color: var(--text-tertiary);
+	font-size: 0.9rem;
+	line-height: 1.55;
+	color: rgb(190 194 211 / 0.82);
 }
 
 .buttons {
@@ -47,15 +52,33 @@
 .form {
 	display: flex;
 	flex-direction: column;
-	gap: 1.5rem;
+	gap: 1rem;
 }
 
 .smsSection {
-	margin-bottom: 1.5rem;
+	margin-bottom: 1rem;
 }
 
 .webauthnSection {
 	margin-bottom: 1rem;
+}
+
+.softButton {
+	height: 44px !important;
+	min-height: 44px !important;
+	background: rgb(255 255 255 / 0.045) !important;
+	border-color: rgb(255 255 255 / 0.1) !important;
+	box-shadow: none !important;
+	color: rgb(232 233 242 / 0.94) !important;
+	font-size: 0.88rem !important;
+	font-weight: 620 !important;
+}
+
+.softButton:hover,
+.softButton:focus-visible {
+	background: rgb(255 255 255 / 0.07) !important;
+	border-color: rgb(255 255 255 / 0.15) !important;
+	box-shadow: none !important;
 }
 
 .footer {
@@ -64,7 +87,7 @@
 }
 
 .footerButtons {
-	margin-top: 1.5rem;
+	margin-top: 1rem;
 	display: flex;
 	flex-direction: column;
 	gap: 0.5rem;

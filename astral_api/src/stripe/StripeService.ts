@@ -160,6 +160,10 @@ export class StripeService {
 		return this.giftService.sendGiftCode(senderUserId, recipientUserId, code);
 	}
 
+	async updateGiftMetadata(userId: UserID, code: string, emoji: string | null, background: string | null): Promise<void> {
+		return this.giftService.updateGiftMetadata(userId, code, emoji, background);
+	}
+
 	getGiftCatalog(countryCode?: string): Array<{
 		id: 'gift_1_month' | 'gift_1_year' | 'gift_visionary';
 		priceId: string | null;

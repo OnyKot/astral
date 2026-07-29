@@ -28,13 +28,13 @@ import {
 	type UserID,
 } from '~/BrandedTypes';
 import {Config} from '~/Config';
-import {APIErrorCodes, UserFlags} from '~/Constants';
-import {AstralAPIError, InputValidationError} from '~/Errors';
+import {UserFlags} from '~/Constants';
+import {InputValidationError, RateLimitError} from '~/Errors';
 import type {IDiscriminatorService} from '~/infrastructure/DiscriminatorService';
 import type {ICacheService} from '~/infrastructure/ICacheService';
 import {resolveEmailLinkContextFromRequest} from '~/infrastructure/EmailLinkContextResolver';
 import type {IEmailService} from '~/infrastructure/IEmailService';
-import type {IRateLimitService} from '~/infrastructure/IRateLimitService';
+import type {IRateLimitService, RateLimitResult} from '~/infrastructure/IRateLimitService';
 import {getMetricsService} from '~/infrastructure/MetricsService';
 import type {PendingJoinInviteStore} from '~/infrastructure/PendingJoinInviteStore';
 import type {RedisActivityTracker} from '~/infrastructure/RedisActivityTracker';
@@ -130,8 +130,14 @@ function isIpv6(ip: string): boolean {
 	return ip.includes(':');
 }
 
-function rateLimitError(message: string): AstralAPIError {
-	return new AstralAPIError({code: APIErrorCodes.RATE_LIMITED, message, status: 429});
+function rateLimitError(message: string, result: RateLimitResult): RateLimitError {
+	return new RateLimitError({
+		message,
+		retryAfter: result.retryAfter ?? Math.ceil((result.resetTime.getTime() - Date.now()) / 1000),
+		retryAfterDecimal: result.retryAfterDecimal,
+		limit: result.limit,
+		resetTime: result.resetTime,
+	});
 }
 
 function parseDobLocalDate(dateOfBirth: string): types.LocalDate {
@@ -300,6 +306,8 @@ export class AuthRegistrationService {
 			banner_color: null,
 			bio: null,
 			pronouns: null,
+			profile_accent_effect: null,
+			channel_list_name_effect: null,
 			accent_color: null,
 			date_of_birth: parseDobLocalDate(data.date_of_birth),
 			locale: userLocale,
@@ -498,7 +506,7 @@ export class AuthRegistrationService {
 				windowMs: 15 * 60 * 1000,
 			});
 
-			if (!emailRateLimit.allowed) throw rateLimitError('Too many registration attempts. Please try again later.');
+			if (!emailRateLimit.allowed) throw rateLimitError('Too many registration attempts. Please try again later.', emailRateLimit);
 		}
 
 		const ipRateLimit = await this.rateLimitService.checkLimit({
@@ -508,7 +516,7 @@ export class AuthRegistrationService {
 		});
 
 		if (!ipRateLimit.allowed)
-			throw rateLimitError('Too many registration attempts from this IP. Please try again later.');
+			throw rateLimitError('Too many registration attempts from this IP. Please try again later.', ipRateLimit);
 	}
 
 	private async resolveBetaCode(betaCodeInput: string | null): Promise<{

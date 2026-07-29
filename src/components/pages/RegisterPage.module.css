@@ -1,22 +1,18 @@
 .nativeRegisterContainer {
 	position: relative;
 	margin-top: 0.25rem;
-	width: min(100%, 32rem);
+	width: min(100%, 30.5rem);
 	margin-inline: auto;
-	padding: 1.25rem 1.2rem 1.35rem;
-	border-radius: 2rem;
-	border: 1px solid rgb(255 255 255 / 0.08);
-	background:
-		radial-gradient(circle at 84% 6%, rgb(255 255 255 / 0.045) 0%, transparent 36%),
-		rgb(20 20 25 / 0.85);
-	box-shadow:
-		0 20px 40px -12px rgb(0 0 0 / 0.62),
-		0 0 0 0.5px rgb(255 255 255 / 0.08);
-	backdrop-filter: blur(20px);
-	-webkit-backdrop-filter: blur(20px);
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
 
 	--auth-font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-	--auth-font-display: 'Unbounded', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--auth-font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--brand-primary: #2c2c34;
 	--brand-secondary: #3a3a44;
 	--brand-primary-fill: #fff;
@@ -25,7 +21,7 @@
 	--button-secondary-text: #e2e2ec;
 	--button-secondary-active-text: #fff;
 	--form-surface-background: rgb(10 10 12 / 0.6);
-	--auth-control-radius: 1rem;
+	--auth-control-radius: 0.75rem;
 	--auth-control-min-height: 48px;
 	--auth-control-padding-left: 16px;
 	--background-modifier-hover: rgb(255 255 255 / 0.075);
@@ -96,10 +92,11 @@
 
 .verificationModalTitle {
 	margin: 0;
-	font-family: var(--auth-font-display, 'Unbounded', var(--font-sans));
-	font-size: 1.16rem;
-	font-weight: 520;
-	letter-spacing: -0.014em;
+	font-family: var(--auth-font-display, var(--font-sans));
+	font-size: 1.18rem;
+	font-weight: 700;
+	letter-spacing: 0;
+	line-height: 1.18;
 	color: #f2f2fa;
 }
 
@@ -125,8 +122,7 @@
 
 @media (max-width: 520px) {
 	.nativeRegisterContainer {
-		padding: 1rem 0.9rem 1.15rem;
-		border-radius: 1.5rem;
+		width: 100%;
 	}
 
 	.verificationModal {

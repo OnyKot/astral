@@ -19,7 +19,7 @@
 
 import {Trans, useLingui} from '@lingui/react/macro';
 import {observer} from 'mobx-react-lite';
-import {useCallback, useMemo} from 'react';
+import {useCallback, useEffect, useMemo} from 'react';
 
 import * as AuthenticationActionCreators from '~/actions/AuthenticationActionCreators';
 import sharedStyles from '~/components/auth/AuthPageStyles.module.css';
@@ -58,10 +58,28 @@ const LoginPage = observer(function LoginPage() {
 
 	const redirectPath = isDesktopHandoff ? undefined : rawRedirect || '/';
 
+	useEffect(() => {
+		const navigatorWithConnection = navigator as Navigator & {connection?: {saveData?: boolean}};
+		if (navigatorWithConnection.connection?.saveData) return;
+
+		const preloadRegister = () => {
+			void import('~/components/pages/RegisterPage');
+		};
+		const schedule = window.requestIdleCallback;
+
+		if (schedule) {
+			const id = schedule(preloadRegister, {timeout: 1800});
+			return () => window.cancelIdleCallback?.(id);
+		}
+
+		const id = window.setTimeout(preloadRegister, 500);
+		return () => window.clearTimeout(id);
+	}, []);
+
 	return (
 		<>
-			<h1 className={sharedStyles.title}>
-				<Trans>Welcome back</Trans>
+			<h1 className={`${sharedStyles.title} ${sharedStyles.loginTitle}`}>
+				<Trans>Log in</Trans>
 			</h1>
 
 			<div className={`${sharedStyles.container} ${registerStyles.nativeRegisterContainer}`} data-auth-cosmic>

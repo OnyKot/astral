@@ -31,11 +31,13 @@ FROM node:24-bookworm-slim AS build
 WORKDIR /usr/src/app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+	ca-certificates \
 	curl \
 	ffmpeg \
 	libvips \
 	libgomp1 \
 	libatomic1 && \
+	update-ca-certificates && \
 	rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable && corepack prepare pnpm@10.26.0 --activate

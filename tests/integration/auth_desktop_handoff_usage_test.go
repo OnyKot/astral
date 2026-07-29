@@ -62,7 +62,9 @@ func TestAuthDesktopHandoffCompleteSingleUse(t *testing.T) {
 	}
 	resp.Body.Close()
 
-	resp, err = client.get(fmt.Sprintf("/auth/handoff/%s/status", initResp.Code))
+	resp, err = client.getWithHeaders(fmt.Sprintf("/auth/handoff/%s/status", initResp.Code), map[string]string{
+		"X-Astral-Handoff-Control": initResp.ControlToken,
+	})
 	if err != nil {
 		t.Fatalf("failed to poll desktop handoff status: %v", err)
 	}

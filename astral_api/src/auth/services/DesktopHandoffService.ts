@@ -39,6 +39,8 @@ interface HandoffData {
 interface HandoffTokenData {
 	token: string;
 	userId: string;
+	/** Copied from the initiator so completed status cannot be claimed without it. */
+	controlToken: string;
 }
 
 function generateHandoffCode(): string {
@@ -119,11 +121,6 @@ export class DesktopHandoffService {
 			});
 		}
 
-		const tokenData: HandoffTokenData = {
-			token,
-			userId,
-		};
-
 		const remainingSeconds = Math.max(
 			0,
 			HANDOFF_CODE_EXPIRY_SECONDS - Math.floor((Date.now() - handoffData.createdAt) / 1000),
@@ -136,6 +133,12 @@ export class DesktopHandoffService {
 			});
 		}
 
+		const tokenData: HandoffTokenData = {
+			token,
+			userId,
+			controlToken: handoffData.controlToken,
+		};
+
 		await this.cacheService.set(`${HANDOFF_TOKEN_PREFIX}${normalizedCode}`, tokenData, remainingSeconds);
 
 		await this.cacheService.delete(`${HANDOFF_CODE_PREFIX}${normalizedCode}`);
@@ -147,11 +150,18 @@ export class DesktopHandoffService {
 	): Promise<{status: 'pending' | 'completed' | 'expired'; token?: string; userId?: string}> {
 		const normalizedCode = normalizeHandoffCode(code);
 		assertValidHandoffCode(normalizedCode);
-		const tokenData = await this.cacheService.getAndDelete<HandoffTokenData>(
-			`${HANDOFF_TOKEN_PREFIX}${normalizedCode}`,
-		);
+
+		const tokenKey = `${HANDOFF_TOKEN_PREFIX}${normalizedCode}`;
+		const tokenData = await this.cacheService.get<HandoffTokenData>(tokenKey);
 
 		if (tokenData) {
+			// Session token is only released to the initiator that holds control_token.
+			// A shoulder-surfed short code must not be enough to steal the session.
+			if (!controlTokenMatches(tokenData.controlToken, controlToken)) {
+				return {status: 'expired'};
+			}
+
+			await this.cacheService.delete(tokenKey);
 			return {
 				status: 'completed',
 				token: tokenData.token,
@@ -175,7 +185,9 @@ export class DesktopHandoffService {
 		}
 
 		const handoffData = await this.cacheService.get<HandoffData>(`${HANDOFF_CODE_PREFIX}${normalizedCode}`);
-		if (!handoffData || !controlTokenMatches(handoffData.controlToken, controlToken)) {
+		const tokenData = await this.cacheService.get<HandoffTokenData>(`${HANDOFF_TOKEN_PREFIX}${normalizedCode}`);
+		const expectedControl = handoffData?.controlToken ?? tokenData?.controlToken;
+		if (!expectedControl || !controlTokenMatches(expectedControl, controlToken)) {
 			return;
 		}
 

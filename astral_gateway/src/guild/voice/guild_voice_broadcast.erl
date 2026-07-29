@@ -20,6 +20,7 @@
 -export([broadcast_voice_state_update/3]).
 -export([broadcast_voice_server_update_to_session/6]).
 -export([broadcast_voice_server_update_to_session/7]).
+-export([broadcast_voice_server_update_to_session/8]).
 
 -ifdef(TEST).
 -define(WARN_MISSING_CONN(_VoiceState), ok).
@@ -102,6 +103,16 @@ broadcast_voice_server_update_to_session(GuildId, SessionId, Token, Endpoint, Co
 broadcast_voice_server_update_to_session(
     GuildId, ChannelId, SessionId, Token, Endpoint, ConnectionId, State
 ) ->
+    broadcast_voice_server_update_to_session(
+        GuildId, ChannelId, SessionId, Token, Endpoint, ConnectionId, undefined, State
+    ).
+
+%% IceServers is the Cloudflare TURN relay list (from the API voice_get_token
+%% response). undefined/null/[] => omit the field so the client keeps LiveKit's
+%% default ICE path; a non-empty list => the client feeds it into rtcConfig.
+broadcast_voice_server_update_to_session(
+    GuildId, ChannelId, SessionId, Token, Endpoint, ConnectionId, IceServers, State
+) ->
     VoiceServerUpdate = #{
         <<"token">> => Token,
         <<"endpoint">> => Endpoint,
@@ -112,7 +123,13 @@ broadcast_voice_server_update_to_session(
         case ChannelId of
             undefined -> VoiceServerUpdate;
             null -> VoiceServerUpdate;
-            _ -> maps:put(<<"channel_id">>, integer_to_binary(ChannelId), VoiceServerUpdate)
+            _ when is_integer(ChannelId) -> maps:put(<<"channel_id">>, integer_to_binary(ChannelId), VoiceServerUpdate);
+            _ -> VoiceServerUpdate
+        end,
+    VoiceServerUpdateWithIce =
+        case IceServers of
+            [_ | _] = Servers -> maps:put(<<"ice_servers">>, Servers, VoiceServerUpdateWithChannel);
+            _ -> VoiceServerUpdateWithChannel
         end,
 
     Sessions = maps:get(sessions, State, #{}),
@@ -124,7 +141,7 @@ broadcast_voice_server_update_to_session(
             SessionPid = maps:get(pid, SessionData, null),
             case SessionPid of
                 Pid when is_pid(Pid) ->
-                    gen_server:cast(Pid, {dispatch, voice_server_update, VoiceServerUpdateWithChannel});
+                    gen_server:cast(Pid, {dispatch, voice_server_update, VoiceServerUpdateWithIce});
                 _ ->
                     ok
             end

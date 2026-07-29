@@ -34,7 +34,7 @@ import GuildStore from '~/stores/GuildStore';
 import RuntimeConfigStore from '~/stores/RuntimeConfigStore';
 import SelectedChannelStore from '~/stores/SelectedChannelStore';
 import * as InviteUtils from '~/utils/InviteUtils';
-import {fromTimestamp} from '~/utils/SnowflakeUtils';
+import {nextClientNonce} from '~/utils/SnowflakeUtils';
 import {InviteIcon} from '../ContextMenuIcons';
 import {MenuGroup} from '../MenuGroup';
 import {MenuItem} from '../MenuItem';
@@ -98,7 +98,7 @@ export const InviteToCommunityMenuItem: React.FC<InviteToCommunityMenuItemProps>
 				const dmChannelId = await PrivateChannelActionCreators.ensureDMChannel(user.id);
 				await MessageActionCreators.send(dmChannelId, {
 					content: inviteUrl,
-					nonce: fromTimestamp(Date.now()),
+					nonce: nextClientNonce(),
 				});
 				ToastActionCreators.createToast({
 					type: 'success',

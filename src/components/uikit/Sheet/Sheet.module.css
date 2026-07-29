@@ -258,6 +258,7 @@
 	border-radius: 9999px;
 	background-color: transparent;
 	border: 0;
+	touch-action: manipulation;
 	transition:
 		background-color var(--motion-dur-short) var(--motion-ease-snap),
 		transform var(--motion-dur-short) var(--motion-ease-smooth);

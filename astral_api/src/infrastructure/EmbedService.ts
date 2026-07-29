@@ -402,15 +402,24 @@ export class EmbedService {
 		const cachedEmbeds: Array<Embed> = [];
 		const uncachedUrls: Array<string> = [];
 
-		for (const url of urls) {
-			const cacheKey = `url-embed:${url}`;
-			const cached = await this.cacheService.get<Array<MessageEmbed>>(cacheKey);
+		if (urls.length === 0) {
+			return {cachedEmbeds, uncachedUrls};
+		}
+
+		// One MGET instead of a sequential GET per URL: this sits on the
+		// message-send path, so every extra round-trip is added latency the
+		// sender waits through. Duplicate URLs are intentionally left in place —
+		// the caller's ordering and duplicate handling stay exactly as before.
+		const cachedValues = await this.cacheService.mget<Array<MessageEmbed>>(urls.map((url) => `url-embed:${url}`));
+
+		for (let index = 0; index < urls.length; index += 1) {
+			const cached = cachedValues[index];
 			if (cached && cached.length > 0) {
 				for (const embed of cached) {
 					cachedEmbeds.push(new Embed(embed));
 				}
 			} else {
-				uncachedUrls.push(url);
+				uncachedUrls.push(urls[index]!);
 			}
 		}
 

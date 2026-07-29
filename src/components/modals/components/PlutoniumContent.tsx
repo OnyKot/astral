@@ -27,6 +27,7 @@ import {ComponentDispatch} from '~/lib/ComponentDispatch';
 import GeoIPStore from '~/stores/GeoIPStore';
 import GuildStore from '~/stores/GuildStore';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
+import RuntimeConfigStore from '~/stores/RuntimeConfigStore';
 import UserStore from '~/stores/UserStore';
 import * as LocaleUtils from '~/utils/LocaleUtils';
 import {getFormattedPrice, PricingTier} from '~/utils/PricingUtils';
@@ -40,6 +41,7 @@ import {useCommunityActions} from './plutonium/hooks/useCommunityActions';
 import {usePremiumData} from './plutonium/hooks/usePremiumData';
 import {useSubscriptionActions} from './plutonium/hooks/useSubscriptionActions';
 import {useSubscriptionStatus} from './plutonium/hooks/useSubscriptionStatus';
+import {useWaitlistActions} from './plutonium/hooks/useWaitlistActions';
 import {PlutoniumUpsellBanner} from './plutonium/PlutoniumUpsellBanner';
 import {PricingSection} from './plutonium/PricingSection';
 import {PurchaseHistorySection} from './plutonium/PurchaseHistorySection';
@@ -93,16 +95,25 @@ export const PlutoniumContent: React.FC<{defaultGiftMode?: boolean}> = observer(
 		subscriptionStatus.isGiftSubscription,
 		mobileLayoutState.enabled,
 	);
+	const {entry: waitlistEntry, handleSelectWaitlistPlan} = useWaitlistActions();
 
+	const billingOffline = !(RuntimeConfigStore.features?.billing_enabled ?? false);
 	const isClaimed = currentUser?.isClaimed() ?? false;
 	const purchaseDisabled = !isClaimed;
 	const purchaseDisabledTooltip = <Trans>Claim your account to purchase Astral Plutonium.</Trans>;
 	const handleSelectPlanGuarded = React.useCallback(
 		(plan: 'monthly' | 'yearly' | 'visionary' | 'gift1Month' | 'gift1Year' | 'giftVisionary') => {
 			if (purchaseDisabled) return;
+			if (billingOffline) {
+				if (plan === 'gift1Month' || plan === 'gift1Year' || plan === 'giftVisionary') return;
+				if (plan === 'monthly' || plan === 'yearly' || plan === 'visionary') {
+					handleSelectWaitlistPlan(plan);
+					return;
+				}
+			}
 			handleSelectPlan(plan);
 		},
-		[handleSelectPlan, purchaseDisabled],
+		[purchaseDisabled, billingOffline, handleSelectWaitlistPlan, handleSelectPlan],
 	);
 
 	const monthlyPrice = React.useMemo(() => getFormattedPrice(PricingTier.Monthly, countryCode), [countryCode]);
@@ -260,8 +271,10 @@ export const PlutoniumContent: React.FC<{defaultGiftMode?: boolean}> = observer(
 					loadingSlots={loadingSlots}
 					isVisionarySoldOut={isVisionarySoldOut}
 					handleSelectPlan={handleSelectPlanGuarded}
-					purchaseDisabled={purchaseDisabled}
+					purchaseDisabled={purchaseDisabled || (billingOffline && isGiftMode)}
 					purchaseDisabledTooltip={purchaseDisabledTooltip}
+					waitlistMode={billingOffline && !isGiftMode}
+					waitlistPlan={waitlistEntry?.plan ?? null}
 				/>
 			) : (
 				<GiftSection
@@ -274,7 +287,7 @@ export const PlutoniumContent: React.FC<{defaultGiftMode?: boolean}> = observer(
 					loadingSlots={loadingSlots}
 					isVisionarySoldOut={isVisionarySoldOut}
 					handleSelectPlan={handleSelectPlanGuarded}
-					purchaseDisabled={purchaseDisabled}
+					purchaseDisabled={purchaseDisabled || billingOffline}
 					purchaseDisabledTooltip={purchaseDisabledTooltip}
 				/>
 			)}
@@ -325,8 +338,10 @@ export const PlutoniumContent: React.FC<{defaultGiftMode?: boolean}> = observer(
 					loadingSlots={loadingSlots}
 					isVisionarySoldOut={isVisionarySoldOut}
 					handleSelectPlan={handleSelectPlanGuarded}
-					purchaseDisabled={purchaseDisabled}
+					purchaseDisabled={purchaseDisabled || (billingOffline && isGiftMode)}
 					purchaseDisabledTooltip={purchaseDisabledTooltip}
+					waitlistMode={billingOffline && !isGiftMode}
+					waitlistPlan={waitlistEntry?.plan ?? null}
 				/>
 			)}
 		</div>

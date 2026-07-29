@@ -1,0 +1,114 @@
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.hero {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	padding: 26px 20px 22px;
+	border-radius: var(--radius-2xl);
+	overflow: hidden;
+	background:
+		radial-gradient(120% 140% at 50% -20%, color-mix(in srgb, var(--brand-primary) 34%, transparent), transparent 70%),
+		linear-gradient(160deg, var(--background-tertiary), var(--background-secondary));
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 12px;
+	border-radius: var(--radius-full);
+	background: color-mix(in srgb, var(--brand-primary) 22%, transparent);
+	border: 1px solid color-mix(in srgb, var(--brand-primary) 40%, transparent);
+	color: var(--text-primary);
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.version {
+	margin: 0;
+	font-size: 2rem;
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	color: var(--text-primary);
+	line-height: 1.1;
+}
+
+.tagline {
+	margin: 0;
+	text-align: center;
+	color: var(--text-tertiary);
+	font-size: 0.9rem;
+	line-height: 1.35rem;
+	max-width: 34ch;
+}
+
+.sparkle {
+	color: var(--brand-primary-light);
+}
+
+/* Notes come from version.json, authored as "Heading:" lines followed by "• item" lines. */
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.sectionTitle {
+	margin: 0;
+	font-size: 0.8rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--text-tertiary);
+}
+
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.item {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	color: var(--text-chat);
+	font-size: 0.925rem;
+	line-height: 1.35rem;
+}
+
+.dot {
+	flex: 0 0 auto;
+	width: 6px;
+	height: 6px;
+	margin-top: 0.5rem;
+	border-radius: var(--radius-full);
+	background: var(--brand-primary);
+}
+
+.footer {
+	display: flex;
+	justify-content: flex-end;
+}
+
+@media (max-width: 520px) {
+	.version {
+		font-size: 1.6rem;
+	}
+	.hero {
+		padding: 22px 16px 18px;
+	}
+}

@@ -35,6 +35,8 @@ interface BottomCTASectionProps {
 	handleSelectPlan: (plan: 'monthly' | 'yearly' | 'visionary' | 'gift1Month' | 'gift1Year' | 'giftVisionary') => void;
 	purchaseDisabled?: boolean;
 	purchaseDisabledTooltip?: React.ReactNode;
+	waitlistMode?: boolean;
+	waitlistPlan?: 'monthly' | 'yearly' | 'visionary' | null;
 }
 
 export const BottomCTASection: React.FC<BottomCTASectionProps> = observer(
@@ -48,9 +50,23 @@ export const BottomCTASection: React.FC<BottomCTASectionProps> = observer(
 		handleSelectPlan,
 		purchaseDisabled = false,
 		purchaseDisabledTooltip,
+		waitlistMode = false,
+		waitlistPlan = null,
 	}) => {
 		const {t} = useLingui();
 		const tooltipText: React.ReactNode = purchaseDisabledTooltip ?? t`Claim your account to purchase Astral Plutonium.`;
+
+		const getWaitlistButtonLabel = (plan: 'monthly' | 'yearly' | 'visionary', price: string) => {
+			if (waitlistPlan === plan) return t`On waitlist`;
+			switch (plan) {
+				case 'monthly':
+					return t`Join waitlist — Monthly ${price}`;
+				case 'yearly':
+					return t`Join waitlist — Yearly ${price}`;
+				case 'visionary':
+					return t`Join waitlist — Visionary ${price}`;
+			}
+		};
 
 		return (
 			<div className={styles.container}>
@@ -68,7 +84,7 @@ export const BottomCTASection: React.FC<BottomCTASectionProps> = observer(
 									className={styles.button}
 									disabled={purchaseDisabled}
 								>
-									<Trans>Monthly {monthlyPrice}</Trans>
+									{waitlistMode ? getWaitlistButtonLabel('monthly', monthlyPrice) : <Trans>Monthly {monthlyPrice}</Trans>}
 								</Button>
 							</PurchaseDisabledWrapper>
 							<PurchaseDisabledWrapper disabled={purchaseDisabled} tooltipText={tooltipText}>
@@ -79,7 +95,7 @@ export const BottomCTASection: React.FC<BottomCTASectionProps> = observer(
 									className={styles.button}
 									disabled={purchaseDisabled}
 								>
-									<Trans>Yearly {yearlyPrice}</Trans>
+									{waitlistMode ? getWaitlistButtonLabel('yearly', yearlyPrice) : <Trans>Yearly {yearlyPrice}</Trans>}
 								</Button>
 							</PurchaseDisabledWrapper>
 							<PurchaseDisabledWrapper disabled={purchaseDisabled} tooltipText={tooltipText}>
@@ -90,7 +106,11 @@ export const BottomCTASection: React.FC<BottomCTASectionProps> = observer(
 									disabled={purchaseDisabled}
 									className={styles.button}
 								>
-									<Trans>Visionary {visionaryPrice}</Trans>
+									{waitlistMode ? (
+										getWaitlistButtonLabel('visionary', visionaryPrice)
+									) : (
+										<Trans>Visionary {visionaryPrice}</Trans>
+									)}
 								</Button>
 							</PurchaseDisabledWrapper>
 						</>

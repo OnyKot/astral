@@ -30,6 +30,12 @@ friend_ids_from_state(State) ->
         Type =:= 1 orelse Type =:= 3
     ].
 
+%% Recipients of every *private* channel: 1:1 DMs (type 1) as well as group DMs (type 3).
+%%
+%% This used to match type 3 only, which meant a 1:1 DM with someone who is not also a friend
+%% produced no presence subscription and no delivery filter entry — their dot was permanently grey,
+%% no matter whether they were online. The name is kept because it is part of the
+%% `presence.sync_group_dm_recipients` RPC contract shared with the API.
 group_dm_recipients_from_state(State) ->
     UserId = maps:get(user_id, State),
     Channels = maps:get(channels, State, #{}),
@@ -37,10 +43,15 @@ group_dm_recipients_from_state(State) ->
         [
             {ChannelId, map_from_ids([Rid || Rid <- RecipientIds, Rid =/= UserId])}
          || {ChannelId, Channel} <- maps:to_list(Channels),
-            maps:get(<<"type">>, Channel, 0) =:= 3,
+            is_private_channel_type(maps:get(<<"type">>, Channel, 0)),
             RecipientIds <- [extract_recipient_ids(Channel)]
         ]
     ).
+
+%% ChannelTypes.DM = 1, ChannelTypes.GROUP_DM = 3.
+is_private_channel_type(1) -> true;
+is_private_channel_type(3) -> true;
+is_private_channel_type(_) -> false.
 
 extract_recipient_ids(Channel) ->
     Recipients = maps:get(<<"recipients">>, Channel, maps:get(<<"recipient_ids">>, Channel, [])),

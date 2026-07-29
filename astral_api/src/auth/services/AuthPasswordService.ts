@@ -23,6 +23,7 @@ import {createPasswordResetToken} from '~/BrandedTypes';
 import {ASTRAL_USER_AGENT, UserFlags} from '~/Constants';
 import {InputValidationError, RateLimitError, UnauthorizedError} from '~/Errors';
 import {resolveEmailLinkContextFromRequest} from '~/infrastructure/EmailLinkContextResolver';
+import type {ICacheService} from '~/infrastructure/ICacheService';
 import type {IEmailService} from '~/infrastructure/IEmailService';
 import type {IRateLimitService} from '~/infrastructure/IRateLimitService';
 import {Logger} from '~/Logger';
@@ -58,6 +59,7 @@ export class AuthPasswordService {
 			user: User,
 		) => Promise<{mfa: true; ticket: string; sms: boolean; totp: boolean; webauthn: boolean}>,
 		private createAuthSession: (params: {user: User; request: Request}) => Promise<[string, AuthSession]>,
+		private cacheService: ICacheService,
 	) {}
 
 	async hashPassword(password: string): Promise<string> {
@@ -164,47 +166,65 @@ export class AuthPasswordService {
 		| {mfa: false; user_id: string; token: string}
 		| {mfa: true; ticket: string; sms: boolean; totp: boolean; webauthn: boolean}
 	> {
-		const tokenData = await this.repository.getPasswordResetToken(data.token);
-		if (!tokenData) {
+		// Single-use guard: the get-then-delete sequence below has a TOCTOU
+		// window — two concurrent requests with the same token could both pass
+		// the existence check before either deletes it, resetting the password
+		// twice and creating two sessions. Acquire a short-lived distributed
+		// lock keyed by the token so only the first request proceeds; the
+		// second is rejected as invalid. The lock TTL covers the reset flow and
+		// the row is deleted on success, so a crashed holder cannot block
+		// reuse for long.
+		const tokenHash = crypto.createHash('sha256').update(data.token).digest('hex');
+		const lockToken = await this.cacheService.acquireLock(`pwreset:consume:${tokenHash}`, 30);
+		if (!lockToken) {
 			throw InputValidationError.create('token', 'Invalid or expired reset token');
 		}
 
-		const user = await this.repository.findUnique(tokenData.userId);
-		if (!user) {
-			throw InputValidationError.create('token', 'Invalid or expired reset token');
+		try {
+			const tokenData = await this.repository.getPasswordResetToken(data.token);
+			if (!tokenData) {
+				throw InputValidationError.create('token', 'Invalid or expired reset token');
+			}
+
+			const user = await this.repository.findUnique(tokenData.userId);
+			if (!user) {
+				throw InputValidationError.create('token', 'Invalid or expired reset token');
+			}
+
+			this.assertNonBotUser(user);
+
+			if (user.flags & UserFlags.DELETED) {
+				throw InputValidationError.create('token', 'Invalid or expired reset token');
+			}
+
+			await this.handleBanStatus(user);
+
+			if (await this.isPasswordPwned(data.password)) {
+				throw InputValidationError.create('password', 'Password is too common');
+			}
+
+			const newPasswordHash = await this.hashPassword(data.password);
+			const updatedUser = await this.repository.patchUpsert(user.id, {
+				password_hash: newPasswordHash,
+				password_last_changed_at: new Date(),
+			});
+
+			if (!updatedUser) {
+				throw new UnauthorizedError();
+			}
+
+			await this.repository.deleteAllAuthSessions(user.id);
+			await this.repository.deletePasswordResetToken(data.token);
+
+			const hasMfa = (updatedUser.authenticatorTypes?.size ?? 0) > 0;
+			if (hasMfa) {
+				return await this.createMfaTicketResponse(updatedUser);
+			}
+
+			const [token] = await this.createAuthSession({user: updatedUser, request});
+			return {mfa: false, user_id: updatedUser.id.toString(), token};
+		} finally {
+			await this.cacheService.releaseLock(`pwreset:consume:${tokenHash}`, lockToken).catch(() => {});
 		}
-
-		this.assertNonBotUser(user);
-
-		if (user.flags & UserFlags.DELETED) {
-			throw InputValidationError.create('token', 'Invalid or expired reset token');
-		}
-
-		await this.handleBanStatus(user);
-
-		if (await this.isPasswordPwned(data.password)) {
-			throw InputValidationError.create('password', 'Password is too common');
-		}
-
-		const newPasswordHash = await this.hashPassword(data.password);
-		const updatedUser = await this.repository.patchUpsert(user.id, {
-			password_hash: newPasswordHash,
-			password_last_changed_at: new Date(),
-		});
-
-		if (!updatedUser) {
-			throw new UnauthorizedError();
-		}
-
-		await this.repository.deleteAllAuthSessions(user.id);
-		await this.repository.deletePasswordResetToken(data.token);
-
-		const hasMfa = (updatedUser.authenticatorTypes?.size ?? 0) > 0;
-		if (hasMfa) {
-			return await this.createMfaTicketResponse(updatedUser);
-		}
-
-		const [token] = await this.createAuthSession({user: updatedUser, request});
-		return {mfa: false, user_id: updatedUser.id.toString(), token};
 	}
 }

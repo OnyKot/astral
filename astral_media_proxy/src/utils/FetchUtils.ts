@@ -17,8 +17,9 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {lookup} from 'node:dns/promises';
-import {isIP} from 'node:net';
+import {lookup as defaultLookup} from 'node:dns/promises';
+import type {LookupAllOptions} from 'node:dns';
+import {isIP, type LookupFunction} from 'node:net';
 import {Agent, errors, request, setGlobalDispatcher} from 'undici';
 import {ASTRAL_USER_AGENT} from '~/Constants';
 import type {ErrorType} from '~/lib/MediaTypes';
@@ -87,6 +88,11 @@ class HttpClient {
 	// slot busy until then. Matches the upstream p99 budget we can
 	// afford on an image-heavy feed.
 	private static readonly DEFAULT_TIMEOUT = 8_000;
+	// Only the standard web ports are reachable through the proxy. Allowing
+	// arbitrary ports lets an attacker probe internal services on high ports
+	// (e.g. http://public-host:6379/ -> Redis) even when the host itself
+	// resolves to a public IP.
+	private static readonly ALLOWED_PORTS = new Set([80, 443]);
 	private static readonly MAX_REDIRECTS = 5;
 	private static readonly DEFAULT_HEADERS = {
 		Accept: '*/*',
@@ -100,6 +106,15 @@ class HttpClient {
 		if (ip.startsWith('fc') || ip.startsWith('fd')) return true;
 		if (ip.startsWith('fe80:')) return true;
 
+		// IPv6-mapped IPv4 (e.g. ::ffff:127.0.0.1) is a private IPv4 address
+		// dressed in an IPv6 wrapper. The dotted-quad check below would miss it
+		// (the leading segment "::ffff:127" is not a pure integer), so strip the
+		// mapping prefix and re-run the IPv4 rules on the embedded address.
+		const mappedIpv4 = ip.match(/^(?:::ffff:|::ffff:0:|64:ff9b::)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/i);
+		if (mappedIpv4) {
+			return HttpClient.isDisallowedIPAddress(mappedIpv4[1]);
+		}
+
 		const parts = ip.split('.').map((part) => Number.parseInt(part, 10));
 		if (parts.length !== 4 || parts.some(Number.isNaN)) return false;
 
@@ -111,11 +126,38 @@ class HttpClient {
 			(a === 100 && b >= 64 && b <= 127) ||
 			(a === 169 && b === 254) ||
 			(a === 172 && b >= 16 && b <= 31) ||
-			(a === 192 && b === 168)
+			(a === 192 && b === 168) ||
+			a === 224 || // multicast 224.0.0.0/4
+			a === 240 || // reserved 240.0.0.0/4
+			(a === 255 && b === 255 && parts[2] === 255 && parts[3] === 255) // broadcast
 		);
 	}
 
-	private static async assertSafeDestination(urlString: string): Promise<void> {
+	// Resolves a hostname and returns the first safe address, or throws if
+	// every resolved address is private/blocked. The returned address is
+	// pinned for the actual request so undici cannot be rebinded to a
+	// different (private) IP between the check and the connect (TOCTOU).
+	private static async resolveSafeAddress(hostname: string): Promise<string> {
+		const directIpVersion = isIP(hostname);
+		if (directIpVersion) {
+			if (HttpClient.isDisallowedIPAddress(hostname)) {
+				throw new HttpError('Unsafe URL destination', 400, undefined, true, 'forbidden');
+			}
+			return hostname;
+		}
+
+		const resolved = await defaultLookup(hostname, {all: true, verbatim: true} as LookupAllOptions);
+		const safe = resolved.find(({address}) => !HttpClient.isDisallowedIPAddress(address));
+		if (!safe) {
+			throw new HttpError('Unsafe URL destination', 400, undefined, true, 'forbidden');
+		}
+		return safe.address;
+	}
+
+	// Validates scheme + port, and returns the pinned IP to connect to. The
+	// caller passes this IP to undici via a custom connect lookup so the
+	// request lands on exactly the address we validated.
+	private static async assertSafeDestination(urlString: string): Promise<{pinnedIp: string}> {
 		const parsedUrl = new URL(urlString);
 		if (!['http:', 'https:'].includes(parsedUrl.protocol))
 			throw new HttpError('Unsupported protocol', 400, undefined, true);
@@ -123,17 +165,45 @@ class HttpClient {
 		const hostname = parsedUrl.hostname;
 		if (hostname === 'localhost') throw new HttpError('Unsafe URL destination', 400, undefined, true, 'forbidden');
 
-		const directIpVersion = isIP(hostname);
-		if (directIpVersion && HttpClient.isDisallowedIPAddress(hostname)) {
+		const port = parsedUrl.port ? Number.parseInt(parsedUrl.port, 10) : parsedUrl.protocol === 'https:' ? 443 : 80;
+		if (!HttpClient.ALLOWED_PORTS.has(port)) {
 			throw new HttpError('Unsafe URL destination', 400, undefined, true, 'forbidden');
 		}
 
-		if (!directIpVersion) {
-			const resolved = await lookup(hostname, {all: true, verbatim: true});
-			if (resolved.some(({address}) => HttpClient.isDisallowedIPAddress(address))) {
-				throw new HttpError('Unsafe URL destination', 400, undefined, true, 'forbidden');
+		const pinnedIp = await HttpClient.resolveSafeAddress(hostname);
+		return {pinnedIp};
+	}
+
+	// Builds a connect lookup that forces undici to dial the pre-validated IP,
+	// closing the DNS-rebinding window. undici calls the lookup with
+	// (hostname, options, callback); we ignore the hostname and hand back the
+	// pinned address so TLS SNI / Host header still use the original name.
+	private static pinnedLookup(pinnedIp: string): LookupFunction {
+		return (_hostname, options, callback) => {
+			const family = isIP(pinnedIp) === 6 ? 6 : 4;
+			// undici's connect calls this with {all: true} and then reads addresses[0].address.
+			// Answering with a bare string in that mode leaves it reading `undefined`, which
+			// surfaces as "Invalid IP address: undefined" and fails every proxied fetch.
+			if ((options as {all?: boolean} | undefined)?.all) {
+				(callback as unknown as (err: null, addresses: Array<{address: string; family: number}>) => void)(null, [
+					{address: pinnedIp, family},
+				]);
+				return;
 			}
-		}
+			callback(null, pinnedIp, family);
+		};
+	}
+
+	// A short-lived dispatcher that dials only the pinned IP. Created per
+	// request because each destination resolves to a different address; the
+	// connection is short-lived and the agent is closed after the response is
+	// consumed by the caller. Inherits the global agent's timeout budget.
+	private static pinnedDispatcher(pinnedIp: string): Agent {
+		return new Agent({
+			connect: {timeout: 4_000, lookup: HttpClient.pinnedLookup(pinnedIp)},
+			headersTimeout: 5_000,
+			bodyTimeout: 10_000,
+		});
 	}
 
 	private static getHeadersForUrl(_url: string, customHeaders?: Record<string, string>): Record<string, string> {
@@ -197,7 +267,7 @@ class HttpClient {
 		}
 
 		const redirectUrl = new URL(Array.isArray(location) ? location[0] : location, currentUrl).toString();
-		await HttpClient.assertSafeDestination(redirectUrl);
+		const {pinnedIp} = await HttpClient.assertSafeDestination(redirectUrl);
 		const requestHeaders = HttpClient.getHeadersForUrl(redirectUrl, options.headers);
 
 		const redirectMethod = statusCode === 303 ? 'GET' : (options.method ?? 'GET');
@@ -212,6 +282,7 @@ class HttpClient {
 			headers: requestHeaders,
 			body: redirectBody ? JSON.stringify(redirectBody) : undefined,
 			signal,
+			dispatcher: HttpClient.pinnedDispatcher(pinnedIp),
 		});
 
 		if ([301, 302, 303, 307, 308].includes(newStatusCode)) {
@@ -239,7 +310,7 @@ class HttpClient {
 			? HttpClient.createCombinedController(options.signal, timeoutController.signal)
 			: timeoutController;
 		const headers = HttpClient.getHeadersForUrl(options.url, options.headers);
-		await HttpClient.assertSafeDestination(options.url);
+		const {pinnedIp} = await HttpClient.assertSafeDestination(options.url);
 
 		try {
 			const {
@@ -251,6 +322,7 @@ class HttpClient {
 				headers,
 				body: options.body ? JSON.stringify(options.body) : undefined,
 				signal: combinedController.signal,
+				dispatcher: HttpClient.pinnedDispatcher(pinnedIp),
 			});
 
 			let finalBody = body;

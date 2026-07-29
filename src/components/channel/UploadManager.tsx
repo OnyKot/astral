@@ -62,7 +62,7 @@ export const UploadManager = observer(({channel}: {channel: ChannelRecord}) => {
 
 				const pendingAttachments = await CloudUpload.createAndStartUploads(channel.id, files);
 
-				const nonce = SnowflakeUtils.fromTimestamp(Date.now());
+				const nonce = SnowflakeUtils.nextClientNonce();
 				const currentUser = UserStore.getCurrentUser();
 				if (!currentUser) return;
 

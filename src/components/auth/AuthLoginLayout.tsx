@@ -18,7 +18,6 @@
  */
 
 import {Trans, useLingui} from '@lingui/react/macro';
-import {RocketLaunchIcon} from '@phosphor-icons/react';
 import clsx from 'clsx';
 import {AnimatePresence, motion, useReducedMotion} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
@@ -60,6 +59,8 @@ interface AuthLoginLayoutProps {
 	redirectPath?: string;
 	inviteCode?: string;
 	desktopHandoff?: boolean;
+	/** Short code from desktop initiator (`handoff_code` query param). */
+	handoffCode?: string | null;
 	excludeCurrentUser?: boolean;
 	extraTopContent?: ReactNode;
 	showTitle?: boolean;
@@ -84,6 +85,7 @@ const AuthLoginLayout = observer(function AuthLoginLayout({
 	redirectPath,
 	inviteCode,
 	desktopHandoff = false,
+	handoffCode = null,
 	excludeCurrentUser = false,
 	extraTopContent,
 	showTitle = true,
@@ -105,6 +107,7 @@ const AuthLoginLayout = observer(function AuthLoginLayout({
 	const handoff = useDesktopHandoffFlow({
 		enabled: desktopHandoff,
 		hasStoredAccounts: hasHandoffAccounts,
+		handoffCodeFromUrl: handoffCode,
 		initialMode: desktopHandoff && hasHandoffAccounts ? 'selecting' : 'login',
 	});
 
@@ -538,9 +541,6 @@ const AuthLoginLayout = observer(function AuthLoginLayout({
 				fieldErrors={fieldErrors}
 				submitLabel={
 					<span className={styles.loginLaunchLabel}>
-						<span className={styles.loginLaunchIconFrame}>
-							<RocketLaunchIcon className={styles.loginLaunchIcon} weight="fill" />
-						</span>
 						<span className={styles.loginLaunchText}>
 							<Trans>Log in</Trans>
 						</span>
@@ -599,6 +599,7 @@ const AuthLoginLayout = observer(function AuthLoginLayout({
 		const selector = (
 			<DesktopHandoffAccountSelector
 				excludeCurrentUser={excludeCurrentUser}
+				handoffCode={handoffCode}
 				onSelectNewAccount={handoff.switchToLogin}
 			/>
 		);
@@ -944,11 +945,12 @@ const AuthLoginLayout = observer(function AuthLoginLayout({
 		return selector;
 	}
 
-	if (desktopHandoff && (handoff.mode === 'generating' || handoff.mode === 'displaying' || handoff.mode === 'error')) {
+	if (desktopHandoff && (handoff.mode === 'generating' || handoff.mode === 'displaying' || handoff.mode === 'done' || handoff.mode === 'error')) {
 		const handoffDisplay = (
 			<HandoffCodeDisplay
 				code={handoff.code}
 				isGenerating={handoff.mode === 'generating'}
+				success={handoff.mode === 'done'}
 				error={handoff.mode === 'error' ? handoff.error : null}
 				onRetry={handoff.retry}
 			/>
@@ -956,8 +958,13 @@ const AuthLoginLayout = observer(function AuthLoginLayout({
 		if (nativeMobile) {
 			return renderMobileShell(handoffDisplay, {
 				eyebrow: <Trans>Secure pairing</Trans>,
-				title: <Trans>Continue the handoff</Trans>,
-				description: <Trans>Keep the code flow inside the mobile shell while Astral links the session.</Trans>,
+				title: handoff.mode === 'done' ? <Trans>Desktop linked</Trans> : <Trans>Continue the handoff</Trans>,
+				description:
+					handoff.mode === 'done' ? (
+						<Trans>Return to the desktop app — it will finish signing you in.</Trans>
+					) : (
+						<Trans>Keep the code flow inside the mobile shell while Astral links the session.</Trans>
+					),
 			});
 		}
 		return handoffDisplay;

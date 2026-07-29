@@ -27,7 +27,7 @@ import * as ReadStateActionCreators from '~/actions/ReadStateActionCreators';
 import * as SavedMessageActionCreators from '~/actions/SavedMessageActionCreators';
 import * as TextCopyActionCreators from '~/actions/TextCopyActionCreators';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
-import {GuildOperations, isMessageTypeDeletable, MessageFlags, Permissions} from '~/Constants';
+import {GuildOperations, isMessageTypeDeletable, MessageFlags, MessageStates, Permissions} from '~/Constants';
 import {ConfirmModal} from '~/components/modals/ConfirmModal';
 import {ForwardModal} from '~/components/modals/ForwardModal';
 import {CloudUpload} from '~/lib/CloudUpload';
@@ -60,6 +60,14 @@ export function canDeleteAttachmentUtil(message: MessageRecord | undefined): boo
 
 export function triggerAddReaction(messageId: string): boolean {
 	const messageElement = document.querySelector<HTMLElement>(`[data-message-id="${messageId}"]`);
+	if (messageElement?.dataset.messageSystem === 'true') {
+		return false;
+	}
+
+	if (messageElement?.dataset.messageReactionTypeLimit === 'true') {
+		return false;
+	}
+
 	if (!messageElement) {
 		ComponentDispatch.dispatch('EMOJI_PICKER_OPEN', {messageId});
 		return false;
@@ -103,6 +111,7 @@ export function useMessagePermissions(message: MessageRecord) {
 
 	const isDM = !channel.guildId;
 	const isAuthorBlocked = RelationshipStore.isBlocked(message.author.id);
+	const isSystemMessage = message.isSystemMessage();
 
 	const passesVerification = isDM || GuildVerificationStore.canAccessGuild(channel.guildId || '');
 
@@ -120,6 +129,7 @@ export function useMessagePermissions(message: MessageRecord) {
 			PermissionStore.can(Permissions.SEND_MESSAGES, {channelId: message.channelId}) &&
 			passesVerification);
 	const canAddReactions =
+		!isSystemMessage &&
 		!isAuthorBlocked &&
 		(isDM ||
 			(!reactionsDisabled &&
@@ -352,13 +362,21 @@ export function useMessageActionHandlers(message: MessageRecord, options?: {onCl
 
 		const messageUpload = CloudUpload.getMessageUpload(message.nonce);
 		const hasAttachments = messageUpload !== null;
-		const newNonce = SnowflakeUtils.fromTimestamp(Date.now());
+		const newNonce = SnowflakeUtils.nextClientNonce();
 
 		if (hasAttachments) {
 			CloudUpload.moveMessageUpload(message.nonce, newNonce);
 		}
 
 		MessageActionCreators.deleteLocal(message.channelId, message.id);
+
+		const optimistic = {
+			...message.toJSON(),
+			id: newNonce,
+			nonce: newNonce,
+			state: MessageStates.SENDING,
+		};
+		MessageActionCreators.createOptimistic(message.channelId, optimistic);
 
 		MessageActionCreators.send(message.channelId, {
 			content: message.content,

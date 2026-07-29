@@ -148,22 +148,29 @@ if [ -n "$CRLF_HITS" ]; then
     exit 1
 fi
 
-# 8. Biome format/lint on changed TS/JS if biome is available inside astral_app.
+# 8. Biome format/lint on changed TS/JS if biome is available in the repo root.
 #    Skipped when biome isn't installed — we don't want to block pushes in clones
 #    that only touched Gleam/Go/Kotlin.
-BIOME_TARGETS=$(printf '%s\n' "$CHANGED_FILES" | grep -E '\.(ts|tsx|js|jsx|mjs|cjs|json)$' | grep -E '^(astral_app|astral_api)/' || true)
+BIOME_TARGETS=$(printf '%s\n' "$CHANGED_FILES" | grep -E '\.(ts|tsx|js|jsx|mjs|cjs|json)$' | grep -E '^(src/|components/|astral_api/|astral_media_proxy/|App\.tsx$|index\.tsx$|index\.html$|rspack\.config\.mjs$)' || true)
 if [ -n "$BIOME_TARGETS" ]; then
-    if [ -x "astral_app/node_modules/.bin/biome" ] || [ -f "astral_app/node_modules/@biomejs/biome/package.json" ]; then
+    BIOME_BIN=""
+    for candidate in node_modules/.bin/biome; do
+        if [ -x "$candidate" ]; then
+            BIOME_BIN="$candidate"
+            break
+        fi
+    done
+    if [ -n "$BIOME_BIN" ]; then
         info "biome check on changed files"
         # Run from repo root so shared biome.json applies.
-        if ! printf '%s\n' "$BIOME_TARGETS" | xargs -r astral_app/node_modules/.bin/biome check --no-errors-on-unmatched >/tmp/biome-prepush.log 2>&1; then
-            printf "${RED}✗ biome check failed:${NC}\n" >&2
+        if ! printf '%s\n' "$BIOME_TARGETS" | xargs -r "$BIOME_BIN" check --no-errors-on-unmatched >/tmp/biome-prepush.log 2>&1; then
+            printf "${RED}\xe2\x9c\x97 biome check failed:${NC}\n" >&2
             head -40 /tmp/biome-prepush.log >&2
-            printf "${YEL}  Fix with: cd astral_app && node_modules/.bin/biome check --write <files>${NC}\n" >&2
+            printf "${YEL}  Fix with: <workspace>/node_modules/.bin/biome check --write <files>${NC}\n" >&2
             exit 1
         fi
     else
-        warn "biome not installed — skipping lint (run 'pnpm -C astral_app install' to enable)"
+        warn "biome not installed \xe2\x80\x94 skipping lint (run 'pnpm install' in a workspace to enable)"
     fi
 fi
 
@@ -192,11 +199,15 @@ typecheck_workspace() {
     return 0
 }
 
-if printf '%s\n' "$CHANGED_FILES" | grep -qE '^astral_app/.*\.(ts|tsx)$'; then
-    typecheck_workspace astral_app || exit 1
-fi
 if printf '%s\n' "$CHANGED_FILES" | grep -qE '^astral_api/.*\.(ts|tsx)$'; then
     typecheck_workspace astral_api || exit 1
+fi
+if printf '%s\n' "$CHANGED_FILES" | grep -qE '^astral_media_proxy/.*\.(ts|tsx)$'; then
+    typecheck_workspace astral_media_proxy || exit 1
+fi
+# Root-level frontend typecheck: src/, components/, App.tsx, index.tsx live in the repo root.
+if printf '%s\n' "$CHANGED_FILES" | grep -qE '^(src/|components/|App\.tsx$|index\.tsx$)'; then
+    typecheck_workspace . || exit 1
 fi
 
 ok "pre-push checks passed"

@@ -23,6 +23,7 @@ import {
 	CaretRightIcon,
 	ChatCircleTextIcon,
 	CheckIcon,
+	DotsThreeIcon,
 	EraserIcon,
 	EyeIcon,
 	ImageSquareIcon,
@@ -91,11 +92,16 @@ const StoryOverlayPortal: React.FC<{children: React.ReactNode}> = ({children}) =
 };
 
 const MAX_STORY_MEDIA_BYTES = 12 * 1024 * 1024;
+const STORY_TEXT_DURATION_MS = 5000;
+const STORY_VIDEO_DEFAULT_DURATION_MS = 9000;
+const STORY_MIN_DURATION_MS = 3000;
+const STORY_MAX_DURATION_MS = 30000;
 type AvatarSize = 16 | 24 | 28 | 32 | 36 | 40 | 48 | 56 | 64 | 80 | 120;
 type StoryTransform = Readonly<{x: number; y: number; scale: number; rotate: number}>;
 type MediaTransform = StoryTransform;
 type TextTransform = StoryTransform;
 type PointerPoint = Readonly<{x: number; y: number}>;
+type StorySummaryLabels = Readonly<{photo: string; video: string; story: string}>;
 
 const storyBackgrounds = ['brand', 'midnight', 'aurora', 'berry', 'sunset', 'mint', 'blush', 'graphite'] as const;
 type StoryBackground = (typeof storyBackgrounds)[number];
@@ -104,6 +110,10 @@ type StoryTextTone = 'light' | 'dark' | 'accent';
 
 const storyReactionEmojis = ['\u2764\uFE0F', '\u{1F602}', '\u{1F525}', '\u{1F44F}', '\u{1F62E}'] as const;
 const getStoryReactionAssetUrl = (emoji: string): string | null => EmojiUtils.getEmojiURL(emoji);
+const renderStoryReactionIcon = (emoji: string) => {
+	const assetUrl = getStoryReactionAssetUrl(emoji);
+	return assetUrl ? <img src={assetUrl} alt="" draggable={false} /> : <span>{emoji}</span>;
+};
 const storyBrushColors = ['#ffffff', '#111827', '#f43f5e', '#f97316', '#facc15', '#22c55e', '#38bdf8', '#a78bfa'] as const;
 
 const isStoryBackground = (value: string): value is StoryBackground =>
@@ -271,11 +281,11 @@ const createStoryEmojiSticker = (emoji: Emoji): StoryActionCreators.StoryEmojiSt
 const getStoryDisplayName = (story: StoryActionCreators.Story, user?: UserRecord): string =>
 	user?.globalName ?? user?.username ?? story.user?.global_name ?? story.user?.username ?? story.user?.name ?? 'Astral';
 
-const getStoryMessageSummary = (story: StoryActionCreators.Story): string => {
+const getStoryMessageSummary = (story: StoryActionCreators.Story, labels: StorySummaryLabels): string => {
 	if (story.text.trim()) return story.text.trim();
-	if (story.media_type === 'image') return 'Photo story';
-	if (story.media_type === 'video') return 'Video story';
-	return 'Story';
+	if (story.media_type === 'image') return labels.photo;
+	if (story.media_type === 'video') return labels.video;
+	return labels.story;
 };
 
 const createStoryMessageNonce = (): string => `story-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -388,6 +398,7 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 	const [draftPreview, setDraftPreview] = React.useState('');
 	const [draftMediaDataUrl, setDraftMediaDataUrl] = React.useState('');
 	const [draftMediaPreparing, setDraftMediaPreparing] = React.useState(false);
+	const [draftDurationMs, setDraftDurationMs] = React.useState(STORY_TEXT_DURATION_MS);
 	const [draftMediaTransform, setDraftMediaTransform] = React.useState<MediaTransform>({x: 0, y: 0, scale: 1, rotate: 0});
 	const [draftTextTransform, setDraftTextTransform] = React.useState<TextTransform>({x: 0, y: 0, scale: 1, rotate: 0});
 	const [draftEmojis, setDraftEmojis] = React.useState<Array<StoryActionCreators.StoryEmojiSticker>>([]);
@@ -397,11 +408,16 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 	const [draftBrushSize, setDraftBrushSize] = React.useState(8);
 	const [emojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
 	const [emojiSearchTerm, setEmojiSearchTerm] = React.useState('');
+	const [editorToolsExpanded, setEditorToolsExpanded] = React.useState(false);
 	const [draftError, setDraftError] = React.useState('');
 	const [submitting, setSubmitting] = React.useState(false);
+	const [reactionBurst, setReactionBurst] = React.useState<{id: number; emoji: string} | null>(null);
 	const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 	const draftObjectUrlRef = React.useRef<string | null>(null);
 	const draftReadTokenRef = React.useRef(0);
+	const reactionBurstTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+	const reactionBurstIdRef = React.useRef(0);
+	const reactionBusyRef = React.useRef(false);
 	const storyViewerTouchStartYRef = React.useRef<number | null>(null);
 	const mediaPointersRef = React.useRef<Map<number, PointerPoint>>(new Map());
 	const mediaGestureRef = React.useRef<{
@@ -441,6 +457,9 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 	const hasReadyMediaDraft = Boolean(draftPreview && (!draftFile || draftMediaDataUrl));
 	const hasPendingMediaDraft = Boolean(draftPreview && draftFile && !draftMediaDataUrl);
 	const canSubmit = Boolean(!draftMediaPreparing && !hasPendingMediaDraft && (draftText.trim() || hasReadyMediaDraft || draftEmojis.length > 0 || draftDrawings.length > 0));
+	const isVideoDraft = Boolean(draftFile?.type.startsWith('video/'));
+	const draftDurationSeconds = Math.round(draftDurationMs / 1000);
+	const showDraftAdjustments = !emojiPickerOpen && (Boolean(draftPreview) || Boolean(draftText.trim()) || draftMediaPreparing || Boolean(draftError));
 	const activeViewsCount = activeSlide?.views_count ?? 0;
 	const activeStoryReaction = activeSlide?.reactions?.find((reaction) => reaction.me) ?? null;
 	const visibleStoryReaction =
@@ -449,6 +468,7 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 	const visibleReactionEmoji = activeReactionEmoji ?? visibleStoryReaction?.emoji ?? null;
 	const visibleReactionsCount = visibleStoryReaction?.count ?? 0;
 	const activeReactionsCount = activeSlide?.reactions?.reduce((total, reaction) => total + reaction.count, 0) ?? 0;
+	const ownerVisibleReactionEmoji = activeSlide?.reactions?.find((reaction) => reaction.count > 0)?.emoji ?? null;
 	const storyReactionOptions = storyReactionEmojis;
 	const storyAgeLabel = React.useMemo(() => {
 		if (!activeSlide?.created_at) return null;
@@ -511,6 +531,10 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 			URL.revokeObjectURL(draftObjectUrlRef.current);
 			draftObjectUrlRef.current = null;
 		}
+		if (reactionBurstTimerRef.current) {
+			clearTimeout(reactionBurstTimerRef.current);
+			reactionBurstTimerRef.current = null;
+		}
 	}, []);
 
 	React.useEffect(() => {
@@ -530,6 +554,7 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 		setStoryActionsExpanded(false);
 		setStoryActionError('');
 		setStoryActionNotice('');
+		setReactionBurst(null);
 	}, [activeSlide?.id]);
 
 	const openStory = React.useCallback((index: number, requestedSlideIndex = 0) => {
@@ -592,15 +617,36 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 	}, []);
 
 	const reactToActiveStory = React.useCallback(async (emoji: string) => {
-		if (!activeSlide || storyActionBusy) return;
+		if (!activeSlide || storyActionBusy || reactionBusyRef.current) return;
+		reactionBusyRef.current = true;
 		setStoryActionError('');
 		setStoryActionNotice('');
 		setStoryActionBusy(true);
+		const isRemovingReaction = activeReactionEmoji === emoji;
+		if (isRemovingReaction) {
+			setReactionBurst(null);
+			if (reactionBurstTimerRef.current) {
+				clearTimeout(reactionBurstTimerRef.current);
+				reactionBurstTimerRef.current = null;
+			}
+		} else {
+			const burstId = reactionBurstIdRef.current + 1;
+			reactionBurstIdRef.current = burstId;
+			setReactionBurst({id: burstId, emoji});
+			if (reactionBurstTimerRef.current) {
+				clearTimeout(reactionBurstTimerRef.current);
+			}
+			reactionBurstTimerRef.current = setTimeout(() => {
+				setReactionBurst((current) => (current?.id === burstId ? null : current));
+				reactionBurstTimerRef.current = null;
+			}, 1180);
+		}
 		try {
 			await StoryStore.reactToStory(activeSlide.id, emoji);
 		} catch {
 			setStoryActionError(t`Could not react to this story`);
 		} finally {
+			reactionBusyRef.current = false;
 			setStoryActionBusy(false);
 		}
 	}, [activeReactionEmoji, activeSlide, storyActionBusy, t]);
@@ -617,8 +663,13 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 				activeSlide.user_id,
 				encodeStoryForwardPayload({
 					authorName: activeBundle.displayName,
-					summary: getStoryMessageSummary(activeSlide),
+					summary: getStoryMessageSummary(activeSlide, {
+						photo: t`Photo story`,
+						video: t`Video story`,
+						story: t`Story`,
+					}),
 					mediaUrl: activeSlide.media_url,
+					mediaTransform: activeSlide.media_transform ?? null,
 					mediaType: activeSlide.media_type,
 					comment: text,
 					storyId: activeSlide.id,
@@ -627,6 +678,8 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 					background: activeSlide.background,
 					textAlign: activeSlide.text_align,
 					textTone: activeSlide.text_tone,
+					textScale: activeSlide.text_scale,
+					textTransform: activeSlide.text_transform ?? null,
 					emojis: activeSlide.emojis,
 					drawings: activeSlide.drawings,
 				}),
@@ -761,6 +814,7 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 		}
 		setDraftFile(file);
 		setDraftMediaTransform({x: 0, y: 0, scale: 1, rotate: 0});
+		setDraftDurationMs(file.type.startsWith('video/') ? STORY_VIDEO_DEFAULT_DURATION_MS : STORY_TEXT_DURATION_MS);
 		setDraftMediaDataUrl('');
 		setDraftMediaPreparing(true);
 		if (draftObjectUrlRef.current) {
@@ -792,6 +846,7 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 		setDraftMediaDataUrl('');
 		setDraftMediaPreparing(false);
 		setDraftError('');
+		setDraftDurationMs(STORY_TEXT_DURATION_MS);
 		setDraftBackground('brand');
 		setDraftTextAlign('center');
 		setDraftTextTone('light');
@@ -805,6 +860,7 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 		setDraftBrushSize(8);
 		setEmojiPickerOpen(false);
 		setEmojiSearchTerm('');
+		setEditorToolsExpanded(false);
 		mediaPointersRef.current.clear();
 		mediaGestureRef.current = null;
 		textPointersRef.current.clear();
@@ -841,31 +897,48 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 					? 'video'
 					: 'image'
 				: 'text';
+			const safeMediaTransform = mediaType === 'text' ? undefined : sanitizeMediaTransform(draftMediaTransform);
+			const safeText = draftText.trim();
+			const safeTextTransform = safeText ? sanitizeTextTransform(draftTextTransform) : undefined;
+			const safeEmojis = draftEmojis.map((emoji) => ({
+				...emoji,
+				transform: sanitizeEmojiTransform({
+					x: Number(emoji.transform.x ?? 0),
+					y: Number(emoji.transform.y ?? 0),
+					scale: Number(emoji.transform.scale ?? 1),
+					rotate: Number(emoji.transform.rotate ?? 0),
+				}),
+			}));
+			const safeDurationMs =
+				mediaType === 'video'
+					? clamp(draftDurationMs, STORY_MIN_DURATION_MS, STORY_MAX_DURATION_MS)
+					: STORY_TEXT_DURATION_MS;
 			const story = await StoryActionCreators.createStory({
 				media_type: mediaType,
 				media_url: draftMediaDataUrl || undefined,
-				media_transform: mediaType === 'text' ? undefined : sanitizeMediaTransform(draftMediaTransform),
-				text: draftText.trim() || undefined,
+				media_transform: safeMediaTransform,
+				text: safeText || undefined,
 				text_align: draftTextAlign,
 				text_tone: draftTextTone,
 				text_scale: draftTextScale,
-				text_transform: draftText.trim() ? sanitizeTextTransform(draftTextTransform) : undefined,
-				emojis: draftEmojis.map((emoji) => ({
-					...emoji,
-					transform: sanitizeEmojiTransform({
-						x: Number(emoji.transform.x ?? 0),
-						y: Number(emoji.transform.y ?? 0),
-						scale: Number(emoji.transform.scale ?? 1),
-						rotate: Number(emoji.transform.rotate ?? 0),
-					}),
-				})),
+				text_transform: safeTextTransform,
+				emojis: safeEmojis,
 				drawings: sanitizedDrawings,
 				background: draftBackground,
-				duration_ms: mediaType === 'video' ? 9000 : 5000,
+				duration_ms: safeDurationMs,
 			});
 			StoryStore.upsertStory({
 				...story,
+				media_transform: story.media_transform ?? safeMediaTransform,
+				text: story.text || safeText,
+				text_align: story.text_align ?? draftTextAlign,
+				text_tone: story.text_tone ?? draftTextTone,
+				text_scale: story.text_scale ?? draftTextScale,
+				text_transform: story.text_transform ?? safeTextTransform,
+				emojis: story.emojis?.length ? story.emojis : safeEmojis,
 				drawings: story.drawings ?? sanitizedDrawings,
+				background: story.background || draftBackground,
+				duration_ms: story.duration_ms || safeDurationMs,
 			});
 			closeEditor();
 		} catch (error) {
@@ -874,7 +947,7 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 		} finally {
 			setSubmitting(false);
 		}
-	}, [canSubmit, closeEditor, draftBackground, draftDrawings, draftEmojis, draftFile, draftMediaDataUrl, draftMediaTransform, draftPreview, draftText, draftTextAlign, draftTextScale, draftTextTone, draftTextTransform, submitting, t]);
+	}, [canSubmit, closeEditor, draftBackground, draftDrawings, draftDurationMs, draftEmojis, draftFile, draftMediaDataUrl, draftMediaTransform, draftPreview, draftText, draftTextAlign, draftTextScale, draftTextTone, draftTextTransform, submitting, t]);
 
 	const cycleTextAlign = React.useCallback(() => {
 		setDraftTextAlign((current) => (current === 'center' ? 'left' : current === 'left' ? 'right' : 'center'));
@@ -903,10 +976,18 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 		mediaGestureRef.current = null;
 	}, []);
 
-	const resetTextTransform = React.useCallback(() => {
-		setDraftTextTransform({x: 0, y: 0, scale: 1, rotate: 0});
-		textPointersRef.current.clear();
-		textGestureRef.current = null;
+	const handleDraftMediaScaleChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+		const scale = Number(event.currentTarget.value);
+		setDraftMediaTransform((current) => sanitizeMediaTransform({...current, scale}));
+	}, []);
+
+	const handleDraftTextScaleChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+		const scale = Number(event.currentTarget.value);
+		setDraftTextTransform((current) => sanitizeTextTransform({...current, scale}));
+	}, []);
+
+	const handleDraftDurationChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+		setDraftDurationMs(clamp(Number(event.currentTarget.value) * 1000, STORY_MIN_DURATION_MS, STORY_MAX_DURATION_MS));
 	}, []);
 
 	const syncMediaGesture = React.useCallback(() => {
@@ -1214,7 +1295,6 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 
 	const AlignIcon = draftTextAlign === 'left' ? TextAlignLeftIcon : draftTextAlign === 'right' ? TextAlignRightIcon : TextAlignCenterIcon;
 	const isEditedMediaTransform = draftMediaTransform.x !== 0 || draftMediaTransform.y !== 0 || draftMediaTransform.scale !== 1 || draftMediaTransform.rotate !== 0;
-	const isEditedTextTransform = draftTextTransform.x !== 0 || draftTextTransform.y !== 0 || draftTextTransform.scale !== 1 || draftTextTransform.rotate !== 0;
 	const getBackgroundLabel = React.useCallback(
 		(background: StoryBackground): string => {
 			if (background === 'midnight') return t`Midnight`;
@@ -1303,6 +1383,7 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 					>
 						<motion.div
 							className={clsx(styles.viewer, styles.editor, getBackgroundClass(draftBackground))}
+							data-composer-expanded={showDraftAdjustments ? 'true' : 'false'}
 							data-edge-swipe-ignore="true"
 							initial={reducedMotion ? false : {opacity: 0, y: 16, scale: 0.98}}
 							animate={{opacity: 1, y: 0, scale: 1}}
@@ -1358,7 +1439,7 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 											style={getMediaTransformStyle(draftMediaTransform)}
 										/>
 									</div>
-								) : draftText.trim() || draftEmojis.length === 0 ? (
+								) : draftText.trim() || (draftEmojis.length === 0 && draftDrawings.length === 0) ? (
 									<div
 										className={clsx(
 											styles.textStoryPreview,
@@ -1442,7 +1523,26 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 									className={styles.fileInput}
 									onChange={handleFileChange}
 								/>
-								<div className={styles.editorTools} aria-label={t`Story tools`}>
+								<div className={clsx(styles.editorToolsHub, editorToolsExpanded && styles.editorToolsHubOpen)} aria-label={t`Story tools`}>
+									<button
+										type="button"
+										className={clsx(styles.editorToolToggle, editorToolsExpanded && styles.editorToolToggleOpen)}
+										onClick={() => setEditorToolsExpanded((expanded) => !expanded)}
+										aria-label={editorToolsExpanded ? t`Hide story tools` : t`Show story tools`}
+										aria-expanded={editorToolsExpanded}
+									>
+										<DotsThreeIcon weight="bold" />
+									</button>
+									<AnimatePresence initial={false}>
+										{editorToolsExpanded && (
+											<motion.div
+												key="story-editor-tools"
+												className={styles.editorTools}
+												initial={reducedMotion ? false : {opacity: 0, y: -10, scale: 0.96}}
+												animate={{opacity: 1, y: 0, scale: 1}}
+												exit={{opacity: 0, y: -8, scale: 0.96}}
+												transition={{duration: reducedMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1]}}
+											>
 									<button type="button" className={styles.toolButton} onClick={() => fileInputRef.current?.click()} aria-label={t`Add photo or video`}>
 										<ImageSquareIcon weight="bold" />
 									</button>
@@ -1469,14 +1569,6 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 										aria-label={t`Text color`}
 									>
 										<PaletteIcon weight="bold" />
-									</button>
-									<button
-										type="button"
-										className={clsx(styles.toolButton, emojiPickerOpen && styles.toolButtonActive)}
-										onClick={() => setEmojiPickerOpen((open) => !open)}
-										aria-label={t`Add emoji`}
-									>
-										<SmileyIcon weight="bold" />
 									</button>
 									<button
 										type="button"
@@ -1512,15 +1604,9 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 									>
 										<ResizeIcon weight="bold" />
 									</button>
-									<button
-										type="button"
-										className={clsx(styles.toolButton, isEditedTextTransform && styles.toolButtonActive)}
-										onClick={resetTextTransform}
-										aria-label={t`Reset text position`}
-										disabled={!draftText.trim()}
-									>
-										<TextAaIcon weight="bold" />
-									</button>
+											</motion.div>
+										)}
+									</AnimatePresence>
 								</div>
 								<AnimatePresence initial={false}>
 									{emojiPickerOpen && (
@@ -1554,29 +1640,100 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 										))}
 									</div>
 								)}
-								<textarea
-									value={draftText}
-									onChange={(event) => setDraftText(event.currentTarget.value.slice(0, 280))}
-									className={styles.storyTextarea}
-									placeholder={draftPreview ? t`Add a caption` : t`Write a status`}
-								/>
-								{draftMediaPreparing && <div className={styles.editorHint}><Trans>Preparing media...</Trans></div>}
-								<div className={styles.backgroundRow} aria-label={t`Story background`}>
-									{storyBackgrounds.map((background) => (
-										<button
-											key={background}
-											type="button"
-											className={clsx(
-												styles.backgroundSwatch,
-												getBackgroundClass(background),
-												background === draftBackground && styles.backgroundSwatchSelected,
-											)}
-											onClick={() => setDraftBackground(background)}
-											aria-label={getBackgroundLabel(background)}
+								<motion.div
+									className={styles.storyComposer}
+									initial={reducedMotion ? false : {opacity: 0, y: 28, scale: 0.98}}
+									animate={{opacity: 1, y: 0, scale: 1}}
+									transition={
+										reducedMotion
+											? {duration: 0}
+											: {type: 'spring', stiffness: 440, damping: 32, mass: 0.72}
+									}
+								>
+									<div className={styles.storyTextareaWrap}>
+										<textarea
+											value={draftText}
+											onChange={(event) => setDraftText(event.currentTarget.value.slice(0, 280))}
+											className={styles.storyTextarea}
+											placeholder={draftPreview ? t`Add a caption` : t`Write a status`}
+											rows={2}
 										/>
-									))}
-								</div>
-								{draftError && <div className={styles.editorError}>{draftError}</div>}
+										<button
+											type="button"
+											className={clsx(styles.storyTextareaEmojiButton, emojiPickerOpen && styles.storyTextareaEmojiButtonActive)}
+											onClick={() => setEmojiPickerOpen((open) => !open)}
+											aria-label={t`Add emoji`}
+										>
+											<SmileyIcon weight="bold" />
+										</button>
+									</div>
+									<div className={styles.backgroundRow} aria-label={t`Story background`}>
+										{storyBackgrounds.map((background) => (
+											<button
+												key={background}
+												type="button"
+												className={clsx(
+													styles.backgroundSwatch,
+													getBackgroundClass(background),
+													background === draftBackground && styles.backgroundSwatchSelected,
+												)}
+												onClick={() => setDraftBackground(background)}
+												aria-label={getBackgroundLabel(background)}
+											/>
+										))}
+									</div>
+									{showDraftAdjustments && (
+										<div className={styles.storyAdjustmentPanel}>
+											{draftPreview && (
+												<label className={styles.storyAdjustmentControl}>
+													<span>{t`Media zoom`}</span>
+													<input
+														type="range"
+														min="1"
+														max="4"
+														step="0.05"
+														value={draftMediaTransform.scale}
+														onChange={handleDraftMediaScaleChange}
+														aria-label={t`Media zoom`}
+													/>
+												</label>
+											)}
+											{draftText.trim() && (
+												<label className={styles.storyAdjustmentControl}>
+													<span>{t`Text zoom`}</span>
+													<input
+														type="range"
+														min="0.6"
+														max="2.8"
+														step="0.05"
+														value={draftTextTransform.scale}
+														onChange={handleDraftTextScaleChange}
+														aria-label={t`Text zoom`}
+													/>
+												</label>
+											)}
+											{isVideoDraft && (
+												<label className={styles.storyAdjustmentControl}>
+													<span>
+														{t`Video length`}
+														<strong>{draftDurationSeconds}s</strong>
+													</span>
+													<input
+														type="range"
+														min={STORY_MIN_DURATION_MS / 1000}
+														max={STORY_MAX_DURATION_MS / 1000}
+														step="1"
+														value={draftDurationSeconds}
+														onChange={handleDraftDurationChange}
+														aria-label={t`Video length`}
+													/>
+												</label>
+											)}
+											{draftMediaPreparing && <div className={styles.editorStatusMessage}><Trans>Preparing media...</Trans></div>}
+											{draftError && <div className={clsx(styles.editorStatusMessage, styles.editorStatusError)}>{draftError}</div>}
+										</div>
+									)}
+								</motion.div>
 							</div>
 						</motion.div>
 					</motion.div>
@@ -1639,7 +1796,7 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 									{activeSlide.user_id === currentUserId && (
 										<button
 											type="button"
-											className={styles.closeButton}
+											className={clsx(styles.closeButton, styles.deleteButton)}
 											onClick={deleteActiveStory}
 											aria-label={t`Delete story`}
 										>
@@ -1669,7 +1826,12 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 										onTimeUpdate={(event) => {
 											const video = event.currentTarget;
 											if (video.duration && Number.isFinite(video.duration)) {
-												setProgress(video.currentTime / video.duration);
+												const storyDurationSeconds = Math.max(1, Number(activeSlide.duration_ms || STORY_VIDEO_DEFAULT_DURATION_MS) / 1000);
+												const visibleDurationSeconds = Math.min(video.duration, storyDurationSeconds);
+												setProgress(clamp(video.currentTime / visibleDurationSeconds, 0, 1));
+												if (video.currentTime >= visibleDurationSeconds) {
+													goToNext();
+												}
 											}
 										}}
 										onEnded={goToNext}
@@ -1717,6 +1879,33 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 								))}
 							</div>
 
+							<AnimatePresence>
+								{reactionBurst && (
+									<motion.div
+										key={reactionBurst.id}
+										className={styles.storyReactionBurst}
+										aria-hidden="true"
+										initial={reducedMotion ? false : {opacity: 0}}
+										animate={reducedMotion ? {opacity: 1} : {opacity: [0, 1, 1, 0]}}
+										exit={{opacity: 0}}
+										transition={{duration: reducedMotion ? 0 : 1.08, ease: [0.22, 1, 0.36, 1]}}
+									>
+										{Array.from({length: 11}, (_, index) => {
+											const assetUrl = getStoryReactionAssetUrl(reactionBurst.emoji);
+											return (
+												<i key={index} className={styles.storyReactionBubble}>
+													{assetUrl ? (
+														<img src={assetUrl} alt="" draggable={false} />
+													) : (
+														<span>{reactionBurst.emoji}</span>
+													)}
+												</i>
+											);
+										})}
+									</motion.div>
+								)}
+							</AnimatePresence>
+
 							<button
 								type="button"
 								className={clsx(styles.storyQuickActionButton, storyActionsExpanded && styles.storyQuickActionButtonHidden)}
@@ -1742,29 +1931,33 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 									<span />
 								</button>
 								<div className={styles.storyReactionRow} aria-label={t`Story reactions`}>
-									{storyReactionOptions.map((emoji) => {
-										const assetUrl = getStoryReactionAssetUrl(emoji);
-										return (
+									{activeReactionEmoji ? (
+										<button
+											type="button"
+											className={clsx(styles.storyReactionButton, styles.storyReactionButtonActive)}
+											onClick={() => reactToActiveStory(activeReactionEmoji)}
+											aria-disabled={storyActionBusy}
+											aria-label={t`Remove story reaction`}
+										>
+											{renderStoryReactionIcon(activeReactionEmoji)}
+										</button>
+									) : (
+										storyReactionOptions.map((emoji) => (
 											<button
 												key={emoji}
 												type="button"
-												className={clsx(styles.storyReactionButton, activeReactionEmoji === emoji && styles.storyReactionButtonActive)}
+												className={styles.storyReactionButton}
 												onClick={() => reactToActiveStory(emoji)}
-												disabled={storyActionBusy || activeReactionEmoji === emoji}
+												aria-disabled={storyActionBusy}
 												aria-label={t`React to story`}
 											>
-												{assetUrl ? <img src={assetUrl} alt="" draggable={false} /> : <span>{emoji}</span>}
+												{renderStoryReactionIcon(emoji)}
 											</button>
-										);
-									})}
-									{visibleReactionEmoji && (
+										))
+									)}
+									{!activeReactionEmoji && visibleReactionEmoji && (
 										<span className={styles.storyReactionCount} aria-label={t`${visibleReactionsCount} story reactions`}>
-											{getStoryReactionAssetUrl(visibleReactionEmoji) ? (
-												<img src={getStoryReactionAssetUrl(visibleReactionEmoji) ?? ''} alt="" draggable={false} />
-											) : (
-												<span>{visibleReactionEmoji}</span>
-											)}
-											{visibleReactionsCount}
+											{renderStoryReactionIcon(visibleReactionEmoji)}
 										</span>
 									)}
 									<button
@@ -1799,15 +1992,15 @@ export const StoriesRail: React.FC<StoriesRailProps> = observer(({users, onOverl
 									</div>
 								) : isOwnActiveStory ? (
 									<div className={styles.storyOwnerStats}>
-										<span className={styles.storyOwnerStat}>
+										<span className={clsx(styles.storyOwnerStat, styles.storyOwnerViews)}>
 											<EyeIcon weight="bold" />
 											{t`${activeViewsCount} views`}
 										</span>
-										{(activeSlide.reactions ?? []).map((reaction) => (
-											<span key={reaction.emoji} className={styles.storyOwnerStat}>
-												{reaction.emoji} {reaction.count}
+										{ownerVisibleReactionEmoji && (
+											<span className={clsx(styles.storyOwnerStat, styles.storyOwnerReactionStat)}>
+												{renderStoryReactionIcon(ownerVisibleReactionEmoji)}
 											</span>
-										))}
+										)}
 										{activeReactionsCount === 0 && (
 											<span className={styles.storyOwnerHint}>
 												<Trans>No reactions yet</Trans>

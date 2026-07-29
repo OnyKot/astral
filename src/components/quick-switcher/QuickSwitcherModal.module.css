@@ -19,16 +19,13 @@
 
 .container,
 .mobileSheet {
-	--qs-shell-top: color-mix(in srgb, var(--app-surface-background) 34%, var(--background-primary) 66%);
-	--qs-shell-bottom: color-mix(in srgb, var(--background-secondary) 32%, var(--background-primary) 68%);
-	--qs-card-top: color-mix(in srgb, var(--background-floating) 22%, var(--background-primary) 78%);
-	--qs-card-bottom: color-mix(in srgb, var(--background-secondary) 24%, var(--background-primary) 76%);
-	--qs-card-hover-top: color-mix(in srgb, var(--background-floating) 30%, var(--background-primary) 70%);
-	--qs-card-hover-bottom: color-mix(in srgb, var(--background-secondary) 34%, var(--background-primary) 66%);
-	--qs-border: color-mix(in srgb, var(--text-primary) 10%, transparent);
-	--qs-border-strong: color-mix(in srgb, var(--text-primary) 16%, transparent);
-	--qs-highlight: color-mix(in srgb, var(--text-primary) 8%, transparent);
-	--qs-shadow: rgb(8 15 28 / 0.22);
+	--qs-shell: color-mix(in srgb, var(--background-primary) 92%, var(--background-floating) 8%);
+	--qs-card: color-mix(in srgb, var(--background-primary) 88%, var(--background-floating) 12%);
+	--qs-card-hover: color-mix(in srgb, var(--background-primary) 96%, var(--background-floating) 4%);
+	--qs-card-active: color-mix(in srgb, var(--brand-primary) 9%, transparent);
+	--qs-border: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	--qs-border-strong: color-mix(in srgb, var(--text-primary) 12%, transparent);
+	--qs-shadow: rgb(0 0 0 / 0.18);
 }
 
 .option {
@@ -37,9 +34,9 @@
 	min-height: 42px;
 	align-items: center;
 	border: 1px solid transparent;
-	background: linear-gradient(180deg, transparent, transparent);
+	background: transparent;
 	text-align: left;
-	border-radius: 1rem;
+	border-radius: 8px;
 	padding: 0.5rem 0.625rem;
 	cursor: pointer;
 	color: var(--text-primary);
@@ -49,23 +46,15 @@
 }
 
 .option:hover {
-	background:
-		linear-gradient(180deg, var(--qs-card-hover-top), var(--qs-card-hover-bottom)),
-		color-mix(in srgb, var(--brand-primary) 8%, transparent);
-	border-color: color-mix(in srgb, var(--brand-primary) 12%, transparent);
-	box-shadow:
-		0 12px 24px rgb(8 15 28 / 0.12),
-		inset 0 1px 0 var(--qs-highlight);
+	background: var(--qs-card-hover);
+	border-color: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+	transform: translateY(-1px);
 }
 
 .optionActive {
-	background:
-		linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 16%, var(--qs-card-top)), var(--qs-card-bottom)),
-		color-mix(in srgb, var(--surface-interactive-selected-bg) 20%, transparent);
-	border-color: color-mix(in srgb, var(--brand-primary) 20%, transparent);
-	box-shadow:
-		0 16px 28px rgb(8 15 28 / 0.14),
-		inset 0 1px 0 color-mix(in srgb, var(--text-primary) 12%, transparent);
+	background: var(--qs-card-active);
+	border-color: color-mix(in srgb, var(--brand-primary) 22%, transparent);
+	box-shadow: none;
 }
 
 .option + .option {
@@ -120,7 +109,7 @@
 	width: 20px;
 	height: 20px;
 	flex-shrink: 0;
-	color: color-mix(in srgb, var(--brand-primary) 42%, var(--text-primary));
+	color: var(--text-muted);
 }
 
 .avatar {
@@ -182,18 +171,13 @@
 
 .container {
 	width: 100%;
-	max-width: 36rem;
+	max-width: 34rem;
 	overflow: hidden;
-	border-radius: 1.5rem;
+	border-radius: 8px;
 	border: 1px solid var(--qs-border);
-	background:
-		radial-gradient(circle at top left, color-mix(in srgb, var(--brand-primary) 16%, transparent) 0%, transparent 44%),
-		radial-gradient(circle at bottom right, color-mix(in srgb, var(--status-online) 10%, transparent) 0%, transparent 40%),
-		linear-gradient(180deg, var(--qs-shell-top), var(--qs-shell-bottom));
-	box-shadow:
-		0 28px 64px var(--qs-shadow),
-		inset 0 1px 0 var(--qs-highlight);
-	backdrop-filter: blur(26px) saturate(128%);
+	background: var(--qs-shell);
+	box-shadow: 0 18px 44px var(--qs-shadow);
+	backdrop-filter: none;
 }
 
 .header {
@@ -201,14 +185,10 @@
 }
 
 .inputBackground {
-	border-radius: 1rem;
+	border-radius: 8px;
 	border: 1px solid var(--qs-border);
-	background:
-		linear-gradient(180deg, var(--qs-card-top), var(--qs-card-bottom)),
-		color-mix(in srgb, var(--brand-primary) 6%, transparent);
-	box-shadow:
-		0 12px 24px rgb(8 15 28 / 0.12),
-		inset 0 1px 0 var(--qs-highlight);
+	background: var(--qs-card);
+	box-shadow: none;
 }
 
 .scrollerContainer {
@@ -246,9 +226,7 @@
 
 .footer {
 	border-top: 1px solid var(--qs-border);
-	background:
-		linear-gradient(180deg, color-mix(in srgb, var(--qs-card-top) 60%, transparent), color-mix(in srgb, var(--qs-card-bottom) 90%, transparent)),
-		transparent;
+	background: transparent;
 	padding: 0.75rem 0.875rem 0.875rem;
 	font-size: 11px;
 	color: var(--text-secondary);
@@ -281,7 +259,7 @@
 	justify-content: center;
 	border-radius: 999px;
 	border: 1px solid var(--qs-border-strong);
-	background: linear-gradient(180deg, var(--qs-card-top), var(--qs-card-bottom));
+	background: var(--qs-card);
 	padding-left: 0.25rem;
 	padding-right: 0.25rem;
 	font-size: 11px;
@@ -301,9 +279,7 @@
 	display: flex;
 	flex-direction: column;
 	height: 100%;
-	background:
-		radial-gradient(circle at top left, color-mix(in srgb, var(--brand-primary) 16%, transparent) 0%, transparent 40%),
-		linear-gradient(180deg, var(--qs-shell-top), var(--qs-shell-bottom));
+	background: var(--qs-shell);
 	padding: 0 16px calc(var(--safe-area-bottom, 0px) + 1rem);
 }
 
@@ -391,7 +367,7 @@
 	align-items: center;
 	width: 100%;
 	border: 1px solid transparent;
-	background: linear-gradient(180deg, transparent, transparent);
+	background: transparent;
 	color: var(--text-primary);
 	border-radius: 1rem;
 	padding: 0.375rem 0.5rem;

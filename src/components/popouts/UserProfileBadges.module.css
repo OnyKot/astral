@@ -255,6 +255,14 @@
 	}
 
 	.badgeCoinShine {
-		animation: none !important;
+		/* Do not write `animation: none !important` in a CSS module: rspack's
+		 * native CSS-modules transform localizes the `important` keyword as if
+		 * it were a @keyframes name (`!<hash>-important`), which makes the
+		 * declaration invalid — browsers drop it, so the motion is NOT reduced,
+		 * and the whole stylesheet then fails CSS minification. */
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
 	}
 }
+
+

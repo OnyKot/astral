@@ -11,6 +11,11 @@ data class LoginRequest(
     val password: String,
 )
 
+enum class MfaMethod {
+    Totp,
+    Sms,
+}
+
 data class RegisterRequest(
     val email: String,
     val username: String?,

@@ -46,6 +46,27 @@ import type {IUserAccountRepository} from '../repositories/IUserAccountRepositor
 import type {IUserChannelRepository} from '../repositories/IUserChannelRepository';
 import type {IUserRelationshipRepository} from '../repositories/IUserRelationshipRepository';
 
+const DM_PRELOAD_CONCURRENCY = 8;
+
+async function mapWithConcurrency<T, R>(
+	items: ReadonlyArray<T>,
+	concurrency: number,
+	mapper: (item: T) => Promise<R>,
+): Promise<Array<R>> {
+	const results = new Array<R>(items.length);
+	let nextIndex = 0;
+
+	const workers = Array.from({length: Math.min(concurrency, items.length)}, async () => {
+		while (nextIndex < items.length) {
+			const currentIndex = nextIndex++;
+			results[currentIndex] = await mapper(items[currentIndex]);
+		}
+	});
+
+	await Promise.all(workers);
+	return results;
+}
+
 export class UserChannelService {
 	constructor(
 		private userAccountRepository: IUserAccountRepository,
@@ -141,15 +162,14 @@ export class UserChannelService {
 			throw InputValidationError.create('channels', 'Cannot preload more than 100 channels at once');
 		}
 
-		const results: Record<string, Message | null> = {};
-		const fetchPromises = channelIds.map(async (channelId) => {
+		const entries = await mapWithConcurrency(channelIds, DM_PRELOAD_CONCURRENCY, async (channelId) => {
 			try {
 				const channel = await this.channelService.getChannel({userId, channelId});
 				if (channel.type !== ChannelTypes.DM && channel.type !== ChannelTypes.GROUP_DM) {
-					return;
+					return [channelId.toString(), null] as const;
 				}
 				if (!channel.recipientIds.has(userId)) {
-					return;
+					return [channelId.toString(), null] as const;
 				}
 				const messages = await this.channelService.getMessages({
 					userId,
@@ -159,14 +179,13 @@ export class UserChannelService {
 					after: undefined,
 					around: undefined,
 				});
-				results[channelId.toString()] = messages[0] ?? null;
+				return [channelId.toString(), messages[0] ?? null] as const;
 			} catch {
-				results[channelId.toString()] = null;
+				return [channelId.toString(), null] as const;
 			}
 		});
 
-		await Promise.all(fetchPromises);
-		return results;
+		return Object.fromEntries(entries);
 	}
 
 	async getExistingDmForUsers(userId: UserID, recipientId: UserID): Promise<Channel | null> {

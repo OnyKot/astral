@@ -69,7 +69,7 @@ interface AuthRegisterWizardCoreProps {
 
 type StepKey = 'credentials' | 'identity' | 'details' | 'consent';
 
-const SPRING_IN = {type: 'spring' as const, stiffness: 320, damping: 28};
+const SPRING_IN = {type: 'spring' as const, stiffness: 430, damping: 36, mass: 0.74};
 const MIN_PASSWORD_LENGTH = 8;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
@@ -302,9 +302,9 @@ export function AuthRegisterWizardCore({
 	const stepVariants = reducedMotion
 		? {initial: {}, animate: {}, exit: {}}
 		: {
-				initial: {opacity: 0, x: 24},
+				initial: {opacity: 0, x: 14},
 				animate: {opacity: 1, x: 0},
-				exit: {opacity: 0, x: -24},
+				exit: {opacity: 0, x: -14},
 			};
 
 	return (

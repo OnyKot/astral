@@ -122,8 +122,8 @@ export const MediaTabContent: React.FC = observer(() => {
 	return (
 		<>
 			<SettingsTabSection
-				title="Media Size Preferences"
-				description="Customize the maximum display size for embedded and attached media. Smaller sizes use less screen space, while larger sizes show more detail."
+				title={t`Media Size Preferences`}
+				description={t`Customize the maximum display size for embedded and attached media. Smaller sizes use less screen space, while larger sizes show more detail.`}
 			>
 				<div className={styles.radioSections}>
 					<div className={styles.radioSection}>
@@ -156,7 +156,7 @@ export const MediaTabContent: React.FC = observer(() => {
 				</div>
 			</SettingsTabSection>
 
-			<SettingsTabSection title="GIF Behavior" description="Control how GIFs are inserted into chat">
+			<SettingsTabSection title={t`GIF Behavior`} description={t`Control how GIFs are inserted into chat`}>
 				<div className={styles.sectionContent}>
 					<Switch
 						label={t`Automatically send Tenor GIFs when selected`}
@@ -168,8 +168,8 @@ export const MediaTabContent: React.FC = observer(() => {
 
 			{!mobileLayout.enabled && (
 				<SettingsTabSection
-					title="Media Buttons"
-					description="Customize which buttons appear on media attachments and embeds when hovering over messages."
+					title={t`Media Buttons`}
+					description={t`Customize which buttons appear on media attachments and embeds when hovering over messages.`}
 				>
 					<div className={styles.sectionContent}>
 						<MediaPreview

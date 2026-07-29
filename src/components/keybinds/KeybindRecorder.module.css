@@ -17,6 +17,14 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
+.inlineEditor {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 0.5rem;
+	width: 100%;
+}
+
 .recorder {
 	box-sizing: border-box;
 	position: relative;
@@ -37,6 +45,22 @@
 .recorder:not(.disabled):hover,
 .recorder[aria-expanded='true']:not(.disabled) {
 	border-color: var(--background-modifier-accent-focus);
+}
+
+.recording {
+	border-color: var(--status-danger);
+	background-color: var(--control-button-danger-hover-bg);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--status-danger) 18%, transparent);
+}
+
+.recording .editIconLeft,
+.recording .input {
+	color: var(--status-danger);
+}
+
+.dirty:not(.recording) {
+	border-color: var(--brand-primary);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary) 16%, transparent);
 }
 
 .recorder * {
@@ -230,6 +254,13 @@
 	display: flex;
 	align-items: center;
 	gap: 0.25rem;
+}
+
+.inlineActions {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	flex-shrink: 0;
 }
 
 @keyframes pulse {

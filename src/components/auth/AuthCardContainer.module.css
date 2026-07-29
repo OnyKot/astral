@@ -34,3 +34,49 @@
 .inertOverlay a {
 	opacity: 0.75;
 }
+
+.contentMotion {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	will-change: opacity, transform;
+}
+
+.contentMotion > * {
+	animation: authContentPaint 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.contentMotion > *:nth-child(2) {
+	animation-delay: 28ms;
+}
+
+.contentMotion > *:nth-child(3) {
+	animation-delay: 52ms;
+}
+
+.contentMotion > *:nth-child(4) {
+	animation-delay: 74ms;
+}
+
+.contentMotion > *:nth-child(5) {
+	animation-delay: 92ms;
+}
+
+@keyframes authContentPaint {
+	from {
+		opacity: 0;
+		transform: scale(0.996);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.contentMotion,
+	.contentMotion > * {
+		animation: none;
+		transform: none;
+	}
+}

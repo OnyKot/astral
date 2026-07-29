@@ -257,7 +257,7 @@ export class UserRepository implements IUserRepositoryAggregate {
 		return this.authRepo.clearMfaBackupCodes(userId);
 	}
 
-	async consumeMfaBackupCode(userId: UserID, code: string): Promise<void> {
+	async consumeMfaBackupCode(userId: UserID, code: string): Promise<boolean> {
 		return this.authRepo.consumeMfaBackupCode(userId, code);
 	}
 
@@ -601,6 +601,10 @@ export class UserRepository implements IUserRepositoryAggregate {
 
 	async linkGiftCodeToCheckoutSession(code: string, checkoutSessionId: string): Promise<void> {
 		return this.contentRepo.linkGiftCodeToCheckoutSession(code, checkoutSessionId);
+	}
+
+	async updateGiftMetadata(code: string, emoji: string | null, background: string | null): Promise<void> {
+		return this.contentRepo.updateGiftMetadata(code, emoji, background);
 	}
 
 	async listPushSubscriptions(userId: UserID): Promise<Array<PushSubscription>> {

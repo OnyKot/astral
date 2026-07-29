@@ -26,6 +26,7 @@ import {NativeTitlebar} from '~/components/layout/NativeTitlebar';
 import {Button} from '~/components/uikit/Button/Button';
 import {useNativePlatform} from '~/hooks/useNativePlatform';
 import {ensureLatestAssets} from '~/lib/versioning';
+import UpdaterStore from '~/stores/UpdaterStore';
 import {factoryReset, reloadAppHard} from '~/utils/factoryReset';
 
 interface ErrorFallbackProps {
@@ -73,10 +74,12 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = observer(({error, eve
 		setIsUpdating(true);
 		try {
 			const {updateFound} = await ensureLatestAssets({force: true});
-			if (!updateFound) {
-				setIsUpdating(false);
-				await reloadAppHard();
+			if (updateFound) {
+				await UpdaterStore.applyUpdate();
+				return;
 			}
+			setIsUpdating(false);
+			await reloadAppHard();
 		} catch (error) {
 			console.error('[ErrorFallback] Failed to apply update:', error);
 			setIsUpdating(false);

@@ -29,6 +29,29 @@ interface GatewayRpcResponse {
 const MAX_RETRY_ATTEMPTS = 3;
 const MAX_BACKOFF_MS = 5_000;
 const INITIAL_BACKOFF_MS = 500;
+const NON_RETRYABLE_GATEWAY_ERRORS = new Set(['forbidden', 'guild_not_found', 'guild not found']);
+
+class GatewayRpcError extends Error {
+	constructor(
+		message: string,
+		readonly status: number,
+	) {
+		super(message);
+		this.name = 'GatewayRpcError';
+	}
+}
+
+function isRetryableGatewayRpcError(error: unknown): boolean {
+	if (!(error instanceof GatewayRpcError)) {
+		return true;
+	}
+
+	if (error.status >= 400 && error.status < 500) {
+		return false;
+	}
+
+	return !NON_RETRYABLE_GATEWAY_ERRORS.has(error.message.toLowerCase());
+}
 
 export class GatewayRpcClient {
 	private static instance: GatewayRpcClient | null = null;
@@ -53,6 +76,10 @@ export class GatewayRpcClient {
 			try {
 				return await this.executeCall(method, params);
 			} catch (error) {
+				if (!isRetryableGatewayRpcError(error)) {
+					throw error;
+				}
+
 				if (attempt === MAX_RETRY_ATTEMPTS) {
 					throw error;
 				}
@@ -79,6 +106,7 @@ export class GatewayRpcClient {
 					method,
 					params,
 				}),
+				signal: AbortSignal.timeout(10_000),
 			});
 		} catch (error) {
 			Logger.error({error}, '[gateway-rpc] request failed to reach gateway');
@@ -100,7 +128,7 @@ export class GatewayRpcClient {
 		if (!response.ok) {
 			const message =
 				typeof payload.error === 'string' ? payload.error : `Gateway RPC request failed with status ${response.status}`;
-			throw new Error(message);
+			throw new GatewayRpcError(message, response.status);
 		}
 
 		if (!Object.hasOwn(payload, 'result')) {

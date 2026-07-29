@@ -43,6 +43,7 @@ import {JoinSourceTypes} from '~/constants/Guild';
 import {InputValidationError, MaxGuildsError, MissingPermissionsError, UnknownGuildError} from '~/Errors';
 import type {
 	GuildCreateRequest,
+	GuildCountsResponse,
 	GuildDiscoveryResponse,
 	GuildPartialResponse,
 	GuildResponse,
@@ -109,6 +110,36 @@ interface CachedGuildDiscoveryMetrics extends GuildDiscoveryMetrics {
 }
 
 const discoveryMetricsCache = new Map<string, CachedGuildDiscoveryMetrics>();
+
+interface CachedGuildCountsAccess {
+	allowed: boolean;
+	expiresAt: number;
+}
+
+const GUILD_COUNTS_ACCESS_CACHE_TTL_MS = 5_000;
+const GUILD_COUNTS_ACCESS_CACHE_MAX_ENTRIES = 10_000;
+const guildCountsAccessCache = new Map<string, CachedGuildCountsAccess>();
+const pendingGuildCountsAccessChecks = new Map<string, Promise<boolean>>();
+
+interface CachedDiscoveryScan {
+	guilds: Array<Guild>;
+	expiresAt: number;
+}
+
+/*
+ * The search-less discovery fallback walks the `guilds` token range sequentially — up to 4500 full
+ * rows in pages of at most 200 — before anything is filtered. That walk depends on nothing but
+ * (pageSize, scanTarget): not on the caller, not on the search text, not on the category. So every
+ * visitor of the discovery page was repeating the identical page walk. Cache the raw scan for a few
+ * seconds and coalesce concurrent walks onto one; the per-request filter/sort/slice below still runs
+ * unchanged, so the only difference in the response is up to the TTL of staleness in the candidate
+ * pool. Entries are capped because (pageSize, scanTarget) derive from caller-supplied `limit`/
+ * `offset` — a client cycling those just gets today's behaviour, never unbounded memory.
+ */
+const DISCOVERY_SCAN_CACHE_TTL_MS = 30 * 1000;
+const DISCOVERY_SCAN_CACHE_MAX_ENTRIES = 4;
+const discoveryScanCache = new Map<string, CachedDiscoveryScan>();
+const pendingDiscoveryScans = new Map<string, Promise<Array<Guild>>>();
 
 interface GuildDiscoveryCategoryDefinition {
 	id: GuildDiscoveryCategoryId;
@@ -206,6 +237,64 @@ export class GuildOperationsService {
 		return guild;
 	}
 
+	async getGuildCounts({userId, guildId}: {userId: UserID; guildId: GuildID}): Promise<GuildCountsResponse> {
+		const hasAccess = await this.hasGuildCountsAccess({userId, guildId});
+		if (!hasAccess) throw new MissingPermissionsError();
+
+		const counts = await this.gatewayService.getGuildCounts(guildId);
+		return {
+			guild_id: guildId.toString(),
+			member_count: counts.memberCount,
+			presence_count: counts.presenceCount,
+		};
+	}
+
+	private async hasGuildCountsAccess({userId, guildId}: {userId: UserID; guildId: GuildID}): Promise<boolean> {
+		const cacheKey = `${guildId.toString()}:${userId.toString()}`;
+		const now = Date.now();
+		const cached = guildCountsAccessCache.get(cacheKey);
+		if (cached && cached.expiresAt > now) {
+			return cached.allowed;
+		}
+
+		const pending = pendingGuildCountsAccessChecks.get(cacheKey);
+		if (pending) {
+			return pending;
+		}
+
+		const request = this.gatewayService
+			.hasGuildMember({guildId, userId})
+			.then((allowed) => {
+				this.setGuildCountsAccessCache(cacheKey, allowed);
+				return allowed;
+			})
+			.catch((error) => {
+				const message = error instanceof Error ? error.message : String(error);
+				if (message === 'guild_not_found' || message.includes('Guild not found')) {
+					throw new UnknownGuildError();
+				}
+				throw error;
+			})
+			.finally(() => {
+				pendingGuildCountsAccessChecks.delete(cacheKey);
+			});
+		pendingGuildCountsAccessChecks.set(cacheKey, request);
+		return request;
+	}
+
+	private setGuildCountsAccessCache(cacheKey: string, allowed: boolean): void {
+		if (guildCountsAccessCache.size >= GUILD_COUNTS_ACCESS_CACHE_MAX_ENTRIES) {
+			const firstKey = guildCountsAccessCache.keys().next().value;
+			if (firstKey) {
+				guildCountsAccessCache.delete(firstKey);
+			}
+		}
+		guildCountsAccessCache.set(cacheKey, {
+			allowed,
+			expiresAt: Date.now() + GUILD_COUNTS_ACCESS_CACHE_TTL_MS,
+		});
+	}
+
 	async getUserGuilds(userId: UserID): Promise<Array<GuildResponse>> {
 		const guilds = await this.guildRepository.listUserGuilds(userId);
 		const guildsWithPermissions = await Promise.all(
@@ -268,16 +357,7 @@ export class GuildOperationsService {
 		if (!usedSearch) {
 			const scanTarget = Math.min(Math.max(candidateLimit * 3, 240), 4500);
 			const pageSize = Math.min(Math.max(Math.floor(candidateLimit / 2), 80), 200);
-			let lastGuildId: GuildID | undefined;
-			const collectedGuilds: Array<Guild> = [];
-
-			while (collectedGuilds.length < scanTarget) {
-				const page = await this.guildRepository.listAllGuildsPaginated(pageSize, lastGuildId);
-				if (page.length === 0) break;
-				collectedGuilds.push(...page);
-				lastGuildId = page[page.length - 1]?.id;
-				if (page.length < pageSize) break;
-			}
+			const collectedGuilds = await this.scanDiscoveryCandidates(pageSize, scanTarget);
 
 			const filteredGuilds =
 				normalizedQuery.length === 0
@@ -424,6 +504,58 @@ export class GuildOperationsService {
 			total: categorizedGuilds.length,
 			taxonomy,
 		};
+	}
+
+	/**
+	 * Token-range walk of `guilds` used by the discovery fallback, memoised per (pageSize, scanTarget).
+	 * The walk is a deterministic prefix of the ring order, so a cache hit yields exactly the array the
+	 * loop would have rebuilt. Callers get a copy because they sort the result in place.
+	 */
+	private async scanDiscoveryCandidates(pageSize: number, scanTarget: number): Promise<Array<Guild>> {
+		const cacheKey = `${pageSize}:${scanTarget}`;
+		const cached = discoveryScanCache.get(cacheKey);
+		if (cached && cached.expiresAt > Date.now()) {
+			return [...cached.guilds];
+		}
+
+		const inFlight = pendingDiscoveryScans.get(cacheKey);
+		if (inFlight) {
+			return [...(await inFlight)];
+		}
+
+		const scan = (async () => {
+			let lastGuildId: GuildID | undefined;
+			const collectedGuilds: Array<Guild> = [];
+
+			while (collectedGuilds.length < scanTarget) {
+				const page = await this.guildRepository.listAllGuildsPaginated(pageSize, lastGuildId);
+				if (page.length === 0) break;
+				collectedGuilds.push(...page);
+				lastGuildId = page[page.length - 1]?.id;
+				if (page.length < pageSize) break;
+			}
+
+			return collectedGuilds;
+		})();
+
+		pendingDiscoveryScans.set(cacheKey, scan);
+		try {
+			const collectedGuilds = await scan;
+			// Evict only when this key is genuinely new, so refreshing an entry cannot drop a live one.
+			if (!discoveryScanCache.has(cacheKey) && discoveryScanCache.size >= DISCOVERY_SCAN_CACHE_MAX_ENTRIES) {
+				const oldestKey = discoveryScanCache.keys().next().value;
+				if (oldestKey) {
+					discoveryScanCache.delete(oldestKey);
+				}
+			}
+			discoveryScanCache.set(cacheKey, {
+				guilds: collectedGuilds,
+				expiresAt: Date.now() + DISCOVERY_SCAN_CACHE_TTL_MS,
+			});
+			return [...collectedGuilds];
+		} finally {
+			pendingDiscoveryScans.delete(cacheKey);
+		}
 	}
 
 	private async getDiscoveryMetrics(guilds: Array<Guild>): Promise<Map<string, GuildDiscoveryMetrics>> {

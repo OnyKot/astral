@@ -482,3 +482,4 @@ const TelegramLoginButton: React.FC<{botUsername: string}> = React.memo(({botUse
 	}, [botUsername]);
 	return <div ref={containerRef} />;
 });
+

@@ -143,6 +143,98 @@
 	color: white;
 }
 
+.themeMultiColorPickerField {
+	position: relative;
+	display: grid;
+	grid-template-columns: 54px minmax(0, 1fr);
+	align-items: center;
+	gap: 0.56rem;
+	width: 100%;
+	min-height: 4.1rem;
+	padding: 0.42rem 0.5rem;
+	border-radius: 0.82rem;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+	background: color-mix(in srgb, var(--background-secondary) 86%, var(--background-primary) 14%);
+	transition:
+		border-color 150ms ease,
+		background-color 150ms ease,
+		transform 150ms ease;
+}
+
+.themeMultiColorPickerField:hover {
+	background: color-mix(in srgb, var(--background-secondary) 80%, var(--brand-primary) 20%);
+	border-color: color-mix(in srgb, var(--brand-primary) 26%, transparent);
+	transform: translateY(-1px);
+}
+
+.themeMultiColorPickerSelected {
+	border-color: var(--brand-primary);
+	background: color-mix(in srgb, var(--background-secondary) 76%, var(--brand-primary) 24%);
+}
+
+.themeMultiColorPickerField [class*='labelContainer'] {
+	grid-column: 2;
+	grid-row: 1;
+	align-self: end;
+	min-width: 0;
+}
+
+.themeMultiColorPickerField legend {
+	font-size: 0.79rem;
+	font-weight: 700;
+	line-height: 1.2;
+	color: var(--text-primary);
+}
+
+.themeMultiColorPickerField [class*='inputContainer'] {
+	display: contents;
+}
+
+.themeMultiColorPickerField [class*='inputWrapper'] {
+	grid-column: 1;
+	grid-row: 1 / span 2;
+	width: 54px;
+	height: 44px;
+	border-radius: 9999px;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 14%, transparent);
+	box-shadow:
+		0 10px 18px rgb(0 0 0 / 0.12),
+		inset 0 1px 0 rgb(255 255 255 / 0.14);
+	overflow: hidden;
+}
+
+.themeMultiColorPickerField input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.themeMultiColorPickerField [class*='divider'] {
+	display: none;
+}
+
+.themeMultiColorPickerField [class*='swatchButton'] {
+	width: 100%;
+	height: 100%;
+	border-radius: inherit;
+}
+
+.themeMultiColorPickerField [class*='swatchIcon'] {
+	filter: drop-shadow(0 1px 4px rgb(0 0 0 / 0.2));
+}
+
+.themeMultiColorPickerDescription {
+	grid-column: 2;
+	grid-row: 2;
+	margin: 0;
+	font-size: 0.68rem;
+	line-height: 1.2;
+	color: var(--text-tertiary);
+}
+
 .colorGrid {
 	display: grid;
 	grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -989,4 +1081,640 @@
 	min-height: 16rem;
 	padding-top: 2.5rem;
 	padding-bottom: 2.5rem;
+}
+
+.themeButtonGroup {
+	grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+	gap: 0.6rem;
+	padding: 0.7rem;
+	max-width: none;
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--background-floating) 10%, transparent);
+	border-color: color-mix(in srgb, var(--text-primary) 7%, transparent);
+	box-shadow: none;
+}
+
+.themeButtonGroup > div {
+	min-width: 0;
+	height: 100%;
+}
+
+.themeButton {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	gap: 0.45rem;
+	min-height: 4.7rem;
+	padding: 0.35rem;
+	border-radius: 8px;
+	border-color: transparent;
+	background: transparent;
+	height: 100%;
+}
+
+.themeButton:hover {
+	background: color-mix(in srgb, var(--background-floating) 18%, transparent);
+	transform: translateY(-1px);
+}
+
+.themeButtonSelected {
+	border-color: color-mix(in srgb, var(--brand-primary) 56%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 10%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-primary) 20%, transparent);
+}
+
+.themeSwatch {
+	width: 44px;
+	height: 44px;
+	border-radius: 9999px;
+	align-self: center;
+	box-shadow:
+		0 8px 18px rgb(0 0 0 / 0.12),
+		inset 0 1px 0 rgb(255 255 255 / 0.14);
+	transition:
+		transform 180ms var(--motion-ease-smooth),
+		box-shadow 180ms var(--motion-ease-smooth),
+		filter 180ms var(--motion-ease-smooth);
+}
+
+.themeSwatch::after {
+	display: none;
+}
+
+.themeButton:hover .themeSwatch {
+	transform: scale(1.035);
+	filter: saturate(1.05);
+}
+
+.themeButtonContent {
+	align-items: center;
+	gap: 0;
+	width: 100%;
+}
+
+.themeButtonLabel {
+	width: 100%;
+	font-size: 0.72rem;
+	letter-spacing: 0;
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.themeButtonDescription {
+	display: none;
+}
+
+.themeButtonIcon {
+	inset: auto;
+}
+
+.themeButtonCheckmark {
+	top: 0.16rem;
+	right: 0.12rem;
+	height: 1.12rem;
+	width: 1.12rem;
+	border: 2px solid color-mix(in srgb, var(--background-primary) 72%, transparent);
+}
+
+.themeMultiColorPickerField {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: center;
+	gap: 0.45rem;
+	min-height: 4.7rem;
+	padding: 0.35rem;
+	border-radius: 8px;
+	border: 1px solid transparent;
+	background: transparent;
+	box-sizing: border-box;
+	height: 100%;
+	min-width: 0;
+	margin: 0;
+}
+
+.themeMultiColorPickerField:hover {
+	background: color-mix(in srgb, var(--background-floating) 18%, transparent);
+	transform: translateY(-1px);
+}
+
+.themeMultiColorPickerSelected {
+	border-color: color-mix(in srgb, var(--brand-primary) 56%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 10%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-primary) 20%, transparent);
+}
+
+.themeMultiColorPickerSelected::after {
+	display: none;
+}
+
+.themeMultiColorPickerField [class*='labelContainer'] {
+	display: contents;
+}
+
+.themeMultiColorPickerField legend {
+	order: 2;
+	width: 100%;
+	font-size: 0.72rem;
+	font-weight: 700;
+	line-height: 1.2;
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: var(--text-primary);
+}
+
+.themeMultiColorPickerField [class*='inputContainer'] {
+	display: contents;
+}
+
+.themeMultiColorPickerField [class*='inputWrapper'] {
+	order: 1;
+	position: relative;
+	width: 44px;
+	height: 44px;
+	align-self: center;
+	border-radius: 9999px;
+	background:
+		conic-gradient(from 20deg, #ef4444, #f97316, #facc15, #22c55e, #06b6d4, #3b82f6, #a855f7, #ec4899, #ef4444);
+	box-shadow:
+		0 8px 18px rgb(0 0 0 / 0.12),
+		0 0 0 0 color-mix(in srgb, var(--theme-custom-gradient-middle) 0%, transparent),
+		inset 0 1px 0 rgb(255 255 255 / 0.14);
+	transition:
+		transform 180ms var(--motion-ease-smooth),
+		box-shadow 180ms var(--motion-ease-smooth),
+		filter 180ms var(--motion-ease-smooth);
+}
+
+.themeMultiColorPickerField [class*='inputWrapper']::before {
+	content: '';
+	position: absolute;
+	inset: 3px;
+	z-index: 0;
+	border-radius: inherit;
+	background:
+		radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--theme-custom-gradient-middle) 70%, white 30%) 0 25%, transparent 26%),
+		conic-gradient(from 20deg, #ef4444, #f97316, #facc15, #22c55e, #06b6d4, #3b82f6, #a855f7, #ec4899, #ef4444);
+	pointer-events: none;
+}
+
+.themeMultiColorPickerField [class*='inputWrapper']::after {
+	content: '';
+	position: absolute;
+	inset: 14px;
+	z-index: 1;
+	border-radius: inherit;
+	background: var(--theme-custom-gradient-middle);
+	border: 2px solid rgb(255 255 255 / 0.72);
+	box-shadow: 0 2px 10px rgb(0 0 0 / 0.18);
+	pointer-events: none;
+}
+
+.themeMultiColorPickerSelected [class*='inputWrapper'] {
+	box-shadow:
+		0 8px 18px rgb(0 0 0 / 0.12),
+		0 0 0 3px color-mix(in srgb, var(--theme-custom-gradient-middle) 36%, transparent),
+		0 0 18px color-mix(in srgb, var(--theme-custom-gradient-middle) 34%, transparent),
+		inset 0 1px 0 rgb(255 255 255 / 0.14);
+}
+
+.themeMultiColorPickerField:hover [class*='inputWrapper'] {
+	transform: scale(1.035);
+	filter: saturate(1.05);
+}
+
+.themeMultiColorPickerField input {
+	position: absolute;
+	inset: auto;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.themeMultiColorPickerField [class*='divider'] {
+	display: none;
+}
+
+.themeMultiColorPickerField [class*='swatchButton'] {
+	position: relative;
+	z-index: 2;
+	width: 100%;
+	height: 100%;
+	border-radius: inherit;
+	background: transparent !important;
+	overflow: visible;
+}
+
+.themeMultiColorPickerSelected [class*='swatchButton']::after {
+	content: '';
+	position: absolute;
+	top: 0.12rem;
+	right: 0.12rem;
+	width: 1.12rem;
+	height: 1.12rem;
+	border-radius: 9999px;
+	background:
+		linear-gradient(135deg, transparent 0 38%, white 39% 50%, transparent 51%),
+		var(--brand-primary);
+	border: 2px solid color-mix(in srgb, var(--background-primary) 72%, transparent);
+	box-shadow: 0 8px 16px color-mix(in srgb, var(--brand-primary) 24%, transparent);
+	pointer-events: none;
+}
+
+.themeMultiColorPickerField [class*='swatchIcon'] {
+	opacity: 0;
+}
+
+.themeMultiColorPickerDescription {
+	display: none;
+}
+
+.studioLayout {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.95rem;
+	align-items: start;
+}
+
+.optionSectionWide {
+	grid-column: 1 / -1;
+}
+
+.optionSection {
+	min-width: 0;
+	width: 100%;
+	gap: 0.62rem;
+	padding: 0.82rem;
+	border-radius: 8px;
+	border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+	border-top-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: linear-gradient(180deg, color-mix(in srgb, var(--background-floating) 10%, transparent), transparent);
+	box-shadow: none;
+}
+
+.optionHeading {
+	font-size: 0.92rem;
+}
+
+.optionDescription {
+	max-width: 42rem;
+	line-height: 1.35;
+}
+
+.presetGrid,
+.messageGradientGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+	gap: 0.52rem;
+	width: 100%;
+	min-width: 0;
+	align-items: stretch;
+}
+
+.presetCard,
+.messageGradientButton {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.42rem;
+	height: auto;
+	min-height: 4.95rem;
+	padding: 0.48rem 0.34rem;
+	border-radius: 8px;
+	border-color: transparent;
+	background: transparent;
+	text-align: center;
+	overflow: visible;
+	min-width: 0;
+}
+
+.presetCard:hover,
+.messageGradientButton:hover {
+	background: color-mix(in srgb, var(--background-floating) 18%, transparent);
+	transform: translateY(-1px);
+}
+
+.presetCardSelected,
+.messageGradientButtonSelected {
+	border-color: color-mix(in srgb, var(--brand-primary) 58%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 10%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+}
+
+.presetPreview,
+.messageGradientPreview {
+	position: relative;
+	width: 44px;
+	height: 44px;
+	flex: 0 0 44px;
+	border-radius: 9999px;
+	border-color: color-mix(in srgb, var(--text-primary) 12%, transparent);
+	box-shadow:
+		0 8px 18px rgb(0 0 0 / 0.12),
+		inset 0 1px 0 rgb(255 255 255 / 0.14);
+	transition:
+		transform 180ms var(--motion-ease-smooth),
+		filter 180ms var(--motion-ease-smooth);
+}
+
+.presetCard:hover .presetPreview,
+.messageGradientButton:hover .messageGradientPreview {
+	transform: scale(1.035);
+	filter: saturate(1.06) brightness(1.02);
+}
+
+.presetPreviewMessageLeft,
+.presetPreviewMessageRight {
+	display: none;
+}
+
+.presetCard[data-preset-gradient='default'] .presetPreview {
+	background: linear-gradient(135deg, color-mix(in srgb, var(--background-secondary) 86%, #64748b 14%), color-mix(in srgb, var(--background-primary) 82%, #334155 18%));
+}
+
+.presetCard[data-preset-gradient='legacy'] .presetPreview {
+	background: linear-gradient(135deg, #2f3136 0%, #1f2228 100%);
+}
+
+.presetCard[data-preset-gradient='aurora'] .presetPreview {
+	background: linear-gradient(135deg, #16a34a 0%, #2563eb 100%);
+}
+
+.presetCard[data-preset-gradient='sunset'] .presetPreview {
+	background: linear-gradient(135deg, #f97316 0%, #ec4899 100%);
+}
+
+.presetCard[data-preset-gradient='ocean'] .presetPreview {
+	background: linear-gradient(135deg, #06b6d4 0%, #2563eb 100%);
+}
+
+.presetCard[data-preset-gradient='midnight'] .presetPreview {
+	background: linear-gradient(135deg, #111827 0%, #4c1d95 100%);
+}
+
+.presetCard[data-preset-gradient='forest'] .presetPreview {
+	background: linear-gradient(135deg, #166534 0%, #84cc16 100%);
+}
+
+.presetCard[data-preset-gradient='ember'] .presetPreview {
+	background: linear-gradient(135deg, #dc2626 0%, #f59e0b 100%);
+}
+
+.presetCard[data-preset-gradient='nebula'] .presetPreview {
+	background: linear-gradient(135deg, #6366f1 0%, #d946ef 100%);
+}
+
+.presetCard[data-preset-gradient='magenta'] .presetPreview {
+	background: linear-gradient(135deg, #a855f7 0%, #ec4899 54%, #fb7185 100%);
+}
+
+.presetPreview::after,
+.messageGradientPreview::after {
+	display: none;
+}
+
+.presetContent,
+.messageGradientContent,
+.chatBackgroundContent {
+	align-items: center;
+	width: 100%;
+	padding: 0;
+}
+
+.presetHeader {
+	justify-content: center;
+}
+
+.presetTitle,
+.messageGradientLabel,
+.chatBackgroundLabel {
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0;
+	text-align: center;
+}
+
+.presetCheck,
+.messageGradientCheck,
+.chatBackgroundCheck {
+	position: absolute;
+	top: 0.12rem;
+	right: 0.12rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.1rem;
+	height: 1.1rem;
+	border-radius: 9999px;
+	background: var(--brand-primary);
+	color: white;
+	border: 2px solid color-mix(in srgb, var(--background-primary) 72%, transparent);
+	box-shadow: 0 8px 16px color-mix(in srgb, var(--brand-primary) 24%, transparent);
+}
+
+.messageGradientButton {
+	position: relative;
+	width: 100%;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.messageGradientPreview {
+	display: block;
+	overflow: hidden;
+	background: var(--message-gradient-preview-background);
+}
+
+.messageGradientPreviewIncoming,
+.messageGradientPreviewOutgoing {
+	position: absolute;
+	left: 50%;
+	width: 28px;
+	height: 8px;
+	border-radius: 9999px;
+	border: 1px solid rgb(255 255 255 / 0.14);
+	transform: translateX(-50%);
+}
+
+.messageGradientPreviewIncoming {
+	top: 14px;
+	background: color-mix(in srgb, var(--background-secondary) 82%, rgb(255 255 255 / 0.12));
+}
+
+.messageGradientPreviewOutgoing {
+	top: 24px;
+	background: var(--message-gradient-preview-outgoing);
+	box-shadow: 0 0 18px var(--message-gradient-preview-glow);
+}
+
+.messageGradientDescription,
+.chatBackgroundDescription {
+	display: none;
+}
+
+.messageGradientButton[data-message-gradient-preview='theme'] {
+	--message-gradient-preview-background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 24%, var(--background-secondary)), color-mix(in srgb, var(--background-primary) 90%, var(--brand-primary)));
+	--message-gradient-preview-outgoing: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 56%, #60a5fa), color-mix(in srgb, var(--brand-primary) 36%, #a78bfa));
+	--message-gradient-preview-glow: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+}
+
+.messageGradientButton[data-message-gradient-preview='soft'] {
+	--message-gradient-preview-background: linear-gradient(135deg, #1b2230, #2a3141);
+	--message-gradient-preview-outgoing: linear-gradient(135deg, #4b5563, #64748b);
+	--message-gradient-preview-glow: rgb(148 163 184 / 0.24);
+}
+
+.messageGradientButton[data-message-gradient-preview='aurora'] {
+	--message-gradient-preview-background: radial-gradient(circle at 25% 15%, rgb(34 197 94 / 0.35), transparent 42%), linear-gradient(135deg, #102a2d, #202241);
+	--message-gradient-preview-outgoing: linear-gradient(135deg, #16a34a, #38bdf8);
+	--message-gradient-preview-glow: rgb(34 197 94 / 0.32);
+}
+
+.messageGradientButton[data-message-gradient-preview='sunset'] {
+	--message-gradient-preview-background: radial-gradient(circle at 72% 8%, rgb(249 115 22 / 0.34), transparent 44%), linear-gradient(135deg, #331b25, #3c2237);
+	--message-gradient-preview-outgoing: linear-gradient(135deg, #f97316, #ec4899);
+	--message-gradient-preview-glow: rgb(249 115 22 / 0.32);
+}
+
+.messageGradientButton[data-message-gradient-preview='ocean'] {
+	--message-gradient-preview-background: radial-gradient(circle at 78% 18%, rgb(6 182 212 / 0.32), transparent 42%), linear-gradient(135deg, #092738, #172554);
+	--message-gradient-preview-outgoing: linear-gradient(135deg, #06b6d4, #2563eb);
+	--message-gradient-preview-glow: rgb(6 182 212 / 0.32);
+}
+
+.messageGradientButton[data-message-gradient-preview='forest'] {
+	--message-gradient-preview-background: radial-gradient(circle at 28% 16%, rgb(132 204 22 / 0.32), transparent 42%), linear-gradient(135deg, #12351f, #365314);
+	--message-gradient-preview-outgoing: linear-gradient(135deg, #15803d, #84cc16);
+	--message-gradient-preview-glow: rgb(132 204 22 / 0.3);
+}
+
+.messageGradientButton[data-message-gradient-preview='ember'] {
+	--message-gradient-preview-background: radial-gradient(circle at 72% 12%, rgb(245 158 11 / 0.34), transparent 44%), linear-gradient(135deg, #3f1717, #431407);
+	--message-gradient-preview-outgoing: linear-gradient(135deg, #dc2626, #f59e0b);
+	--message-gradient-preview-glow: rgb(245 158 11 / 0.3);
+}
+
+.messageGradientButton[data-message-gradient-preview='nebula'] {
+	--message-gradient-preview-background: radial-gradient(circle at 75% 18%, rgb(217 70 239 / 0.32), transparent 44%), linear-gradient(135deg, #1e1b4b, #581c87);
+	--message-gradient-preview-outgoing: linear-gradient(135deg, #6366f1, #d946ef);
+	--message-gradient-preview-glow: rgb(217 70 239 / 0.3);
+}
+
+.messageGradientButton[data-message-gradient-preview='magenta'] {
+	--message-gradient-preview-background: radial-gradient(circle at 76% 16%, rgb(236 72 153 / 0.35), transparent 44%), linear-gradient(135deg, #581c87, #831843);
+	--message-gradient-preview-outgoing: linear-gradient(135deg, #a855f7, #ec4899);
+	--message-gradient-preview-glow: rgb(236 72 153 / 0.32);
+}
+
+.messageGradientButton[data-message-gradient-preview='custom'] {
+	--message-gradient-preview-background:
+		radial-gradient(circle at 72% 16%, color-mix(in srgb, var(--theme-custom-gradient-middle) 34%, transparent), transparent 44%),
+		linear-gradient(135deg, var(--theme-custom-gradient-start), var(--theme-custom-gradient-end));
+	--message-gradient-preview-outgoing: linear-gradient(135deg, var(--theme-custom-gradient-start), var(--theme-custom-gradient-middle), var(--theme-custom-gradient-end));
+	--message-gradient-preview-glow: color-mix(in srgb, var(--theme-custom-gradient-middle) 32%, transparent);
+}
+
+.messageGradientButton[data-message-gradient-preview='mono'] {
+	--message-gradient-preview-background: linear-gradient(135deg, #16181d, #2b2f38);
+	--message-gradient-preview-outgoing: linear-gradient(135deg, #52525b, #71717a);
+	--message-gradient-preview-glow: rgb(113 113 122 / 0.22);
+}
+
+.chatBackgroundGrid {
+	display: grid;
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+	gap: 0.5rem;
+	align-items: stretch;
+}
+
+.chatBackgroundCard {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.42rem;
+	min-height: 4.9rem;
+	padding: 0.48rem 0.34rem;
+	border-radius: 8px;
+	border-color: transparent;
+	background: transparent;
+	text-align: center;
+	overflow: visible;
+}
+
+.chatBackgroundCard:hover {
+	background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
+	transform: translateY(-2px);
+}
+
+.chatBackgroundCardSelected {
+	border-color: color-mix(in srgb, var(--brand-primary) 58%, transparent);
+	background: color-mix(in srgb, var(--brand-primary) 10%, transparent);
+}
+
+.chatBackgroundPreview {
+	width: 44px;
+	height: 44px;
+	flex: 0 0 44px;
+	border-radius: 9999px;
+}
+
+.chatBackgroundPreviewIncoming,
+.chatBackgroundPreviewOutgoing {
+	display: none;
+}
+
+@media (max-width: 767px) {
+	.themeButtonGroup {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		padding: 0.62rem;
+	}
+
+	.themeButton {
+		min-height: 4.4rem;
+	}
+
+	.themeSwatch,
+	.presetPreview,
+	.messageGradientPreview,
+	.chatBackgroundPreview {
+		width: 40px;
+		height: 40px;
+		flex-basis: 40px;
+	}
+
+	.studioLayout {
+		grid-template-columns: 1fr;
+		gap: 0.7rem;
+	}
+
+	.optionSection {
+		padding: 0.68rem;
+	}
+
+	.presetGrid,
+	.messageGradientGrid,
+	.chatBackgroundGrid {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+
+	.presetCard,
+	.messageGradientButton {
+		min-height: 4.8rem;
+	}
+}
+
+@media (max-width: 520px) {
+	.themeButtonGroup,
+	.presetGrid,
+	.messageGradientGrid,
+	.chatBackgroundGrid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
 }

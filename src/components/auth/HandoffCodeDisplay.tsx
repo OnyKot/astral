@@ -29,10 +29,11 @@ interface HandoffCodeDisplayProps {
 	code: string | null;
 	isGenerating: boolean;
 	error: string | null;
+	success?: boolean;
 	onRetry?: () => void;
 }
 
-export function HandoffCodeDisplay({code, isGenerating, error, onRetry}: HandoffCodeDisplayProps) {
+export function HandoffCodeDisplay({code, isGenerating, error, success = false, onRetry}: HandoffCodeDisplayProps) {
 	const [copied, setCopied] = useState(false);
 
 	const handleCopyCode = useCallback(async () => {
@@ -46,7 +47,7 @@ export function HandoffCodeDisplay({code, isGenerating, error, onRetry}: Handoff
 		return (
 			<div className={styles.container}>
 				<h1 className={styles.title}>
-					<Trans>Generating code...</Trans>
+					<Trans>Linking desktop...</Trans>
 				</h1>
 				<div className={styles.spinner}>
 					<span className={styles.spinnerIcon} />
@@ -71,6 +72,22 @@ export function HandoffCodeDisplay({code, isGenerating, error, onRetry}: Handoff
 		);
 	}
 
+	if (success) {
+		return (
+			<div className={styles.container}>
+				<h1 className={styles.title}>
+					<Trans>Desktop linked</Trans>
+				</h1>
+				<p className={styles.description}>
+					<Trans>You can close this tab and return to the desktop app.</Trans>
+				</p>
+				<div className={styles.spinner}>
+					<CheckCircleIcon size={48} weight="fill" />
+				</div>
+			</div>
+		);
+	}
+
 	if (!code) {
 		return null;
 	}
@@ -87,23 +104,27 @@ export function HandoffCodeDisplay({code, isGenerating, error, onRetry}: Handoff
 			<p className={styles.description}>
 				<Trans>Paste it where you came from to complete sign-in.</Trans>
 			</p>
-
 			<div className={styles.codeSection}>
 				<p className={styles.codeLabel}>
-					<Trans>Your code</Trans>
+					<Trans>Login code</Trans>
 				</p>
 				<div className={styles.codeDisplay}>
 					<span className={styles.codeChar}>{codePart1}</span>
 					<span className={styles.codeSeparator}>-</span>
 					<span className={styles.codeChar}>{codePart2}</span>
 				</div>
-				<Button
-					type="button"
-					onClick={handleCopyCode}
-					leftIcon={copied ? <CheckCircleIcon size={16} weight="bold" /> : <ClipboardIcon size={16} />}
-					variant="secondary"
-				>
-					{copied ? <Trans>Copied!</Trans> : <Trans>Copy code</Trans>}
+				<Button onClick={handleCopyCode} fitContainer variant="secondary">
+					{copied ? (
+						<>
+							<CheckCircleIcon size={16} weight="bold" />
+							<Trans>Copied</Trans>
+						</>
+					) : (
+						<>
+							<ClipboardIcon size={16} weight="bold" />
+							<Trans>Copy code</Trans>
+						</>
+					)}
 				</Button>
 			</div>
 		</div>

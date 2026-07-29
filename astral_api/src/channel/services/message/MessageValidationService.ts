@@ -58,9 +58,18 @@ export class MessageValidationService {
 		const hasAttachments = data.attachments && data.attachments.length > 0;
 		const hasFavoriteMeme = 'favorite_meme_id' in data && data.favorite_meme_id != null;
 		const hasStickers = 'sticker_ids' in data && data.sticker_ids != null && data.sticker_ids.length > 0;
+		const hasComponents = 'components' in data && data.components != null && data.components.length > 0;
 		const hasFlags = data.flags !== undefined && data.flags !== null;
 
-		if (!hasContent && !hasEmbeds && !hasAttachments && !hasFavoriteMeme && !hasStickers && (!isUpdate || !hasFlags)) {
+		if (
+			!hasContent &&
+			!hasEmbeds &&
+			!hasAttachments &&
+			!hasFavoriteMeme &&
+			!hasStickers &&
+			!hasComponents &&
+			(!isUpdate || !hasFlags)
+		) {
 			throw new CannotSendEmptyMessageError();
 		}
 

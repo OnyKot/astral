@@ -110,7 +110,7 @@ const MobileHeaderWithBanner = observer(
 							initial={prefersReducedMotion ? {opacity: 1} : {opacity: 0}}
 							animate={{opacity: 1}}
 							exit={prefersReducedMotion ? {opacity: 1} : {opacity: 0}}
-							transition={prefersReducedMotion ? {duration: 0} : {duration: 0.25, ease: 'easeOut'}}
+							transition={prefersReducedMotion ? {duration: 0} : {duration: 0.14, ease: 'easeOut'}}
 							className={styles.headerContent}
 						>
 							<div className={styles.bannerTextContainer}>
@@ -135,7 +135,7 @@ const MobileHeaderWithBanner = observer(
 							initial={prefersReducedMotion ? {opacity: 1} : {opacity: 0}}
 							animate={{opacity: 1}}
 							exit={prefersReducedMotion ? {opacity: 1} : {opacity: 0}}
-							transition={prefersReducedMotion ? {duration: 0} : {duration: 0.25, ease: 'easeOut'}}
+							transition={prefersReducedMotion ? {duration: 0} : {duration: 0.14, ease: 'easeOut'}}
 							className={styles.headerContentRelative}
 						>
 							{showBackButton && onBack && (
@@ -827,7 +827,7 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 		return (
 			<div className={userSettingsStyles.mobileWrapper}>
 				<div className={userSettingsStyles.mobileHeaderContainer}>
-					<AnimatePresence mode="sync" initial={false} custom={mobileNav.direction}>
+					<AnimatePresence mode="wait" initial={false} custom={mobileNav.direction}>
 						{showMobileList && (
 							<motion.div
 								key="mobile-list-header"

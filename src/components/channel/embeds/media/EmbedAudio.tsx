@@ -74,6 +74,7 @@ const EmbedAudio: FC<EmbedAudioProps> = observer(
 
 		const defaultName =
 			title || deriveDefaultNameFromMessage({message, attachmentId, embedIndex, url: embedUrl || src, proxyUrl: src});
+		const messageAuthorName = message?.author.globalName || message?.author.username || null;
 
 		const {
 			isFavorited,
@@ -122,7 +123,7 @@ const EmbedAudio: FC<EmbedAudioProps> = observer(
 		const containerStyles: React.CSSProperties = isMobile
 			? {
 					display: 'grid',
-					width: isVoiceMessage ? 'min(100%, calc(100vw - 1.8rem))' : '100%',
+					width: '100%',
 					maxWidth: '100%',
 					minWidth: 0,
 				}
@@ -154,6 +155,11 @@ const EmbedAudio: FC<EmbedAudioProps> = observer(
 						onDownloadClick={showDownloadButton ? handleDownload : undefined}
 						onContextMenu={handleContextMenu}
 						isVoiceMessage={isVoiceMessage}
+						enableVoicePlaybackBanner={!isPreview}
+						channelId={channelId}
+						messageId={messageId}
+						attachmentId={attachmentId}
+						messageAuthorName={messageAuthorName}
 					/>
 				</div>
 			);
@@ -185,6 +191,11 @@ const EmbedAudio: FC<EmbedAudioProps> = observer(
 					onDownloadClick={showDownloadButton ? handleDownload : undefined}
 					onContextMenu={handleContextMenu}
 					isVoiceMessage={isVoiceMessage}
+					enableVoicePlaybackBanner={!isPreview}
+					channelId={channelId}
+					messageId={messageId}
+					attachmentId={attachmentId}
+					messageAuthorName={messageAuthorName}
 				/>
 			</div>
 		);

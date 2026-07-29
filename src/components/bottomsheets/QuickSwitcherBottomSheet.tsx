@@ -53,6 +53,7 @@ type QuickSwitcherContainerStyle = React.CSSProperties & {
 };
 
 const QUICK_SWITCHER_SCROLL_PADDING_BOTTOM = 'calc(var(--safe-area-bottom, 0px) + 1.25rem)';
+const QUICK_SWITCHER_MOBILE_SEARCH_CLASS = 'quick-switcher-mobile-search-open';
 
 const ResultRow = observer(
 	({
@@ -149,6 +150,14 @@ export const QuickSwitcherBottomSheet: React.FC<QuickSwitcherBottomSheetProps> =
 	const shouldScrollToSelection = React.useRef(false);
 	const [activeTab, setActiveTab] = React.useState<'search' | 'friends'>('search');
 	const [friendsSearchQuery, setFriendsSearchQuery] = React.useState('');
+
+	React.useEffect(() => {
+		if (!isOpen || typeof document === 'undefined') return undefined;
+		document.documentElement.classList.add(QUICK_SWITCHER_MOBILE_SEARCH_CLASS);
+		return () => {
+			document.documentElement.classList.remove(QUICK_SWITCHER_MOBILE_SEARCH_CLASS);
+		};
+	}, [isOpen]);
 
 	const {
 		keyboardFocusIndex,
@@ -307,9 +316,18 @@ export const QuickSwitcherBottomSheet: React.FC<QuickSwitcherBottomSheetProps> =
 	);
 
 	return (
-		<Sheet.Root isOpen={isOpen} onClose={onClose} snapPoints={[0, 1]} initialSnap={1}>
-			<Sheet.Handle />
-			<Sheet.Content padding="none">
+		<Sheet.Root
+			isOpen={isOpen}
+			onClose={onClose}
+			snapPoints={[0, 1]}
+			initialSnap={1}
+			className={styles.sheetRoot}
+			animationPreset="content-replacement"
+			backdropOpacity={0.18}
+			disableBackdropBlur
+		>
+			<Sheet.Handle className={styles.sheetHandle} />
+			<Sheet.Content padding="none" className={styles.sheetContent}>
 				<div className={styles.container} style={containerStyle}>
 					<div className={styles.tabsContainer}>
 						<SegmentedTabs

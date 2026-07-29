@@ -33,11 +33,12 @@ import {createPortal} from 'react-dom';
 import * as ContextMenuActionCreators from '~/actions/ContextMenuActionCreators';
 import * as GuildMemberActionCreators from '~/actions/GuildMemberActionCreators';
 import * as LayoutActionCreators from '~/actions/LayoutActionCreators';
+import * as MessageActionCreators from '~/actions/MessageActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import * as ToastActionCreators from '~/actions/ToastActionCreators';
 
-import {ChannelTypes, isGuildRtcChannelType, Permissions} from '~/Constants';
+import {ChannelTypes, isGuildRtcChannelType, MAX_MESSAGES_PER_CHANNEL, Permissions} from '~/Constants';
 
 import {ChannelBottomSheet} from '~/components/bottomsheets/ChannelBottomSheet';
 import {VoiceLobbyBottomSheet} from '~/components/bottomsheets/VoiceLobbyBottomSheet';
@@ -96,6 +97,8 @@ import type {ScrollIndicatorSeverity} from './ScrollIndicatorOverlay';
 import {DND_TYPES, type DragItem, type DropResult} from './types/dnd';
 import {isCategory, isTextChannel} from './utils/channelOrganization';
 import {VoiceChannelUserCount} from './VoiceChannelUserCount';
+
+const MOBILE_CHANNEL_PREFETCH_MESSAGE_LIMIT = 36;
 
 export interface ChannelItemCoreProps {
 	channel: {
@@ -270,6 +273,17 @@ export const ChannelItem = observer(
 			allowHoverAffordances && channelIsVoice && isVoiceHovered && streamerParticipantIdentity && streamerUser,
 		);
 		const room = MediaEngineStore.room;
+
+		const prefetchChannelMessages = useCallback(() => {
+			if (channel.type !== ChannelTypes.GUILD_TEXT) {
+				return;
+			}
+
+			void MessageActionCreators.prefetchMessages(
+				channel.id,
+				isMobileLayout ? MOBILE_CHANNEL_PREFETCH_MESSAGE_LIMIT : MAX_MESSAGES_PER_CHANNEL,
+			);
+		}, [channel.id, channel.type, isMobileLayout]);
 
 		const [dropIndicator, setDropIndicator] = React.useState<{position: 'top' | 'bottom'; isValid: boolean} | null>(
 			null,
@@ -489,6 +503,7 @@ export const ChannelItem = observer(
 		}, [shouldShowStreamPreview]);
 
 		const handleSelect = useCallback(() => {
+			prefetchChannelMessages();
 			if (channelIsVoice && isCurrentUserTimedOut) {
 				ToastActionCreators.createToast({
 					type: 'error',
@@ -569,6 +584,7 @@ export const ChannelItem = observer(
 		}, [
 			channel,
 			channelPath,
+			prefetchChannelMessages,
 			guild.id,
 			isVoiceSelected,
 			onToggle,
@@ -680,6 +696,8 @@ export const ChannelItem = observer(
 				onClick={handleSelect}
 				onContextMenu={handleContextMenu}
 				onKeyDown={(e) => e.key === 'Enter' && handleSelect()}
+				onPointerDown={prefetchChannelMessages}
+				onPointerEnter={isMobileLayout ? undefined : prefetchChannelMessages}
 				onFocus={() => setIsFocused(true)}
 				onBlur={() => setIsFocused(false)}
 				onLongPress={() => {

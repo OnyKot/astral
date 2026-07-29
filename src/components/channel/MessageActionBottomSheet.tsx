@@ -50,12 +50,13 @@ export const MessageActionBottomSheet: React.FC<MessageActionBottomSheetProps> =
 			onClose();
 		}, [onClose]);
 
-		const {groups, handlers, quickReactionEmojis, quickReactionRowVisible} = useMessageActionMenuData(message, {
-			onClose,
-			onDelete: () => handleDelete(),
-			onOpenEmojiPicker: handleAddReaction,
-			quickReactionCount: 4,
-		});
+		const {groups, handlers, quickReactionEmojis, quickReactionRowVisible, canOpenReactionPicker} =
+			useMessageActionMenuData(message, {
+				onClose,
+				onDelete: () => handleDelete(),
+				onOpenEmojiPicker: handleAddReaction,
+				quickReactionCount: 4,
+			});
 
 		const quickReactionRow = quickReactionRowVisible ? (
 			<div className={styles.quickReactionWrapper}>
@@ -84,14 +85,16 @@ export const MessageActionBottomSheet: React.FC<MessageActionBottomSheetProps> =
 						);
 					})}
 
-					<button
-						type="button"
-						onClick={handleAddReaction}
-						aria-label={t`Add another reaction`}
-						className={styles.quickReactionButton}
-					>
-						<PlusIcon className={styles.addReactionIcon} weight="bold" />
-					</button>
+					{canOpenReactionPicker && (
+						<button
+							type="button"
+							onClick={handleAddReaction}
+							aria-label={t`Add another reaction`}
+							className={styles.quickReactionButton}
+						>
+							<PlusIcon className={styles.addReactionIcon} weight="bold" />
+						</button>
+					)}
 				</div>
 			</div>
 		) : null;

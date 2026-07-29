@@ -81,6 +81,15 @@
 	height: calc(var(--message-group-spacing) / 2);
 }
 
+.messageGroup {
+	contain: style;
+}
+
+.messageItem {
+	position: relative;
+	overflow: visible;
+}
+
 .scrollerInner {
 	display: flex;
 	flex-direction: column;
@@ -91,7 +100,7 @@
 	padding-top: 0.875rem;
 	padding-bottom: 0.25rem;
 	position: relative;
-	overflow-x: clip;
+	overflow-x: visible;
 }
 
 @media (min-width: 768px) {
@@ -171,6 +180,26 @@
 .newMessagesBar:active {
 	transform: translateY(2px);
 	box-shadow: 0 0 0 rgb(37 99 235 / 0.12);
+}
+
+.newMessagesBarMobile {
+	animation: mobileNewMessagesBarFade 120ms ease-out both;
+	transition:
+		background-color 120ms var(--motion-ease-snap),
+		box-shadow 120ms var(--motion-ease-snap);
+}
+
+.newMessagesBarMobile:active {
+	transform: none;
+}
+
+@keyframes mobileNewMessagesBarFade {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 /*
@@ -257,6 +286,24 @@
 	.unreadSlot[data-visible='1'] {
 		animation: none;
 	}
+
+	.newMessagesBarMobile {
+		animation: none;
+	}
+}
+
+:global(html.mobile-fast-mode) .messageGroup {
+	content-visibility: auto;
+	contain-intrinsic-size: auto 320px;
+}
+
+:global(html.mobile-fast-mode) .messageItem {
+	contain: layout paint style;
+}
+
+:global(html.mobile-fast-mode) .unreadSlot[data-visible='1'],
+:global(html.mobile-fast-mode) .newMessagesBarMobile {
+	animation: none;
 }
 
 @media (min-width: 768px) {

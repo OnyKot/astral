@@ -219,7 +219,7 @@ const UserAreaInner = observer(
 
 		const pushToTalkCombo = KeybindStore.getByAction('push_to_talk').combo;
 		const pushToTalkHint = formatKeyCombo(pushToTalkCombo);
-		const effectiveMuted = muteReason !== null || isMuted;
+		const effectiveMuted = muteReason !== null;
 		const muteControlDisabled = isGuildMuted || isStageListenerLocked;
 
 		return (

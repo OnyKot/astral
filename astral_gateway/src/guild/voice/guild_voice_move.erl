@@ -142,12 +142,12 @@ handle_channel_move(ConnectionsToMove, ChannelIdValue, UserId, ModeratorId, Voic
             {reply, gateway_errors:error(voice_channel_not_found), State};
         _ ->
             ChannelType = maps:get(<<"type">>, Channel, 0),
-            case ChannelType of
-                2 ->
+            case constants:is_guild_rtc_channel_type(ChannelType) of
+                true ->
                     check_move_permissions_and_execute(
                         ConnectionsToMove, ChannelIdValue, UserId, ModeratorId, VoiceStates, State
                     );
-                _ ->
+                false ->
                     {reply, gateway_errors:error(voice_channel_not_voice), State}
             end
     end.

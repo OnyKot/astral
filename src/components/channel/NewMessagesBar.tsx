@@ -43,6 +43,15 @@ export const NewMessagesBar = observer(function NewMessagesBar({
 	const sameDay = DateUtils.isSameDay(oldestUnreadTimestamp);
 	const compactTime = DateUtils.getFormattedCompactDateTime(oldestUnreadTimestamp);
 	const shortTime = sameDay ? DateUtils.getFormattedTime(oldestUnreadTimestamp) : compactTime;
+	const label = isEstimated
+		? isMobile
+			? t`${unreadCount}+ new since ${shortTime}`
+			: t`${unreadCount}+ new messages since ${compactTime}`
+		: isMobile
+			? t`${unreadCount} new since ${shortTime}`
+			: unreadCount === 1
+				? t`${unreadCount} new message since ${compactTime}`
+				: t`${unreadCount} new messages since ${compactTime}`;
 
 	/*
 	 * The "new messages since X" bar slides down from the top of the message
@@ -58,24 +67,32 @@ export const NewMessagesBar = observer(function NewMessagesBar({
 				transition: {type: 'spring' as const, stiffness: 420, damping: 32, mass: 0.7},
 			};
 
-	return (
-		<motion.button type="button" className={styles.newMessagesBar} onClick={onJumpToNewMessages} {...motionProps}>
-			<span className={styles.newMessagesBarText}>
-				{isEstimated
-					? isMobile
-						? t`${unreadCount}+ new since ${shortTime}`
-						: t`${unreadCount}+ new messages since ${compactTime}`
-					: isMobile
-						? t`${unreadCount} new since ${shortTime}`
-						: unreadCount === 1
-							? t`${unreadCount} new message since ${compactTime}`
-							: t`${unreadCount} new messages since ${compactTime}`}
-			</span>
+	const content = (
+		<>
+			<span className={styles.newMessagesBarText}>{label}</span>
 
 			<span className={styles.newMessagesBarAction}>
 				<span>{isMobile ? t`Mark Read` : t`Mark as Read`}</span>
 				<CheckIcon weight="bold" size={16} />
 			</span>
+		</>
+	);
+
+	if (isMobile) {
+		return (
+			<button
+				type="button"
+				className={`${styles.newMessagesBar} ${styles.newMessagesBarMobile}`}
+				onClick={onJumpToNewMessages}
+			>
+				{content}
+			</button>
+		);
+	}
+
+	return (
+		<motion.button type="button" className={styles.newMessagesBar} onClick={onJumpToNewMessages} {...motionProps}>
+			{content}
 		</motion.button>
 	);
 });

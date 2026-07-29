@@ -17,8 +17,13 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'highlight.js/styles/github-dark.css';
-import 'katex/dist/katex.min.css';
+/*
+ * The highlight.js and katex stylesheets used to be imported here. Importing
+ * them from the root component put them in the render-blocking stylesheet of
+ * every cold load for a feature only fenced code blocks use, so they now load
+ * next to the libraries themselves — see
+ * ~/lib/markdown/renderers/common/code-elements.tsx. Please don't move them back.
+ */
 
 import {i18n} from '@lingui/core';
 import {I18nProvider} from '@lingui/react';
@@ -74,7 +79,8 @@ import LayerManager from '~/stores/LayerManager';
 
 import {ensureAutostartDefaultEnabled} from '~/utils/AutostartUtils';
 import {startDeepLinkHandling} from '~/utils/DeepLinkUtils';
-import {isLowEndMobileExperience} from '~/utils/mobileExperience';
+import {isFastMobileExperience, isLowEndMobileExperience} from '~/utils/mobileExperience';
+import {isAndroidWebViewShell as detectAndroidWebViewShell} from '~/utils/AndroidWebViewUtils';
 import {attachExternalLinkInterceptor, getElectronAPI, getNativePlatform} from '~/utils/NativeUtils';
 import {getChatBackgroundAsset} from '~/constants/chatBackgrounds';
 
@@ -114,8 +120,7 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 	const isNativeDesktopNonMac = isNative && (isWindows || isLinux);
 	const isNativeMobilePlatform = isNative && !isNativeDesktopPlatform;
 	const isAndroidWebViewShell = React.useMemo(() => {
-		const ua = navigator.userAgent ?? '';
-		return /Android/i.test(ua) && /\bwv\b/i.test(ua);
+		return detectAndroidWebViewShell();
 	}, []);
 	const isMobileWebBrowser = React.useMemo(() => {
 		if (isNative) {
@@ -138,6 +143,7 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 	const customThemeGradientAngle = AccessibilityStore.customThemeGradientAngle;
 	const customThemeGradientGlow = AccessibilityStore.customThemeGradientGlow;
 	const chatBackgroundId = AccessibilityStore.chatBackgroundId;
+	const messageGradientStyle = AccessibilityStore.messageGradientStyle;
 	const [layoutVariant, setLayoutVariant] = React.useState<LayoutVariant>('app');
 	const layoutVariantContextValue = React.useMemo(
 		() => ({variant: layoutVariant, setVariant: setLayoutVariant}),
@@ -167,6 +173,39 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 	}, [userSettingsTheme, syncThemeAcrossDevices, localThemeOverride, systemDarkMode]);
 
 	const hasBlockingModal = ModalStore.hasModalOpen();
+
+	React.useLayoutEffect(() => {
+		const root = document.documentElement;
+		root.dataset.appRenderPhase = 'critical';
+
+		let firstFrame = 0;
+		let secondFrame = 0;
+		let idleHandle: number | null = null;
+		const complete = () => {
+			root.dataset.appRenderPhase = 'complete';
+		};
+
+		firstFrame = window.requestAnimationFrame(() => {
+			secondFrame = window.requestAnimationFrame(() => {
+				const requestIdle = (window as Window & {requestIdleCallback?: (callback: () => void, options?: {timeout: number}) => number})
+					.requestIdleCallback;
+				if (typeof requestIdle === 'function') {
+					idleHandle = requestIdle(complete, {timeout: 120});
+				} else {
+					complete();
+				}
+			});
+		});
+
+		return () => {
+			window.cancelAnimationFrame(firstFrame);
+			window.cancelAnimationFrame(secondFrame);
+			if (idleHandle !== null) {
+				const cancelIdle = (window as Window & {cancelIdleCallback?: (handle: number) => void}).cancelIdleCallback;
+				cancelIdle?.(idleHandle);
+			}
+		};
+	}, []);
 
 	React.useEffect(() => {
 		const node = ringsContainerRef.current;
@@ -262,15 +301,24 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 	React.useEffect(() => {
 		const root = document.documentElement;
 		const updateMobileLiteMode = () => {
-			root.classList.toggle('mobile-lite', isLowEndMobileExperience());
+			const fastMobileExperience = isFastMobileExperience();
+			root.classList.toggle('mobile-lite', isAndroidWebViewShell || isLowEndMobileExperience());
+			root.classList.toggle('mobile-fast-mode', fastMobileExperience);
+			root.classList.toggle('android-fast-mode', isAndroidWebViewShell);
+			root.toggleAttribute('data-mobile-fast-mode', fastMobileExperience);
+			root.toggleAttribute('data-android-fast-mode', isAndroidWebViewShell);
 		};
 		updateMobileLiteMode();
 		window.addEventListener('resize', updateMobileLiteMode);
 		return () => {
 			window.removeEventListener('resize', updateMobileLiteMode);
 			root.classList.remove('mobile-lite');
+			root.classList.remove('mobile-fast-mode');
+			root.classList.remove('android-fast-mode');
+			root.removeAttribute('data-mobile-fast-mode');
+			root.removeAttribute('data-android-fast-mode');
 		};
-	}, []);
+	}, [isAndroidWebViewShell]);
 
 	React.useEffect(() => {
 		const root = document.documentElement;
@@ -749,6 +797,7 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 		const htmlNode = document.documentElement;
 		htmlNode.dataset.themeGradientStyle = themeGradientStyle;
 		htmlNode.dataset.buttonMotionStyle = buttonMotionStyle;
+		htmlNode.dataset.messageGradientStyle = messageGradientStyle;
 		htmlNode.style.setProperty('--theme-custom-gradient-start', customThemeGradientStart);
 		htmlNode.style.setProperty('--theme-custom-gradient-middle', customThemeGradientMiddle);
 		htmlNode.style.setProperty('--theme-custom-gradient-end', customThemeGradientEnd);
@@ -762,6 +811,7 @@ export const AppWrapper = observer(({children}: AppWrapperProps) => {
 		customThemeGradientEnd,
 		customThemeGradientAngle,
 		customThemeGradientGlow,
+		messageGradientStyle,
 	]);
 
 	React.useEffect(() => {

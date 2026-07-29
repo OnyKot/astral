@@ -28,6 +28,7 @@ import MessageSelectionStore from '~/stores/MessageSelectionStore';
 import PermissionStore from '~/stores/PermissionStore';
 import UserSettingsStore from '~/stores/UserSettingsStore';
 import {openExternalUrl} from '~/utils/NativeUtils';
+import {canAddNewReactionTypeToMessage} from '~/utils/ReactionUtils';
 import {isStoryForwardPayload} from '~/utils/StoryForwardPayload';
 import {CopyIcon, CopyLinkIcon, OpenLinkIcon} from './ContextMenuIcons';
 import {
@@ -178,6 +179,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = observer(
 		} = useMessagePermissions(message);
 
 		const canManageMessages = !isDM && PermissionStore.can(Permissions.MANAGE_MESSAGES, {channelId: message.channelId});
+		const canOpenReactionPicker = canAddReactions && canAddNewReactionTypeToMessage(message);
 
 		const handlers = createMessageActionHandlers(message);
 		const hasCopyableText = Boolean(message.content && !isStoryForwardPayload(message.content));
@@ -208,7 +210,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = observer(
 				)}
 
 				<MenuGroup>
-					{canAddReactions && <AddReactionMenuItem message={message} onClose={onClose} />}
+					{canOpenReactionPicker && <AddReactionMenuItem message={message} onClose={onClose} />}
 
 					<MarkAsUnreadMenuItem message={message} onMarkAsUnread={handlers.handleMarkAsUnread} onClose={onClose} />
 

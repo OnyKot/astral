@@ -18,7 +18,7 @@
  */
 
 import type {ApplicationID, UserID} from '~/BrandedTypes';
-import {BatchBuilder, deleteOneOrMany, fetchMany, fetchOne, upsertOne} from '~/database/Cassandra';
+import {BatchBuilder, deleteOneOrMany, fetchMany, fetchManyInChunks, fetchOne, upsertOne} from '~/database/Cassandra';
 import type {
 	OAuth2AccessTokenByUserRow,
 	OAuth2AccessTokenRow,
@@ -29,6 +29,7 @@ import type {
 import {OAuth2AccessToken} from '~/models/OAuth2AccessToken';
 import {OAuth2AuthorizationCode} from '~/models/OAuth2AuthorizationCode';
 import {OAuth2RefreshToken} from '~/models/OAuth2RefreshToken';
+import {ACCESS_TOKEN_TTL_SECONDS} from '~/oauth/OAuth2Service';
 import {
 	OAuth2AccessTokens,
 	OAuth2AccessTokensByUser,
@@ -53,6 +54,14 @@ const SELECT_ACCESS_TOKENS_BY_USER = OAuth2AccessTokensByUser.selectCql({
 
 const SELECT_REFRESH_TOKEN = OAuth2RefreshTokens.selectCql({
 	where: OAuth2RefreshTokens.where.eq('token_'),
+});
+
+const SELECT_REFRESH_TOKENS_BY_IDS = OAuth2RefreshTokens.selectCql({
+	where: OAuth2RefreshTokens.where.in('token_', 'tokens'),
+});
+
+const SELECT_ACCESS_TOKENS_BY_IDS = OAuth2AccessTokens.selectCql({
+	where: OAuth2AccessTokens.where.in('token_', 'tokens'),
 });
 
 const SELECT_REFRESH_TOKENS_BY_USER = OAuth2RefreshTokensByUser.selectCql({
@@ -94,7 +103,23 @@ export class OAuth2TokenRepository implements IOAuth2TokenRepository {
 
 	async getAccessToken(token: string): Promise<OAuth2AccessToken | null> {
 		const row = await fetchOne<OAuth2AccessTokenRow>(SELECT_ACCESS_TOKEN, {token_: token});
-		return row ? new OAuth2AccessToken(row) : null;
+		if (!row) return null;
+
+		/*
+		 * Expiry was enforced by the row's TTL alone, which is a storage detail and not the lifetime
+		 * the token was issued with: `default_time_to_live` only applies to writes made after it was
+		 * last changed, and a row re-inserted by a repair or restored from a backup comes back with
+		 * whatever TTL it was written with. Everything the server tells clients about the lifetime
+		 * (`expires_in`, the `exp` of introspect, /oauth2/@me) is created_at + ACCESS_TOKEN_TTL_SECONDS,
+		 * so enforce exactly that here. Absent rather than an error because every caller already
+		 * treats null as an invalid token.
+		 *
+		 * Read at call time on purpose: OAuth2Service imports this module, so touching the constant at
+		 * module scope would hit its temporal dead zone on one of the two import orders.
+		 */
+		if (Date.now() >= row.created_at.getTime() + ACCESS_TOKEN_TTL_SECONDS * 1000) return null;
+
+		return new OAuth2AccessToken(row);
 	}
 
 	async deleteAccessToken(token: string, _applicationId: ApplicationID, userId: UserID | null): Promise<void> {
@@ -176,14 +201,12 @@ export class OAuth2TokenRepository implements IOAuth2TokenRepository {
 			return [];
 		}
 
-		const tokens: Array<OAuth2RefreshToken> = [];
-		for (const tokenRef of tokenRefs) {
-			const row = await fetchOne<OAuth2RefreshTokenRow>(SELECT_REFRESH_TOKEN, {token_: tokenRef.token_});
-			if (row) {
-				tokens.push(new OAuth2RefreshToken(row));
-			}
-		}
-		return tokens;
+		const rows = await fetchManyInChunks<OAuth2RefreshTokenRow>(
+			SELECT_REFRESH_TOKENS_BY_IDS,
+			tokenRefs.map((tokenRef) => tokenRef.token_),
+			(chunk) => ({tokens: chunk}),
+		);
+		return rows.map((row) => new OAuth2RefreshToken(row));
 	}
 
 	async deleteAllTokensForUserAndApplication(userId: UserID, applicationId: ApplicationID): Promise<void> {
@@ -194,21 +217,36 @@ export class OAuth2TokenRepository implements IOAuth2TokenRepository {
 			user_id: userId,
 		});
 
+		const [accessRows, refreshRows] = await Promise.all([
+			accessTokenRefs.length === 0
+				? Promise.resolve([] as Array<OAuth2AccessTokenRow>)
+				: fetchManyInChunks<OAuth2AccessTokenRow>(
+						SELECT_ACCESS_TOKENS_BY_IDS,
+						accessTokenRefs.map((tokenRef) => tokenRef.token_),
+						(chunk) => ({tokens: chunk}),
+					),
+			refreshTokenRefs.length === 0
+				? Promise.resolve([] as Array<OAuth2RefreshTokenRow>)
+				: fetchManyInChunks<OAuth2RefreshTokenRow>(
+						SELECT_REFRESH_TOKENS_BY_IDS,
+						refreshTokenRefs.map((tokenRef) => tokenRef.token_),
+						(chunk) => ({tokens: chunk}),
+					),
+		]);
+
 		const batch = new BatchBuilder();
 
-		for (const tokenRef of accessTokenRefs) {
-			const row = await fetchOne<OAuth2AccessTokenRow>(SELECT_ACCESS_TOKEN, {token_: tokenRef.token_});
-			if (row && row.application_id === applicationId) {
-				batch.addPrepared(OAuth2AccessTokens.deleteByPk({token_: tokenRef.token_}));
-				batch.addPrepared(OAuth2AccessTokensByUser.deleteByPk({user_id: userId, token_: tokenRef.token_}));
+		for (const row of accessRows) {
+			if (row.application_id === applicationId) {
+				batch.addPrepared(OAuth2AccessTokens.deleteByPk({token_: row.token_}));
+				batch.addPrepared(OAuth2AccessTokensByUser.deleteByPk({user_id: userId, token_: row.token_}));
 			}
 		}
 
-		for (const tokenRef of refreshTokenRefs) {
-			const row = await fetchOne<OAuth2RefreshTokenRow>(SELECT_REFRESH_TOKEN, {token_: tokenRef.token_});
-			if (row && row.application_id === applicationId) {
-				batch.addPrepared(OAuth2RefreshTokens.deleteByPk({token_: tokenRef.token_}));
-				batch.addPrepared(OAuth2RefreshTokensByUser.deleteByPk({user_id: userId, token_: tokenRef.token_}));
+		for (const row of refreshRows) {
+			if (row.application_id === applicationId) {
+				batch.addPrepared(OAuth2RefreshTokens.deleteByPk({token_: row.token_}));
+				batch.addPrepared(OAuth2RefreshTokensByUser.deleteByPk({user_id: userId, token_: row.token_}));
 			}
 		}
 

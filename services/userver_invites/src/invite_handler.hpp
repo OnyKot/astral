@@ -1,12 +1,13 @@
+// Invite handler - fast path with Node.js upstream
+// For direct ScyllaDB access, add userver-storages-cassandra component
+
 #pragma once
-
-#include <string>
-
-#include "invite_upstream_client.hpp"
 
 #include <userver/components/component_config.hpp>
 #include <userver/components/component_context.hpp>
 #include <userver/server/handlers/http_handler_base.hpp>
+
+#include "invite_upstream_client.hpp"
 
 namespace astral::userver_invites {
 

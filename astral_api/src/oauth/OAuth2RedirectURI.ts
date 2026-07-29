@@ -53,4 +53,11 @@ export const OAuth2RedirectURICreateType = createRedirectURIType(
 	false,
 	'Redirect URIs must use HTTPS, or HTTP for localhost only',
 );
-export const OAuth2RedirectURIUpdateType = createRedirectURIType(true, 'Redirect URIs must use HTTP or HTTPS');
+// Updates must follow the same rule as creates: HTTPS, or HTTP for loopback
+// only. Previously this accepted any HTTP URI, so a developer could weaken an
+// app's redirect URIs to http://attacker.com/callback — enabling
+// authorization-code interception on non-HTTPS clients.
+export const OAuth2RedirectURIUpdateType = createRedirectURIType(
+	false,
+	'Redirect URIs must use HTTPS, or HTTP for localhost only',
+);

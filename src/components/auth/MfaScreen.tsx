@@ -55,7 +55,7 @@ const MfaScreen = ({challenge, inviteCode, onSuccess, onCancel}: MfaScreenProps)
 
 	if (!selectedMethod && (supports.sms || supports.webauthn || supports.totp)) {
 		return (
-			<div className={styles.container}>
+			<div className={styles.container} data-auth-cosmic>
 				<h1 className={styles.title}>
 					<Trans>Two-factor authentication</Trans>
 				</h1>
@@ -64,12 +64,24 @@ const MfaScreen = ({challenge, inviteCode, onSuccess, onCancel}: MfaScreenProps)
 				</p>
 				<div className={styles.buttons}>
 					{supports.totp && (
-						<Button type="button" fitContainer onClick={() => setSelectedMethod('totp')}>
+						<Button
+							type="button"
+							fitContainer
+							variant="secondary"
+							className={styles.softButton}
+							onClick={() => setSelectedMethod('totp')}
+						>
 							<Trans>Authenticator App</Trans>
 						</Button>
 					)}
 					{supports.sms && (
-						<Button type="button" fitContainer variant="secondary" onClick={() => setSelectedMethod('sms')}>
+						<Button
+							type="button"
+							fitContainer
+							variant="secondary"
+							className={styles.softButton}
+							onClick={() => setSelectedMethod('sms')}
+						>
 							<Trans>SMS Code</Trans>
 						</Button>
 					)}
@@ -78,6 +90,7 @@ const MfaScreen = ({challenge, inviteCode, onSuccess, onCancel}: MfaScreenProps)
 							type="button"
 							fitContainer
 							variant="secondary"
+							className={styles.softButton}
 							onClick={handleWebAuthn}
 							disabled={isWebAuthnLoading}
 						>
@@ -95,7 +108,7 @@ const MfaScreen = ({challenge, inviteCode, onSuccess, onCancel}: MfaScreenProps)
 	}
 
 	return (
-		<div className={styles.container}>
+		<div className={styles.container} data-auth-cosmic>
 			<h1 className={styles.title}>
 				<Trans>Two-factor authentication</Trans>
 			</h1>
@@ -108,14 +121,21 @@ const MfaScreen = ({challenge, inviteCode, onSuccess, onCancel}: MfaScreenProps)
 			</p>
 			{selectedMethod === 'sms' && !smsSent && supports.sms && (
 				<div className={styles.smsSection}>
-					<Button type="button" fitContainer onClick={handleSendSms}>
+					<Button type="button" fitContainer variant="secondary" className={styles.softButton} onClick={handleSendSms}>
 						<Trans>Send SMS Code</Trans>
 					</Button>
 				</div>
 			)}
 			{supports.webauthn && (
 				<div className={styles.webauthnSection}>
-					<Button type="button" fitContainer variant="secondary" onClick={handleWebAuthn} disabled={isWebAuthnLoading}>
+					<Button
+						type="button"
+						fitContainer
+						variant="secondary"
+						className={styles.softButton}
+						onClick={handleWebAuthn}
+						disabled={isWebAuthnLoading}
+					>
 						<Trans>Try security key / passkey instead</Trans>
 					</Button>
 				</div>
@@ -132,7 +152,13 @@ const MfaScreen = ({challenge, inviteCode, onSuccess, onCancel}: MfaScreenProps)
 					onChange={(value) => form.setValue('code', value)}
 					error={form.getError('code') || fieldErrors?.code}
 				/>
-				<Button type="submit" fitContainer disabled={isLoading || form.isSubmitting}>
+				<Button
+					type="submit"
+					fitContainer
+					variant="secondary"
+					className={styles.softButton}
+					disabled={isLoading || form.isSubmitting}
+				>
 					<Trans>Log in</Trans>
 				</Button>
 			</form>

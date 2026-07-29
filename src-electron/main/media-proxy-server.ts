@@ -23,6 +23,7 @@ import https from 'node:https';
 import log from 'electron-log';
 import {BUILD_CHANNEL} from '../common/build-channel.js';
 import {TRUSTED_APP_ORIGINS, TRUSTED_APP_URLS} from '../common/constants.js';
+import {assertSafeProxyTarget, isValidProxyTargetUrl} from '../common/safe-proxy-target.js';
 
 export const MEDIA_PROXY_PORT = BUILD_CHANNEL === 'canary' ? 21868 : 21867;
 const MEDIA_PROXY_TOKEN_PARAM = 'token';
@@ -81,16 +82,6 @@ const rejectIfDisallowedPage = (
 	return false;
 };
 
-const isValidTargetUrl = (raw: string | null): raw is string => {
-	if (!raw) return false;
-	try {
-		const parsed = new URL(raw);
-		return parsed.protocol === 'https:' || parsed.protocol === 'http:';
-	} catch {
-		return false;
-	}
-};
-
 const sanitizeUpstreamHeaders = (headers: http.IncomingHttpHeaders): Record<string, string> => {
 	const out: Record<string, string> = {};
 	for (const [key, value] of Object.entries(headers)) {
@@ -120,12 +111,13 @@ const buildForwardHeaders = (req: http.IncomingMessage, targetUrl: URL): Record<
 	return headers;
 };
 
-const pipeRequest = (
+const pipeRequest = async (
 	req: http.IncomingMessage,
 	res: http.ServerResponse,
 	targetUrl: string,
 	redirectsRemaining: number,
-): void => {
+): Promise<void> => {
+	await assertSafeProxyTarget(targetUrl);
 	const parsedTarget = new URL(targetUrl);
 	const agent = parsedTarget.protocol === 'https:' ? https : http;
 	const method = (req.method ?? 'GET').toUpperCase();
@@ -149,7 +141,7 @@ const pipeRequest = (
 			const location = upstreamRes.headers.location;
 			const nextTarget = new URL(location, parsedTarget).toString();
 			upstreamRes.resume();
-			pipeRequest(req, res, nextTarget, redirectsRemaining - 1);
+			void pipeRequest(req, res, nextTarget, redirectsRemaining - 1);
 			return;
 		}
 
@@ -183,6 +175,60 @@ const pipeRequest = (
 
 let server: http.Server | null = null;
 
+const handleMediaProxyRequest = async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
+	const remoteAddress = req.socket.remoteAddress;
+	if (remoteAddress !== '127.0.0.1' && remoteAddress !== '::1' && remoteAddress !== '::ffff:127.0.0.1') {
+		res.writeHead(403);
+		res.end();
+		return;
+	}
+
+	const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host}`);
+	const tokenValid = hasValidMediaProxyToken(requestUrl);
+	if (!tokenValid) {
+		res.writeHead(403);
+		res.end();
+		return;
+	}
+	requestUrl.searchParams.delete(MEDIA_PROXY_TOKEN_PARAM);
+
+	const method = (req.method ?? 'GET').toUpperCase();
+	if (method !== 'GET' && method !== 'HEAD') {
+		res.writeHead(405, {'Content-Type': 'text/plain'});
+		res.end('Method Not Allowed');
+		return;
+	}
+
+	if (requestUrl.pathname !== '/media') {
+		res.writeHead(404);
+		res.end();
+		return;
+	}
+
+	const target = requestUrl.searchParams.get('target');
+	if (!isValidProxyTargetUrl(target)) {
+		res.writeHead(400, {'Content-Type': 'text/plain'});
+		res.end('Missing or invalid target');
+		return;
+	}
+
+	const targetUrl = new URL(target);
+
+	if (rejectIfDisallowedPage(req, res, targetUrl, tokenValid)) {
+		return;
+	}
+
+	try {
+		await pipeRequest(req, res, target, 5);
+	} catch (error) {
+		log.warn('[Media Proxy] Rejected unsafe target:', error);
+		if (!res.headersSent) {
+			res.writeHead(400, {'Content-Type': 'text/plain'});
+		}
+		res.end('Missing or invalid target');
+	}
+};
+
 export const getMediaProxyUrl = (): string | null => {
 	if (!server) return null;
 	return `http://127.0.0.1:${MEDIA_PROXY_PORT}/media`;
@@ -201,48 +247,7 @@ export const startMediaProxyServer = (): Promise<void> => {
 		}
 
 		server = http.createServer((req, res) => {
-			const remoteAddress = req.socket.remoteAddress;
-			if (remoteAddress !== '127.0.0.1' && remoteAddress !== '::1' && remoteAddress !== '::ffff:127.0.0.1') {
-				res.writeHead(403);
-				res.end();
-				return;
-			}
-
-			const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host}`);
-			const tokenValid = hasValidMediaProxyToken(requestUrl);
-			if (!tokenValid) {
-				res.writeHead(403);
-				res.end();
-				return;
-			}
-			requestUrl.searchParams.delete(MEDIA_PROXY_TOKEN_PARAM);
-
-			const method = (req.method ?? 'GET').toUpperCase();
-			if (method !== 'GET' && method !== 'HEAD') {
-				res.writeHead(405, {'Content-Type': 'text/plain'});
-				res.end('Method Not Allowed');
-				return;
-			}
-
-			if (requestUrl.pathname !== '/media') {
-				res.writeHead(404);
-				res.end();
-				return;
-			}
-
-			const target = requestUrl.searchParams.get('target');
-			if (!isValidTargetUrl(target)) {
-				res.writeHead(400, {'Content-Type': 'text/plain'});
-				res.end('Missing or invalid target');
-				return;
-			}
-
-			const targetUrl = new URL(target);
-
-			if (rejectIfDisallowedPage(req, res, targetUrl, tokenValid)) {
-				return;
-			}
-			pipeRequest(req, res, target, 5);
+			void handleMediaProxyRequest(req, res);
 		});
 
 		server.on('error', (error: NodeJS.ErrnoException) => {

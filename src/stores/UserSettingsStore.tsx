@@ -58,6 +58,7 @@ export interface UserSettings {
 	locale: string;
 	restrictedGuilds: Array<string>;
 	defaultGuildsRestricted: boolean;
+	hideOnlineTime: boolean;
 	inlineAttachmentMedia: boolean;
 	inlineEmbedMedia: boolean;
 	gifAutoPlay: boolean;
@@ -138,6 +139,7 @@ class UserSettingsStore {
 	locale: string = 'en-US';
 	restrictedGuilds: Array<string> = [];
 	defaultGuildsRestricted: boolean = false;
+	hideOnlineTime: boolean = false;
 	inlineAttachmentMedia: boolean = true;
 	inlineEmbedMedia: boolean = true;
 	gifAutoPlay: boolean = true;
@@ -234,6 +236,10 @@ class UserSettingsStore {
 		return this.defaultGuildsRestricted;
 	}
 
+	getHideOnlineTime(): boolean {
+		return this.hideOnlineTime;
+	}
+
 	getInlineAttachmentMedia(): boolean {
 		return this.inlineAttachmentMedia;
 	}
@@ -243,10 +249,11 @@ class UserSettingsStore {
 	}
 
 	getGifAutoPlay(): boolean {
-		if (MobileLayoutStore.isMobileLayout()) {
-			if (!AccessibilityStore.mobileGifAutoPlayOverridden) {
-				return false;
-			}
+		// Mirrors getAnimateEmoji: an explicit accessibility override wins, otherwise fall through
+		// to the account setting. Previously mobile hard-returned false whenever no override was
+		// set, so `gif_auto_play` was silently ignored on phones and every GIF embed rendered as a
+		// click-to-play video.
+		if (MobileLayoutStore.isMobileLayout() && AccessibilityStore.mobileGifAutoPlayOverridden) {
 			return AccessibilityStore.mobileGifAutoPlayValue;
 		}
 		return this.gifAutoPlay;
@@ -392,6 +399,7 @@ class UserSettingsStore {
 		});
 		this.restrictedGuilds = [...camelCaseSettings.restrictedGuilds];
 		this.defaultGuildsRestricted = camelCaseSettings.defaultGuildsRestricted;
+		this.hideOnlineTime = camelCaseSettings.hideOnlineTime ?? false;
 		this.inlineAttachmentMedia = camelCaseSettings.inlineAttachmentMedia;
 		this.inlineEmbedMedia = camelCaseSettings.inlineEmbedMedia;
 		this.gifAutoPlay = camelCaseSettings.gifAutoPlay;
@@ -451,6 +459,7 @@ class UserSettingsStore {
 			locale: this.locale,
 			restrictedGuilds: [...this.restrictedGuilds],
 			defaultGuildsRestricted: this.defaultGuildsRestricted,
+			hideOnlineTime: this.hideOnlineTime,
 			inlineAttachmentMedia: this.inlineAttachmentMedia,
 			inlineEmbedMedia: this.inlineEmbedMedia,
 			gifAutoPlay: this.gifAutoPlay,

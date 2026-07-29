@@ -20,16 +20,76 @@
 import {msg} from '@lingui/core/macro';
 import {CheckCircleIcon, ClipboardIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
-import highlight from 'highlight.js';
-import katex from 'katex';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import * as TextCopyActionCreators from '~/actions/TextCopyActionCreators';
 import codeElementsStyles from '~/styles/CodeElements.module.css';
 import markupStyles from '~/styles/Markup.module.css';
 import type {CodeBlockNode, InlineCodeNode} from '../../parser/types/nodes';
 import type {RendererProps} from '..';
+
+/*
+ * highlight.js (~960 KB raw, because the root entry registers every language)
+ * and katex (~265 KB) used to be static imports here. This module is on the
+ * initial graph — the markdown renderer registry is reached from
+ * NotificationStore and from Message/UserMessage — so both libraries plus
+ * their stylesheets were downloaded and parsed on every cold load even though
+ * most sessions never render a single fenced code block.
+ *
+ * They are fetched on first use now, cached in module-level singletons so every
+ * code block on the page shares one request, and the block renders as the plain
+ * <pre><code> we already fall back to for unregistered languages until the
+ * library lands. Two deliberate choices:
+ *
+ *  - we load the full 'highlight.js' entry rather than 'highlight.js/lib/common'
+ *    so no language silently loses highlighting (common only registers 36 of
+ *    them, and this project's own code is Erlang/Elixir-flavoured);
+ *  - we do NOT build the specifier from `language` (i.e. no
+ *    import(`highlight.js/lib/languages/${language}`)): `language` comes from
+ *    untrusted message content, and a template specifier also makes the bundler
+ *    emit a context module with one tiny chunk per language.
+ */
+type HighlightApi = typeof import('highlight.js').default;
+type KatexApi = typeof import('katex').default;
+
+let highlighter: HighlightApi | null = null;
+let highlighterPromise: Promise<void> | null = null;
+let katex: KatexApi | null = null;
+let katexPromise: Promise<void> | null = null;
+
+const loadHighlighter = (): Promise<void> => {
+	highlighterPromise ??= Promise.all([
+		import('highlight.js'),
+		// github-dark is what actually colours the hljs-* tokens; it used to be
+		// a render-blocking stylesheet imported from App.tsx.
+		import('highlight.js/styles/github-dark.css'),
+	]).then(
+		([hljsModule]) => {
+			highlighter = hljsModule.default;
+		},
+		(error: unknown) => {
+			// Keep the settled promise cached so we don't retry per code block.
+			// The block stays unhighlighted, which is the pre-existing fallback.
+			console.error('Failed to load syntax highlighter:', error);
+		},
+	);
+
+	return highlighterPromise;
+};
+
+const loadKatex = (): Promise<void> => {
+	katexPromise ??= Promise.all([import('katex'), import('katex/dist/katex.min.css')]).then(
+		([katexModule]) => {
+			katex = katexModule.default;
+		},
+		(error: unknown) => {
+			console.error('Failed to load KaTeX:', error);
+		},
+	);
+
+	return katexPromise;
+};
 
 export const CodeBlockRenderer = observer(function CodeBlockRenderer({
 	node,
@@ -39,6 +99,34 @@ export const CodeBlockRenderer = observer(function CodeBlockRenderer({
 	const i18n = options.i18n!;
 	const {content, language} = node;
 	const [isCopied, setIsCopied] = useState(false);
+	const [, bumpLoadedRevision] = useState(0);
+	const normalizedLanguage = language?.toLowerCase();
+	const isLatex = normalizedLanguage === 'latex' || normalizedLanguage === 'tex';
+
+	useEffect(() => {
+		// A fence with no language never needed the highlighter, so don't pay for
+		// the chunk at all.
+		if (!isLatex && !language) {
+			return;
+		}
+
+		// Already resolved (the common case after the first code block on the
+		// page): the render above used the real library, so skip the extra pass.
+		if (isLatex ? katex !== null : highlighter !== null) {
+			return;
+		}
+
+		let cancelled = false;
+		void (isLatex ? loadKatex() : loadHighlighter()).then(() => {
+			if (!cancelled) {
+				bumpLoadedRevision((revision) => revision + 1);
+			}
+		});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [isLatex, language]);
 
 	const handleCopy = () => {
 		TextCopyActionCreators.copy(i18n, content);
@@ -63,9 +151,14 @@ export const CodeBlockRenderer = observer(function CodeBlockRenderer({
 		</div>
 	);
 
-	if (language?.toLowerCase() === 'latex' || language?.toLowerCase() === 'tex') {
+	// Both are null while the library is still in flight, which routes us to the
+	// plain <pre><code> below — the same output an unregistered language gets.
+	const katexRenderer = isLatex ? katex : null;
+	const activeHighlighter = isLatex ? null : highlighter;
+
+	if (katexRenderer) {
 		try {
-			const html = katex.renderToString(content, {
+			const html = katexRenderer.renderToString(content, {
 				displayMode: true,
 				throwOnError: false,
 				errorColor: 'var(--accent-danger)',
@@ -103,9 +196,9 @@ export const CodeBlockRenderer = observer(function CodeBlockRenderer({
 
 	let highlightedContent: React.ReactElement;
 
-	if (language && highlight.getLanguage(language)) {
+	if (language && activeHighlighter?.getLanguage(language)) {
 		try {
-			const highlighted = highlight.highlight(content, {
+			const highlighted = activeHighlighter.highlight(content, {
 				language: language,
 				ignoreIllegals: true,
 			});

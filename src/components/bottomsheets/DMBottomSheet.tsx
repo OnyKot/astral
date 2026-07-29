@@ -84,7 +84,7 @@ import {getMutedText} from '~/utils/ContextMenuUtils';
 import * as InviteUtils from '~/utils/InviteUtils';
 import * as RelationshipActionUtils from '~/utils/RelationshipActionUtils';
 import * as RouterUtils from '~/utils/RouterUtils';
-import {fromTimestamp} from '~/utils/SnowflakeUtils';
+import {nextClientNonce} from '~/utils/SnowflakeUtils';
 import sharedStyles from './shared.module.css';
 
 interface DMBottomSheetProps {
@@ -251,7 +251,7 @@ export const DMBottomSheet: React.FC<DMBottomSheetProps> = observer(({isOpen, on
 			const dmChannelId = await PrivateChannelActionCreators.ensureDMChannel(recipient.id);
 			await MessageActionCreators.send(dmChannelId, {
 				content: inviteUrl,
-				nonce: fromTimestamp(Date.now()),
+				nonce: nextClientNonce(),
 			});
 			ToastActionCreators.createToast({
 				type: 'success',

@@ -21,6 +21,7 @@ import type {IAdminRepository} from '~/admin/IAdminRepository';
 import type {AuthService} from '~/auth/AuthService';
 import {createUserID, type UserID} from '~/BrandedTypes';
 import {UnknownUserError} from '~/Errors';
+import {assertNotProtectedTarget} from '~/admin/ProtectedRootUsers';
 import type {IGuildRepository} from '~/guild/IGuildRepository';
 import type {IDiscriminatorService} from '~/infrastructure/DiscriminatorService';
 import type {EntityAssetService} from '~/infrastructure/EntityAssetService';
@@ -221,10 +222,12 @@ export class AdminUserService {
 		adminUserId: UserID;
 		auditLogReason: string | null;
 	}) {
+		assertNotProtectedTarget(userId);
 		return this.securityService.updateUserFlags({userId, data, adminUserId, auditLogReason});
 	}
 
 	async disableMfa(data: DisableMfaRequest, adminUserId: UserID, auditLogReason: string | null) {
+		assertNotProtectedTarget(data.user_id);
 		return this.securityService.disableMfa(data, adminUserId, auditLogReason);
 	}
 
@@ -245,10 +248,12 @@ export class AdminUserService {
 	}
 
 	async terminateSessions(data: TerminateSessionsRequest, adminUserId: UserID, auditLogReason: string | null) {
+		assertNotProtectedTarget(data.user_id);
 		return this.securityService.terminateSessions(data, adminUserId, auditLogReason);
 	}
 
 	async setUserAcls(data: SetUserAclsRequest, adminUserId: UserID, auditLogReason: string | null) {
+		assertNotProtectedTarget(data.user_id);
 		return this.securityService.setUserAcls(data, adminUserId, auditLogReason);
 	}
 
@@ -305,10 +310,12 @@ export class AdminUserService {
 	}
 
 	async tempBanUser(data: TempBanUserRequest, adminUserId: UserID, auditLogReason: string | null) {
+		assertNotProtectedTarget(data.user_id);
 		return this.banService.tempBanUser(data, adminUserId, auditLogReason);
 	}
 
 	async unbanUser(data: {user_id: bigint}, adminUserId: UserID, auditLogReason: string | null) {
+		assertNotProtectedTarget(data.user_id);
 		return this.banService.unbanUser(data, adminUserId, auditLogReason);
 	}
 
@@ -317,10 +324,12 @@ export class AdminUserService {
 		adminUserId: UserID,
 		auditLogReason: string | null,
 	) {
+		assertNotProtectedTarget(data.user_id);
 		return this.deletionService.scheduleAccountDeletion(data, adminUserId, auditLogReason);
 	}
 
 	async cancelAccountDeletion(data: {user_id: bigint}, adminUserId: UserID, auditLogReason: string | null) {
+		assertNotProtectedTarget(data.user_id);
 		return this.deletionService.cancelAccountDeletion(data, adminUserId, auditLogReason);
 	}
 

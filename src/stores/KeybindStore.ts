@@ -102,7 +102,6 @@ type TransmitMode = (typeof TRANSMIT_MODES)[number];
 const DEFAULT_RELEASE_DELAY_MS = 20;
 const MIN_RELEASE_DELAY_MS = 20;
 const MAX_RELEASE_DELAY_MS = 2000;
-const LATCH_TAP_THRESHOLD_MS = 200;
 
 const getDefaultKeybinds = (i18n: I18n): ReadonlyArray<KeybindConfig> =>
 	[
@@ -472,7 +471,6 @@ class KeybindStore {
 	pushToTalkLatching = false;
 
 	private pushToTalkLatched = false;
-	private pushToTalkPressTime = 0;
 	private i18n: I18n | null = null;
 	private initialized = false;
 
@@ -490,7 +488,6 @@ class KeybindStore {
 	setI18n(i18n: I18n): void {
 		this.i18n = i18n;
 		if (!this.initialized) {
-			this.resetToDefaults();
 			this.initialized = true;
 		}
 	}
@@ -521,8 +518,16 @@ class KeybindStore {
 	}
 
 	setKeybind(action: KeybindAction, combo: KeyCombo): void {
+		const normalizedCombo =
+			action === 'push_to_talk'
+				? {
+						...combo,
+						enabled: Boolean(combo.key || combo.code),
+					}
+				: combo;
+
 		runInAction(() => {
-			this.keybinds[action] = combo;
+			this.keybinds[action] = normalizedCombo;
 		});
 	}
 
@@ -571,7 +576,7 @@ class KeybindStore {
 
 	hasPushToTalkKeybind(): boolean {
 		const {combo} = this.getByAction('push_to_talk');
-		return Boolean(combo.key || combo.code);
+		return (combo.enabled ?? true) && Boolean(combo.key || combo.code);
 	}
 
 	isPushToTalkEffective(): boolean {
@@ -588,39 +593,27 @@ class KeybindStore {
 
 	setPushToTalkLatching(enabled: boolean): void {
 		runInAction(() => {
-			this.pushToTalkLatching = enabled;
-			if (!enabled) this.pushToTalkLatched = false;
+			void enabled;
+			this.pushToTalkLatching = false;
+			this.pushToTalkLatched = false;
 		});
 	}
 
 	handlePushToTalkPress(nowMs: number = Date.now()): boolean {
-		this.pushToTalkPressTime = nowMs;
-
-		if (this.pushToTalkLatching && this.pushToTalkLatched) {
-			runInAction(() => {
-				this.pushToTalkLatched = false;
-				this.pushToTalkHeld = false;
-			});
-			return false;
-		}
+		void nowMs;
 
 		runInAction(() => {
+			this.pushToTalkLatched = false;
 			this.pushToTalkHeld = true;
 		});
 		return true;
 	}
 
 	handlePushToTalkRelease(nowMs: number = Date.now()): boolean {
-		const pressDuration = nowMs - this.pushToTalkPressTime;
-
-		if (this.pushToTalkLatching && pressDuration < LATCH_TAP_THRESHOLD_MS && !this.pushToTalkLatched) {
-			runInAction(() => {
-				this.pushToTalkLatched = true;
-			});
-			return false;
-		}
+		void nowMs;
 
 		runInAction(() => {
+			this.pushToTalkLatched = false;
 			this.pushToTalkHeld = false;
 		});
 		return true;
@@ -634,7 +627,6 @@ class KeybindStore {
 		runInAction(() => {
 			this.pushToTalkHeld = false;
 			this.pushToTalkLatched = false;
-			this.pushToTalkPressTime = 0;
 		});
 	}
 }

@@ -32,6 +32,7 @@ import {Config} from '~/Config';
 import {
 	ChannelTypes,
 	GuildOperations,
+	MAX_ATTACHMENTS_PER_MESSAGE,
 	MessageReferenceTypes,
 	MessageTypes,
 	Permissions,
@@ -40,6 +41,7 @@ import {
 } from '~/Constants';
 import type {AttachmentRequestData, AttachmentToProcess} from '~/channel/AttachmentDTOs';
 import type {MessageRequest} from '~/channel/ChannelModel';
+import {applyStoryForwardPreviewComponent} from '~/channel/StoryForwardComponent';
 import type {MessageAttachment, MessageReference, MessageSnapshot} from '~/database/CassandraTypes';
 import {
 	CannotExecuteOnDmError,
@@ -66,12 +68,14 @@ import type {MessageChannelAuthService} from './MessageChannelAuthService';
 import type {MessageDispatchService} from './MessageDispatchService';
 import type {MessageEmbedAttachmentResolver} from './MessageEmbedAttachmentResolver';
 import {createMessageSnapshotsForForward, isOperationDisabled, isPersonalNotesChannel} from './MessageHelpers';
+import {notifyTelegram} from '~/telegram/TelegramNotificationsService';
 import type {MessageMentionService} from './MessageMentionService';
 import type {MessageOperationsHelpers} from './MessageOperationsHelpers';
 import type {MessagePersistenceService} from './MessagePersistenceService';
 import type {MessageProcessingService} from './MessageProcessingService';
 import type {MessageSearchService} from './MessageSearchService';
 import type {MessageValidationService} from './MessageValidationService';
+import {LargeMessageTxtService} from './LargeMessageTxtService';
 
 interface MessageSendServiceDeps {
 	channelRepository: IChannelRepositoryAggregate;
@@ -91,6 +95,7 @@ interface MessageSendServiceDeps {
 	deleteMessageAfterModeration: (params: {channel: Channel; message: Message}) => Promise<void>;
 	embedAttachmentResolver: MessageEmbedAttachmentResolver;
 	grokService: IGrokService;
+	largeMessageTxtService: LargeMessageTxtService;
 }
 
 export class MessageSendService {
@@ -103,6 +108,47 @@ export class MessageSendService {
 				'upload_filename' in att && typeof att.upload_filename === 'string' && att.upload_filename.length > 0,
 		);
 		return processed.length > 0 ? processed : undefined;
+	}
+
+	/*
+	 * Astral 4.0 — large messages auto-convert to TXT attachments.
+	 * If the caller's content exceeds their in-message length limit, the
+	 * full text is uploaded as a text/plain TXT file and the in-message
+	 * content is replaced by a short prefix + note. The TXT is added as
+	 * an AttachmentToProcess so it goes through the normal attachment
+	 * pipeline (virus scan, CDN copy). Mutates `data` in place.
+	 *
+	 * Skipped for forward messages (those carry no content by contract)
+	 * and when the attachment cap is already reached (in which case the
+	 * oversized content is left to be rejected by length validation).
+	 */
+	private async applyLargeMessageConversion({
+		user,
+		data,
+	}: {
+		user: User;
+		data: MessageRequest;
+	}): Promise<void> {
+		if (data.message_reference?.type === MessageReferenceTypes.FORWARD) return;
+		if (!this.deps.largeMessageTxtService.shouldConvert(data.content, user)) return;
+
+		const existingCount = data.attachments?.length ?? 0;
+		if (existingCount >= MAX_ATTACHMENTS_PER_MESSAGE) return;
+
+		// Choose an attachment id that won't collide with client-supplied
+		// ids (which are small indices 0..N-1).
+		const existingIds = new Set((data.attachments ?? []).map((a) => ('id' in a ? a.id : -1)));
+		let txtId = MAX_ATTACHMENTS_PER_MESSAGE - 1;
+		while (existingIds.has(txtId)) txtId--;
+
+		const {content, attachment} = await this.deps.largeMessageTxtService.convert({
+			content: data.content!,
+			user,
+			attachmentId: txtId,
+		});
+
+		data.content = content;
+		data.attachments = [...(data.attachments ?? []), attachment];
 	}
 
 	async validateMessageCanBeSent({
@@ -161,6 +207,9 @@ export class MessageSendService {
 
 		this.deps.validationService.ensureTextChannel(channel);
 
+		applyStoryForwardPreviewComponent(data);
+		await this.applyLargeMessageConversion({user, data});
+
 		const isForwardMessage = this.ensureMessageRequestIsValid({user, data});
 
 		this.deps.embedAttachmentResolver.validateAttachmentReferences({
@@ -172,6 +221,7 @@ export class MessageSendService {
 			data,
 			channelId,
 			isForwardMessage,
+			user,
 		});
 
 		if (data.message_reference && referencedMessage && !isForwardMessage) {
@@ -232,6 +282,9 @@ export class MessageSendService {
 
 		this.deps.validationService.ensureTextChannel(channel);
 
+		applyStoryForwardPreviewComponent(data);
+		await this.applyLargeMessageConversion({user, data});
+
 		const isForwardMessage = this.ensureMessageRequestIsValid({user, data});
 
 		this.deps.embedAttachmentResolver.validateAttachmentReferences({
@@ -243,6 +296,7 @@ export class MessageSendService {
 			data,
 			channelId,
 			isForwardMessage,
+			user,
 		});
 
 		if (data.message_reference && referencedMessage && !isForwardMessage) {
@@ -285,10 +339,12 @@ export class MessageSendService {
 		data,
 		channelId,
 		isForwardMessage,
+		user,
 	}: {
 		data: MessageRequest;
 		channelId: ChannelID;
 		isForwardMessage: boolean;
+		user: User;
 	}): Promise<{referencedMessage: Message | null; referencedChannelGuildId?: GuildID | null}> {
 		if (!data.message_reference) {
 			return {referencedMessage: null};
@@ -307,11 +363,14 @@ export class MessageSendService {
 
 		let referencedChannelGuildId: GuildID | null | undefined;
 		if (isForwardMessage) {
-			const referencedChannel = await this.deps.channelRepository.channelData.findUnique(referencedMessage.channelId);
-			if (!referencedChannel) {
-				throw new UnknownChannelError();
+			const sourceAuth = await this.deps.channelAuthService.getChannelAuthenticated({
+				userId: user.id,
+				channelId: referencedMessage.channelId,
+			});
+			if (sourceAuth.guild) {
+				await sourceAuth.checkPermission(Permissions.READ_MESSAGE_HISTORY);
 			}
-			referencedChannelGuildId = referencedChannel.guildId ?? null;
+			referencedChannelGuildId = sourceAuth.channel.guildId ?? null;
 		}
 
 		return {referencedMessage, referencedChannelGuildId};
@@ -395,10 +454,16 @@ export class MessageSendService {
 
 		let referencedChannelGuildId: GuildID | null | undefined;
 		if (isForwardMessage && referencedMessage) {
-			const referencedChannel = await this.deps.channelRepository.channelData.findUnique(referencedMessage.channelId);
-			if (!referencedChannel) {
-				throw new UnknownChannelError();
+			// Authorize the *source* channel before cloning content/attachments.
+			const sourceAuth = await this.deps.channelAuthService.getChannelAuthenticated({
+				userId: user.id,
+				channelId: referencedMessage.channelId,
+			});
+			if (sourceAuth.guild) {
+				await sourceAuth.checkPermission(Permissions.READ_MESSAGE_HISTORY);
 			}
+
+			const referencedChannel = sourceAuth.channel;
 			referencedChannelGuildId = referencedChannel.guildId;
 		}
 
@@ -585,6 +650,9 @@ export class MessageSendService {
 
 			this.deps.validationService.ensureTextChannel(channel);
 
+			applyStoryForwardPreviewComponent(data);
+			await this.applyLargeMessageConversion({user, data});
+
 			const isForwardMessage = this.ensureMessageRequestIsValid({user, data});
 
 			this.deps.embedAttachmentResolver.validateAttachmentReferences({
@@ -704,6 +772,7 @@ export class MessageSendService {
 				hasPermission: guild ? hasPermission : undefined,
 				mentionData,
 				allowEmbeds: canEmbedLinks,
+				components: data.components ?? null,
 			});
 
 			await Promise.all([
@@ -728,6 +797,23 @@ export class MessageSendService {
 				nonce: data.nonce,
 				tts: data.tts,
 			});
+
+			// Telegram bridge: deliver a push to recipients who linked Telegram
+			// for DMs and group DMs. Fire-and-forget — never blocks the send.
+			if (channel.type === ChannelTypes.DM || channel.type === ChannelTypes.GROUP_DM) {
+				const recipientIds = Array.from(channel.recipientIds).filter((id) => id !== user.id);
+				const preview = (data.content ?? '').slice(0, 100).trim();
+				const title = `💬 ${user.username}`;
+				const body = preview
+					? preview.length === 100
+						? `${preview}…`
+						: preview
+					: '<i>прислал(-а) вложение</i>';
+				const url = `https://astraof.com/channels/@me/${channelId}`;
+				for (const recipientId of recipientIds) {
+					void notifyTelegram(recipientId, {kind: 'dms', title, body, url});
+				}
+			}
 
 			if (data.nonce) {
 				await this.deps.validationService.cacheMessageNonce({userId: user.id, nonce: data.nonce, channelId, messageId});
@@ -892,6 +978,9 @@ export class MessageSendService {
 	}): Promise<Message> {
 		const {channel} = await this.deps.channelAuthService.getChannelAuthenticated({userId: user.id, channelId});
 
+		applyStoryForwardPreviewComponent(data);
+		await this.applyLargeMessageConversion({user, data});
+
 		const isForwardMessage = this.ensureMessageRequestIsValid({user, data});
 
 		this.deps.embedAttachmentResolver.validateAttachmentReferences({
@@ -947,6 +1036,7 @@ export class MessageSendService {
 			messageSnapshots,
 			guildId: null,
 			channel,
+			components: data.components ?? null,
 		});
 
 		await this.deps.dispatchService.dispatchMessageCreate({

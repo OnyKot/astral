@@ -29,10 +29,10 @@ switch_voice_region_handler(Request, State) ->
             {reply, gateway_errors:error(voice_channel_not_found), State};
         _ ->
             ChannelType = maps:get(<<"type">>, Channel, 0),
-            case ChannelType of
-                2 ->
+            case constants:is_guild_rtc_channel_type(ChannelType) of
+                true ->
                     {reply, #{success => true}, State};
-                _ ->
+                false ->
                     {reply, gateway_errors:error(voice_channel_not_voice), State}
             end
     end.

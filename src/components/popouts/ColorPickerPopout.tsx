@@ -37,24 +37,60 @@ export const ColorPickerPopout = observer(
 	}) => {
 		const hasCustomColor = color !== null && color !== '#4641D9';
 
-		const handleColorChange = React.useCallback(
-			(newColor: ReturnType<typeof parseColor>) => {
-				onChange(newColor.toString('hex'));
-			},
-			[onChange],
-		);
-
-		const parsedColor = React.useMemo(() => {
+		const parsedColorFromProp = React.useMemo(() => {
 			try {
 				return parseColor(color).toFormat('hsb');
 			} catch {
 				return parseColor('#4641D9').toFormat('hsb');
 			}
 		}, [color]);
+		const [liveColor, setLiveColor] = React.useState(parsedColorFromProp);
+		const pendingColorRef = React.useRef<string | null>(null);
+		const parentChangeFrameRef = React.useRef<number | null>(null);
+
+		React.useEffect(() => {
+			setLiveColor(parsedColorFromProp);
+		}, [parsedColorFromProp]);
+
+		const flushParentColorChange = React.useCallback(() => {
+			parentChangeFrameRef.current = null;
+			const pendingColor = pendingColorRef.current;
+			pendingColorRef.current = null;
+			if (pendingColor) {
+				onChange(pendingColor);
+			}
+		}, [onChange]);
+
+		React.useEffect(() => {
+			return () => {
+				if (parentChangeFrameRef.current !== null) {
+					window.cancelAnimationFrame(parentChangeFrameRef.current);
+					parentChangeFrameRef.current = null;
+				}
+
+				const pendingColor = pendingColorRef.current;
+				pendingColorRef.current = null;
+				if (pendingColor) {
+					onChange(pendingColor);
+				}
+			};
+		}, [onChange]);
+
+		const handleColorChange = React.useCallback(
+			(newColor: ReturnType<typeof parseColor>) => {
+				const nextColor = newColor.toFormat('hsb');
+				setLiveColor(nextColor);
+				pendingColorRef.current = nextColor.toString('hex');
+				if (parentChangeFrameRef.current === null) {
+					parentChangeFrameRef.current = window.requestAnimationFrame(flushParentColorChange);
+				}
+			},
+			[flushParentColorChange],
+		);
 
 		return (
 			<div className={styles.container}>
-				<ColorPicker value={parsedColor} onChange={handleColorChange}>
+				<ColorPicker value={liveColor} onChange={handleColorChange}>
 					<div className={hasCustomColor ? styles.pickerContainerWithMargin : styles.pickerContainer}>
 						<div className={styles.pickerWrapper}>
 							<ColorArea colorSpace="hsb" xChannel="saturation" yChannel="brightness" className={styles.colorArea}>

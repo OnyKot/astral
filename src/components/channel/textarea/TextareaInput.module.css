@@ -34,7 +34,7 @@
 	--textarea-upload-gap: 0.625rem;
 	--textarea-side-button-padding: 0.25rem;
 
-	--textarea-line-height: 1.375rem;
+	--textarea-line-height: 1.25rem;
 }
 
 .textareaContainer {
@@ -279,7 +279,7 @@
 		--textarea-button-compact-height: 46px;
 		--textarea-button-compact-icon-size: 21px;
 		--textarea-min-height: 50px;
-		--textarea-line-height: 1.32rem;
+		--textarea-line-height: 1.25rem;
 	}
 
 	.textareaContainer {

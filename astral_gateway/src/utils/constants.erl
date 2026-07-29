@@ -35,6 +35,9 @@
     speak_permission/0,
     stream_permission/0,
     use_vad_permission/0,
+    guild_voice_channel_type/0,
+    guild_stage_channel_type/0,
+    is_guild_rtc_channel_type/1,
     kick_members_permission/0,
     ban_members_permission/0
 ]).
@@ -181,6 +184,8 @@ dispatch_event_atom(<<"MESSAGE_REACTION_REMOVE_EMOJI">>) ->
     message_reaction_remove_emoji;
 dispatch_event_atom(<<"MESSAGE_ACK">>) ->
     message_ack;
+dispatch_event_atom(<<"MESSAGE_READ_RECEIPT">>) ->
+    message_read_receipt;
 dispatch_event_atom(<<"TYPING_START">>) ->
     typing_start;
 dispatch_event_atom(<<"WEBHOOKS_UPDATE">>) ->
@@ -307,6 +312,8 @@ dispatch_event_atom(message_reaction_remove_emoji) ->
     <<"MESSAGE_REACTION_REMOVE_EMOJI">>;
 dispatch_event_atom(message_ack) ->
     <<"MESSAGE_ACK">>;
+dispatch_event_atom(message_read_receipt) ->
+    <<"MESSAGE_READ_RECEIPT">>;
 dispatch_event_atom(typing_start) ->
     <<"TYPING_START">>;
 dispatch_event_atom(webhooks_update) ->
@@ -353,9 +360,22 @@ status_type_atom(invisible) -> <<"invisible">>;
 status_type_atom(offline) -> <<"offline">>.
 
 max_payload_size() -> 4096.
-heartbeat_interval() -> 41250.
-heartbeat_timeout() -> 45000.
+heartbeat_interval() ->
+    case astral_gateway_env:get(heartbeat_interval_ms) of
+        N when is_integer(N), N > 0 -> N;
+        _ -> 41250
+    end.
+heartbeat_timeout() ->
+    case astral_gateway_env:get(heartbeat_timeout_ms) of
+        N when is_integer(N), N > 0 -> N;
+        _ -> 45000
+    end.
 random_session_bytes() -> 16.
+guild_voice_channel_type() -> 2.
+guild_stage_channel_type() -> 13.
+is_guild_rtc_channel_type(ChannelType) ->
+    ChannelType =:= guild_voice_channel_type() orelse
+        ChannelType =:= guild_stage_channel_type().
 view_channel_permission() -> 1024.
 administrator_permission() -> 8.
 manage_roles_permission() -> 268435456.

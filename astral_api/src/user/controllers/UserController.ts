@@ -26,11 +26,13 @@ import {UserMusicAuthController} from './UserMusicAuthController';
 import {UserMusicController} from './UserMusicController';
 import {UserMusicProxyController} from './UserMusicProxyController';
 import {UserMusicSearchController} from './UserMusicSearchController';
+import {UserPremiumWaitlistController} from './UserPremiumWaitlistController';
 import {UserRelationshipController} from './UserRelationshipController';
 import {UserScheduledMessageController} from './UserScheduledMessageController';
 
 export const UserController = (app: HonoApp) => {
 	UserAccountController(app);
+	UserPremiumWaitlistController(app);
 	UserAuthController(app);
 	UserRelationshipController(app);
 	UserChannelController(app);

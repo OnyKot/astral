@@ -33,6 +33,7 @@ import {
 } from '~/Errors';
 import type {IGatewayService} from '~/infrastructure/IGatewayService';
 import type {UserCacheService} from '~/infrastructure/UserCacheService';
+import {notifyTelegram} from '~/telegram/TelegramNotificationsService';
 import type {Relationship} from '~/Models';
 import type {RequestCache} from '~/middleware/RequestCacheMiddleware';
 import {type FriendRequestByTagRequest, mapRelationshipToResponse} from '~/user/UserModel';
@@ -418,7 +419,32 @@ export class UserRelationshipService {
 			userCacheService,
 			requestCache,
 		});
+
+		// Telegram bridge: notify the recipient that someone wants to be friends.
+		// Fire-and-forget — never blocks the relationship creation.
+		void this.notifyFriendRequest(userId, targetId, userCacheService, requestCache);
+
 		return userRelationship;
+	}
+
+	private async notifyFriendRequest(
+		fromUserId: UserID,
+		toUserId: UserID,
+		userCacheService: UserCacheService,
+		requestCache: RequestCache,
+	): Promise<void> {
+		try {
+			const fromUser = await getCachedUserPartialResponse({userId: fromUserId, userCacheService, requestCache});
+			const fromName = fromUser?.username ?? 'Кто-то';
+			await notifyTelegram(toUserId, {
+				kind: 'friend_requests',
+				title: '👥 Новый запрос в друзья',
+				body: `<b>${escapeHtml(fromName)}</b> хочет добавить вас в друзья.`,
+				url: 'https://astraof.com/channels/@me',
+			});
+		} catch {
+			// non-fatal
+		}
 	}
 
 	async dispatchRelationshipCreate({
@@ -468,4 +494,13 @@ export class UserRelationshipService {
 			data: {id: targetId},
 		});
 	}
+}
+
+function escapeHtml(input: string): string {
+	return input
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
 }

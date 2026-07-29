@@ -39,10 +39,15 @@ interface AuthBackgroundResult {
 	splashDimensions: ImageDimensions | null;
 }
 
-export function usePatternImageLoader(patternUrl: string): PatternImageLoaderResult {
+export function usePatternImageLoader(patternUrl: string, enabled = true): PatternImageLoaderResult {
 	const [patternReady, setPatternReady] = useState(false);
 
 	useEffect(() => {
+		if (!enabled) {
+			setPatternReady(false);
+			return;
+		}
+
 		const img = new Image();
 		const handleLoad = () => setPatternReady(true);
 		img.addEventListener('load', handleLoad, {once: true});
@@ -86,8 +91,8 @@ export function useSplashImageLoader(imageUrl: string | null): SplashImageLoader
 	return {loaded, dimensions};
 }
 
-export function useAuthBackground(splashUrl: string | null, patternUrl: string): AuthBackgroundResult {
-	const {patternReady} = usePatternImageLoader(patternUrl);
+export function useAuthBackground(splashUrl: string | null, patternUrl: string, patternEnabled = true): AuthBackgroundResult {
+	const {patternReady} = usePatternImageLoader(patternUrl, patternEnabled);
 	const {loaded: splashLoaded, dimensions: splashDimensions} = useSplashImageLoader(splashUrl);
 
 	return {

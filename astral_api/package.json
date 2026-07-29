@@ -7,6 +7,8 @@
 		"dev:worker": "tsx watch --clear-screen=false src/worker/Worker.ts",
 		"knip": "knip",
 		"passkeys:migrate": "tsx src/scripts/passkeyMigration.ts",
+		"s3:migrate": "tsx src/scripts/migrateS3OvhToSelectel.ts",
+		"users:ensure-profile-effect-columns": "tsx src/scripts/ensureUserProfileEffectColumns.ts",
 		"publish:android": "tsx src/scripts/publishAndroidRelease.ts",
 		"publish:desktop": "tsx src/scripts/publishDesktopRelease.ts",
 		"search:smoke": "tsx src/scripts/musicSearchSmoke.ts",

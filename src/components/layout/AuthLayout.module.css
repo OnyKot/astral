@@ -81,6 +81,111 @@
 	z-index: 1;
 }
 
+.minimalAuthShell > * {
+	z-index: 2;
+}
+
+.minimalAuthShell {
+	--auth-bg-ring-size: min(58vw, 58vh);
+
+	background:
+		linear-gradient(180deg, rgb(0 0 0 / 0.42) 0%, rgb(0 0 0 / 0.62) 100%),
+		url('../../../assets/loginbg/astralBG-1280.jpg') center center / cover no-repeat,
+		#020205;
+	background-color: #020205;
+	overflow: hidden;
+}
+
+.minimalAuthShell::before {
+	content: none;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	z-index: 1;
+	width: var(--auth-bg-ring-size);
+	height: var(--auth-bg-ring-size);
+	pointer-events: none;
+	background:
+		conic-gradient(
+			from 0deg,
+			transparent 0deg,
+			rgb(190 220 255 / 0.08) 18deg,
+			rgb(245 250 255 / 0.46) 32deg,
+			rgb(150 190 245 / 0.1) 46deg,
+			transparent 62deg,
+			transparent 118deg,
+			rgb(150 190 245 / 0.14) 146deg,
+			rgb(235 248 255 / 0.38) 164deg,
+			transparent 194deg,
+			transparent 246deg,
+			rgb(210 235 255 / 0.32) 276deg,
+			rgb(120 170 235 / 0.1) 296deg,
+			transparent 318deg,
+			transparent 360deg
+		);
+	border-radius: 50%;
+	opacity: 0.92;
+	transform: translate3d(-50%, -50%, 0) rotate(0deg);
+	transform-origin: center;
+	animation: authBackgroundRingDrift 16s linear infinite;
+	mix-blend-mode: screen;
+	mask-image: radial-gradient(circle, transparent 0 30%, #000 39%, #000 66%, transparent 76%);
+	-webkit-mask-image: radial-gradient(circle, transparent 0 30%, #000 39%, #000 66%, transparent 76%);
+}
+
+.minimalAuthShell::after {
+	inset: -3%;
+	background:
+		radial-gradient(18% 46% at -2% 46%, rgb(195 224 255 / 0.16) 0%, transparent 72%),
+		radial-gradient(18% 46% at 102% 45%, rgb(145 190 245 / 0.14) 0%, transparent 72%),
+		radial-gradient(76% 68% at 50% 48%, transparent 0%, rgb(0 0 0 / 0.2) 48%, rgb(0 0 0 / 0.86) 100%),
+		linear-gradient(90deg, rgb(0 0 0 / 0.72) 0%, transparent 18%, transparent 82%, rgb(0 0 0 / 0.72) 100%),
+		linear-gradient(180deg, rgb(0 0 0 / 0.64) 0%, transparent 20%, transparent 76%, rgb(0 0 0 / 0.72) 100%),
+		linear-gradient(90deg, rgb(0 0 0 / 0.42) 0%, transparent 28%, transparent 72%, rgb(0 0 0 / 0.42) 100%);
+	background-size:
+		100% 100%,
+		100% 100%,
+		100% 100%,
+		100% 100%,
+		100% 100%,
+		100% 100%;
+	background-position:
+		center center,
+		center center,
+		center center,
+		center center,
+		center center,
+		center center;
+	background-repeat: no-repeat;
+	opacity: 1;
+	filter: none;
+	animation: authEdgeCosmicPath 18s ease-in-out infinite alternate;
+}
+
+.minimalAuthShell .mobileContainer {
+	background: transparent;
+}
+
+@media (min-width: 768px) {
+	.minimalAuthShell {
+		--auth-bg-ring-size: min(48vw, 68vh);
+
+		background:
+			linear-gradient(180deg, rgb(0 0 0 / 0.34) 0%, rgb(0 0 0 / 0.56) 100%),
+			url('../../../assets/loginbg/astralBG-2560.jpg') center center / cover no-repeat,
+			#020205;
+	}
+}
+
+@media (orientation: portrait) {
+	.minimalAuthShell {
+		background-position:
+			center center,
+			50% 50%,
+			center center;
+	}
+}
+
 @keyframes authNebulaDrift {
 	0% {
 		transform: translate3d(0, 0, 0) scale(1);
@@ -155,7 +260,7 @@
 }
 
 .characterBackground::before {
-	opacity: 0.62;
+	opacity: 0.4;
 	background-image:
 		radial-gradient(1.1px 1.1px at 18px 28px, rgb(255 255 255 / 0.88), transparent 70%),
 		radial-gradient(1px 1px at 72px 118px, rgb(255 255 255 / 0.72), transparent 72%),
@@ -166,13 +271,11 @@
 		radial-gradient(1px 1px at 44px 206px, rgb(255 255 255 / 0.78), transparent 74%);
 	background-size: 240px 240px;
 	background-repeat: repeat;
-	animation:
-		authStarFieldDriftFar 52s linear infinite,
-		authStarFieldPulse 7.4s ease-in-out infinite alternate;
+	animation: none;
 }
 
 .characterBackground::after {
-	opacity: 0.54;
+	opacity: 0.3;
 	background-image:
 		radial-gradient(1.4px 1.4px at 42px 34px, rgb(255 255 255 / 0.92), transparent 70%),
 		radial-gradient(1.1px 1.1px at 116px 146px, rgb(255 255 255 / 0.8), transparent 72%),
@@ -182,9 +285,115 @@
 		radial-gradient(1.3px 1.3px at 346px 222px, rgb(255 255 255 / 0.76), transparent 72%);
 	background-size: 380px 380px;
 	background-repeat: repeat;
-	animation:
-		authStarFieldDriftNear 34s linear infinite reverse,
-		authStarFieldPulse 5.8s ease-in-out infinite alternate-reverse;
+	animation: none;
+}
+
+.minimalAuthShell .characterBackground::before,
+.minimalAuthShell .characterBackground::after {
+	display: none;
+}
+
+@media (max-width: 860px) {
+	.minimalAuthShell {
+		--auth-bg-ring-size: min(88vw, 56vh);
+		background:
+			linear-gradient(180deg, rgb(18 19 24 / 0.78) 0%, rgb(12 13 18 / 0.86) 52%, rgb(8 9 13 / 0.92) 100%),
+			url('../../../assets/loginbg/astralBG-1280.jpg') center center / cover no-repeat,
+			rgb(10 11 15);
+	}
+
+	.minimalAuthShell::before {
+		opacity: 0.28;
+	}
+
+	.minimalAuthShell::after {
+		background:
+			radial-gradient(92% 68% at 50% 34%, rgb(28 30 38 / 0.2) 0%, rgb(18 19 25 / 0.42) 44%, rgb(8 9 13 / 0.82) 100%),
+			linear-gradient(90deg, rgb(8 9 13 / 0.76) 0%, transparent 24%, transparent 76%, rgb(8 9 13 / 0.76) 100%),
+			linear-gradient(180deg, rgb(18 19 24 / 0.56) 0%, rgb(12 13 18 / 0.22) 34%, rgb(8 9 13 / 0.82) 100%);
+		background-size:
+			100% 100%,
+			100% 100%,
+			100% 100%;
+		background-position:
+			center center,
+			center center,
+			center center;
+		background-repeat: no-repeat;
+		animation: none;
+	}
+
+	.minimalAuthShell .mobileContainer {
+		padding:
+			calc(0.75rem + var(--safe-area-top, 0px))
+			0.75rem
+			calc(0.75rem + var(--safe-area-bottom, 0px));
+	}
+
+	.minimalAuthShell .mobileContent {
+		display: flex;
+		flex-direction: column;
+		padding: 1.05rem 1rem;
+		border-radius: 0.95rem;
+	}
+
+	.minimalAuthShell .mobileLogoContainer {
+		margin-bottom: 1.25rem;
+		padding-top: 0.28rem;
+	}
+
+	:global(html.platform-native-mobile) .minimalAuthShell .mobileContainer {
+		background: transparent;
+		padding:
+			calc(0.75rem + var(--safe-area-top, 0px))
+			0.75rem
+			calc(0.75rem + var(--safe-area-bottom, 0px));
+	}
+}
+
+@keyframes authBackgroundRingDrift {
+	to {
+		transform: translate3d(-50%, -50%, 0) rotate(360deg);
+	}
+}
+
+@keyframes authEdgeCosmicPath {
+	from {
+		opacity: 0.78;
+	}
+	to {
+		opacity: 1;
+		background-position:
+			center center,
+			center center,
+			center center,
+			center center;
+	}
+}
+
+@keyframes authCardReveal {
+	from {
+		opacity: 0;
+		transform: scale3d(0.965, 0.985, 1);
+	}
+	58% {
+		opacity: 1;
+	}
+	to {
+		opacity: 1;
+		transform: scale3d(1, 1, 1);
+	}
+}
+
+@keyframes authContentPaintLite {
+	from {
+		opacity: 0;
+		transform: scale(0.996);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 
 .rightSplit {
@@ -280,17 +489,71 @@
 	max-width: 56rem;
 	overflow: hidden;
 	border-radius: 2rem;
-	border: 1px solid rgb(255 255 255 / 0.08);
-	background: rgb(20 20 25 / 0.85);
-	backdrop-filter: blur(20px);
-	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid rgb(255 255 255 / 0.09);
+	background: rgb(16 17 23);
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
 	box-shadow:
-		0 20px 40px -12px rgb(0 0 0 / 0.62),
-		0 0 0 0.5px rgb(255 255 255 / 0.08);
+		0 22px 42px -26px rgb(0 0 0 / 0.82),
+		inset 0 1px 0 rgb(255 255 255 / 0.045);
 }
 
 .cardSingle {
 	max-width: 42rem;
+}
+
+.minimalAuthShell .cardContainer {
+	padding: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+.minimalAuthShell .card {
+	width: min(100%, 35rem);
+	max-width: 35rem;
+	height: auto;
+	min-height: 0;
+	max-height: calc(100dvh - 2rem);
+	border-radius: 1.15rem;
+	transform-origin: center;
+	border-color: rgb(255 255 255 / 0.1);
+	background: rgb(16 17 23);
+	box-shadow:
+		0 22px 42px -28px rgb(0 0 0 / 0.84),
+		inset 0 1px 0 rgb(255 255 255 / 0.045);
+}
+
+.minimalAuthShell .formSideSingle {
+	padding: clamp(1.35rem, 3vw, 2rem);
+	background: transparent;
+}
+
+.minimalAuthShell .mobileContent {
+	width: 100%;
+	max-width: none;
+	min-height: calc(100dvh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 1.5rem);
+	box-sizing: border-box;
+	padding: 1.15rem;
+	border-radius: 1.05rem;
+	border: 1px solid rgb(255 255 255 / 0.1);
+	background: rgb(16 17 23);
+	box-shadow:
+		0 18px 34px -24px rgb(0 0 0 / 0.82),
+		inset 0 1px 0 rgb(255 255 255 / 0.045);
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	transform-origin: center;
+	animation: authCardReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.minimalAuthShell .mobileContent > * {
+	animation: authContentPaintLite 250ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.minimalAuthShell .mobileContent > *:nth-child(2) {
+	animation-delay: 30ms;
+}
+
+.minimalAuthShell .mobileContent > *:nth-child(3) {
+	animation-delay: 54ms;
 }
 
 .logoSide {
@@ -303,9 +566,7 @@
 	justify-content: center;
 	padding: 3rem 2rem;
 	border-right: 1px solid rgb(255 255 255 / 0.08);
-	background:
-		radial-gradient(circle at 10% 10%, rgb(255 255 255 / 0.08) 0%, transparent 45%),
-		rgb(15 15 20 / 0.42);
+	background: rgb(11 12 17 / 0.5);
 }
 
 .logoSide::before,
@@ -322,11 +583,11 @@
 	left: -42%;
 	top: 60%;
 	border-radius: 999px;
-	background: linear-gradient(90deg, transparent 0%, rgb(208 214 255 / 0.72) 42%, transparent 100%);
+	background: linear-gradient(90deg, transparent 0%, rgb(208 214 255 / 0.42) 42%, transparent 100%);
 	filter: blur(1.5px);
 	opacity: 0;
 	transform: rotate(-19deg);
-	animation: authRocketTrail 7.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+	animation: none;
 }
 
 .logoSide::after {
@@ -338,12 +599,15 @@
 	background:
 		radial-gradient(circle at 68% 44%, rgb(32 32 46 / 0.78) 0%, rgb(32 32 46 / 0) 25%),
 		linear-gradient(90deg, #d7daef 0%, #b6bad8 52%, #8f94bb 100%);
-	box-shadow:
-		-8px 0 10px rgb(255 180 120 / 0.56),
-		0 0 12px rgb(175 190 255 / 0.34);
+	box-shadow: 0 0 10px rgb(175 190 255 / 0.24);
 	opacity: 0;
 	transform: rotate(-19deg);
-	animation: authRocketFlight 7.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+	animation: none;
+}
+
+.minimalAuthShell .logoSide::before,
+.minimalAuthShell .logoSide::after {
+	display: none;
 }
 
 .logo {
@@ -377,9 +641,7 @@
 	text-shadow:
 		0 0 18px rgb(255 255 255 / 0.08),
 		0 0 28px rgb(174 187 255 / 0.08);
-	animation:
-		authWordmarkFloat 4.8s ease-in-out infinite alternate,
-		authWordmarkShimmer 8s ease-in-out infinite;
+	animation: none;
 }
 
 .formSide {
@@ -389,7 +651,7 @@
 	justify-content: center;
 	min-height: 0;
 	padding: 3rem;
-	background: rgb(16 16 21 / 0.26);
+	background: rgb(10 11 16 / 0.28);
 	font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	overflow: auto;
 	overscroll-behavior: contain;
@@ -688,7 +950,7 @@
 }
 
 :global(html.auth-lite-effects) .card {
-	background: rgb(20 20 25 / 0.94);
+	background: rgb(20 20 25);
 	backdrop-filter: none;
 	-webkit-backdrop-filter: none;
 	box-shadow:
@@ -710,6 +972,8 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.scrollerWrapper::before,
+	.minimalAuthShell::before,
+	.minimalAuthShell::after,
 	.characterBackground::before,
 	.characterBackground::after {
 		animation: none;
@@ -717,29 +981,11 @@
 
 	.logoSide::before,
 	.logoSide::after,
-	.wordmarkText {
+	.wordmarkText,
+	.minimalAuthShell .card,
+	.minimalAuthShell .mobileContent,
+	.minimalAuthShell .mobileContent > * {
 		animation: none;
-	}
-}
-
-.card {
-	transition:
-		box-shadow var(--motion-dur-short) var(--motion-ease-smooth),
-		transform var(--motion-dur-short) var(--motion-ease-smooth);
-}
-
-@media (hover: hover) and (pointer: fine) {
-	.card:hover {
-		transform: translateY(-2px);
-		box-shadow:
-			0 24px 42px -18px rgb(0 0 0 / 0.5),
-			0 0 0 1px rgb(255 255 255 / 0.08);
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.card:hover {
-		transform: none;
 	}
 }
 

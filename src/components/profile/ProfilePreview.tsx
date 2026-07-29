@@ -22,6 +22,7 @@ import {ChatTeardropIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
+import * as UserProfileActionCreators from '~/actions/UserProfileActionCreators';
 import {modal} from '~/actions/ModalActionCreators';
 import * as PrivateChannelActionCreators from '~/actions/PrivateChannelActionCreators';
 import {DEFAULT_ACCENT_COLOR} from '~/Constants';
@@ -47,6 +48,7 @@ import type {ProfileRecord} from '~/records/ProfileRecord';
 import type {UserProfile, UserRecord} from '~/records/UserRecord';
 import AuthenticationStore from '~/stores/AuthenticationStore';
 import GuildStore from '~/stores/GuildStore';
+import MobileLayoutStore from '~/stores/MobileLayoutStore';
 import * as ColorUtils from '~/utils/ColorUtils';
 import * as NicknameUtils from '~/utils/NicknameUtils';
 import * as ProfileDisplayUtils from '~/utils/ProfileDisplayUtils';
@@ -190,6 +192,11 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = observer(
 		]);
 
 		const openMockProfile = React.useCallback(() => {
+			if (MobileLayoutStore.enabled) {
+				UserProfileActionCreators.openUserProfile(user.id, guildId || undefined);
+				return;
+			}
+
 			ModalActionCreators.push(
 				modal(() => (
 					<UserProfileModal

@@ -71,42 +71,43 @@ interface TextareaButtonsProps {
 	onVoiceInteractionChange?: (active: boolean) => void;
 }
 
-export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsProps>(
-	(
-		{
-			disabled,
-			showAllButtons,
-			showGiftButton,
-			showGifButton,
-			showMemesButton,
-			showStickersButton,
-			showEmojiButton,
-			showMessageSendButton,
-			showVoiceMessageButton,
-			expressionPickerOpen,
-			selectedTab,
-			isMobile,
-			shouldShowMobileGiftButton,
-			isComposing,
-			isSlowmodeActive,
-			isOverLimit,
-			hasContent,
-			hasAttachments,
-			isMessageSending = false,
-			expressionPickerTriggerRef,
-			invisibleExpressionPickerTriggerRef,
-			onExpressionPickerToggle,
-			onSubmit,
-			onContextMenu,
-			disableSendButton,
-			onVoiceRecordStart,
-			onVoiceRecordStop,
-			onVoiceRecordCancel,
-			voiceDisabled,
-			onVoiceInteractionChange,
-		},
-		ref,
-	) => {
+export const TextareaButtons = React.memo(
+	React.forwardRef<HTMLDivElement, TextareaButtonsProps>(
+		(
+			{
+				disabled,
+				showAllButtons,
+				showGiftButton,
+				showGifButton,
+				showMemesButton,
+				showStickersButton,
+				showEmojiButton,
+				showMessageSendButton,
+				showVoiceMessageButton,
+				expressionPickerOpen,
+				selectedTab,
+				isMobile,
+				shouldShowMobileGiftButton,
+				isComposing,
+				isSlowmodeActive,
+				isOverLimit,
+				hasContent,
+				hasAttachments,
+				isMessageSending = false,
+				expressionPickerTriggerRef,
+				invisibleExpressionPickerTriggerRef,
+				onExpressionPickerToggle,
+				onSubmit,
+				onContextMenu,
+				disableSendButton,
+				onVoiceRecordStart,
+				onVoiceRecordStop,
+				onVoiceRecordCancel,
+				voiceDisabled,
+				onVoiceInteractionChange,
+			},
+			ref,
+		) => {
 		const {t} = useLingui();
 		const [isVoiceRecording, setIsVoiceRecording] = React.useState(false);
 		const [isVoiceLocked, setIsVoiceLocked] = React.useState(false);
@@ -564,7 +565,8 @@ export const TextareaButtons = React.forwardRef<HTMLDivElement, TextareaButtonsP
 				)}
 			</div>
 		);
-	},
+		},
+	),
 );
 
 TextareaButtons.displayName = 'TextareaButtons';

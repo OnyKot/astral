@@ -31,7 +31,7 @@ import UserStore from '~/stores/UserStore';
 import type {Invite as InviteType} from '~/types/InviteTypes';
 import * as GiftCodeUtils from '~/utils/giftCodeUtils';
 import * as InviteUtils from '~/utils/InviteUtils';
-import {emojiEquals, type ReactionEmoji} from '~/utils/ReactionUtils';
+import {emojiEquals, MAX_REACTION_TYPES_PER_MESSAGE, type ReactionEmoji} from '~/utils/ReactionUtils';
 import * as ThemeUtils from '~/utils/ThemeUtils';
 
 export type Invite = InviteType;
@@ -226,26 +226,45 @@ const generateEmbedId = (): string => {
 	return `embed_${embedIdCounter++}`;
 };
 
-const areEmbedsEqual = (embed1: MessageEmbed, embed2: MessageEmbed): boolean => {
-	const {id: _id1, ...embed1WithoutId} = embed1;
-	const {id: _id2, ...embed2WithoutId} = embed2;
-	return JSON.stringify(embed1WithoutId) === JSON.stringify(embed2WithoutId);
-};
+const EMBED_ID_CACHE_LIMIT = 2000;
 
-const embedCache: Array<{embed: MessageEmbed; id: string}> = [];
+/*
+ * Embed ids are client-only React keys. The server never sends one
+ * (MessageEmbedResponse has no `id` field), so an embed that already carries one
+ * can only have come from a MessageRecord we built earlier and keeps it - that
+ * short-circuit removes all of the rebuild paths (withUpdates on every reaction,
+ * edit, USER_UPDATE and GUILD_MEMBER_UPDATE sweep) from this function entirely.
+ *
+ * Everything else is keyed by a single JSON.stringify of the embed body. The
+ * previous implementation scanned an unbounded module-global array and
+ * stringified BOTH sides of every comparison, so a link-heavy session degraded
+ * quadratically, and it retained a full copy of every embed ever seen even after
+ * the bounded message store had dropped the message.
+ */
+const embedIdByKey = new Map<string, string>();
 
-const getOrCreateEmbedId = (embed: Omit<MessageEmbed, 'id'>): string => {
-	const existingEmbed = embedCache.find((cached) => areEmbedsEqual(cached.embed, embed as MessageEmbed));
+const getOrCreateEmbedId = (embed: Omit<MessageEmbed, 'id'> & {id?: string}): string => {
+	if (embed.id) {
+		return embed.id;
+	}
 
-	if (existingEmbed) {
-		return existingEmbed.id;
+	const {id: _id, ...embedWithoutId} = embed;
+	const key = JSON.stringify(embedWithoutId);
+	const existingId = embedIdByKey.get(key);
+	if (existingId != null) {
+		return existingId;
 	}
 
 	const newId = generateEmbedId();
-	embedCache.push({
-		embed: {...embed, id: newId} as MessageEmbed,
-		id: newId,
-	});
+	embedIdByKey.set(key, newId);
+
+	if (embedIdByKey.size > EMBED_ID_CACHE_LIMIT) {
+		// Map preserves insertion order, so the first key is the oldest entry.
+		const oldestKey = embedIdByKey.keys().next().value;
+		if (oldestKey !== undefined) {
+			embedIdByKey.delete(oldestKey);
+		}
+	}
 
 	return newId;
 };
@@ -334,7 +353,7 @@ export class MessageRecord {
 		);
 		this.attachments = Object.freeze(message.attachments ?? []);
 		this.stickerItems = Object.freeze(message.stickers ?? []);
-		this.reactions = Object.freeze(message.reactions ?? []);
+		this.reactions = Object.freeze((message.reactions ?? []).slice(0, MAX_REACTION_TYPES_PER_MESSAGE));
 
 		this.messageReference = message.message_reference;
 		this.referencedMessage = message.referenced_message
@@ -449,6 +468,10 @@ export class MessageRecord {
 		const existingReaction = this.getReaction(emoji);
 
 		if (!existingReaction && !add) {
+			return this;
+		}
+
+		if (!existingReaction && add && this.reactions.length >= MAX_REACTION_TYPES_PER_MESSAGE) {
 			return this;
 		}
 

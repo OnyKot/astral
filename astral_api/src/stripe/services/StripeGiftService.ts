@@ -62,16 +62,18 @@ export class StripeGiftService {
 	}
 
 	async redeemGiftCode(userId: UserID, code: string): Promise<void> {
-		const inflightKey = `gift_redeem_inflight:${code}`;
 		const appliedKey = `gift_redeem_applied:${code}`;
 
 		if (await this.cacheService.get<boolean>(appliedKey)) {
 			throw new GiftCodeAlreadyRedeemedError();
 		}
-		if (await this.cacheService.get<boolean>(inflightKey)) {
+
+		// Exclusive claim — get-then-set left a TOCTOU window where two redeemers
+		// could both grant premium before either LWT won.
+		const lockToken = await this.cacheService.acquireLock(`gift_redeem:${code}`, 60);
+		if (!lockToken) {
 			throw new StripeError('Gift code redemption in progress. Please try again in a moment.');
 		}
-		await this.cacheService.set(inflightKey, 60);
 
 		try {
 			const giftCode = await this.userRepository.findGiftCode(code);
@@ -100,6 +102,14 @@ export class StripeGiftService {
 				throw new CannotRedeemPlutoniumWithVisionaryError();
 			}
 
+			// Claim the gift atomically BEFORE any premium/slot side effects so a
+			// losing concurrent redeemer cannot keep a granted entitlement.
+			const redeemResult = await this.userRepository.redeemGiftCode(code, userId);
+			if (!redeemResult.applied) {
+				await this.cacheService.set(appliedKey, 365 * 24 * 60 * 60);
+				throw new GiftCodeAlreadyRedeemedError();
+			}
+
 			const premiumType = giftCode.durationMonths === 0 ? UserPremiumTypes.LIFETIME : UserPremiumTypes.SUBSCRIPTION;
 			if (premiumType === UserPremiumTypes.LIFETIME && user.stripeSubscriptionId && this.stripe) {
 				await this.cancelStripeSubscriptionImmediately(user);
@@ -121,17 +131,12 @@ export class StripeGiftService {
 				await this.premiumService.grantPremium(userId, premiumType, giftCode.durationMonths, null, false);
 			}
 
-			const redeemResult = await this.userRepository.redeemGiftCode(code, userId);
-			if (!redeemResult.applied) {
-				throw new GiftCodeAlreadyRedeemedError();
-			}
-
 			await this.cacheService.set(`redeemed_gift_codes:${code}`, 300);
 			await this.cacheService.set(appliedKey, 365 * 24 * 60 * 60);
 
 			Logger.debug({userId, giftCode: code, durationMonths: giftCode.durationMonths}, 'Gift code redeemed');
 		} finally {
-			await this.cacheService.delete(inflightKey);
+			await this.cacheService.releaseLock(`gift_redeem:${code}`, lockToken);
 		}
 	}
 
@@ -224,6 +229,8 @@ export class StripeGiftService {
 			visionary_sequence_number: visionarySequenceNumber,
 			checkout_session_id: checkoutSessionId,
 			version: 1,
+			emoji: null,
+			background: null,
 		});
 
 		await this.userRepository.linkGiftCodeToCheckoutSession(code, checkoutSessionId);
@@ -278,5 +285,12 @@ export class StripeGiftService {
 			event: 'USER_UPDATE',
 			data: mapUserToPrivateResponse(user),
 		});
+	}
+
+	async updateGiftMetadata(userId: UserID, code: string, emoji: string | null, background: string | null): Promise<void> {
+		const giftCode = await this.userRepository.findGiftCode(code);
+		if (!giftCode) throw new UnknownGiftCodeError();
+		if (giftCode.createdByUserId !== userId) throw new AccessDeniedError();
+		await this.userRepository.updateGiftMetadata(code, emoji, background);
 	}
 }

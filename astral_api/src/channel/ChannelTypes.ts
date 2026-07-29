@@ -109,6 +109,11 @@ const CreateVoice = CreateCommon.extend({
 	name: GeneralChannelNameType,
 });
 
+const CreateStage = CreateCommon.extend({
+	type: z.literal(ChannelTypes.GUILD_STAGE),
+	name: GeneralChannelNameType,
+});
+
 const CreateCat = CreateCommon.extend({
 	type: z.literal(ChannelTypes.GUILD_CATEGORY),
 	name: GeneralChannelNameType,
@@ -119,7 +124,7 @@ const CreateLink = CreateCommon.extend({
 	name: GeneralChannelNameType,
 });
 
-export const ChannelCreateRequest = z.discriminatedUnion('type', [CreateText, CreateVoice, CreateCat, CreateLink]);
+export const ChannelCreateRequest = z.discriminatedUnion('type', [CreateText, CreateVoice, CreateStage, CreateCat, CreateLink]);
 export type ChannelCreateRequest = z.infer<typeof ChannelCreateRequest>;
 
 const UpdateText = UpdateCommon.extend({
@@ -129,6 +134,11 @@ const UpdateText = UpdateCommon.extend({
 
 const UpdateVoice = UpdateCommon.extend({
 	type: z.literal(ChannelTypes.GUILD_VOICE),
+	name: GeneralChannelNameType.nullish(),
+});
+
+const UpdateStage = UpdateCommon.extend({
+	type: z.literal(ChannelTypes.GUILD_STAGE),
 	name: GeneralChannelNameType.nullish(),
 });
 
@@ -153,6 +163,7 @@ const UpdateGroupDm = z.object({
 export const ChannelUpdateRequest = z.discriminatedUnion('type', [
 	UpdateText,
 	UpdateVoice,
+	UpdateStage,
 	UpdateCat,
 	UpdateLink,
 	UpdateGroupDm,

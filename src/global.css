@@ -159,6 +159,7 @@ html.stream-mode-hide-sensitive [data-stream-sensitive='true'] {
     --android-virtual-frame-bottom: 0px;
     --mobile-keyboard-inset: 0px;
     --mobile-expression-picker-height: clamp(280px, 42dvh, 380px);
+    --mobile-expression-picker-sheet-height: clamp(280px, var(--mobile-expression-picker-height), min(62dvh, 430px));
     --safe-area-top: max( env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--native-safe-area-top), var(--android-statusbar-fallback-top), var(--android-virtual-frame-top));
     --safe-area-right: max( env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px), var(--native-safe-area-right), var(--android-virtual-frame-side));
     --safe-area-bottom: max( env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px), var(--native-safe-area-bottom));
@@ -683,39 +684,39 @@ html.platform-mobile-browser [data-skeleton='true'] {
 }
 
 .theme-pink {
-    --theme-shell-start: #1a1119;
-    --theme-shell-end: #301f2d;
-    --theme-shell-surface: #25171f;
-    --background-primary: #25171f;
-    --background-secondary: #180f15;
-    --background-secondary-alt: #2b1b25;
-    --background-tertiary: #34222e;
-    --background-textarea: #281923;
-    --background-header-primary: #25171f;
-    --background-header-primary-hover: #3a2433;
-    --background-header-secondary: #2d1c28;
-    --background-floating: #261821;
-    --panel-control-bg: #31202a;
-    --panel-control-border: rgb(198 113 151 / 24%);
-    --panel-control-divider: rgb(198 113 151 / 16%);
-    --background-modifier-hover: rgb(255 230 240 / 5%);
-    --background-modifier-selected: rgb(198 113 151 / 20%);
-    --background-modifier-accent: rgb(198 113 151 / 15%);
-    --text-primary: #fff0f6;
-    --text-secondary: #eed3df;
-    --text-tertiary: #bc98aa;
-    --text-primary-muted: #bc98aa;
-    --text-chat: #ffe8f1;
-    --text-chat-muted: #bc98aa;
-    --text-link: #df8fb4;
-    --text-selection: rgb(223 143 180 / 25%);
-    --brand-primary: #c67197;
-    --brand-secondary: #ac5d80;
-    --brand-primary-light: #e7b5cb;
-    --button-primary-fill: #c67197;
-    --button-primary-active-fill: #af6386;
-    --button-secondary-fill: #34212c;
-    --button-secondary-active-fill: #3d2733;
+    --theme-shell-start: #170b1f;
+    --theme-shell-end: #321336;
+    --theme-shell-surface: #25112d;
+    --background-primary: #25112d;
+    --background-secondary: #16091c;
+    --background-secondary-alt: #2c1535;
+    --background-tertiary: #391a42;
+    --background-textarea: #2a1432;
+    --background-header-primary: #25112d;
+    --background-header-primary-hover: #42204c;
+    --background-header-secondary: #2d1538;
+    --background-floating: #2a1434;
+    --panel-control-bg: #35183f;
+    --panel-control-border: rgb(236 72 153 / 28%);
+    --panel-control-divider: rgb(168 85 247 / 18%);
+    --background-modifier-hover: rgb(255 230 247 / 6%);
+    --background-modifier-selected: rgb(236 72 153 / 24%);
+    --background-modifier-accent: rgb(168 85 247 / 17%);
+    --text-primary: #fff1f8;
+    --text-secondary: #f4d8e8;
+    --text-tertiary: #c79bb8;
+    --text-primary-muted: #c79bb8;
+    --text-chat: #ffeaf4;
+    --text-chat-muted: #c79bb8;
+    --text-link: #f0abfc;
+    --text-selection: rgb(236 72 153 / 28%);
+    --brand-primary: #ec4899;
+    --brand-secondary: #a855f7;
+    --brand-primary-light: #f9a8d4;
+    --button-primary-fill: #ec4899;
+    --button-primary-active-fill: #d946ef;
+    --button-secondary-fill: #3a1a43;
+    --button-secondary-active-fill: #482152;
     --button-secondary-text: #ffe3ee;
     --button-secondary-active-text: #fff1f7;
     --status-online: #5cbf96;
@@ -928,7 +929,109 @@ html[data-theme-gradient-style='nebula'] {
     );
 }
 
+html[data-theme-gradient-style='magenta'] {
+	--app-shell-background:
+		radial-gradient(620px 380px at 92% -18%, rgb(236 72 153 / 28%), transparent 60%),
+		radial-gradient(560px 340px at 4% 12%, rgb(168 85 247 / 24%), transparent 62%),
+		linear-gradient(
+			138deg,
+			color-mix(in srgb, var(--theme-shell-start) 82%, #4c1238 18%) 0%,
+			color-mix(in srgb, var(--theme-shell-end) 76%, #641b6e 24%) 46%,
+			color-mix(in srgb, var(--theme-shell-end) 70%, #7a1c55 30%) 100%
+		);
+	--theme-preset-overlay-background:
+		radial-gradient(circle at 84% 8%, rgb(244 114 182 / 0.34), transparent 44%),
+		radial-gradient(circle at 16% 12%, rgb(192 132 252 / 0.3), transparent 42%);
+	--theme-preset-overlay-opacity: 0.6;
+}
+
+html[data-theme-gradient-style='orchid'] {
+	--app-shell-background:
+		radial-gradient(620px 380px at 88% -16%, rgb(168 85 247 / 30%), transparent 60%),
+		radial-gradient(520px 340px at 6% 10%, rgb(99 102 241 / 26%), transparent 62%),
+		linear-gradient(
+			138deg,
+			color-mix(in srgb, var(--theme-shell-start) 80%, #26135f 20%) 0%,
+			color-mix(in srgb, var(--theme-shell-end) 74%, #4c1d95 26%) 48%,
+			color-mix(in srgb, var(--theme-shell-end) 70%, #7e22ce 30%) 100%
+		);
+	--theme-preset-overlay-background:
+		radial-gradient(circle at 82% 8%, rgb(216 180 254 / 0.32), transparent 44%),
+		radial-gradient(circle at 18% 14%, rgb(129 140 248 / 0.28), transparent 42%);
+	--theme-preset-overlay-opacity: 0.58;
+}
+
+html[data-theme-gradient-style='coral'] {
+	--app-shell-background:
+		radial-gradient(640px 390px at 90% -14%, rgb(251 113 133 / 28%), transparent 60%),
+		radial-gradient(560px 360px at 6% 8%, rgb(249 115 22 / 24%), transparent 62%),
+		linear-gradient(
+			142deg,
+			color-mix(in srgb, var(--theme-shell-start) 82%, #4a1622 18%) 0%,
+			color-mix(in srgb, var(--theme-shell-end) 76%, #7c2d12 24%) 46%,
+			color-mix(in srgb, var(--theme-shell-end) 70%, #9f1239 30%) 100%
+		);
+	--theme-preset-overlay-background:
+		radial-gradient(circle at 80% 10%, rgb(251 113 133 / 0.32), transparent 44%),
+		radial-gradient(circle at 16% 12%, rgb(251 146 60 / 0.26), transparent 42%);
+	--theme-preset-overlay-opacity: 0.56;
+}
+
+html[data-theme-gradient-style='lime'] {
+	--app-shell-background:
+		radial-gradient(620px 380px at 12% -16%, rgb(132 204 22 / 28%), transparent 60%),
+		radial-gradient(560px 340px at 92% 4%, rgb(20 184 166 / 24%), transparent 62%),
+		linear-gradient(
+			140deg,
+			color-mix(in srgb, var(--theme-shell-start) 82%, #164e1f 18%) 0%,
+			color-mix(in srgb, var(--theme-shell-end) 76%, #166534 24%) 44%,
+			color-mix(in srgb, var(--theme-shell-end) 70%, #3f6212 30%) 100%
+		);
+	--theme-preset-overlay-background:
+		radial-gradient(circle at 18% 8%, rgb(163 230 53 / 0.3), transparent 44%),
+		radial-gradient(circle at 84% 12%, rgb(45 212 191 / 0.24), transparent 42%);
+	--theme-preset-overlay-opacity: 0.54;
+}
+
 html[data-theme-gradient-style='custom'] {
+	--theme-shell-start: color-mix(in srgb, #080a10 88%, var(--theme-custom-gradient-middle) 12%);
+	--theme-shell-end: color-mix(in srgb, #111827 78%, var(--theme-custom-gradient-middle) 22%);
+	--theme-shell-surface: color-mix(in srgb, #151a21 82%, var(--theme-custom-gradient-middle) 18%);
+	--background-primary: color-mix(in srgb, #151a21 82%, var(--theme-custom-gradient-middle) 18%);
+	--background-secondary: color-mix(in srgb, #0d1117 88%, var(--theme-custom-gradient-middle) 12%);
+	--background-secondary-alt: color-mix(in srgb, #161d27 82%, var(--theme-custom-gradient-middle) 18%);
+	--background-tertiary: color-mix(in srgb, #1b2330 78%, var(--theme-custom-gradient-middle) 22%);
+	--background-textarea: color-mix(in srgb, #0b1016 82%, var(--theme-custom-gradient-middle) 18%);
+	--background-header-primary: color-mix(in srgb, #0d1117 86%, var(--theme-custom-gradient-middle) 14%);
+	--background-header-primary-hover: color-mix(in srgb, #1f2937 74%, var(--theme-custom-gradient-middle) 26%);
+	--background-header-secondary: color-mix(in srgb, #10161e 82%, var(--theme-custom-gradient-middle) 18%);
+	--guild-list-foreground: color-mix(in srgb, #151a21 82%, var(--theme-custom-gradient-middle) 18%);
+	--background-floating: color-mix(in srgb, #111923 78%, var(--theme-custom-gradient-middle) 22%);
+	--panel-control-bg: color-mix(in srgb, #161b22 76%, var(--theme-custom-gradient-middle) 24%);
+	--panel-control-border: color-mix(in srgb, var(--theme-custom-gradient-middle) 32%, transparent);
+	--panel-control-divider: color-mix(in srgb, var(--theme-custom-gradient-middle) 20%, transparent);
+	--background-modifier-hover: color-mix(in srgb, var(--theme-custom-gradient-middle) 10%, transparent);
+	--background-modifier-selected: color-mix(in srgb, var(--theme-custom-gradient-middle) 24%, transparent);
+	--background-modifier-accent: color-mix(in srgb, var(--theme-custom-gradient-middle) 18%, transparent);
+	--text-primary: #f8fafc;
+	--text-secondary: #dbe4f0;
+	--text-tertiary: color-mix(in srgb, #94a3b8 82%, var(--theme-custom-gradient-middle) 18%);
+	--text-primary-muted: color-mix(in srgb, #94a3b8 82%, var(--theme-custom-gradient-middle) 18%);
+	--text-chat: #edf2fb;
+	--text-chat-muted: color-mix(in srgb, #94a3b8 80%, var(--theme-custom-gradient-middle) 20%);
+	--text-link: color-mix(in srgb, var(--theme-custom-gradient-middle) 72%, white 28%);
+	--text-selection: color-mix(in srgb, var(--theme-custom-gradient-middle) 30%, transparent);
+	--brand-primary: var(--theme-custom-gradient-middle);
+	--brand-secondary: color-mix(in srgb, var(--theme-custom-gradient-middle) 82%, black 18%);
+	--brand-primary-light: color-mix(in srgb, var(--theme-custom-gradient-middle) 58%, white 42%);
+	--button-primary-fill: var(--theme-custom-gradient-middle);
+	--button-primary-active-fill: color-mix(in srgb, var(--theme-custom-gradient-middle) 84%, black 16%);
+	--button-primary-border: color-mix(in srgb, var(--theme-custom-gradient-middle) 38%, transparent);
+	--button-secondary-fill: color-mix(in srgb, #1a212c 78%, var(--theme-custom-gradient-middle) 22%);
+	--button-secondary-active-fill: color-mix(in srgb, #232c39 70%, var(--theme-custom-gradient-middle) 30%);
+	--button-secondary-active-border: color-mix(in srgb, var(--theme-custom-gradient-middle) 30%, transparent);
+	--icon-accent: color-mix(in srgb, var(--theme-custom-gradient-middle) 74%, white 26%);
+	--focus-primary: color-mix(in srgb, var(--theme-custom-gradient-middle) 72%, white 28%);
     --app-shell-background: linear-gradient(
         var(--theme-custom-gradient-angle),
         color-mix(in srgb, var(--theme-shell-start) 84%, var(--theme-custom-gradient-start) 16%),
@@ -945,14 +1048,31 @@ html[data-theme-gradient-style='custom'] {
 }
 
 /*
- * Keep preset gradients scoped to chat background only.
- * App shell remains controlled by the selected base theme.
+ * Keep the chat overlay synced with the active preset.
  */
 html[data-theme-gradient-style] {
-    --app-shell-background: linear-gradient(145deg, var(--theme-shell-start) 0%, var(--theme-shell-end) 100%);
-    --app-surface-background: var(--theme-shell-surface);
     --chat-gradient-overlay-opacity: var(--theme-preset-overlay-opacity, 0);
     --chat-gradient-overlay-background: var(--theme-preset-overlay-background, transparent);
+}
+
+html[data-app-render-phase='critical'] {
+    --chat-background-pattern-opacity: 0 !important;
+    --chat-gradient-overlay-opacity: 0 !important;
+    --theme-preset-overlay-opacity: 0 !important;
+}
+
+html[data-app-render-phase='critical'] [data-theme-transition='surface'] {
+    transition: none !important;
+}
+
+html[data-theme-live-edit='1'],
+html[data-theme-live-edit='1'] [data-theme-transition='surface'],
+html[data-theme-live-edit='1'] button,
+html[data-theme-live-edit='1'] a,
+html[data-theme-live-edit='1'] input,
+html[data-theme-live-edit='1'] textarea,
+html[data-theme-live-edit='1'] [role='button'] {
+    transition: none !important;
 }
 
 
@@ -1186,6 +1306,129 @@ html.platform-android-webview-shell :where(button.no-press-feedback, [role='butt
 html.platform-android-webview-shell :where(button.no-press-feedback, [role='button'].no-press-feedback):hover,
 html.platform-android-webview-shell :where(button.no-press-feedback, [role='button'].no-press-feedback):active {
     transform: none !important;
+}
+
+html.mobile-fast-mode {
+    --motion-dur-instant: 0.01ms;
+    --motion-dur-short: 0.01ms;
+    --motion-dur-medium: 0.01ms;
+    --motion-dur-long: 0.01ms;
+    --motion-dur-xlong: 0.01ms;
+    --window-open-duration: 0.01ms;
+    --button-motion-active-scale: 1;
+    --button-motion-active-translate-y: 0px;
+    --chat-background-pattern-opacity: 0;
+    --chat-background-pattern-filter: none;
+}
+
+html.android-fast-mode {
+    --chat-background-pattern-opacity: 0;
+    --chat-background-pattern-filter: none;
+}
+
+html.mobile-fast-mode *,
+html.mobile-fast-mode *::before,
+html.mobile-fast-mode *::after,
+html.android-fast-mode *,
+html.android-fast-mode *::before,
+html.android-fast-mode *::after {
+    scroll-behavior: auto !important;
+}
+
+html.mobile-fast-mode :where(
+    [data-message-id],
+    [data-list-item],
+    [data-channel-item],
+    [data-dm-item],
+    [data-guild-item],
+    [data-floating-ui-portal] [role='dialog'],
+    [data-popouts-root] [role='dialog'],
+    [role='dialog'],
+    [class*='BottomSheet'],
+    [class*='Sheet'],
+    [class*='Modal'],
+    [class*='Popover'],
+    [class*='Tooltip'],
+    [class*='profile'],
+    [class*='Profile'],
+    [class*='avatar'],
+    [class*='Avatar'],
+    .reactionButton,
+    .addReactionButton
+),
+html.android-fast-mode :where(
+    [data-message-id],
+    [data-list-item],
+    [data-channel-item],
+    [data-dm-item],
+    [data-guild-item],
+    [data-floating-ui-portal] [role='dialog'],
+    [data-popouts-root] [role='dialog'],
+    [role='dialog'],
+    [class*='BottomSheet'],
+    [class*='Sheet'],
+    [class*='Modal'],
+    [class*='Popover'],
+    [class*='Tooltip'],
+    [class*='profile'],
+    [class*='Profile'],
+    [class*='avatar'],
+    [class*='Avatar'],
+    .reactionButton,
+    .addReactionButton
+) {
+    animation: none !important;
+    transition:
+        background-color 55ms linear,
+        color 55ms linear,
+        border-color 55ms linear,
+        opacity 55ms linear !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    text-shadow: none !important;
+}
+
+html.mobile-fast-mode :where(
+    button,
+    a,
+    [role='button'],
+    [role='menuitem'],
+    [role='tab'],
+    [data-message-id],
+    [data-channel-item],
+    [data-dm-item],
+    [data-guild-item],
+    .reactionButton,
+    .addReactionButton
+):not([data-allow-android-transform='true']),
+html.android-fast-mode :where(
+    button,
+    a,
+    [role='button'],
+    [role='menuitem'],
+    [role='tab'],
+    [data-message-id],
+    [data-channel-item],
+    [data-dm-item],
+    [data-guild-item],
+    .reactionButton,
+    .addReactionButton
+):not([data-allow-android-transform='true']) {
+    transform: none !important;
+}
+
+html.mobile-fast-mode :where(.skeleton, [data-skeleton='true']),
+html.android-fast-mode :where(.skeleton, [data-skeleton='true']) {
+    animation: none !important;
+    background-image: none !important;
+}
+
+html.mobile-fast-mode :where(video, canvas, img, svg),
+html.android-fast-mode :where(video, canvas, img, svg) {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 @media (max-width: 767px) {

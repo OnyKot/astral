@@ -43,6 +43,7 @@ import {z} from '~/Schema';
 
 export const MAX_ACTION_ROWS = 5;
 export const MAX_BUTTONS_PER_ROW = 5;
+export const COMPONENT_TYPE_STORY_PREVIEW = 100;
 
 export const BUTTON_STYLES = [1, 2, 3, 4, 5] as const; // primary, secondary, success, danger, link
 
@@ -100,7 +101,17 @@ const StringSelectComponent = z.object({
 	disabled: z.boolean().optional(),
 });
 
-const RowChild = z.union([ButtonComponent, StringSelectComponent]);
+const StoryPreviewComponent = z.object({
+	type: z.literal(COMPONENT_TYPE_STORY_PREVIEW),
+	kind: z.literal('story_preview'),
+	author_name: z.string().min(1).max(80),
+	summary: z.string().min(1).max(240),
+	media_url: z.string().max(2048).nullish(),
+	comment: z.string().max(500).nullish(),
+	is_video: z.boolean().optional(),
+});
+
+const RowChild = z.union([ButtonComponent, StringSelectComponent, StoryPreviewComponent]);
 
 export const MessageActionRowSchema = z
 	.object({
@@ -109,13 +120,15 @@ export const MessageActionRowSchema = z
 	})
 	.refine(
 		(row) => {
-			// A row containing a select menu may not contain anything else.
+			// Full-width components may not share their row.
 			const hasSelect = row.components.some((c) => c.type === 3);
+			const hasStoryPreview = row.components.some((c) => c.type === COMPONENT_TYPE_STORY_PREVIEW);
 			if (hasSelect && row.components.length !== 1) return false;
+			if (hasStoryPreview && row.components.length !== 1) return false;
 			return true;
 		},
 		{
-			message: 'A row containing a select menu cannot contain other components',
+			message: 'A row containing a full-width component cannot contain other components',
 		},
 	);
 
@@ -123,6 +136,7 @@ export const MessageComponentsSchema = z.array(MessageActionRowSchema).max(MAX_A
 
 export type MessageComponentButton = z.infer<typeof ButtonComponent>;
 export type MessageComponentSelect = z.infer<typeof StringSelectComponent>;
+export type MessageComponentStoryPreview = z.infer<typeof StoryPreviewComponent>;
 export type MessageComponentRowChild = z.infer<typeof RowChild>;
 export type MessageActionRow = z.infer<typeof MessageActionRowSchema>;
 export type MessageComponents = z.infer<typeof MessageComponentsSchema>;
@@ -161,7 +175,7 @@ export function parseComponents(raw: string | null | undefined): MessageComponen
 export function findComponentByCustomId(
 	components: MessageComponents | null | undefined,
 	customId: string,
-): MessageComponentRowChild | null {
+): MessageComponentButton | MessageComponentSelect | null {
 	if (!components) return null;
 	for (const row of components) {
 		for (const child of row.components) {

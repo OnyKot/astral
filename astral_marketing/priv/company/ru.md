@@ -21,19 +21,19 @@ Astral Platform AB — шведская компания с ограниченн
 
 ### Регистрационные данные
 
-**Регистрационный номер:** 559537-3993
+**Регистрационный номер:** 559537-3993  
 **VAT ID:** SE559537399301
 
 ### Юридический адрес
 
-Astral Platform AB
-Norra Kronans Gata 430
-136 76 Brandbergen
+Astral Platform AB  
+Norra Kronans Gata 430  
+136 76 Brandbergen  
 Stockholm County, Sweden
 
 ### Контакты
 
-**Email:** support@astraof.com
+**Email:** support@astraof.com  
 **Сайт:** [https://astraof.com](https://astraof.com)
 
 По вопросам аккаунта по возможности пишите с email-адреса, привязанного к вашей учётной записи Astral. Это помогает подтвердить личность и безопасно обрабатывать обращения.

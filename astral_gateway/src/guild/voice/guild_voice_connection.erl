@@ -22,6 +22,7 @@
 -export([voice_state_update/2]).
 -export([confirm_voice_connection_from_livekit/2]).
 -export([request_voice_token/4]).
+-export([request_voice_token/5]).
 
 -type guild_state() :: map().
 -type voice_state() :: map().
@@ -288,6 +289,7 @@ get_voice_token_and_create_state(Context, Member, ParsedViewerStreamKey, State) 
     ChannelIdValue = maps:get(channel_id, Context),
     UserId = maps:get(user_id, Context),
     SessionId = maps:get(session_id, Context),
+    PeerIp = maps:get(peer_ip, Context, undefined),
 
     case resolve_guild_identity(State) of
         {error, ErrorAtom} ->
@@ -301,12 +303,13 @@ get_voice_token_and_create_state(Context, Member, ParsedViewerStreamKey, State) 
             logger:debug("[guild_voice_connection] Computed voice permissions: ~p", [
                 VoicePermissions
             ]),
-            case request_voice_token(GuildId, ChannelIdValue, UserId, VoicePermissions) of
+            case request_voice_token(GuildId, ChannelIdValue, UserId, VoicePermissions, PeerIp) of
                 {ok, TokenData} ->
                     logger:debug("[guild_voice_connection] Voice token request succeeded"),
                     Token = maps:get(token, TokenData),
                     Endpoint = maps:get(endpoint, TokenData),
                     ConnectionId = maps:get(connection_id, TokenData),
+                    IceServers = maps:get(ice_servers, TokenData, undefined),
 
                     ChannelIdBin = integer_to_binary(ChannelIdValue),
                     UserIdBin = integer_to_binary(UserId),
@@ -319,7 +322,8 @@ get_voice_token_and_create_state(Context, Member, ParsedViewerStreamKey, State) 
                         self_deaf = SelfDeafFlag,
                         self_video = SelfVideoFlag,
                         self_stream = SelfStreamFlag,
-                        is_mobile = IsMobileFlag
+                        is_mobile = IsMobileFlag,
+                        suppress = SuppressFlag
                     } = Flags,
                     SessionIdValue = maps:get(session_id, Context, undefined),
                     SessionIdBin = normalize_session_id(SessionIdValue),
@@ -359,6 +363,7 @@ get_voice_token_and_create_state(Context, Member, ParsedViewerStreamKey, State) 
                         self_video => SelfVideoFlag,
                         self_stream => SelfStreamFlag,
                         is_mobile => IsMobileFlag,
+                        suppress => SuppressFlag,
                         server_mute => ServerMute,
                         server_deaf => ServerDeaf,
                         member => Member,
@@ -375,7 +380,7 @@ get_voice_token_and_create_state(Context, Member, ParsedViewerStreamKey, State) 
                     ),
 
                     maybe_broadcast_voice_server_update(
-                        SessionId, GuildId, Token, Endpoint, ConnectionId, NewState
+                        SessionId, GuildId, Token, Endpoint, ConnectionId, IceServers, NewState
                     ),
 
                     {reply,
@@ -410,7 +415,9 @@ build_context(Request0) ->
         self_video => normalize_boolean(maps:get(self_video, Request, false)),
         self_stream => normalize_boolean(maps:get(self_stream, Request, false)),
         is_mobile => normalize_boolean(maps:get(is_mobile, Request, false)),
-        viewer_stream_key => maps:get(viewer_stream_key, Request, undefined)
+        suppress => normalize_boolean(maps:get(suppress, Request, false)),
+        viewer_stream_key => maps:get(viewer_stream_key, Request, undefined),
+        peer_ip => maps:get(peer_ip, Request, undefined)
     }.
 
 normalize_connection_id(undefined) ->
@@ -556,7 +563,8 @@ build_voice_state_from_pending(PendingData, ConnectionId, State) ->
                 self_deaf = pending_get_boolean(PendingData, self_deaf),
                 self_video = pending_get_boolean(PendingData, self_video),
                 self_stream = pending_get_boolean(PendingData, self_stream),
-                is_mobile = pending_get_boolean(PendingData, is_mobile)
+                is_mobile = pending_get_boolean(PendingData, is_mobile),
+                suppress = pending_get_boolean(PendingData, suppress)
             },
             ServerMute = pending_get_boolean(PendingData, server_mute),
             ServerDeaf = pending_get_boolean(PendingData, server_deaf),
@@ -647,13 +655,13 @@ guild_id_binary(Value, Int) ->
         Bin -> Bin
     end.
 
-maybe_broadcast_voice_server_update(undefined, _GuildId, _Token, _Endpoint, _ConnectionId, _State) ->
+maybe_broadcast_voice_server_update(undefined, _GuildId, _Token, _Endpoint, _ConnectionId, _IceServers, _State) ->
     ok;
-maybe_broadcast_voice_server_update(null, _GuildId, _Token, _Endpoint, _ConnectionId, _State) ->
+maybe_broadcast_voice_server_update(null, _GuildId, _Token, _Endpoint, _ConnectionId, _IceServers, _State) ->
     ok;
-maybe_broadcast_voice_server_update(SessionId, GuildId, Token, Endpoint, ConnectionId, State) ->
+maybe_broadcast_voice_server_update(SessionId, GuildId, Token, Endpoint, ConnectionId, IceServers, State) ->
     guild_voice_broadcast:broadcast_voice_server_update_to_session(
-        GuildId, SessionId, Token, Endpoint, ConnectionId, State
+        GuildId, undefined, SessionId, Token, Endpoint, ConnectionId, IceServers, State
     ).
 
 guild_data(State) ->
@@ -729,15 +737,22 @@ confirm_voice_connection_from_livekit(Request, State) ->
 -spec request_voice_token(integer(), integer(), integer(), map()) ->
     {ok, map()} | {error, term()}.
 request_voice_token(GuildId, ChannelId, UserId, VoicePermissions) ->
+    request_voice_token(GuildId, ChannelId, UserId, VoicePermissions, null).
+
+-spec request_voice_token(integer(), integer(), integer(), map(), binary() | null) ->
+    {ok, map()} | {error, term()}.
+request_voice_token(GuildId, ChannelId, UserId, VoicePermissions, Ip) ->
     Req = voice_utils:build_voice_token_rpc_request(
-        GuildId, ChannelId, UserId, null, null, null, VoicePermissions
+        GuildId, ChannelId, UserId, null, null, null, VoicePermissions, Ip
     ),
     case rpc_client:call(Req) of
         {ok, Data} ->
+            IceServers = maps:get(<<"iceServers">>, Data, undefined),
             {ok, #{
                 token => maps:get(<<"token">>, Data),
                 endpoint => maps:get(<<"endpoint">>, Data),
-                connection_id => maps:get(<<"connectionId">>, Data)
+                connection_id => maps:get(<<"connectionId">>, Data),
+                ice_servers => IceServers
             }};
         {error, {http_error, _Status, Body}} ->
             case parse_unclaimed_error(Body) of

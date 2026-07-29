@@ -32,6 +32,7 @@ import {IS_DEV} from '~/lib/env';
 import KeybindManager from '~/lib/KeybindManager';
 import KeybindStore, {getDefaultKeybind, type KeybindConfig, type KeyCombo} from '~/stores/KeybindStore';
 import NativePermissionStore from '~/stores/NativePermissionStore';
+import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import {openExternalUrl} from '~/utils/NativeUtils';
 import {InputMonitoringSection} from './components/InputMonitoringSection';
 import styles from './KeybindsTab.module.css';
@@ -41,6 +42,10 @@ const KeybindRow = observer(
 		const {t, i18n} = useLingui();
 		const handleToggleGlobal = (value: boolean) => {
 			KeybindStore.toggleGlobal(entry.action, value);
+			void KeybindManager.reapplyGlobalShortcuts();
+			if (entry.action === 'push_to_talk') {
+				void KeybindManager.reapplyPushToTalkShortcuts();
+			}
 		};
 		const defaultCombo = getDefaultKeybind(entry.action, i18n);
 		const downloadUrl = 'https://astraof.com/download';
@@ -58,8 +63,14 @@ const KeybindRow = observer(
 								action={entry.action}
 								value={entry.combo}
 								defaultValue={defaultCombo}
+								allowMouseButtons={entry.action === 'push_to_talk'}
 								onChange={(combo) => {
 									KeybindStore.setKeybind(entry.action, {...combo, global: entry.combo.global});
+									if (entry.action === 'push_to_talk') {
+										KeybindStore.setTransmitMode('push_to_talk');
+										MediaEngineStore.handlePushToTalkModeChange();
+										void KeybindManager.reapplyPushToTalkShortcuts();
+									}
 								}}
 								onClear={() => {
 									KeybindStore.setKeybind(entry.action, {
@@ -68,10 +79,19 @@ const KeybindRow = observer(
 										global: entry.combo.global,
 										enabled: false,
 									});
+									if (entry.action === 'push_to_talk') {
+										MediaEngineStore.handlePushToTalkModeChange();
+										void KeybindManager.reapplyPushToTalkShortcuts();
+									}
 								}}
 								onReset={() => {
 									if (defaultCombo) {
 										KeybindStore.setKeybind(entry.action, {...defaultCombo, global: entry.combo.global});
+										if (entry.action === 'push_to_talk') {
+											KeybindStore.setTransmitMode('push_to_talk');
+											MediaEngineStore.handlePushToTalkModeChange();
+											void KeybindManager.reapplyPushToTalkShortcuts();
+										}
 									}
 								}}
 							/>

@@ -303,6 +303,15 @@ export const send = async (channelId: string, params: SendMessageParams): Promis
 			(result, error) => {
 				if (result?.body) {
 					logger.debug(`Message sent successfully in channel ${channelId}`);
+					const body = result.body;
+					// Apply HTTP response so optimistic messages resolve even if gateway is delayed.
+					MessageStore.handleIncomingMessage({
+						channelId,
+						message: {
+							...body,
+							nonce: body.nonce ?? params.nonce,
+						},
+					});
 					try {
 						window.dispatchEvent(
 							new CustomEvent('astral:onboarding-step', {detail: {step: 'message'}}),
@@ -518,7 +527,7 @@ export const forward = async (
 
 	try {
 		for (const channelId of channelIds) {
-			const nonce = SnowflakeUtils.fromTimestamp(Date.now());
+			const nonce = SnowflakeUtils.nextClientNonce();
 			await send(channelId, {
 				content: '',
 				nonce,
@@ -532,7 +541,7 @@ export const forward = async (
 			});
 
 			if (optionalMessage) {
-				const commentNonce = SnowflakeUtils.fromTimestamp(Date.now() + 1);
+				const commentNonce = SnowflakeUtils.nextClientNonce();
 				await send(channelId, {
 					content: optionalMessage,
 					nonce: commentNonce,
@@ -560,7 +569,7 @@ export const forwardMany = async (
 	try {
 		for (const channelId of channelIds) {
 			for (const messageReference of messageReferences) {
-				const nonce = SnowflakeUtils.fromTimestamp(Date.now());
+				const nonce = SnowflakeUtils.nextClientNonce();
 				await send(channelId, {
 					content: '',
 					nonce,
@@ -575,7 +584,7 @@ export const forwardMany = async (
 			}
 
 			if (optionalMessage) {
-				const commentNonce = SnowflakeUtils.fromTimestamp(Date.now() + 1);
+				const commentNonce = SnowflakeUtils.nextClientNonce();
 				await send(channelId, {
 					content: optionalMessage,
 					nonce: commentNonce,

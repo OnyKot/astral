@@ -21,7 +21,9 @@ import {observer} from 'mobx-react-lite';
 import React, {Fragment} from 'react';
 import type {ChannelRecord} from '~/records/ChannelRecord';
 import type {MessageRecord} from '~/records/MessageRecord';
+import {shouldContinueVisualMessageBlock} from '~/utils/MessageGroupingUtils';
 import {Message} from './Message';
+import styles from './Messages.module.css';
 import {UnreadDividerSlot} from './UnreadDividerSlot';
 
 const getStableMessageKey = (message: MessageRecord): string => message.nonce ?? message.id;
@@ -29,6 +31,8 @@ const getStableMessageKey = (message: MessageRecord): string => message.nonce ??
 interface MessageGroupProps {
 	messages: Array<MessageRecord>;
 	channel: ChannelRecord;
+	previousMessage?: MessageRecord;
+	nextMessage?: MessageRecord;
 	onEdit?: (targetNode: HTMLElement) => void;
 	jumpSequenceId?: number;
 	highlightedMessageId?: string | null;
@@ -43,6 +47,8 @@ export const MessageGroup: React.FC<MessageGroupProps> = React.memo(
 		const {
 			messages,
 			channel,
+			previousMessage,
+			nextMessage,
 			onEdit,
 			jumpSequenceId,
 			highlightedMessageId,
@@ -55,13 +61,17 @@ export const MessageGroup: React.FC<MessageGroupProps> = React.memo(
 
 		return (
 			<div
+				className={styles.messageGroup}
 				data-jump-sequence-id={jumpSequenceId}
 				data-group-id={groupId}
 				role="group"
 				aria-label="Message group">
 				{messages.map((message, index) => {
-					const prevMessage = messages[index - 1];
-					const isGroupStart = index === 0;
+					const prevMessage = index > 0 ? messages[index - 1] : previousMessage;
+					const followingMessage = index < messages.length - 1 ? messages[index + 1] : nextMessage;
+					const shouldGroupWithPrevious = shouldContinueVisualMessageBlock(prevMessage, message);
+					const isGroupStart = !shouldGroupWithPrevious;
+					const isGroupEnd = !shouldContinueVisualMessageBlock(message, followingMessage);
 
 					return (
 						<Fragment key={getStableMessageKey(message)}>
@@ -69,13 +79,19 @@ export const MessageGroup: React.FC<MessageGroupProps> = React.memo(
 								<UnreadDividerSlot beforeId={message.id} visible={getUnreadDividerVisibility(message.id, 'before')} />
 							)}
 
-							<div data-message-index={index} data-message-id={message.id} data-is-group-start={isGroupStart}>
+							<div
+								className={styles.messageItem}
+								data-message-index={index}
+								data-message-id={message.id}
+								data-is-group-start={isGroupStart}>
 								<Message
 									channel={channel}
 									message={message}
 									prevMessage={prevMessage}
 									onEdit={onEdit}
-									shouldGroup={!isGroupStart}
+									shouldGroup={shouldGroupWithPrevious}
+									isGroupEnd={isGroupEnd}
+									showAvatar={isGroupStart}
 									isJumpTarget={highlightedMessageId === message.id}
 									compact={messageDisplayCompact}
 									idPrefix={idPrefix}
@@ -91,6 +107,8 @@ export const MessageGroup: React.FC<MessageGroupProps> = React.memo(
 		// Only re-render if messages array changed or critical props changed
 		if (prevProps.messages !== nextProps.messages) return false;
 		if (prevProps.channel !== nextProps.channel) return false;
+		if ((prevProps.previousMessage?.id ?? null) !== (nextProps.previousMessage?.id ?? null)) return false;
+		if ((prevProps.nextMessage?.id ?? null) !== (nextProps.nextMessage?.id ?? null)) return false;
 		if (prevProps.highlightedMessageId !== nextProps.highlightedMessageId) return false;
 		if (prevProps.messageDisplayCompact !== nextProps.messageDisplayCompact) return false;
 		if (prevProps.jumpSequenceId !== nextProps.jumpSequenceId) return false;

@@ -41,6 +41,8 @@ interface PricingSectionProps {
 	handleSelectPlan: (plan: 'monthly' | 'yearly' | 'visionary' | 'gift1Month' | 'gift1Year' | 'giftVisionary') => void;
 	purchaseDisabled?: boolean;
 	purchaseDisabledTooltip?: React.ReactNode;
+	waitlistMode?: boolean;
+	waitlistPlan?: 'monthly' | 'yearly' | 'visionary' | null;
 }
 
 export const PricingSection: React.FC<PricingSectionProps> = observer(
@@ -56,9 +58,16 @@ export const PricingSection: React.FC<PricingSectionProps> = observer(
 		handleSelectPlan,
 		purchaseDisabled = false,
 		purchaseDisabledTooltip,
+		waitlistMode = false,
+		waitlistPlan = null,
 	}) => {
 		const {t} = useLingui();
 		const tooltipText: React.ReactNode = purchaseDisabledTooltip ?? t`Claim your account to purchase Astral Plutonium.`;
+
+		const getWaitlistButtonText = (plan: 'monthly' | 'yearly' | 'visionary') => {
+			if (waitlistPlan === plan) return t`On waitlist`;
+			return t`Join waitlist`;
+		};
 
 		return (
 			<section className={styles.section}>
@@ -77,6 +86,7 @@ export const PricingSection: React.FC<PricingSectionProps> = observer(
 										price={monthlyPrice}
 										period={t`per month`}
 										onSelect={() => handleSelectPlan('monthly')}
+										buttonText={waitlistMode ? getWaitlistButtonText('monthly') : undefined}
 										isLoading={loadingCheckout || loadingSlots}
 										disabled={purchaseDisabled}
 									/>
@@ -89,7 +99,7 @@ export const PricingSection: React.FC<PricingSectionProps> = observer(
 										badge={t`Save 17%`}
 										isPopular
 										onSelect={() => handleSelectPlan('yearly')}
-										buttonText={t`Upgrade Now`}
+										buttonText={waitlistMode ? getWaitlistButtonText('yearly') : t`Upgrade Now`}
 										isLoading={loadingCheckout || loadingSlots}
 										disabled={purchaseDisabled}
 									/>
@@ -101,6 +111,7 @@ export const PricingSection: React.FC<PricingSectionProps> = observer(
 										period={t`one-time, lifetime`}
 										remainingSlots={loadingSlots ? undefined : visionarySlots?.remaining ?? undefined}
 										onSelect={() => handleSelectPlan('visionary')}
+										buttonText={waitlistMode ? getWaitlistButtonText('visionary') : undefined}
 										isLoading={loadingCheckout || loadingSlots}
 										disabled={purchaseDisabled}
 									/>

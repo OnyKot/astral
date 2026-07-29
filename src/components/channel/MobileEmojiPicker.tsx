@@ -45,7 +45,7 @@ import ChannelStore from '~/stores/ChannelStore';
 import EmojiStore, {type Emoji, normalizeEmojiSearchQuery} from '~/stores/EmojiStore';
 
 const MOBILE_EMOJIS_PER_ROW = 8;
-const MOBILE_PICKER_PRELOAD_EMOJI_COUNT = MOBILE_EMOJIS_PER_ROW * (OVERSCAN_ROWS * 3 + 6);
+const MOBILE_PICKER_PRELOAD_EMOJI_COUNT = MOBILE_EMOJIS_PER_ROW * (OVERSCAN_ROWS + 4);
 
 export const MobileEmojiPicker = observer(
 	({

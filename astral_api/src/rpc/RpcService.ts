@@ -52,6 +52,7 @@ import type {FeatureFlagService} from '~/feature_flag/FeatureFlagService';
 import {
 	mapGuildEmojiToResponse,
 	mapGuildMemberToResponse,
+	mapGuildMembersToResponse,
 	mapGuildRoleToResponse,
 	mapGuildStickerToResponse,
 	mapGuildToGuildResponse,
@@ -408,6 +409,7 @@ export class RpcService {
 					userId: createUserID(request.user_id),
 					latitude: request.latitude,
 					longitude: request.longitude,
+					ip: request.ip,
 					canSpeak: request.can_speak,
 					canStream: request.can_stream,
 					canVideo: request.can_video,
@@ -750,8 +752,7 @@ export class RpcService {
 		}
 
 		await this.ensurePersonalNotesChannel(user);
-		const cachedChannels = await this.ensurePrivateChannelsWithinLimit(user);
-		userData.privateChannels = cachedChannels ?? (await this.userRepository.listPrivateChannels(user.id));
+		userData.privateChannels = await this.ensurePrivateChannelsWithinLimit(user);
 
 		const mapChannel = (channel: Channel) =>
 			mapChannelToResponse({
@@ -898,34 +899,12 @@ export class RpcService {
 				requestCache,
 			});
 
-		const mapMember = (member: GuildMember) => mapGuildMemberToResponse(member, this.userCacheService, requestCache);
-
+		// Batch all member user lookups through a single deduped cache read
+		// (mapGuildMembersToResponse → getCachedUserPartialResponses) instead
+		// of one cache round-trip per member; missing users are skipped there.
 		const [channels, members] = await Promise.all([
 			Promise.all(guildData.channels.map(mapChannel)),
-			(async () =>
-				(
-					await Promise.all(
-						guildData.members.map(async (member) => {
-							try {
-								return await mapMember(member);
-							} catch (error) {
-								if (!isUnknownUserFailure(error)) {
-									throw error;
-								}
-
-								Logger.warn(
-									{
-										guildId: guildId.toString(),
-										userId: member.userId.toString(),
-										error,
-									},
-									'Skipping guild member with missing user during RPC guild payload build',
-								);
-								return null;
-							}
-						}),
-					)
-				).flatMap((member) => (member ? [member] : [])))(),
+			mapGuildMembersToResponse(guildData.members, this.userCacheService, requestCache),
 		]);
 
 		return {
@@ -989,7 +968,17 @@ export class RpcService {
 			};
 		}
 
-		const [settingsResult, notes, readStates, guildIds, relationships, favoriteMemes, pinnedDMs] = await Promise.all([
+		const [
+			settingsResult,
+			notes,
+			readStates,
+			guildIds,
+			relationships,
+			favoriteMemes,
+			pinnedDMs,
+			guildSettings,
+			privateChannels,
+		] = await Promise.all([
 			this.userRepository.findSettings(userId),
 			this.userRepository.getUserNotes(userId),
 			this.readStateService.getReadStates(userId),
@@ -997,9 +986,9 @@ export class RpcService {
 			this.userRepository.listRelationships(userId),
 			this.favoriteMemeRepository.findByUserId(userId),
 			this.userRepository.getPinnedDms(userId),
+			this.userRepository.findAllGuildSettings(userId),
+			includePrivateChannels ? this.userRepository.listPrivateChannels(userId) : Promise.resolve([]),
 		]);
-
-		const privateChannels = includePrivateChannels ? await this.userRepository.listPrivateChannels(userId) : [];
 
 		let settings = settingsResult;
 		if (settings) {
@@ -1021,8 +1010,6 @@ export class RpcService {
 			}
 		}
 
-		const guildSettings = await this.userRepository.findAllGuildSettings(userId);
-
 		return {
 			user,
 			settings,
@@ -1037,7 +1024,7 @@ export class RpcService {
 		};
 	}
 
-	private async ensurePrivateChannelsWithinLimit(user: User): Promise<Array<Channel> | null> {
+	private async ensurePrivateChannelsWithinLimit(user: User): Promise<Array<Channel>> {
 		if (user.isBot) {
 			return [];
 		}
@@ -1059,28 +1046,30 @@ export class RpcService {
 			});
 
 		const toClose = totalPrivateChannels - MAX_PRIVATE_CHANNELS_PER_USER;
-		let closed = 0;
+		const closedIds = new Set<string>();
 		for (const channel of closableDms) {
-			if (closed >= toClose) {
+			if (closedIds.size >= toClose) {
 				break;
 			}
 			await this.userRepository.closeDmForUser(user.id, channel.id);
-			closed += 1;
+			closedIds.add(channel.id.toString());
 		}
 
-		if (closed < toClose) {
+		if (closedIds.size < toClose) {
 			Logger.warn(
 				{
 					user_id: user.id.toString(),
 					total_private_channels: totalPrivateChannels,
 					required_closures: toClose,
-					actual_closures: closed,
+					actual_closures: closedIds.size,
 				},
 				'Unable to close enough DMs to satisfy private channel limit',
 			);
 		}
 
-		return null;
+		// Return the post-close list locally instead of re-reading the whole
+		// private-channel partition again in the session builder.
+		return channels.filter((channel) => !closedIds.has(channel.id.toString()));
 	}
 
 	private async getUserGuildSettings(params: {

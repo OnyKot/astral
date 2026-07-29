@@ -25,6 +25,7 @@ import {MicrophonePermissionDeniedModal} from '~/components/alerts/MicrophonePer
 import {Logger} from '~/lib/Logger';
 import ChannelStore from '~/stores/ChannelStore';
 import ConnectionStore from '~/stores/ConnectionStore';
+import KeybindStore from '~/stores/KeybindStore';
 import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
 import MediaPermissionStore from '~/stores/MediaPermissionStore';
 import ParticipantVolumeStore from '~/stores/ParticipantVolumeStore';
@@ -77,17 +78,19 @@ export const toggleSelfDeaf = async (_guildId: string | null = null): Promise<vo
 	LocalVoiceStateStore.toggleSelfDeaf();
 	const newDeafState = LocalVoiceStateStore.getSelfDeaf();
 	const newMuteState = LocalVoiceStateStore.getSelfMute();
+	const pushToTalkGateMuted = KeybindStore.isPushToTalkEnabled() && !KeybindStore.pushToTalkHeld;
+	const effectiveMuteState = newMuteState || newDeafState || pushToTalkGateMuted;
 
-	logger.debug('Voice state updated', {newDeafState, newMuteState});
+	logger.debug('Voice state updated', {newDeafState, newMuteState, effectiveMuteState, pushToTalkGateMuted});
 
 	const room = MediaEngineStore.room;
 	if (room?.localParticipant) {
 		room.localParticipant.audioTrackPublications.forEach((publication: LocalTrackPublication) => {
 			const track = publication.track;
 			if (!track) return;
-			const operation = newMuteState ? track.mute() : track.unmute();
+			const operation = effectiveMuteState ? track.mute() : track.unmute();
 			operation.catch((error) =>
-				logger.error(newMuteState ? 'Failed to mute local track' : 'Failed to unmute local track', {error}),
+				logger.error(effectiveMuteState ? 'Failed to mute local track' : 'Failed to unmute local track', {error}),
 			);
 		});
 
@@ -98,6 +101,7 @@ export const toggleSelfDeaf = async (_guildId: string | null = null): Promise<vo
 		logger.debug('Applied mute/deafen state to LiveKit tracks immediately', {
 			newDeafState,
 			newMuteState,
+			effectiveMuteState,
 			localTrackCount: room.localParticipant.audioTrackPublications.size,
 			remoteParticipantCount: room.remoteParticipants.size,
 		});
@@ -110,7 +114,7 @@ export const toggleSelfDeaf = async (_guildId: string | null = null): Promise<vo
 	}
 
 	MediaEngineStore.syncLocalVoiceStateWithServer({
-		self_mute: newMuteState,
+		self_mute: effectiveMuteState,
 		self_deaf: newDeafState,
 	});
 };
@@ -306,11 +310,31 @@ export const toggleSelfMute = async (_guildId: string | null = null): Promise<vo
 
 			const currentMuteAfterPermission = LocalVoiceStateStore.getSelfMute();
 			if (!currentMuteAfterPermission) {
-				logger.debug('Already unmuted after permission grant, skipping toggle');
+				const pushToTalkGateMuted = KeybindStore.isPushToTalkEnabled() && !KeybindStore.pushToTalkHeld;
+				const effectiveMuteAfterPermission =
+					LocalVoiceStateStore.getSelfDeaf() || currentMuteAfterPermission || pushToTalkGateMuted;
+
+				if (room?.localParticipant) {
+					room.localParticipant.audioTrackPublications.forEach((publication: LocalTrackPublication) => {
+						const track = publication.track;
+						if (!track) return;
+						const operation = effectiveMuteAfterPermission ? track.mute() : track.unmute();
+						operation.catch((error) =>
+							logger.error(effectiveMuteAfterPermission ? 'Failed to mute local track' : 'Failed to unmute local track', {
+								error,
+							}),
+						);
+					});
+				}
+
+				logger.debug('Already unmuted after permission grant, skipping toggle', {
+					effectiveMuteAfterPermission,
+					pushToTalkGateMuted,
+				});
 				SoundActionCreators.playSound(SoundType.Unmute);
 				if (room) {
 					MediaEngineStore.syncLocalVoiceStateWithServer({
-						self_mute: false,
+						self_mute: effectiveMuteAfterPermission,
 						self_deaf: LocalVoiceStateStore.getSelfDeaf(),
 					});
 				}
@@ -322,10 +346,12 @@ export const toggleSelfMute = async (_guildId: string | null = null): Promise<vo
 	LocalVoiceStateStore.toggleSelfMute();
 	const newMute = LocalVoiceStateStore.getSelfMute();
 	const newDeaf = LocalVoiceStateStore.getSelfDeaf();
+	const pushToTalkGateMuted = KeybindStore.isPushToTalkEnabled() && !KeybindStore.pushToTalkHeld;
+	const effectiveMute = newMute || newDeaf || pushToTalkGateMuted;
 
-	logger.debug('Voice state updated', {newMute, newDeaf});
+	logger.debug('Voice state updated', {newMute, newDeaf, effectiveMute, pushToTalkGateMuted});
 
-	if (!newMute && room?.localParticipant) {
+	if (!effectiveMute && room?.localParticipant) {
 		const participant = room.localParticipant;
 		const hasAudioTrack = participant.audioTrackPublications.size > 0;
 
@@ -360,15 +386,16 @@ export const toggleSelfMute = async (_guildId: string | null = null): Promise<vo
 		room.localParticipant.audioTrackPublications.forEach((publication: LocalTrackPublication) => {
 			const track = publication.track;
 			if (!track) return;
-			const operation = newMute ? track.mute() : track.unmute();
+			const operation = effectiveMute ? track.mute() : track.unmute();
 			operation.catch((error) =>
-				logger.error(newMute ? 'Failed to mute local track' : 'Failed to unmute local track', {error}),
+				logger.error(effectiveMute ? 'Failed to mute local track' : 'Failed to unmute local track', {error}),
 			);
 		});
 
 		logger.debug('Applied mute state to LiveKit tracks immediately', {
 			newMute,
 			newDeaf,
+			effectiveMute,
 			localTrackCount: room.localParticipant.audioTrackPublications.size,
 		});
 	}
@@ -381,7 +408,7 @@ export const toggleSelfMute = async (_guildId: string | null = null): Promise<vo
 
 	if (room) {
 		MediaEngineStore.syncLocalVoiceStateWithServer({
-			self_mute: newMute,
+			self_mute: effectiveMute,
 			self_deaf: newDeaf,
 		});
 	}

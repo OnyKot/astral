@@ -24,6 +24,7 @@ import type React from 'react';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Tooltip} from '~/components/uikit/Tooltip/Tooltip';
 import MobileLayoutStore from '~/stores/MobileLayoutStore';
+import VoiceMessagePlaybackStore from '~/stores/VoiceMessagePlaybackStore';
 import {useMediaPlayer} from '../hooks/useMediaPlayer';
 import {useMediaProgress} from '../hooks/useMediaProgress';
 import {useMediaVolume} from '../hooks/useMediaVolume';
@@ -46,6 +47,11 @@ export interface InlineAudioPlayerProps {
 	onContextMenu?: (e: React.MouseEvent) => void;
 	className?: string;
 	isVoiceMessage?: boolean;
+	enableVoicePlaybackBanner?: boolean;
+	channelId?: string;
+	messageId?: string;
+	attachmentId?: string;
+	messageAuthorName?: string | null;
 }
 
 function formatFileSize(bytes: number): string {
@@ -96,6 +102,11 @@ export function InlineAudioPlayer({
 	onContextMenu,
 	className,
 	isVoiceMessage = false,
+	enableVoicePlaybackBanner = true,
+	channelId,
+	messageId,
+	attachmentId,
+	messageAuthorName,
 }: InlineAudioPlayerProps) {
 	const {t} = useLingui();
 	const isMobileLayout = MobileLayoutStore.isMobileLayout();
@@ -104,7 +115,7 @@ export function InlineAudioPlayer({
 
 	const [hasStarted, setHasStarted] = useState(false);
 	const [voiceEnvelope, setVoiceEnvelope] = useState<Array<number>>([]);
-	const [waveBarCount, setWaveBarCount] = useState(() => (isMobileLayout ? 52 : 56));
+	const waveBarCount = isMobileLayout ? 36 : 44;
 	const [pendingSeekRatio, setPendingSeekRatio] = useState<number | null>(null);
 	const wavePointerIdRef = useRef<number | null>(null);
 	const waveSeekBootstrapRef = useRef(false);
@@ -179,44 +190,6 @@ export function InlineAudioPlayer({
 	}, [isVoiceMessage, src, waveform]);
 
 	useEffect(() => {
-		if (!isVoiceMessage) {
-			setWaveBarCount(56);
-			return;
-		}
-
-		const element = voiceWaveRef.current;
-		if (!element || typeof ResizeObserver === 'undefined') {
-			setWaveBarCount(isMobileLayout ? 52 : 56);
-			return;
-		}
-
-		const updateBarCount = (width: number) => {
-			const safeWidth = Math.max(1, width);
-			const gapPx = 1;
-			const minBarWidthPx = 2;
-			const maxBarsByWidth = Math.max(10, Math.floor((safeWidth + gapPx) / (minBarWidthPx + gapPx)));
-			const targetBars = Math.floor(
-				safeWidth / (isMobileLayout ? (safeWidth < 300 ? 4.2 : 3.9) : safeWidth < 300 ? 5.6 : 4.6),
-			);
-			const maxBars = isMobileLayout ? 68 : 72;
-			const minBars = Math.min(isMobileLayout ? 26 : 10, maxBarsByWidth);
-			const next = Math.max(minBars, Math.min(maxBars, Math.min(maxBarsByWidth, targetBars)));
-			setWaveBarCount((current) => (current === next ? current : next));
-		};
-
-		updateBarCount(element.clientWidth);
-
-		const observer = new ResizeObserver((entries) => {
-			const entry = entries[0];
-			if (!entry) return;
-			updateBarCount(entry.contentRect.width);
-		});
-
-		observer.observe(element);
-		return () => observer.disconnect();
-	}, [isMobileLayout, isVoiceMessage]);
-
-	useEffect(() => {
 		return () => {
 			if (speedShadeTimerRef.current != null) {
 				window.clearTimeout(speedShadeTimerRef.current);
@@ -226,6 +199,54 @@ export function InlineAudioPlayer({
 	}, []);
 
 	const displayDuration = initialDuration || duration;
+	const voicePlaybackKey = useMemo(() => {
+		if (!enableVoicePlaybackBanner || !isVoiceMessage || !channelId || !messageId) {
+			return null;
+		}
+
+		return `${channelId}:${messageId}:${attachmentId ?? src}`;
+	}, [attachmentId, channelId, enableVoicePlaybackBanner, isVoiceMessage, messageId, src]);
+
+	useEffect(() => {
+		if (!voicePlaybackKey) {
+			return;
+		}
+
+		if (!state.isPlaying) {
+			VoiceMessagePlaybackStore.clearIf(voicePlaybackKey);
+			return;
+		}
+
+		VoiceMessagePlaybackStore.setActive({
+			key: voicePlaybackKey,
+			channelId: channelId!,
+			messageId: messageId!,
+			title: title || t`Voice Message Player`,
+			authorName: messageAuthorName ?? null,
+			src,
+			currentTime: Number.isFinite(currentTime) ? currentTime : 0,
+			duration: Number.isFinite(displayDuration) ? displayDuration : 0,
+		});
+	}, [
+		channelId,
+		currentTime,
+		displayDuration,
+		messageAuthorName,
+		messageId,
+		src,
+		state.isPlaying,
+		t,
+		title,
+		voicePlaybackKey,
+	]);
+
+	useEffect(() => {
+		return () => {
+			if (voicePlaybackKey) {
+				VoiceMessagePlaybackStore.clearIf(voicePlaybackKey);
+			}
+		};
+	}, [voicePlaybackKey]);
 
 	useEffect(() => {
 		if (pendingSeekRatio == null || !hasStarted) {
@@ -461,6 +482,7 @@ export function InlineAudioPlayer({
 				src={hasStarted ? src : undefined}
 				preload="none"
 				data-inline-audio-player
+				data-voice-message-player-key={voicePlaybackKey ?? undefined}
 				onLoadedMetadata={handleAudioLoadedMetadata}
 			/>
 

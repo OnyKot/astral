@@ -43,6 +43,8 @@ export interface UserRow {
 	banner_color: Nullish<number>;
 	bio: Nullish<string>;
 	pronouns: Nullish<string>;
+	profile_accent_effect: Nullish<string>;
+	channel_list_name_effect: Nullish<string>;
 	accent_color: Nullish<number>;
 	date_of_birth: Nullish<types.LocalDate>;
 	locale: Nullish<string>;
@@ -100,6 +102,8 @@ export const USER_COLUMNS = [
 	'banner_color',
 	'bio',
 	'pronouns',
+	'profile_accent_effect',
+	'channel_list_name_effect',
 	'accent_color',
 	'date_of_birth',
 	'locale',
@@ -157,6 +161,8 @@ export const EMPTY_USER_ROW: UserRow = {
 	banner_color: null,
 	bio: null,
 	pronouns: null,
+	profile_accent_effect: null,
+	channel_list_name_effect: null,
 	accent_color: null,
 	date_of_birth: null,
 	locale: null,
@@ -231,6 +237,7 @@ export interface UserSettingsRow {
 	incoming_call_flags: number;
 	group_dm_add_permission_flags: number;
 	default_guilds_restricted: boolean;
+	hide_online_time: Nullish<boolean>;
 	restricted_guilds: Nullish<Set<GuildID>>;
 	guild_positions: Nullish<Array<GuildID>>;
 	guild_folders: Nullish<Array<GuildFolder>>;
@@ -479,6 +486,7 @@ export const USER_SETTINGS_COLUMNS = [
 	'incoming_call_flags',
 	'group_dm_add_permission_flags',
 	'default_guilds_restricted',
+	'hide_online_time',
 	'restricted_guilds',
 	'guild_positions',
 	'guild_folders',

@@ -26,6 +26,7 @@ import EmojiStore from '~/stores/EmojiStore';
 import GuildStore from '~/stores/GuildStore';
 import UserStore from '~/stores/UserStore';
 import {detectPastedSegments, type LookupFunctions} from '~/utils/PasteSegmentUtils';
+import {scheduleSelectionRange} from '~/utils/textareaCaret';
 import type {MentionSegment, TextareaSegmentManager} from '~/utils/TextareaSegmentManager';
 
 interface UseTextareaPasteParams {
@@ -72,12 +73,7 @@ export function useTextareaPaste({
 				previousValueRef.current = newText;
 
 				const newCursorPosition = beforeSelection.length + pastedText.length;
-				setTimeout(() => {
-					const t = textareaRef.current;
-					if (t) {
-						t.setSelectionRange(newCursorPosition, newCursorPosition);
-					}
-				}, 0);
+				scheduleSelectionRange(() => textareaRef.current, newCursorPosition);
 
 				return true;
 			}
@@ -158,12 +154,7 @@ export function useTextareaPaste({
 			previousValueRef.current = newText;
 
 			const newCursorPosition = selectionStart + displayReplacement.length;
-			setTimeout(() => {
-				const t = textareaRef.current;
-				if (t) {
-					t.setSelectionRange(newCursorPosition, newCursorPosition);
-				}
-			}, 0);
+			scheduleSelectionRange(() => textareaRef.current, newCursorPosition);
 
 			return true;
 		},
@@ -223,12 +214,7 @@ export function useTextareaPaste({
 			setValue(newValue);
 			previousValueRef.current = newValue;
 
-			setTimeout(() => {
-				const t = textareaRef.current;
-				if (t) {
-					t.setSelectionRange(selectionStart, selectionStart);
-				}
-			}, 0);
+			scheduleSelectionRange(() => textareaRef.current, selectionStart);
 		},
 		[textareaRef, segmentManagerRef, setValue, previousValueRef],
 	);

@@ -27,6 +27,7 @@ import {StripeError, StripeWebhookSignatureInvalidError} from '~/Errors';
 import type {IEmailService} from '~/infrastructure/IEmailService';
 import type {IGatewayService} from '~/infrastructure/IGatewayService';
 import {Logger} from '~/Logger';
+import {notifyTelegram} from '~/telegram/TelegramNotificationsService';
 import type {GiftCode, User} from '~/Models';
 import type {IUserRepository} from '~/user/IUserRepository';
 import {mapUserToPrivateResponse} from '~/user/UserModel';
@@ -251,6 +252,14 @@ export class StripeWebhookService {
 			},
 			'Subscription renewed from invoice payment',
 		);
+
+		// Telegram bridge: notify the user that their subscription was renewed.
+		void notifyTelegram(subscriptionInfo.user_id, {
+			kind: 'billing',
+			title: '💎 Подписка продлена',
+			body: `Ваша подписка <b>${productInfo.premiumType}</b> успешно продлена на ${productInfo.durationMonths} мес.`,
+			url: 'https://astraof.com/channels/@me',
+		});
 	}
 
 	private async handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
@@ -319,6 +328,14 @@ export class StripeWebhookService {
 
 		const updatedUser = await this.userRepository.patchUpsert(info.user_id, updates);
 		if (updatedUser) await this.dispatchUser(updatedUser);
+
+		// Telegram bridge: notify on subscription end
+		void notifyTelegram(info.user_id, {
+			kind: 'billing',
+			title: '💳 Подписка завершена',
+			body: 'Ваша подписка Astral завершилась. Вернуться можно в любой момент в Settings → Billing.',
+			url: 'https://astraof.com/channels/@me',
+		});
 	}
 
 	private async handleChargebackCreated(dispute: Stripe.Dispute): Promise<void> {

@@ -35,10 +35,10 @@ function getCurrency(countryCode: string | null): Currency {
 function getPrice(tier: PricingTier, currency: Currency): number {
 	const prices: Record<PricingTier, Record<Currency, number>> = {
 		[PricingTier.Monthly]: {
-			[Currency.RUB]: 490,
+			[Currency.RUB]: 299,
 		},
 		[PricingTier.Yearly]: {
-			[Currency.RUB]: 4900,
+			[Currency.RUB]: 2990,
 		},
 		[PricingTier.Visionary]: {
 			[Currency.RUB]: 29900,

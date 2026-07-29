@@ -172,4 +172,16 @@ export class GiftCodeRepository {
 			),
 		);
 	}
+
+	async updateGiftMetadata(code: string, emoji: string | null, background: string | null): Promise<void> {
+		await upsertOne(
+			GiftCodes.patchByPk(
+				{code},
+				{
+					emoji: Db.set(emoji),
+					background: Db.set(background),
+				},
+			),
+		);
+	}
 }

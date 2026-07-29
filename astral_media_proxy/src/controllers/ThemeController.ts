@@ -39,6 +39,9 @@ export async function handleThemeHeadRequest(ctx: Context<HonoEnv>): Promise<Res
 	ctx.header('Content-Type', 'text/css; charset=utf-8');
 	ctx.header('Cache-Control', 'public, max-age=31536000, immutable');
 	ctx.header('Access-Control-Allow-Origin', '*');
+	// Themes are user-uploaded CSS served cross-origin. nosniff stops a browser
+	// from interpreting a mis-stored payload as a different (executable) type.
+	ctx.header('X-Content-Type-Options', 'nosniff');
 	ctx.header('Content-Length', contentLength.toString());
 
 	if (lastModified) {
@@ -61,6 +64,7 @@ export async function handleThemeRequest(ctx: Context<HonoEnv>): Promise<Respons
 	ctx.header('Content-Type', 'text/css; charset=utf-8');
 	ctx.header('Cache-Control', 'public, max-age=31536000, immutable');
 	ctx.header('Access-Control-Allow-Origin', '*');
+	ctx.header('X-Content-Type-Options', 'nosniff');
 
 	if (lastModified) {
 		ctx.header('Last-Modified', new Date(lastModified).toUTCString());

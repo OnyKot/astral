@@ -29,7 +29,12 @@ import {
 	fetchOne,
 	upsertOne,
 } from '~/database/Cassandra';
-import type {ChannelMessageBucketRow, ChannelStateRow, MessageRow} from '~/database/CassandraTypes';
+import type {
+	ChannelEmptyBucketRow,
+	ChannelMessageBucketRow,
+	ChannelStateRow,
+	MessageRow,
+} from '~/database/CassandraTypes';
 import {MESSAGE_COLUMNS} from '~/database/CassandraTypes';
 import {Logger} from '~/Logger';
 import {Message} from '~/Models';
@@ -62,6 +67,11 @@ const FETCH_MESSAGE_BY_CHANNEL_BUCKET_AND_MESSAGE_ID = Messages.select({
 const FETCH_CHANNEL_STATE = ChannelState.select({
 	where: ChannelState.where.eq('channel_id'),
 	limit: 1,
+});
+
+const FETCH_CHANNEL_EMPTY_BUCKETS = ChannelEmptyBuckets.select({
+	columns: ['bucket'],
+	where: ChannelEmptyBuckets.where.eq('channel_id'),
 });
 
 export class MessageDataRepository {
@@ -172,6 +182,7 @@ export class MessageDataRepository {
 			limit,
 			minBucket,
 			maxBucket,
+			state,
 		});
 	}
 
@@ -205,6 +216,7 @@ export class MessageDataRepository {
 			maxBucket,
 			before,
 			restrictToBeforeBucket: options?.restrictToBeforeBucket,
+			state,
 		});
 	}
 
@@ -242,6 +254,7 @@ export class MessageDataRepository {
 				minBucket,
 				maxBucket,
 				after,
+				state,
 			});
 			return asc.reverse();
 		}
@@ -251,6 +264,7 @@ export class MessageDataRepository {
 			minBucket,
 			maxBucket,
 			after,
+			state,
 		});
 	}
 
@@ -293,6 +307,7 @@ export class MessageDataRepository {
 			after,
 			before,
 			restrictToBeforeBucket: options?.restrictToBeforeBucket,
+			state,
 		});
 	}
 
@@ -305,6 +320,7 @@ export class MessageDataRepository {
 			before?: MessageID;
 			after?: MessageID;
 			restrictToBeforeBucket?: boolean;
+			state?: ChannelStateRow | null;
 		},
 	): Promise<Array<Message>> {
 		const beforeBucket = opts.before ? BucketUtils.makeBucket(opts.before) : null;
@@ -327,6 +343,8 @@ export class MessageDataRepository {
 			},
 			'scanBucketsDescForMessages: starting scan',
 		);
+
+		const skipBuckets = await this.listEmptyBuckets(channelId);
 
 		const {rows: out} = await scanBucketsWithIndex<MessageRow>(
 			{
@@ -354,6 +372,7 @@ export class MessageDataRepository {
 				direction: BucketScanDirection.Desc,
 				indexPageSize: DEFAULT_BUCKET_INDEX_PAGE_SIZE,
 				stopAfterBucket,
+				skipBuckets,
 			},
 		);
 
@@ -369,8 +388,7 @@ export class MessageDataRepository {
 			}
 		}
 
-		await this.touchChannelHasMessages(channelId);
-		await this.advanceChannelStateLastMessageIfNewer(channelId, maxId, maxBucketForId);
+		await this.reconcileChannelStateAfterScan(channelId, opts.state ?? null, maxId, maxBucketForId);
 
 		return this.repairAndMapMessages(channelId, out);
 	}
@@ -382,9 +400,12 @@ export class MessageDataRepository {
 			minBucket: number;
 			maxBucket: number;
 			after: MessageID;
+			state?: ChannelStateRow | null;
 		},
 	): Promise<Array<Message>> {
 		const afterBucket = BucketUtils.makeBucket(opts.after);
+
+		const skipBuckets = await this.listEmptyBuckets(channelId);
 
 		const {rows: out} = await scanBucketsWithIndex<MessageRow>(
 			{
@@ -409,6 +430,7 @@ export class MessageDataRepository {
 				maxBucket: opts.maxBucket,
 				direction: BucketScanDirection.Asc,
 				indexPageSize: DEFAULT_BUCKET_INDEX_PAGE_SIZE,
+				skipBuckets,
 			},
 		);
 
@@ -424,8 +446,7 @@ export class MessageDataRepository {
 			}
 		}
 
-		await this.touchChannelHasMessages(channelId);
-		await this.advanceChannelStateLastMessageIfNewer(channelId, maxId, maxBucketForId);
+		await this.reconcileChannelStateAfterScan(channelId, opts.state ?? null, maxId, maxBucketForId);
 
 		return this.repairAndMapMessages(channelId, out);
 	}
@@ -573,7 +594,74 @@ export class MessageDataRepository {
 			}),
 		);
 
+		/*
+		 * Keep this atomic (logged). The pair is "add the empty marker" plus
+		 * "remove the positive index entry", and the scan skip in
+		 * BucketScanEngine is only sound while those two agree. A half-applied
+		 * batch would leave a bucket present in BOTH indexes, which is exactly
+		 * the disagreement the skip cannot detect. The batchlog round trip is
+		 * the price of that invariant.
+		 */
 		await batch.execute(true);
+	}
+
+	/**
+	 * Buckets an earlier scan proved empty, so the scan can skip them instead of
+	 * re-reading every barren bucket back to channel creation. `channel_id` is
+	 * the partition key here, so this is one single-partition read.
+	 *
+	 * CONSISTENCY ASSUMPTION — read before changing cluster topology: skipping a
+	 * bucket is only safe while a write is visible to the very next read. That
+	 * holds today because the keyspace is created with
+	 * `SimpleStrategy, replication_factor: 1` (scripts/cassandra-migrate) and the
+	 * driver runs at its default consistency (see database/Cassandra.ts, which
+	 * sets no `queryOptions.consistency`). If the replication factor is ever
+	 * raised without moving reads and writes to QUORUM, a stale replica can
+	 * answer this query and the skip turns into systematic message loss rather
+	 * than a self-healing race. Raise RF and consistency together, or drop the
+	 * skip.
+	 */
+	private async listEmptyBuckets(channelId: ChannelID): Promise<ReadonlySet<number>> {
+		const rows = await fetchMany<Pick<ChannelEmptyBucketRow, 'bucket'>>(
+			FETCH_CHANNEL_EMPTY_BUCKETS.bind({channel_id: channelId}),
+		);
+
+		/*
+		 * Never trust the marker for the bucket that is still being written to.
+		 * A scan can read a bucket as empty, a message can land in it, and the
+		 * scan can then write the empty marker with a later timestamp — the
+		 * marker wins and the positive index entry is gone. Today that heals
+		 * itself: the fallback still reads the bucket, finds the row and repairs
+		 * both indexes. Honouring the marker would instead hide that message
+		 * until the next write to the same bucket, i.e. permanently once the
+		 * bucket window closes. Only the current bucket can be in that state, so
+		 * excluding it costs one bucket read and closes the hole.
+		 */
+		const currentBucket = BucketUtils.makeBucket(SnowflakeUtils.getSnowflake());
+
+		return new Set(rows.map((row) => row.bucket).filter((bucket) => bucket !== currentBucket));
+	}
+
+	/**
+	 * Both bookkeeping writes below are no-ops whenever the state row already
+	 * agrees, and the callees decide that by re-reading the row we were just
+	 * handed. Gating on the state we already hold keeps the repair behaviour and
+	 * drops a SELECT plus an UPDATE (and the LWT loop) off every settled page.
+	 */
+	private async reconcileChannelStateAfterScan(
+		channelId: ChannelID,
+		state: ChannelStateRow | null,
+		maxId: MessageID,
+		maxBucketForId: number,
+	): Promise<void> {
+		if (state?.has_messages !== true) {
+			await this.touchChannelHasMessages(channelId);
+		}
+
+		const knownLastMessageId = state?.last_message_id ?? null;
+		if (knownLastMessageId === null || maxId > knownLastMessageId) {
+			await this.advanceChannelStateLastMessageIfNewer(channelId, maxId, maxBucketForId);
+		}
 	}
 
 	private async touchChannelHasMessages(channelId: ChannelID): Promise<void> {
@@ -751,6 +839,16 @@ export class MessageDataRepository {
 		}
 
 		const finalVersion = result.finalVersion ?? 1;
+
+		if (oldData?.author_id && data.author_id && oldData.author_id !== data.author_id) {
+			batch.addPrepared(
+				MessagesByAuthor.deleteByPk({
+					author_id: oldData.author_id,
+					channel_id: data.channel_id,
+					message_id: data.message_id,
+				}),
+			);
+		}
 
 		if (data.author_id) {
 			batch.addPrepared(

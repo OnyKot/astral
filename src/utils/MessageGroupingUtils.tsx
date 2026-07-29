@@ -50,6 +50,57 @@ export interface ChannelStreamItem {
 
 export const MESSAGE_GROUP_TIMEOUT = 7 * 60 * 1000;
 
+const isVisualUserMessage = (message: MessageRecord | undefined): message is MessageRecord =>
+	message != null && (message.type === MessageTypes.DEFAULT || message.type === MessageTypes.REPLY);
+
+export function shouldContinueVisualMessageBlock(
+	prevMessage: MessageRecord | undefined,
+	currentMessage: MessageRecord | undefined,
+): boolean {
+	if (!isVisualUserMessage(prevMessage) || !isVisualUserMessage(currentMessage)) {
+		return false;
+	}
+
+	if (prevMessage.author.id !== currentMessage.author.id) {
+		return false;
+	}
+
+	if (prevMessage.webhookId !== currentMessage.webhookId) {
+		return false;
+	}
+
+	if (currentMessage.webhookId && prevMessage.author.username !== currentMessage.author.username) {
+		return false;
+	}
+
+	if (!prevMessage.timestamp || !currentMessage.timestamp) {
+		return false;
+	}
+
+	if (!DateUtils.isSameDay(prevMessage.timestamp, currentMessage.timestamp)) {
+		return false;
+	}
+
+	const prevSuppressed = prevMessage.hasFlag(MessageFlags.SUPPRESS_NOTIFICATIONS);
+	const currSuppressed = currentMessage.hasFlag(MessageFlags.SUPPRESS_NOTIFICATIONS);
+
+	if (currSuppressed !== prevSuppressed) {
+		if (!prevSuppressed && currSuppressed) {
+			return false;
+		}
+
+		if (prevSuppressed && !currSuppressed) {
+			const hasMentions =
+				currentMessage.mentions.length > 0 || currentMessage.mentionRoles.length > 0 || currentMessage.mentionEveryone;
+			if (hasMentions) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 export function isNewMessageGroup(
 	_channel: ChannelRecord | undefined,
 	prevMessage: MessageRecord | undefined,
@@ -132,9 +183,10 @@ export function createChannelStream(props: {
 	channel: ChannelRecord;
 	messages: ChannelMessages;
 	oldestUnreadMessageId: string | null;
+	presentWindow?: {limit: number};
 	treatSpam: boolean;
 }): Array<ChannelStreamItem> {
-	const {channel, messages, oldestUnreadMessageId, treatSpam} = props;
+	const {channel, messages, oldestUnreadMessageId, presentWindow, treatSpam} = props;
 
 	const stream: Array<ChannelStreamItem> = [];
 	let lastDateDivider: string | undefined;
@@ -146,7 +198,7 @@ export function createChannelStream(props: {
 		? SnowflakeUtils.extractTimestamp(oldestUnreadMessageId)
 		: null;
 
-	messages.forEach((message): boolean | undefined => {
+	const visitMessage = (message: MessageRecord): boolean | undefined => {
 		if (seenMessageIds.has(message.id)) {
 			return undefined;
 		}
@@ -223,9 +275,7 @@ export function createChannelStream(props: {
 			showUnreadDividerBefore: shouldShowUnreadDividerBefore,
 		};
 
-		if (groupId === message.id) {
-			lastMessageInGroup = message;
-		}
+		lastMessageInGroup = message;
 
 		const {jumpSequenceId, jumpFlash, jumpTargetId} = messages;
 
@@ -246,7 +296,19 @@ export function createChannelStream(props: {
 			stream.push(messageItem);
 		}
 		return undefined;
-	});
+	};
+
+	if (presentWindow && presentWindow.limit > 0 && messages.length > presentWindow.limit) {
+		const startIndex = Math.max(0, messages.length - presentWindow.limit);
+		for (let index = startIndex; index < messages.length; index++) {
+			const message = messages.getByIndex(index);
+			if (message) {
+				visitMessage(message);
+			}
+		}
+	} else {
+		messages.forEach(visitMessage);
+	}
 
 	return stream;
 }

@@ -51,9 +51,11 @@ import {createLegalHoldPreviewResponse, LegalHoldMiddleware} from '~/middleware/
 import {RequestCacheMiddleware} from '~/middleware/RequestCacheMiddleware';
 import {RequestIdMiddleware} from '~/middleware/RequestIdMiddleware';
 import {RequireXForwardedForMiddleware} from '~/middleware/RequireXForwardedForMiddleware';
+import {SecurityHeadersMiddleware} from '~/middleware/SecurityHeadersMiddleware';
 import {ensureVoiceResourcesInitialized} from '~/middleware/ServiceMiddleware';
 import {CloudPaymentsController} from '~/payments/cloudpayments/CloudPaymentsController';
 import {IntellectMoneyController} from '~/payments/intellectmoney/IntellectMoneyController';
+import {TBankController} from '~/payments/tbank/TBankController';
 import {WataController} from '~/payments/wata/WataController';
 import {UserMiddleware} from '~/middleware/UserMiddleware';
 import {initializeOAuth} from '~/oauth/init';
@@ -66,10 +68,15 @@ import {ReportController} from '~/report/ReportController';
 import {RpcController} from '~/rpc/RpcController';
 import {SearchController} from '~/search/controllers/SearchController';
 import {StripeController} from '~/stripe/StripeController';
+import {StoryController} from '~/story/StoryController';
 import {VisionarySlotInitializer} from '~/stripe/VisionarySlotInitializer';
 import {TenorController} from '~/tenor/TenorController';
 import {TestHarnessController} from '~/test/TestHarnessController';
 import {ThemeController} from '~/theme/ThemeController';
+import {TwitchController} from '~/twitch/TwitchController';
+import {SteamController} from '~/steam/SteamController';
+import {TelegramController} from '~/telegram/TelegramController';
+import {RiotController} from '~/riot/RiotController';
 import {UserController} from '~/user/UserController';
 import {isKnownAppHost, isKnownAppOrigin, isServerToServerWebhookPath} from '~/utils/AppOriginUtils';
 import {VoiceDataInitializer} from '~/voice/VoiceDataInitializer';
@@ -79,7 +86,7 @@ import type {AdminArchiveService} from './admin/services/AdminArchiveService';
 import type {AuthService} from './auth/AuthService';
 import type {AuthMfaService} from './auth/services/AuthMfaService';
 import type {DesktopHandoffService} from './auth/services/DesktopHandoffService';
-import type {UserID} from './BrandedTypes';
+import type {ApplicationID, UserID} from './BrandedTypes';
 import type {IChannelRepository} from './channel/IChannelRepository';
 import type {ChannelService} from './channel/services/ChannelService';
 import type {ScheduledMessageService} from './channel/services/ScheduledMessageService';
@@ -123,6 +130,7 @@ import type {TBankService} from './payments/tbank/TBankService';
 import type {WataService} from './payments/wata/WataService';
 import type {IUserRepository} from './user/IUserRepository';
 import type {EmailChangeService} from './user/services/EmailChangeService';
+import type {PremiumWaitlistService} from './user/services/PremiumWaitlistService';
 import {UserRepository} from './user/UserRepository';
 import type {InteractionService} from './interaction/InteractionService';
 import type {UserService} from './user/UserService';
@@ -144,6 +152,10 @@ export interface HonoEnv {
 		oauthBearerToken?: string;
 		oauthBearerScopes?: Set<string>;
 		oauthBearerUserId?: UserID;
+		// Which OAuth2 application the bearer token was issued to. Admin routes
+		// use it to tell the first-party admin panel from a third-party app,
+		// because both request the same scopes.
+		oauthBearerApplicationId?: ApplicationID;
 		auditLogReason: string | null;
 		authMfaService: AuthMfaService;
 		authService: AuthService;
@@ -163,6 +175,7 @@ export interface HonoEnv {
 		guildService: GuildService;
 		packService: PackService;
 		packRepository: PackRepository;
+		premiumWaitlistService: PremiumWaitlistService;
 		inviteService: InviteService;
 		liveKitWebhookService?: LiveKitWebhookService;
 		mediaService: IMediaService;
@@ -204,13 +217,21 @@ export interface HonoEnv {
 export type HonoApp = typeof app;
 
 const routes = new Hono<HonoEnv>({strict: true});
+const requestLogger = logger((message: string, ...rest: Array<string>) => {
+	Logger.info(rest.length > 0 ? `${message} ${rest.join(' ')}` : message);
+});
 
-routes.use(
-	logger((message: string, ...rest: Array<string>) => {
-		Logger.info(rest.length > 0 ? `${message} ${rest.join(' ')}` : message);
-	}),
-);
+routes.use(async (ctx, next) => {
+	if (ctx.req.path === '/_health') {
+		await next();
+		return;
+	}
+
+	return requestLogger(ctx, next);
+});
+routes.get('/_health', async (ctx) => ctx.text('OK'));
 routes.use(RequestIdMiddleware);
+routes.use(SecurityHeadersMiddleware);
 
 if (Config.nodeEnv === 'production') {
 	routes.use('*', async (ctx, next) => {
@@ -270,7 +291,6 @@ routes.use('*', async (ctx, next) => {
 routes.onError(AppErrorHandler);
 routes.notFound(AppNotFoundHandler);
 
-routes.get('/_health', async (ctx) => ctx.text('OK'));
 routes.get('/_legal-hold-preview', async (ctx) => createLegalHoldPreviewResponse(ctx.get('requestId')));
 
 GatewayController(routes);
@@ -289,9 +309,17 @@ ReportController(routes);
 RpcController(routes);
 GuildController(routes);
 SearchController(routes);
+StoryController(routes);
 TenorController(routes);
 ThemeController(routes);
-if (Config.dev.testModeEnabled) {
+TwitchController(routes);
+SteamController(routes);
+TelegramController(routes);
+RiotController(routes);
+// Test harness is a privileged admin/debug surface (it can grant admin
+// ACLs, set user flags, delete accounts, seed messages). It must never be
+// reachable in production, regardless of env flags — fail-closed.
+if (Config.dev.testModeEnabled && Config.nodeEnv !== 'production') {
 	TestHarnessController(routes);
 }
 UserController(routes);
@@ -301,7 +329,7 @@ OAuth2Controller(routes);
 OAuth2ApplicationsController(routes);
 ApplicationCommandController(routes);
 
-if (!Config.instance.selfHosted || Config.stripe.enabled || Config.cloudpayments.enabled || Config.intellectmoney.enabled || Config.wata.enabled) {
+if (!Config.instance.selfHosted || Config.stripe.enabled || Config.cloudpayments.enabled || Config.intellectmoney.enabled || Config.tbank.enabled || Config.wata.enabled) {
 	StripeController(routes);
 }
 if (Config.cloudpayments.enabled) {
@@ -309,6 +337,9 @@ if (Config.cloudpayments.enabled) {
 }
 if (Config.intellectmoney.enabled) {
 	IntellectMoneyController(routes);
+}
+if (Config.tbank.enabled) {
+	TBankController(routes);
 }
 if (Config.wata.enabled) {
 	WataController(routes);
@@ -348,7 +379,12 @@ try {
 	throw error;
 }
 
-if (Config.nodeEnv === 'development') {
+/*
+ * Explicit opt-in, NOT keyed off NODE_ENV: the last step here purges the uploads
+ * bucket, and NODE_ENV falls back to 'development' when the variable is missing,
+ * so an env slip alone must never be enough to destroy data.
+ */
+if (Config.dev.seedBuckets) {
 	const storageService = new StorageService();
 	await storageService.createBucket(Config.s3.buckets.cdn, true);
 	await storageService.createBucket(Config.s3.buckets.uploads);
@@ -382,7 +418,7 @@ if (Config.voice.enabled && Config.voice.autoCreateDummyData) {
 	await ensureVoiceResourcesInitialized();
 }
 
-if (Config.dev.testModeEnabled && Config.stripe.enabled) {
+if (Config.dev.testModeEnabled && Config.nodeEnv !== 'production' && Config.stripe.enabled) {
 	const visionarySlotInitializer = new VisionarySlotInitializer();
 	await visionarySlotInitializer.initialize();
 }

@@ -67,7 +67,9 @@ export const SelfMuteMenuItem: React.FC<SelfMuteMenuItemProps> = observer(
 		const voiceState = connectionId
 			? MediaEngineStore.getVoiceStateByConnectionId(connectionId)
 			: MediaEngineStore.getCurrentUserVoiceState();
-		const isSelfMuted = voiceState?.self_mute ?? false;
+		const isCurrentConnection = !connectionId || connectionId === MediaEngineStore.connectionId;
+		const muteReason = isCurrentConnection ? MediaEngineStore.getMuteReason(voiceState) : null;
+		const isSelfMuted = isCurrentConnection ? muteReason !== null : (voiceState?.self_mute ?? false);
 		const handleToggle = React.useCallback(() => {
 			if (isDeviceSpecific && connectionId) {
 				VoiceStateActionCreators.toggleSelfMuteForConnection(connectionId);
@@ -80,8 +82,9 @@ export const SelfMuteMenuItem: React.FC<SelfMuteMenuItemProps> = observer(
 				icon={<MicrophoneSlashIcon weight="fill" className={styles.icon} />}
 				checked={isSelfMuted}
 				onChange={handleToggle}
+				disabled={false}
 			>
-				{label ?? t`Mute`}
+				{label ?? (muteReason === 'push_to_talk' ? t`Push-to-Talk: hold shortcut to speak` : t`Mute`)}
 			</MenuItemCheckbox>
 		);
 	},

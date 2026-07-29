@@ -48,6 +48,7 @@ import refreshSearchIndex from '~/worker/tasks/refreshSearchIndex';
 import {sendScheduledMessage} from '~/worker/tasks/sendScheduledMessage';
 import userProcessPendingDeletion from '~/worker/tasks/userProcessPendingDeletion';
 import userProcessPendingDeletions from '~/worker/tasks/userProcessPendingDeletions';
+import syncSteamPresence from '~/worker/tasks/syncSteamPresence';
 import {setWorkerDependencies} from './WorkerContext';
 import {initializeWorkerDependencies, shutdownWorkerDependencies} from './WorkerDependencies';
 import {WorkerMetricsCollector} from './WorkerMetricsCollector';
@@ -94,6 +95,7 @@ async function main() {
 			userProcessPendingDeletion,
 			userProcessPendingDeletions,
 			processPendingBulkMessageDeletions,
+			syncSteamPresence,
 		},
 		crontabFile: './src/worker/.crontab',
 	};

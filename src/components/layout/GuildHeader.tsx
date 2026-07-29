@@ -18,7 +18,7 @@
  */
 
 import {useLingui} from '@lingui/react/macro';
-import {CaretRightIcon, GearIcon, SealCheckIcon} from '@phosphor-icons/react';
+import {ArrowLeftIcon, CaretRightIcon, GearIcon, SealCheckIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {motion, type MotionValue} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
@@ -44,6 +44,8 @@ import GuildMemberStore from '~/stores/GuildMemberStore';
 import PermissionStore from '~/stores/PermissionStore';
 import PresenceStore from '~/stores/PresenceStore';
 import * as AvatarUtils from '~/utils/AvatarUtils';
+import {Routes} from '~/Routes';
+import * as RouterUtils from '~/utils/RouterUtils';
 import styles from './GuildHeader.module.css';
 
 const HEADER_MIN_HEIGHT = 56;
@@ -185,6 +187,11 @@ export const GuildHeader = observer(({guild, scrollY}: GuildHeaderProps) => {
 	const handleOpenCommunitySettings = React.useCallback(() => {
 		ModalActionCreators.push(modal(() => <GuildSettingsModal guildId={guild.id} />));
 	}, [guild.id]);
+	const handleMobileBackToDirectMessages = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+		event.preventDefault();
+		event.stopPropagation();
+		RouterUtils.transitionTo(Routes.ME);
+	}, []);
 
 	const headerButtonRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -225,6 +232,19 @@ export const GuildHeader = observer(({guild, scrollY}: GuildHeaderProps) => {
 						triggerRef={headerButtonRef}
 					>
 						<div className={styles.mobileHeaderCard}>
+							<button
+								type="button"
+								className={styles.mobileHeaderBackButton}
+								aria-label={t`Back to Direct Messages`}
+								onClick={handleMobileBackToDirectMessages}
+								onPointerDown={(event) => event.stopPropagation()}
+								onContextMenu={(event) => {
+									event.preventDefault();
+									event.stopPropagation();
+								}}
+							>
+								<ArrowLeftIcon weight="bold" className={styles.mobileHeaderBackIcon} />
+							</button>
 							<div className={styles.mobileHeaderIconWrap}>
 								<GuildIcon id={guild.id} name={guild.name} icon={guild.icon} sizePx={40} className={styles.mobileGuildIcon} />
 							</div>

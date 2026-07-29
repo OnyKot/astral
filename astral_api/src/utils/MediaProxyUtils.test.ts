@@ -198,6 +198,12 @@ describe('MediaProxyUtils', () => {
 			expect(verifySignature(path, signature, testSecretKey)).toBe(false);
 		});
 
+		it('should return false (not throw) when signature length differs', () => {
+			const path = 'https/example.com/image.jpg';
+			expect(verifySignature(path, 'short', testSecretKey)).toBe(false);
+			expect(verifySignature(path, 'x'.repeat(200), testSecretKey)).toBe(false);
+		});
+
 		it('should reject signatures for wrong path', () => {
 			const signature = createSignature('https/example.com/image1.jpg', testSecretKey);
 

@@ -22,6 +22,7 @@ import https from 'node:https';
 import log from 'electron-log';
 import {BUILD_CHANNEL} from '../common/build-channel.js';
 import {STABLE_APP_URL, TRUSTED_APP_ORIGINS, TRUSTED_APP_URLS} from '../common/constants.js';
+import {assertSafeProxyTarget, isValidProxyTargetUrl} from '../common/safe-proxy-target.js';
 
 export const API_PROXY_PORT = BUILD_CHANNEL === 'canary' ? 21862 : 21861;
 
@@ -132,22 +133,13 @@ const rejectIfDisallowedPage = (
 	return false;
 };
 
-const isValidTargetUrl = (raw: string | null): raw is string => {
-	if (!raw) return false;
-	try {
-		const parsed = new URL(raw);
-		return parsed.protocol === 'https:' || parsed.protocol === 'http:';
-	} catch {
-		return false;
-	}
-};
-
-const pipeRequest = (
+const pipeRequest = async (
 	req: http.IncomingMessage,
 	res: http.ServerResponse,
 	targetUrl: string,
 	_retriesRemaining: number,
-): void => {
+): Promise<void> => {
+	await assertSafeProxyTarget(targetUrl);
 	const parsedTarget = new URL(targetUrl);
 	const agent = parsedTarget.protocol === 'https:' ? https : http;
 	const method = (req.method ?? 'GET').toUpperCase();
@@ -197,6 +189,56 @@ const pipeRequest = (
 
 let server: http.Server | null = null;
 
+const handleApiProxyRequest = async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
+	const remoteAddress = req.socket.remoteAddress;
+	if (remoteAddress !== '127.0.0.1' && remoteAddress !== '::1' && remoteAddress !== '::ffff:127.0.0.1') {
+		res.writeHead(403);
+		res.end();
+		return;
+	}
+
+	const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host}`);
+
+	if (requestUrl.pathname !== PROXY_PATH) {
+		res.writeHead(404);
+		res.end();
+		return;
+	}
+
+	const target = requestUrl.searchParams.get('target');
+	if (!isValidProxyTargetUrl(target)) {
+		res.writeHead(400, {'Content-Type': 'text/plain'});
+		res.end('Missing or invalid target');
+		return;
+	}
+
+	const initiator = req.headers[PROXY_INITIATOR_HEADER];
+	const initiatorHeader = Array.isArray(initiator) ? initiator[0] : initiator;
+
+	if (rejectIfDisallowedPage(req, res, initiatorHeader ?? undefined)) {
+		return;
+	}
+
+	setCorsHeaders(res, req.headers.origin ?? initiatorHeader ?? req.headers.referer ?? undefined);
+
+	if (req.method?.toUpperCase() === 'OPTIONS') {
+		res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS');
+		res.writeHead(204);
+		res.end();
+		return;
+	}
+
+	try {
+		await pipeRequest(req, res, target, 5);
+	} catch (error) {
+		log.warn('[API Proxy] Rejected unsafe target:', error);
+		if (!res.headersSent) {
+			res.writeHead(400, {'Content-Type': 'text/plain'});
+		}
+		res.end('Missing or invalid target');
+	}
+};
+
 export const getApiProxyUrl = (): string | null => {
 	if (!server) return null;
 	return `http://127.0.0.1:${API_PROXY_PORT}${PROXY_PATH}`;
@@ -210,45 +252,7 @@ export const startApiProxyServer = (): Promise<void> => {
 		}
 
 		server = http.createServer((req, res) => {
-			const remoteAddress = req.socket.remoteAddress;
-			if (remoteAddress !== '127.0.0.1' && remoteAddress !== '::1' && remoteAddress !== '::ffff:127.0.0.1') {
-				res.writeHead(403);
-				res.end();
-				return;
-			}
-
-			const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host}`);
-
-			if (requestUrl.pathname !== PROXY_PATH) {
-				res.writeHead(404);
-				res.end();
-				return;
-			}
-
-			const target = requestUrl.searchParams.get('target');
-			if (!isValidTargetUrl(target)) {
-				res.writeHead(400, {'Content-Type': 'text/plain'});
-				res.end('Missing or invalid target');
-				return;
-			}
-
-			const initiator = req.headers[PROXY_INITIATOR_HEADER];
-			const initiatorHeader = Array.isArray(initiator) ? initiator[0] : initiator;
-
-			if (rejectIfDisallowedPage(req, res, initiatorHeader ?? undefined)) {
-				return;
-			}
-
-			setCorsHeaders(res, req.headers.origin ?? initiatorHeader ?? req.headers.referer ?? undefined);
-
-			if (req.method?.toUpperCase() === 'OPTIONS') {
-				res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS');
-				res.writeHead(204);
-				res.end();
-				return;
-			}
-
-			pipeRequest(req, res, target, 5);
+			void handleApiProxyRequest(req, res);
 		});
 
 		server.on('error', (error: NodeJS.ErrnoException) => {

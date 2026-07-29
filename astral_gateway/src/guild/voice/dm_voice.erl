@@ -20,6 +20,7 @@
 -export([voice_state_update/2]).
 -export([get_voice_state/2]).
 -export([get_voice_token/6]).
+-export([get_voice_token/7]).
 -export([disconnect_voice_user/2]).
 -export([broadcast_voice_state_update/3]).
 -export([join_or_create_call/5, join_or_create_call/6]).
@@ -331,23 +332,38 @@ maybe_spawn_join_call(true, ChannelId, UserId, VoiceState, SessionId) ->
     end).
 
 get_voice_token(ChannelId, UserId, _SessionId, SessionPid, Latitude, Longitude) ->
-    Req = voice_utils:build_voice_token_rpc_request(
+    get_voice_token(ChannelId, UserId, _SessionId, SessionPid, Latitude, Longitude, null).
+
+get_voice_token(ChannelId, UserId, _SessionId, SessionPid, Latitude, Longitude, Ip) ->
+    %% NB: build_voice_token_rpc_request/7 takes VoicePermissions (a map) as the
+    %% 7th argument, NOT the IP — passing Ip there crashes with badmap and kills
+    %% every DM call. Build the base request and attach the IP explicitly.
+    Req0 = voice_utils:build_voice_token_rpc_request(
         null, ChannelId, UserId, null, Latitude, Longitude
     ),
+    Req = voice_utils:add_ip_to_request(Req0, Ip),
 
     case rpc_client:call(Req) of
         {ok, Data} ->
             Token = maps:get(<<"token">>, Data),
             Endpoint = maps:get(<<"endpoint">>, Data),
             ConnectionId = maps:get(<<"connectionId">>, Data),
+            IceServers = maps:get(<<"iceServers">>, Data, undefined),
+
+            VoiceServerUpdate0 = #{
+                channel_id => integer_to_binary(ChannelId),
+                endpoint => Endpoint,
+                token => Token,
+                connection_id => ConnectionId
+            },
+            VoiceServerUpdate =
+                case IceServers of
+                    [_ | _] = Servers -> maps:put(<<"ice_servers">>, Servers, VoiceServerUpdate0);
+                    _ -> VoiceServerUpdate0
+                end,
 
             SessionPid !
-                {voice_server_update, #{
-                    channel_id => integer_to_binary(ChannelId),
-                    endpoint => Endpoint,
-                    token => Token,
-                    connection_id => ConnectionId
-                }},
+                {voice_server_update, VoiceServerUpdate},
             ok;
         {error, {http_error, _Status, Body}} ->
             case parse_unclaimed_error(Body) of
@@ -374,9 +390,13 @@ get_dm_voice_token_and_create_state(
     Longitude,
     State
 ) ->
-    Req = voice_utils:build_voice_token_rpc_request(
+    PeerIp = maps:get(peer_ip, State, undefined),
+    %% Same badmap trap as get_voice_token/7: /7 expects a permissions map as
+    %% the last argument, so the IP must be attached separately.
+    Req0 = voice_utils:build_voice_token_rpc_request(
         null, ChannelId, UserId, null, Latitude, Longitude
     ),
+    Req = voice_utils:add_ip_to_request(Req0, PeerIp),
 
     case rpc_client:call(Req) of
         {ok, Data} ->
@@ -418,6 +438,7 @@ handle_dm_token_success(
     Token = maps:get(<<"token">>, Data),
     Endpoint = maps:get(<<"endpoint">>, Data),
     ConnectionId = maps:get(<<"connectionId">>, Data),
+    IceServers = maps:get(<<"iceServers">>, Data, undefined),
 
     VoiceState = #{
         <<"user_id">> => integer_to_binary(UserId),
@@ -440,12 +461,17 @@ handle_dm_token_success(
     broadcast_voice_state_update(ChannelId, VoiceState, NewState),
 
     SessionPid = maps:get(session_pid, State),
-    VoiceServerUpdate = #{
+    VoiceServerUpdate0 = #{
         <<"token">> => Token,
         <<"endpoint">> => Endpoint,
         <<"channel_id">> => integer_to_binary(ChannelId),
         <<"connection_id">> => ConnectionId
     },
+    VoiceServerUpdate =
+        case IceServers of
+            [_ | _] = Servers -> maps:put(<<"ice_servers">>, Servers, VoiceServerUpdate0);
+            _ -> VoiceServerUpdate0
+        end,
     gen_server:cast(SessionPid, {dispatch, voice_server_update, VoiceServerUpdate}),
 
     GatewaySessionId = maps:get(id, State),

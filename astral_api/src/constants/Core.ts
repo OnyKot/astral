@@ -47,6 +47,22 @@ export const MAX_EMBEDS_PER_MESSAGE = 10;
 export const MAX_REACTIONS_PER_MESSAGE = 30;
 export const MAX_USERS_PER_MESSAGE_REACTION = 5000;
 
+/*
+ * Astral 4.0 — large messages auto-convert to TXT attachments.
+ * When a message's content exceeds the user's length limit, the full
+ * content is written to a text/plain TXT file uploaded as an attachment
+ * and the in-message content is replaced by a short prefix. This keeps
+ * very long messages usable without rejecting them.
+ *
+ * MAX_TXT_MESSAGE_BYTES is a hard cap on the generated TXT body so a
+ * single message cannot exhaust server memory/disk; content beyond it
+ * is truncated (the user is told via the in-message note).
+ */
+export const TXT_MESSAGE_PREFIX_LENGTH = 280;
+export const MAX_TXT_MESSAGE_BYTES = 256 * 1024;
+export const TXT_MESSAGE_FILENAME = 'message.txt';
+export const TXT_MESSAGE_CONTENT_TYPE = 'text/plain; charset=utf-8';
+
 export const MAX_RELATIONSHIPS = 1000;
 export const MAX_GROUP_DM_RECIPIENTS = 10;
 export const MAX_PRIVATE_CHANNELS_PER_USER = 250;
@@ -71,8 +87,8 @@ export const EMOJI_EXTENSIONS = new Set(['jpeg', 'png', 'webp', 'gif']);
 export const STICKER_MAX_SIZE = 512 * 1024;
 export const STICKER_EXTENSIONS = new Set(['png', 'gif']);
 
-export const ATTACHMENT_MAX_SIZE_PREMIUM = 500 * 1024 * 1024;
-export const ATTACHMENT_MAX_SIZE_NON_PREMIUM = 25 * 1024 * 1024;
+export const ATTACHMENT_MAX_SIZE_PREMIUM = 4 * 1024 * 1024 * 1024;
+export const ATTACHMENT_MAX_SIZE_NON_PREMIUM = 2 * 1024 * 1024 * 1024;
 
 export const USER_MENTION_REGEX = /<@!?(?<userId>\d+)>/g;
 export const ROLE_MENTION_REGEX = /<@&(?<roleId>\d+)>/g;

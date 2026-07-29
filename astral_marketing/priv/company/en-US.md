@@ -21,19 +21,19 @@ Astral Platform AB is a Swedish limited liability company registered with the Sw
 
 ### Company Registration
 
-**Organization Number:** 559537-3993
+**Organization Number:** 559537-3993  
 **VAT ID:** SE559537399301
 
 ### Registered Address
 
-Astral Platform AB
-Norra Kronans Gata 430
-136 76 Brandbergen
+Astral Platform AB  
+Norra Kronans Gata 430  
+136 76 Brandbergen  
 Stockholm County, Sweden
 
 ### Contact Information
 
-**Email:** support@astraof.com
+**Email:** support@astraof.com  
 **Website:** [https://astraof.com](https://astraof.com)
 
 For account-related matters, please contact us from the email address associated with your Astral account whenever possible. This helps us verify your identity and keep account communication secure.

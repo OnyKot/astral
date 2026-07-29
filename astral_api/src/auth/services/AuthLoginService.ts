@@ -29,7 +29,7 @@ import {
 } from '~/BrandedTypes';
 import {Config} from '~/Config';
 import {APIErrorCodes, UserAuthenticatorTypes, UserFlags} from '~/Constants';
-import {AstralAPIError, InputValidationError} from '~/Errors';
+import {AstralAPIError, InputValidationError, RateLimitError} from '~/Errors';
 import type {ICacheService} from '~/infrastructure/ICacheService';
 import {resolveEmailLinkContextFromRequest} from '~/infrastructure/EmailLinkContextResolver';
 import type {IEmailService} from '~/infrastructure/IEmailService';
@@ -115,6 +115,32 @@ export class AuthLoginService {
 		return `ip-auth-token:${token}`;
 	}
 
+	// Per-ticket MFA attempt cap. The route-level rate limit buckets by IP/user,
+	// not by ticket, so a holder of a valid 5-minute MFA ticket could otherwise
+	// try ~120 TOTP codes/minute — enough to brute-force the 6-digit space.
+	// Cap at 5 attempts per ticket (the ticket TTL is 5 minutes, matching the
+	// window). Throws a rate-limit error when the ticket is exhausted.
+	private async assertMfaTicketAttemptsAllowed(ticket: string): Promise<void> {
+		const result = await this.rateLimitService.checkLimit({
+			identifier: `mfa-ticket-attempts:${ticket}`,
+			maxAttempts: 5,
+			windowMs: 5 * 60 * 1000,
+		});
+		if (!result.allowed) {
+			getMetricsService().counter({
+				name: 'auth.login.failure',
+				dimensions: {reason: 'mfa_ticket_rate_limited'},
+			});
+			throw new RateLimitError({
+				message: 'Too many MFA attempts. Please log in again.',
+				retryAfter: result.retryAfter ?? Math.ceil((result.resetTime.getTime() - Date.now()) / 1000),
+				retryAfterDecimal: result.retryAfterDecimal,
+				limit: result.limit,
+				resetTime: result.resetTime,
+			});
+		}
+	}
+
 	async resendIpAuthorization(ticket: string, request: Request): Promise<{retryAfter?: number}> {
 		const cacheKey = this.getTicketCacheKey(ticket);
 		const payload = await this.cacheService.get<IpAuthorizationTicketCache>(cacheKey);
@@ -166,6 +192,14 @@ export class AuthLoginService {
 	}
 
 	async completeIpAuthorization(token: string): Promise<{token: string; user_id: string; ticket: string}> {
+		// Single-use guard: fetch-then-delete on the Cassandra token row races —
+		// two parallel redeemers can both create sessions. Mirror password-reset
+		// and claim the token with an NX lock before any side effects.
+		const lockToken = await this.cacheService.acquireLock(`ip-auth:consume:${token}`, 30);
+		if (!lockToken) {
+			throw InputValidationError.create('token', 'Invalid or expired authorization token');
+		}
+
 		const tokenMapping = await this.cacheService.get<{ticket: string}>(this.getTokenCacheKey(token));
 		if (!tokenMapping?.ticket) {
 			throw InputValidationError.create('token', 'Invalid or expired authorization token');
@@ -231,8 +265,12 @@ export class AuthLoginService {
 		| {mfa: false; user_id: string; token: string; pending_verification?: boolean}
 		| {mfa: true; ticket: string; sms: boolean; totp: boolean; webauthn: boolean}
 	> {
-		const inTests = Config.dev.testModeEnabled || process.env.CI === 'true';
-		const skipRateLimits = inTests || Config.dev.disableRateLimits;
+		// CI/test bypasses for login rate limits must never fire in production —
+		// a leaked CI=true env var would otherwise disable per-email/per-IP
+		// brute-force protection. The Config object is the validated source of
+		// truth for environment, so gate on it rather than raw process.env.CI.
+		const inTests = Config.dev.testModeEnabled && Config.nodeEnv !== 'production';
+		const skipRateLimits = inTests || (Config.dev.disableRateLimits && Config.nodeEnv !== 'production');
 
 		const emailRateLimit = await this.rateLimitService.checkLimit({
 			identifier: `login:email:${data.email}`,
@@ -241,10 +279,12 @@ export class AuthLoginService {
 		});
 
 		if (!emailRateLimit.allowed && !skipRateLimits) {
-			throw new AstralAPIError({
-				code: APIErrorCodes.RATE_LIMITED,
+			throw new RateLimitError({
 				message: 'Too many login attempts. Please try again later.',
-				status: 429,
+				retryAfter: emailRateLimit.retryAfter ?? Math.ceil((emailRateLimit.resetTime.getTime() - Date.now()) / 1000),
+				retryAfterDecimal: emailRateLimit.retryAfterDecimal,
+				limit: emailRateLimit.limit,
+				resetTime: emailRateLimit.resetTime,
 			});
 		}
 
@@ -256,10 +296,12 @@ export class AuthLoginService {
 		});
 
 		if (!ipRateLimit.allowed && !skipRateLimits) {
-			throw new AstralAPIError({
-				code: APIErrorCodes.RATE_LIMITED,
+			throw new RateLimitError({
 				message: 'Too many login attempts from this IP. Please try again later.',
-				status: 429,
+				retryAfter: ipRateLimit.retryAfter ?? Math.ceil((ipRateLimit.resetTime.getTime() - Date.now()) / 1000),
+				retryAfterDecimal: ipRateLimit.retryAfterDecimal,
+				limit: ipRateLimit.limit,
+				resetTime: ipRateLimit.resetTime,
 			});
 		}
 
@@ -277,9 +319,20 @@ export class AuthLoginService {
 
 		this.assertNonBotUser(user);
 
+		if (!user.passwordHash || user.isUnclaimedAccount()) {
+			getMetricsService().counter({
+				name: 'auth.login.failure',
+				dimensions: {reason: 'invalid_credentials'},
+			});
+			throw InputValidationError.createMultiple([
+				{field: 'email', message: 'Invalid email or password'},
+				{field: 'password', message: 'Invalid email or password'},
+			]);
+		}
+
 		const isMatch = await this.verifyPassword({
 			password: data.password,
-			passwordHash: user.passwordHash!,
+			passwordHash: user.passwordHash,
 		});
 
 		if (!isMatch) {
@@ -329,8 +382,9 @@ export class AuthLoginService {
 
 		const hasMfa = (currentUser.authenticatorTypes?.size ?? 0) > 0;
 		const isAppStoreReviewer = (currentUser.flags & UserFlags.APP_STORE_REVIEWER) !== 0n;
+		const ipAuthorizationEnabled = Config.auth.ipAuthorizationEnabled;
 
-		if (!hasMfa && !isAppStoreReviewer) {
+		if (ipAuthorizationEnabled && !hasMfa && !isAppStoreReviewer) {
 			const isIpAuthorized = await this.repository.checkIpAuthorized(currentUser.id, clientIp);
 			if (!isIpAuthorized) {
 				const ticket = createIpAuthorizationTicket(await this.generateSecureToken());
@@ -429,6 +483,8 @@ export class AuthLoginService {
 			throw InputValidationError.create('code', 'Session timeout. Please refresh the page and log in again.');
 		}
 
+		await this.assertMfaTicketAttemptsAllowed(ticket);
+
 		const user = await this.repository.findUnique(createUserID(BigInt(userId)));
 		if (!user) {
 			throw new Error('User not found');
@@ -492,6 +548,8 @@ export class AuthLoginService {
 			throw InputValidationError.create('code', 'Session timeout. Please refresh the page and log in again.');
 		}
 
+		await this.assertMfaTicketAttemptsAllowed(ticket);
+
 		const user = await this.repository.findUnique(createUserID(BigInt(userId)));
 		if (!user) {
 			throw new Error('User not found');
@@ -542,6 +600,8 @@ export class AuthLoginService {
 			throw InputValidationError.create('ticket', 'Session timeout. Please refresh the page and log in again.');
 		}
 
+		await this.assertMfaTicketAttemptsAllowed(ticket);
+
 		const user = await this.repository.findUnique(createUserID(BigInt(userId)));
 		if (!user) {
 			throw new Error('User not found');
@@ -573,9 +633,11 @@ export class AuthLoginService {
 		webauthn: boolean;
 	}> {
 		const ticket = createMfaTicket(RandomUtils.randomString(64));
-		await this.cacheService.set(`mfa-ticket:${ticket}`, user.id.toString(), 60 * 5);
-
-		const credentials = await this.repository.listWebAuthnCredentials(user.id);
+		// Cache write and WebAuthn credential listing are independent.
+		const [, credentials] = await Promise.all([
+			this.cacheService.set(`mfa-ticket:${ticket}`, user.id.toString(), 60 * 5),
+			this.repository.listWebAuthnCredentials(user.id),
+		]);
 		const hasSms = user.authenticatorTypes.has(UserAuthenticatorTypes.SMS);
 		const hasWebauthn = credentials.length > 0;
 		const hasTotp = user.authenticatorTypes.has(UserAuthenticatorTypes.TOTP);

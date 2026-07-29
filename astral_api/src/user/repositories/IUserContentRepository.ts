@@ -64,6 +64,7 @@ export interface IUserContentRepository {
 	redeemGiftCode(code: string, userId: UserID): Promise<{applied: boolean}>;
 	updateGiftCode(code: string, data: Partial<GiftCodeRow>): Promise<void>;
 	linkGiftCodeToCheckoutSession(code: string, checkoutSessionId: string): Promise<void>;
+	updateGiftMetadata(code: string, emoji: string | null, background: string | null): Promise<void>;
 
 	listPushSubscriptions(userId: UserID): Promise<Array<PushSubscription>>;
 	createPushSubscription(data: PushSubscriptionRow): Promise<PushSubscription>;

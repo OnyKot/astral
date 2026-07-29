@@ -36,7 +36,7 @@ const config: CapacitorConfig = {
     backgroundColor: '#000000',
     allowMixedContent: false,
     overScrollMode: 'never',
-    webContentsDebuggingEnabled: true,
+    webContentsDebuggingEnabled: process.env.ASTRAL_CAPACITOR_WEB_DEBUGGING === '1',
   },
   server: {
     url: stableStartUrl,

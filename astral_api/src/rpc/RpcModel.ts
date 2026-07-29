@@ -96,6 +96,7 @@ export const RpcRequest = z.discriminatedUnion('type', [
 		connection_id: createStringType().optional(),
 		latitude: createStringType(1, 32).optional(),
 		longitude: createStringType(1, 32).optional(),
+		ip: createStringType(1, 45).optional(),
 		can_speak: z.boolean().optional(),
 		can_stream: z.boolean().optional(),
 		can_video: z.boolean().optional(),
@@ -244,6 +245,15 @@ export const RpcResponse = z.discriminatedUnion('type', [
 			token: z.string(),
 			endpoint: z.string(),
 			connectionId: z.string(),
+			iceServers: z
+				.array(
+					z.object({
+						urls: z.array(z.string()),
+						username: z.string().optional(),
+						credential: z.string().optional(),
+					}),
+				)
+				.optional(),
 		}),
 	}),
 	z.object({

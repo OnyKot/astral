@@ -1,0 +1,221 @@
+/*
+ * Copyright (C) 2026 Astral Contributors
+ *
+ * This file is part of Astral.
+ *
+ * Astral is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Astral is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Astral. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.topBanners {
+	position: relative;
+	z-index: 2;
+	display: grid;
+	flex: 0 0 auto;
+	gap: 4px;
+	padding: 5px 12px 0;
+	overflow: hidden;
+	background: var(--background-primary);
+}
+
+.banner {
+	--voice-playback-progress: 0%;
+	position: relative;
+	display: flex;
+	align-items: stretch;
+	width: 100%;
+	min-height: 38px;
+	min-width: 0;
+	overflow: hidden;
+	border: 0;
+	border-radius: 10px;
+	background: color-mix(in srgb, var(--background-floating) 18%, var(--background-primary) 82%);
+	box-shadow: none;
+	color: var(--text-primary);
+	cursor: pointer;
+	padding: 0;
+	text-align: left;
+}
+
+.banner:hover {
+	background: color-mix(in srgb, var(--background-floating) 28%, var(--background-primary) 72%);
+}
+
+.banner:focus-visible,
+.bannerMain:focus-visible,
+.closeButton:focus-visible {
+	outline: 2px solid color-mix(in srgb, var(--brand-primary) 72%, white 28%);
+	outline-offset: -2px;
+}
+
+.bannerMain {
+	all: unset;
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	flex: 1 1 auto;
+	min-width: 0;
+	gap: 9px;
+	padding: 7px 10px;
+	cursor: pointer;
+}
+
+.bannerButton {
+	box-sizing: border-box;
+	gap: 9px;
+	padding: 7px 10px;
+}
+
+.iconShell,
+.voiceIconShell {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	flex: 0 0 26px;
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--background-floating) 36%, transparent);
+	color: color-mix(in srgb, var(--brand-primary) 58%, var(--text-secondary) 42%);
+}
+
+.voiceIconShell {
+	background: color-mix(in srgb, var(--background-floating) 36%, transparent);
+	color: color-mix(in srgb, var(--brand-primary) 56%, var(--text-secondary) 44%);
+}
+
+.icon {
+	width: 16px;
+	height: 16px;
+}
+
+.textColumn {
+	display: flex;
+	flex: 1 1 auto;
+	min-width: 0;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.title {
+	display: block;
+	overflow: hidden;
+	color: var(--text-primary);
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 15px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.summary {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	min-width: 0;
+	overflow: hidden;
+	color: var(--text-secondary);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 16px;
+}
+
+.authorName {
+	flex: 0 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	color: color-mix(in srgb, var(--brand-primary) 52%, var(--text-primary) 48%);
+	font-weight: 700;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.previewText {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.closeButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	flex: 0 0 34px;
+	border: 0;
+	background: transparent;
+	color: var(--text-tertiary);
+	cursor: pointer;
+	transition:
+		background-color 140ms ease,
+		color 140ms ease;
+}
+
+.closeButton:hover {
+	background: color-mix(in srgb, var(--background-modifier-hover) 62%, transparent);
+	color: var(--text-primary);
+}
+
+.closeIcon {
+	width: 17px;
+	height: 17px;
+}
+
+.voiceProgress {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: var(--voice-playback-progress);
+	height: 1px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 56%, transparent);
+	transition: width 180ms linear;
+}
+
+@media (max-width: 767px) {
+	.topBanners {
+		padding:
+			6px max(0.5rem, var(--safe-area-right, 0px))
+			0 max(0.5rem, var(--safe-area-left, 0px));
+	}
+
+	.banner {
+		min-height: 40px;
+		border-radius: 10px;
+	}
+
+	.bannerMain,
+	.bannerButton {
+		padding: 7px 9px;
+	}
+
+	.iconShell,
+	.voiceIconShell {
+		width: 24px;
+		height: 24px;
+		flex-basis: 24px;
+		border-radius: 8px;
+	}
+
+	.title {
+		font-size: 10px;
+		line-height: 14px;
+	}
+
+	.summary {
+		font-size: 11px;
+		line-height: 15px;
+	}
+}

@@ -150,8 +150,8 @@ export const InteractionTabContent: React.FC = observer(() => {
 	if (mobileLayout.enabled) {
 		return (
 			<SettingsTabSection
-				title="Message Action Bar"
-				description="Message action bar settings are only available on desktop."
+				title={t`Message Action Bar`}
+				description={t`Message action bar settings are only available on desktop.`}
 			>
 				{null}
 			</SettingsTabSection>
@@ -160,8 +160,8 @@ export const InteractionTabContent: React.FC = observer(() => {
 
 	return (
 		<SettingsTabSection
-			title="Message Action Bar"
-			description="Customize the action bar that appears when hovering over messages."
+			title={t`Message Action Bar`}
+			description={t`Customize the action bar that appears when hovering over messages.`}
 		>
 			<div className={styles.sectionContent}>
 				<MessageActionBarPreview

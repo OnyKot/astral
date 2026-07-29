@@ -19,7 +19,7 @@
 
 import type {PublicKeyCredentialCreationOptionsJSON, RegistrationResponseJSON} from '@simplewebauthn/browser';
 import {Endpoints} from '~/Endpoints';
-import http from '~/lib/HttpClient';
+import http, {HttpError} from '~/lib/HttpClient';
 import {Logger} from '~/lib/Logger';
 import type {Message} from '~/records/MessageRecord';
 import type {UserPrivate} from '~/records/UserRecord';
@@ -441,10 +441,24 @@ export const getHarvestStatus = async (harvestId: string): Promise<any> => {
 export type PreloadedDirectMessages = Record<string, Message>;
 
 const pendingDMPreloadPromises = new Map<string, Promise<PreloadedDirectMessages>>();
+const DM_PRELOAD_UNAVAILABLE_COOLDOWN_MS = 30000;
+const DM_PRELOAD_RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504, 507, 522, 523, 524, 598, 599]);
+let dmPreloadDisabledUntil = 0;
+
+const isRetryableDMPreloadError = (error: unknown): boolean => {
+	if (error instanceof HttpError) {
+		return error.status !== undefined && DM_PRELOAD_RETRYABLE_STATUSES.has(error.status);
+	}
+	return false;
+};
 
 export const preloadDMMessages = async (channelIds: Array<string>): Promise<PreloadedDirectMessages> => {
 	const uniqueChannelIds = Array.from(new Set(channelIds.filter(Boolean)));
 	if (uniqueChannelIds.length === 0) {
+		return {};
+	}
+
+	if (Date.now() < dmPreloadDisabledUntil) {
 		return {};
 	}
 
@@ -457,8 +471,12 @@ export const preloadDMMessages = async (channelIds: Array<string>): Promise<Prel
 	const promise = (async () => {
 		try {
 			logger.debug('Preloading DM messages', {channelCount: uniqueChannelIds.length});
-			const response = await http.post<PreloadedDirectMessages>(Endpoints.USER_PRELOAD_MESSAGES, {
-				channels: uniqueChannelIds,
+			const response = await http.post<PreloadedDirectMessages>({
+				url: Endpoints.USER_PRELOAD_MESSAGES,
+				body: {
+					channels: uniqueChannelIds,
+				},
+				retries: 2,
 			});
 			const preloadedData = response.body ?? {};
 
@@ -466,6 +484,15 @@ export const preloadDMMessages = async (channelIds: Array<string>): Promise<Prel
 
 			return preloadedData;
 		} catch (error) {
+			if (isRetryableDMPreloadError(error)) {
+				dmPreloadDisabledUntil = Date.now() + DM_PRELOAD_UNAVAILABLE_COOLDOWN_MS;
+				logger.warn('DM message preload temporarily unavailable; cooling down', {
+					status: error instanceof HttpError ? error.status : undefined,
+					channelCount: uniqueChannelIds.length,
+				});
+				return {};
+			}
+
 			logger.error('Failed to preload DM messages', error);
 			throw error;
 		}

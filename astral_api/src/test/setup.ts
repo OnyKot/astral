@@ -30,7 +30,10 @@ process.env.REDIS_URL = 'redis://localhost:6379';
 
 process.env.ASTRAL_GATEWAY_RPC_HOST = 'localhost';
 process.env.ASTRAL_GATEWAY_RPC_PORT = '9082';
-process.env.GATEWAY_RPC_SECRET = 'test-rpc-secret';
+// Secrets must clear the 32-character floor the config schema enforces, or
+// loadConfig throws a ZodError and every test file that imports Config fails to
+// collect. These are fixed dummy values, deliberately not random.
+process.env.GATEWAY_RPC_SECRET = 'test-rpc-secret-0000000000000000';
 
 process.env.ASTRAL_API_PUBLIC_ENDPOINT = 'https://api.test';
 process.env.ASTRAL_API_CLIENT_ENDPOINT = 'https://api-client.test';
@@ -39,7 +42,7 @@ process.env.ASTRAL_GATEWAY_ENDPOINT = 'https://gateway.test';
 process.env.ASTRAL_MEDIA_ENDPOINT = 'https://media.test';
 process.env.ASTRAL_CDN_ENDPOINT = 'https://cdn.test';
 process.env.ASTRAL_MARKETING_ENDPOINT = 'https://marketing.test';
-process.env.ASTRAL_PATH_MARKETING = '/marketing';
+process.env.ASTRAL_PATH_MARKETING = '/';
 process.env.ASTRAL_ADMIN_ENDPOINT = 'https://admin.test';
 process.env.ASTRAL_PATH_ADMIN = '/admin';
 process.env.ASTRAL_INVITE_ENDPOINT = 'https://invite.test';
@@ -48,7 +51,7 @@ process.env.ASTRAL_UNFURL_IGNORED_HOSTS = '';
 
 process.env.MEDIA_PROXY_HOST = 'localhost:8082';
 process.env.MEDIA_PROXY_ENDPOINT = 'http://localhost:8082';
-process.env.MEDIA_PROXY_SECRET_KEY = 'test-media-secret';
+process.env.MEDIA_PROXY_SECRET_KEY = 'test-media-secret-00000000000000';
 
 process.env.AWS_ACCESS_KEY_ID = 'test-access-key';
 process.env.AWS_SECRET_ACCESS_KEY = 'test-secret-key';
@@ -74,7 +77,7 @@ process.env.CLAMAV_ENABLED = 'false';
 process.env.ASTRAL_APP_HOST = 'localhost:3000';
 process.env.ASTRAL_APP_PROTOCOL = 'http';
 
-process.env.SUDO_MODE_SECRET = 'test-sudo-secret';
+process.env.SUDO_MODE_SECRET = 'test-sudo-secret-000000000000000';
 
 import {vi} from 'vitest';
 

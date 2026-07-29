@@ -99,3 +99,35 @@ go-integration-check:
   go test ./tests/integration/...
   $(go env GOPATH)/bin/staticcheck ./tests/integration/...
   $(go env GOPATH)/bin/golangci-lint run ./tests/integration/...
+
+# Git-native CI/CD: plan deploy without touching services.
+cicd-plan base="":
+  set -euo pipefail
+  if [ -n "{{base}}" ]; then
+  DEPLOY_BASE="{{base}}" bash scripts/cicd/plan.sh
+  else
+  bash scripts/cicd/plan.sh
+  fi
+
+# Full pipeline dry-run: CI gates + plan + simulated deploy-run.
+cicd-dry-run base="":
+  set -euo pipefail
+  if [ -n "{{base}}" ]; then
+  bash scripts/cicd/pipeline.sh --dry-run --base "{{base}}"
+  else
+  bash scripts/cicd/pipeline.sh --dry-run
+  fi
+
+# Woodpecker CI (self-hosted) — install on production server
+woodpecker-install:
+  sudo bash deploy/woodpecker/install.sh
+
+woodpecker-up:
+  docker compose -f deploy/woodpecker/compose.yaml --env-file deploy/woodpecker/.env up -d
+
+woodpecker-logs:
+  docker compose -f deploy/woodpecker/compose.yaml logs -f --tail 100
+
+# Live deploy via SSH (no Python) — see scripts/cicd/quick-deploy.ps1
+quick-deploy:
+  powershell -ExecutionPolicy Bypass -File scripts/cicd/quick-deploy.ps1

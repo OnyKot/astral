@@ -76,7 +76,10 @@ export const VoiceParticipantBottomSheet: React.FC<VoiceParticipantBottomSheetPr
 
 		const voiceState = MediaEngineStore.getVoiceStateByConnectionId(connectionId ?? '');
 
-		const isSelfMuted = voiceState?.self_mute ?? false;
+		const isCurrentConnection = isCurrentUser && (!connectionId || connectionId === MediaEngineStore.connectionId);
+		const muteReason = isCurrentConnection ? MediaEngineStore.getMuteReason(voiceState) : null;
+		const isSelfMuted = isCurrentConnection ? muteReason !== null : (voiceState?.self_mute ?? false);
+		const isSelfMuteDisabled = false;
 		const isSelfDeafened = voiceState?.self_deaf ?? false;
 		const isGuildMuted = voiceState?.mute ?? false;
 		const isGuildDeafened = voiceState?.deaf ?? false;
@@ -250,8 +253,14 @@ export const VoiceParticipantBottomSheet: React.FC<VoiceParticipantBottomSheetPr
 					) : (
 						<MicrophoneSlashIcon weight="fill" className={sharedStyles.icon} />
 					),
-					label: isSelfMuted ? t`Unmute` : t`Mute`,
+					label:
+						muteReason === 'push_to_talk'
+							? t`Push-to-Talk: hold shortcut to speak`
+							: isSelfMuted
+								? t`Unmute`
+								: t`Mute`,
 					onClick: handleSelfMute,
+					disabled: isSelfMuteDisabled,
 				},
 				{
 					icon: isSelfDeafened ? (

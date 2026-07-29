@@ -123,12 +123,23 @@ interface ColorPickerFieldProps {
 	defaultValue?: number;
 	hideHelperText?: boolean;
 	descriptionClassName?: string;
+	skipTextInputLiveUpdate?: boolean;
 }
 
 export const ColorPickerField: React.FC<ColorPickerFieldProps> = observer((props) => {
 	const {t} = useLingui();
-	const {label, description, value, onChange, disabled, className, defaultValue, hideHelperText, descriptionClassName} =
-		props;
+	const {
+		label,
+		description,
+		value,
+		onChange,
+		disabled,
+		className,
+		defaultValue,
+		hideHelperText,
+		descriptionClassName,
+		skipTextInputLiveUpdate,
+	} = props;
 
 	const containerRef = React.useRef<HTMLFieldSetElement>(null);
 	const inputRef = React.useRef<HTMLInputElement>(null);
@@ -188,11 +199,13 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = observer((props
 			const parsed = parseColor(colorHex);
 			if (parsed) {
 				onChange(parsed.num);
-				setInputValue(parsed.hex);
+				if (!skipTextInputLiveUpdate) {
+					setInputValue(parsed.hex);
+				}
 				setShowError(false);
 			}
 		},
-		[onChange],
+		[onChange, skipTextInputLiveUpdate],
 	);
 
 	const handleReset = React.useCallback(() => {
@@ -265,7 +278,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldProps> = observer((props
 
 					{(description || !hideHelperText) && (
 						<p className={clsx(styles.description, descriptionClassName)}>
-							{description ?? <Trans>Type a color (hex, rgb(), hsl, or name) — or use the picker.</Trans>}
+							{description ?? <Trans>Type a color (hex, rgb(), hsl, or name) - or use the picker.</Trans>}
 						</p>
 					)}
 

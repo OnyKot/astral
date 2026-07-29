@@ -19,7 +19,13 @@
 
 export const MEDIA_TYPES = {
 	IMAGE: {
-		extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg'],
+		// SVG is intentionally excluded: it is XML that can carry <script>,
+		// event handlers, and <foreignObject>, and the image routes serve
+		// responses inline with Access-Control-Allow-Origin: *. Serving SVG
+		// here would be a stored-XSS sink. Avatars/emojis/stickers already
+		// reject SVG upstream (Core.ts), so no legitimate SVG reaches the
+		// CDN bucket through those paths.
+		extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'],
 		mimes: {
 			jpg: 'image/jpeg',
 			jpeg: 'image/jpeg',
@@ -27,7 +33,6 @@ export const MEDIA_TYPES = {
 			gif: 'image/gif',
 			webp: 'image/webp',
 			avif: 'image/avif',
-			svg: 'image/svg+xml',
 		},
 	},
 	VIDEO: {

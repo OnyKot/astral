@@ -19,6 +19,7 @@
 
 import type {LocalTrackPublication, RemoteAudioTrack, Room} from 'livekit-client';
 import {Track} from 'livekit-client';
+import * as SoundActionCreators from '~/actions/SoundActionCreators';
 import {Logger} from '~/lib/Logger';
 import KeybindStore from '~/stores/KeybindStore';
 import LocalVoiceStateStore from '~/stores/LocalVoiceStateStore';
@@ -27,6 +28,7 @@ import VoiceSettingsStore from '~/stores/VoiceSettingsStore';
 import VoiceDevicePermissionStore from '~/stores/voice/VoiceDevicePermissionStore';
 import VoiceActivityManager from '~/stores/voice/VoiceActivityManager';
 import {clampMediaVolumePercent} from '~/utils/voice/audioVolume';
+import {SoundType} from '~/utils/SoundUtils';
 import type {VoiceState} from './VoiceStateManager';
 
 const logger = new Logger('VoiceAudioManager');
@@ -40,6 +42,43 @@ const extractUserId = (identity: string): string | null => {
 	const delimiterIndex = value.indexOf('_');
 	return delimiterIndex === -1 ? value : value.slice(0, delimiterIndex);
 };
+
+let muteApplyGeneration = 0;
+
+interface ApplyLocalMuteStateOptions {
+	updateLocalState?: boolean;
+}
+
+const applyPublishedAudioTrackMuteState = (room: Room | null, muted: boolean): void => {
+	if (!room?.localParticipant) return;
+
+	room.localParticipant.audioTrackPublications.forEach((publication: LocalTrackPublication) => {
+		const track = publication.track;
+		if (!track) return;
+		const operation = muted ? track.mute() : track.unmute();
+		operation.catch((error) =>
+			logger.error(muted ? 'Failed to mute local track' : 'Failed to unmute local track', {error}),
+		);
+	});
+};
+
+const getRequestedInputDeviceId = (): string => {
+	let inputDeviceId = VoiceSettingsStore.getInputDeviceId() || 'default';
+	const devices = VoiceDevicePermissionStore.getState().inputDevices;
+	const hasRequestedInput = inputDeviceId === 'default' || devices.some((device) => device.deviceId === inputDeviceId);
+	if (!hasRequestedInput && devices.length > 0) {
+		inputDeviceId = 'default';
+	}
+	return inputDeviceId;
+};
+
+const isPushToTalkGateMuted = (): boolean => KeybindStore.isPushToTalkEnabled() && !KeybindStore.pushToTalkHeld;
+
+const getAppliedMuteState = (transientMute = false): boolean =>
+	LocalVoiceStateStore.getSelfDeaf() ||
+	LocalVoiceStateStore.getSelfMute() ||
+	transientMute ||
+	isPushToTalkGateMuted();
 
 export function applyLocalAudioPreferencesForUser(userId: string, room: Room | null): void {
 	if (!room) {
@@ -89,17 +128,31 @@ export function applyPushToTalkHold(
 	getCurrentUserVoiceState: () => VoiceState | null,
 	syncVoiceState: (partial: {self_mute?: boolean}) => void,
 ): void {
-	KeybindStore.setPushToTalkHeld(held);
+	const wasAppliedMute = getAppliedMuteState();
 	if (!KeybindStore.isPushToTalkEnabled()) return;
 
 	const serverVoiceState = getCurrentUserVoiceState();
-	if (serverVoiceState?.mute || serverVoiceState?.suppress) return;
+	if (serverVoiceState?.mute || serverVoiceState?.suppress) {
+		KeybindStore.setPushToTalkHeld(false);
+		applyLocalMuteState(true, room, syncVoiceState, {updateLocalState: false});
+		return;
+	}
+
+	if (held && !LocalVoiceStateStore.getSelfDeaf() && LocalVoiceStateStore.getSelfMute()) {
+		LocalVoiceStateStore.updateSelfMute(false);
+	}
+
+	KeybindStore.setPushToTalkHeld(held);
 
 	// In push-to-talk mode, key hold state is the source of truth:
 	// hold -> unmuted, release -> muted.
 	const shouldMute = !held;
+	const nextAppliedMute = getAppliedMuteState(shouldMute);
 
-	applyLocalMuteState(shouldMute, room, syncVoiceState);
+	applyLocalMuteState(shouldMute, room, syncVoiceState, {updateLocalState: false});
+	if (wasAppliedMute !== nextAppliedMute) {
+		SoundActionCreators.playSound(nextAppliedMute ? SoundType.Mute : SoundType.Unmute);
+	}
 }
 
 export function handlePushToTalkModeChange(
@@ -111,12 +164,15 @@ export function handlePushToTalkModeChange(
 	if (serverVoiceState?.mute || serverVoiceState?.suppress) return;
 
 	// Push-to-talk means the mic stays closed until a key is held. Mute as soon
-	// as the mode is selected — even before a key is bound — so the user is never
+	// as the mode is selected, even before a key is bound, so the user is never
 	// unexpectedly transmitting on an open mic while they think PTT is active.
 	if (KeybindStore.isPushToTalkEnabled()) {
 		KeybindStore.setPushToTalkHeld(false);
 		KeybindStore.resetPushToTalkState();
-		applyLocalMuteState(true, room, syncVoiceState);
+		if (!LocalVoiceStateStore.getSelfDeaf() && LocalVoiceStateStore.getSelfMute()) {
+			LocalVoiceStateStore.updateSelfMute(false);
+		}
+		applyLocalMuteState(true, room, syncVoiceState, {updateLocalState: false});
 	} else if (!LocalVoiceStateStore.getHasUserSetMute()) {
 		applyLocalMuteState(false, room, syncVoiceState);
 	}
@@ -126,9 +182,9 @@ export function getMuteReason(voiceState: VoiceState | null): 'guild' | 'push_to
 	const isGuildMuted = voiceState?.mute ?? false;
 	if (isGuildMuted) return 'guild';
 
-	const selfMuted = voiceState?.self_mute ?? LocalVoiceStateStore.getSelfMute();
-	if (KeybindStore.isPushToTalkEnabled() && KeybindStore.isPushToTalkMuted(selfMuted)) return 'push_to_talk';
-	if (selfMuted) return 'self';
+	if (LocalVoiceStateStore.getSelfDeaf()) return 'self';
+	if (LocalVoiceStateStore.getSelfMute()) return 'self';
+	if (KeybindStore.isPushToTalkEnabled() && !KeybindStore.pushToTalkHeld) return 'push_to_talk';
 	return null;
 }
 
@@ -136,55 +192,53 @@ export function applyLocalMuteState(
 	muted: boolean,
 	room: Room | null,
 	syncVoiceState: (partial: {self_mute?: boolean}) => void,
+	options: ApplyLocalMuteStateOptions = {},
 ): void {
-	const targetMute = LocalVoiceStateStore.getSelfDeaf() ? true : muted;
-	const currentMute = LocalVoiceStateStore.getSelfMute();
+	const generation = ++muteApplyGeneration;
+	const updateLocalState = options.updateLocalState ?? true;
 
-	if (!targetMute && room?.localParticipant) {
+	if (updateLocalState) {
+		const targetMute = LocalVoiceStateStore.getSelfDeaf() ? true : muted;
+		const currentMute = LocalVoiceStateStore.getSelfMute();
+
+		if (currentMute !== targetMute) {
+			LocalVoiceStateStore.updateSelfMute(targetMute);
+		}
+	}
+
+	const transientMute = updateLocalState ? false : muted;
+	const appliedMute = getAppliedMuteState(transientMute);
+
+	if (!appliedMute && room?.localParticipant) {
 		const participant = room.localParticipant;
 		const hasAudioTrack = participant.audioTrackPublications.size > 0;
 		if (!hasAudioTrack || !participant.isMicrophoneEnabled) {
-			let inputDeviceId = VoiceSettingsStore.getInputDeviceId() || 'default';
-			const devices = VoiceDevicePermissionStore.getState().inputDevices;
-			const hasRequestedInput =
-				inputDeviceId === 'default' || devices.some((device) => device.deviceId === inputDeviceId);
-			if (!hasRequestedInput && devices.length > 0) {
-				inputDeviceId = 'default';
-			}
-
 			void participant
 				.setMicrophoneEnabled(true, {
-					deviceId: inputDeviceId,
+					deviceId: getRequestedInputDeviceId(),
 					echoCancellation: VoiceSettingsStore.getEchoCancellation(),
 					noiseSuppression: VoiceSettingsStore.getNoiseSuppression(),
 					autoGainControl: VoiceSettingsStore.getAutoGainControl(),
+				})
+				.then(() => {
+					const latestMute = getAppliedMuteState(transientMute);
+					applyPublishedAudioTrackMuteState(room, latestMute);
+
+					if (generation === muteApplyGeneration || latestMute) {
+						syncVoiceState({self_mute: latestMute});
+						VoiceActivityManager.refresh();
+					}
 				})
 				.catch((error) => {
 					logger.error('Failed to enable microphone while unmuting push-to-talk', {error});
 					LocalVoiceStateStore.updateSelfMute(true);
 					syncVoiceState({self_mute: true});
+					VoiceActivityManager.refresh();
 				});
 		}
 	}
 
-	if (currentMute === targetMute) {
-		VoiceActivityManager.refresh();
-		return;
-	}
-
-	LocalVoiceStateStore.updateSelfMute(targetMute);
-
-	if (room?.localParticipant) {
-		room.localParticipant.audioTrackPublications.forEach((publication: LocalTrackPublication) => {
-			const track = publication.track;
-			if (!track) return;
-			const operation = targetMute ? track.mute() : track.unmute();
-			operation.catch((error) =>
-				logger.error(targetMute ? 'Failed to mute local track' : 'Failed to unmute local track', {error}),
-			);
-		});
-	}
-
-	syncVoiceState({self_mute: targetMute});
+	applyPublishedAudioTrackMuteState(room, appliedMute);
+	syncVoiceState({self_mute: appliedMute});
 	VoiceActivityManager.refresh();
 }

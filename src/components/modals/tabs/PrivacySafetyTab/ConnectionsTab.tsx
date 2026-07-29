@@ -104,6 +104,7 @@ const DirectMessagesConfirmModal = observer(
 export const ConnectionsTabContent: React.FC = observer(() => {
 	const friendSourceFlags = UserSettingsStore.getFriendSourceFlags();
 	const defaultGuildsRestricted = UserSettingsStore.getDefaultGuildsRestricted();
+	const hideOnlineTime = UserSettingsStore.getHideOnlineTime();
 
 	const hasFriendFlag = (flag: number) => (friendSourceFlags & flag) === flag;
 
@@ -187,6 +188,14 @@ export const ConnectionsTabContent: React.FC = observer(() => {
 					description={<Trans>Allow members from communities you're in to send you direct messages</Trans>}
 					value={!defaultGuildsRestricted}
 					onChange={handleDirectMessagesToggle}
+				/>
+				<Switch
+					label={<Trans>Hide last online time</Trans>}
+					description={
+						<Trans>When you're offline or invisible, other people will only see that you were online recently.</Trans>
+					}
+					value={hideOnlineTime}
+					onChange={(value) => UserSettingsActionCreators.update({hideOnlineTime: value})}
 				/>
 			</SettingsTabSection>
 		</>

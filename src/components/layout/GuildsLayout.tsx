@@ -38,6 +38,7 @@ import {
 	MicrophoneIcon,
 	MicrophoneSlashIcon,
 	PlanetIcon,
+	PlusIcon,
 	SpeakerHighIcon,
 	SpeakerSlashIcon,
 } from '@phosphor-icons/react';
@@ -53,7 +54,9 @@ import * as PremiumModalActionCreators from '~/actions/PremiumModalActionCreator
 import * as UserSettingsActionCreators from '~/actions/UserSettingsActionCreators';
 import * as VoiceStateActionCreators from '~/actions/VoiceStateActionCreators';
 import {ChannelTypes, isGuildRtcChannelType, ME, Permissions} from '~/Constants';
+import {GuildHeaderBottomSheet} from '~/components/bottomsheets/GuildHeaderBottomSheet';
 import {openClaimAccountModal} from '~/components/modals/ClaimAccountModal';
+import {AddGuildModal} from '~/components/modals/AddGuildModal';
 import {CustomStatusModal} from '~/components/modals/CustomStatusModal';
 import {UserSettingsModal} from '~/components/modals/UserSettingsModal';
 import {MobileNavigationMenuButton} from '~/components/layout/MobileNavigationDrawer';
@@ -94,10 +97,12 @@ import UserStore from '~/stores/UserStore';
 import MediaEngineStore from '~/stores/voice/MediaEngineFacade';
 import ChannelListLayoutStore from '~/stores/ChannelListLayoutStore';
 import AccessibilityStore from '~/stores/AccessibilityStore';
+import * as AvatarUtils from '~/utils/AvatarUtils';
 import {getBestContrastColor, int2hex} from '~/utils/ColorUtils';
 import {isNativeMobile} from '~/utils/NativeUtils';
 import * as RouterUtils from '~/utils/RouterUtils';
 import * as SnowflakeUtils from '~/utils/SnowflakeUtils';
+import * as StringUtils from '~/utils/StringUtils';
 import {useActiveNagbars, useNagbarConditions} from './app-layout/hooks';
 import {NagbarContainer} from './app-layout/NagbarContainer';
 import {TopNagbarContext} from './app-layout/TopNagbarContext';
@@ -126,6 +131,61 @@ const getUnreadDMChannels = () => {
 	const dmChannels = ChannelStore.dmChannels;
 	return dmChannels.filter((channel) => ReadStateStore.hasUnread(channel.id));
 };
+
+const DirectMessagesDockButton = observer(({isDocked = false}: {isDocked?: boolean}) => {
+	const {t} = useLingui();
+	const location = useLocation();
+	const selectedDMChannelId = SelectedChannelStore.selectedChannelIds.get(ME);
+	const directMessagesPath = selectedDMChannelId ? Routes.dmChannel(selectedDMChannelId) : Routes.ME;
+	const dmChannels = ChannelStore.dmChannels;
+	const mentionCount = dmChannels.reduce((total, channel) => total + ReadStateStore.getMentionCount(channel.id), 0);
+	const hasUnreadMessages = dmChannels.some((channel) => ReadStateStore.hasUnread(channel.id));
+	const isSelected = location.pathname.startsWith(Routes.ME);
+	const indicatorSize = isDocked ? 9 : isSelected ? 40 : 8;
+	const scrollSeverity = mentionCount > 0 ? 'mention' : hasUnreadMessages ? 'unread' : undefined;
+
+	const navigateToDirectMessages = React.useCallback(() => {
+		NavigationActionCreators.selectChannel(ME, selectedDMChannelId ?? null);
+		RouterUtils.transitionTo(directMessagesPath);
+	}, [directMessagesPath, selectedDMChannelId]);
+
+	return (
+		<div className={styles.dmListItemWrapper}>
+			<Tooltip position={isDocked ? 'top' : 'right'} size="large" text={t`Direct Messages`}>
+				<FocusRing offset={-2}>
+					<button
+						type="button"
+						className={styles.dmUtilityShortcutButton}
+						aria-label={t`Direct Messages`}
+						aria-pressed={isSelected}
+						onClick={navigateToDirectMessages}
+						data-scroll-indicator={scrollSeverity}
+						data-scroll-id="direct-messages"
+					>
+						{(hasUnreadMessages || isSelected) && (
+							<div className={clsx(styles.guildIndicator, isDocked && styles.guildIndicatorDocked)}>
+								<span
+									className={clsx(styles.guildIndicatorBar, isDocked && styles.guildIndicatorBarDocked)}
+									style={
+										isDocked
+											? {height: indicatorSize, width: indicatorSize}
+											: {height: indicatorSize}
+									}
+								/>
+							</div>
+						)}
+						<div className={clsx(styles.dmUtilityShortcutIcon, isSelected && styles.dmUtilityShortcutIconSelected)}>
+							<ChatCircleDotsIcon weight="fill" className={styles.dmUtilityShortcutGlyph} />
+						</div>
+						<div className={clsx(styles.guildBadge, mentionCount > 0 && styles.guildBadgeActive)}>
+							<MentionBadgeAnimated mentionCount={mentionCount} size="small" />
+						</div>
+					</button>
+				</FocusRing>
+			</Tooltip>
+		</div>
+	);
+});
 
 interface GuildFolderRender {
 	key: string;
@@ -164,6 +224,188 @@ const getSelectedDMChannelIdFromPath = (pathname: string): string | null => {
 	const match = pathname.match(/^\/channels\/@me\/([^/]+)/);
 	return match?.[1] ?? null;
 };
+
+const getDockOrderedGuilds = (guilds: Array<GuildRecord>, pinnedGuildIds: Array<string>): Array<GuildRecord> => {
+	if (pinnedGuildIds.length === 0) return guilds;
+	const guildById = new Map(guilds.map((guild) => [guild.id, guild]));
+	const pinnedGuilds = pinnedGuildIds
+		.map((guildId) => guildById.get(guildId))
+		.filter((guild): guild is GuildRecord => guild !== undefined);
+	const pinnedIdSet = new Set(pinnedGuilds.map((guild) => guild.id));
+	const remainingGuilds = guilds.filter((guild) => !pinnedIdSet.has(guild.id));
+	return [...pinnedGuilds, ...remainingGuilds];
+};
+
+const MOBILE_COMMUNITY_DOCK_LONG_PRESS_MS = 500;
+const MOBILE_COMMUNITY_DOCK_PAN_CANCEL_PX = 8;
+
+interface MobileCommunityDockItemProps {
+	guild: GuildRecord;
+	isSelected: boolean;
+}
+
+const MobileCommunityDockItem = observer(({guild, isSelected}: MobileCommunityDockItemProps) => {
+	const {t} = useLingui();
+	const [bottomSheetOpen, setBottomSheetOpen] = React.useState(false);
+	const suppressNextClickRef = React.useRef(false);
+	const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+	const pressStartRef = React.useRef<{x: number; y: number} | null>(null);
+	const mentionCount = GuildReadStateStore.getMentionCount(guild.id);
+	const hasUnreadMessages = GuildReadStateStore.hasUnread(guild.id);
+	const iconUrl = AvatarUtils.getGuildIconURL(guild, false);
+	const initials = StringUtils.getInitialsFromName(guild.name);
+	const mentionLabel = mentionCount > 99 ? '99+' : `${mentionCount}`;
+
+	const clearLongPressTimer = React.useCallback(() => {
+		if (longPressTimerRef.current) {
+			clearTimeout(longPressTimerRef.current);
+			longPressTimerRef.current = null;
+		}
+		pressStartRef.current = null;
+	}, []);
+
+	const openActions = React.useCallback((event?: {preventDefault?: () => void; stopPropagation?: () => void}) => {
+		event?.preventDefault?.();
+		event?.stopPropagation?.();
+		clearLongPressTimer();
+		suppressNextClickRef.current = true;
+		setBottomSheetOpen(true);
+		window.setTimeout(() => {
+			suppressNextClickRef.current = false;
+		}, 420);
+	}, [clearLongPressTimer]);
+
+	const handlePointerDown = React.useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			if (event.pointerType !== 'touch' || event.button !== 0) return;
+			clearLongPressTimer();
+			pressStartRef.current = {x: event.clientX, y: event.clientY};
+			longPressTimerRef.current = setTimeout(() => {
+				if (!pressStartRef.current) return;
+				openActions();
+			}, MOBILE_COMMUNITY_DOCK_LONG_PRESS_MS);
+		},
+		[clearLongPressTimer, openActions],
+	);
+
+	const handlePointerMove = React.useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			const pressStart = pressStartRef.current;
+			if (!pressStart) return;
+			const deltaX = Math.abs(event.clientX - pressStart.x);
+			const deltaY = Math.abs(event.clientY - pressStart.y);
+			if (deltaX > MOBILE_COMMUNITY_DOCK_PAN_CANCEL_PX || deltaY > MOBILE_COMMUNITY_DOCK_PAN_CANCEL_PX) {
+				clearLongPressTimer();
+			}
+		},
+		[clearLongPressTimer],
+	);
+
+	const handleSelect = React.useCallback(
+		(event?: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => {
+			if (suppressNextClickRef.current) {
+				event?.preventDefault?.();
+				return;
+			}
+			NavigationActionCreators.selectGuild(guild.id);
+			RouterUtils.transitionTo(Routes.guildChannel(guild.id));
+		},
+		[guild.id],
+	);
+
+	const handleKeyDown = React.useCallback(
+		(event: React.KeyboardEvent<HTMLDivElement>) => {
+			if (event.key !== 'Enter' && event.key !== ' ') return;
+			event.preventDefault();
+			handleSelect(event);
+		},
+		[handleSelect],
+	);
+
+	const closeBottomSheet = React.useCallback(() => {
+		setBottomSheetOpen(false);
+	}, []);
+
+	React.useEffect(() => clearLongPressTimer, [clearLongPressTimer]);
+
+	return (
+		<>
+			<FocusRing offset={-2}>
+				<div
+					role="button"
+					tabIndex={0}
+					className={clsx(styles.mobileCommunityDockItem, isSelected && styles.mobileCommunityDockItemSelected)}
+					aria-label={`${guild.name}${isSelected ? ` (${t`selected`})` : ''}`}
+					aria-pressed={isSelected}
+					onClick={handleSelect}
+					onContextMenu={openActions}
+					onKeyDown={handleKeyDown}
+					onPointerCancel={clearLongPressTimer}
+					onPointerDown={handlePointerDown}
+					onPointerLeave={clearLongPressTimer}
+					onPointerMove={handlePointerMove}
+					onPointerUp={clearLongPressTimer}
+				>
+					<span
+						className={clsx(styles.mobileCommunityDockAvatar, !guild.icon && styles.mobileCommunityDockAvatarFallback)}
+						style={guild.icon ? {backgroundImage: `url(${iconUrl})`} : undefined}
+					>
+						{!guild.icon && <span className={styles.mobileCommunityDockInitials}>{initials}</span>}
+					</span>
+					{mentionCount > 0 && (
+						<span
+							className={clsx(styles.mobileCommunityDockNotice, styles.mobileCommunityDockNoticeMention)}
+							aria-label={t`${mentionCount} unread mentions`}
+						>
+							{mentionLabel}
+						</span>
+					)}
+					{mentionCount === 0 && hasUnreadMessages && (
+						<span className={styles.mobileCommunityDockNotice} aria-hidden="true" />
+					)}
+				</div>
+			</FocusRing>
+			<GuildHeaderBottomSheet isOpen={bottomSheetOpen} onClose={closeBottomSheet} guild={guild} />
+		</>
+	);
+});
+
+const MobileCommunityDock = observer(() => {
+	const {t} = useLingui();
+	const guilds = GuildListStore.guilds;
+	const pinnedGuildIds = GuildDockStore.getPinnedGuildIds();
+	const location = useLocation();
+	const selectedGuildId = React.useMemo(() => getSelectedGuildIdFromPath(location.pathname), [location.pathname]);
+	const orderedGuilds = React.useMemo(() => getDockOrderedGuilds(guilds, pinnedGuildIds), [guilds, pinnedGuildIds]);
+
+	React.useEffect(() => {
+		GuildDockStore.keepOnlyExistingGuilds(new Set(guilds.map((guild) => guild.id)));
+	}, [guilds]);
+
+	const handleOpenAddGuildModal = React.useCallback(() => {
+		ModalActionCreators.push(modal(() => <AddGuildModal />));
+	}, []);
+
+	return (
+		<nav className={styles.mobileCommunityDock} aria-label={t`Communities`} data-pull-to-refresh-ignore="true">
+			<FocusRing offset={-2}>
+				<button
+					type="button"
+					className={styles.mobileCommunityDockAddButton}
+					aria-label={t`Add a community`}
+					onClick={handleOpenAddGuildModal}
+				>
+					<PlusIcon weight="bold" className={styles.mobileCommunityDockAddIcon} />
+				</button>
+			</FocusRing>
+			<div className={styles.mobileCommunityDockViewport}>
+				{orderedGuilds.map((guild) => (
+					<MobileCommunityDockItem key={guild.id} guild={guild} isSelected={selectedGuildId === guild.id} />
+				))}
+			</div>
+		</nav>
+	);
+});
 
 const MobileFloatingVoiceWindow = observer(({currentPathname}: {currentPathname: string}) => {
 	const {t} = useLingui();
@@ -308,6 +550,8 @@ const DesktopUtilityRail = observer(
 		const isSelfDeafened = LocalVoiceStateStore.selfDeaf;
 		const isGuildMuted = voiceState?.mute ?? false;
 		const isGuildDeafened = voiceState?.deaf ?? false;
+		const muteReason = MediaEngineStore.getMuteReason(voiceState);
+		const effectiveVoiceMuted = muteReason !== null;
 		const canSpeakInVoiceChannel = connectedVoiceChannel
 			? (!connectedVoiceChannel.guildId || PermissionStore.can(Permissions.SPEAK, connectedVoiceChannel))
 			: true;
@@ -321,8 +565,10 @@ const DesktopUtilityRail = observer(
 		const muteButtonLabel = isVoiceMuteDisabled
 			? isGuildMuted
 				? t`Community Muted`
-				: t`Listener mode: join stage to speak`
-			: isSelfMuted
+				: muteReason === 'push_to_talk'
+					? t`Push-to-Talk: hold shortcut to speak`
+					: t`Listener mode: join stage to speak`
+			: effectiveVoiceMuted
 				? t`Unmute`
 				: t`Mute`;
 		const deafenButtonLabel = isGuildDeafened ? t`Community Deafened` : isSelfDeafened ? t`Undeafen` : t`Deafen`;
@@ -624,15 +870,15 @@ const DesktopUtilityRail = observer(
 											className={clsx(
 												styles.desktopUtilityRailAudioQuickButton,
 												styles.desktopUtilityRailAudioQuickButtonMute,
-												(isSelfMuted || isGuildMuted) && styles.desktopUtilityRailAudioQuickButtonMuted,
+												effectiveVoiceMuted && styles.desktopUtilityRailAudioQuickButtonMuted,
 												isVoiceMuteDisabled && styles.desktopUtilityRailAudioQuickButtonDisabled,
 											)}
 										onClick={handleToggleVoiceMute}
 										aria-label={muteButtonLabel}
-										aria-pressed={isSelfMuted || isGuildMuted}
+										aria-pressed={effectiveVoiceMuted}
 										disabled={isVoiceMuteDisabled}
 									>
-										{isSelfMuted || isGuildMuted ? (
+										{effectiveVoiceMuted ? (
 											<MicrophoneSlashIcon weight="fill" className={styles.desktopUtilityRailAudioQuickIcon} />
 										) : (
 											<MicrophoneIcon weight="fill" className={styles.desktopUtilityRailAudioQuickIcon} />
@@ -714,6 +960,7 @@ const GuildList = observer(({desktopDockEnabled = false, onDockPointerEnter, onD
 	const hasUnavailableGuilds = unavailableGuilds.size > 0;
 	const unavailableCount = unavailableGuilds.size;
 	const showDownloadButton = !isNativeMobile() && !Platform.isElectron && !Platform.isPWA;
+	const shouldShowDirectMessagesShortcut = !mobileLayout.enabled;
 	const guildReadVersion = GuildReadStateStore.version;
 	const readVersion = ReadStateStore.version;
 	const guildFolderDependency = React.useMemo(
@@ -1034,6 +1281,7 @@ const GuildList = observer(({desktopDockEnabled = false, onDockPointerEnter, onD
 							className={shouldCollapseFavoritesSpacing ? styles.guildListItemNoMargin : undefined}
 						/>
 					)}
+					{shouldShowDirectMessagesShortcut && <DirectMessagesDockButton isDocked={isDesktopDock} />}
 
 					{!isDesktopDock && (
 						<>
@@ -1372,9 +1620,11 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 		mobileLayout.enabled &&
 		Routes.isGuildChannelRoute(location.pathname) &&
 		location.pathname.split('/').length > 3;
-	const showGuildListOnMobile =
+	const isMobileDiscoveryRoute =
 		mobileLayout.enabled &&
-		(location.pathname === Routes.DISCOVERY || isMobileGuildRootRoute || isMobileGuildChannelDetailRoute);
+		(location.pathname === Routes.DISCOVERY || location.pathname.startsWith(`${Routes.DISCOVERY}/`));
+	const shouldShowMobileCommunityDock =
+		mobileLayout.enabled && (Routes.isMobileBottomNavRoute(location.pathname) || isMobileDiscoveryRoute || isMobileGuildRootRoute);
 
 	const nagbarConditions = useNagbarConditions();
 	const activeNagbars = useActiveNagbars(nagbarConditions);
@@ -1472,7 +1722,8 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 				isConnectedGuildVoiceCallView && styles.guildsLayoutContainerDesktopDockCallView,
 				shouldPinDesktopDock && styles.guildsLayoutContainerDesktopDockPinned,
 				isCommunitySidebarCollapsed && styles.guildsLayoutCommunitySidebarCollapsed,
-				mobileLayout.enabled && !showGuildListOnMobile && styles.guildsLayoutContainerMobile,
+				mobileLayout.enabled && styles.guildsLayoutContainerMobile,
+				shouldShowMobileCommunityDock && styles.guildsLayoutContainerMobileCommunityDock,
 			)}
 			style={
 				guildChannelSidebarWidth !== null
@@ -1539,14 +1790,13 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 			)}
 			{!mobileLayout.enabled && isClassicCommunityList && <ClassicCommunityRail />}
 			{!mobileLayout.enabled && !shouldUseDesktopDock && !isClassicCommunityList && <GuildList />}
-			{mobileLayout.enabled && showGuildListOnMobile && <GuildList />}
 			<div
 				className={clsx(
 					styles.contentContainer,
 					shouldUseDesktopDock && styles.contentContainerDesktopDock,
 					isClassicCommunityList && styles.contentContainerClassicCommunities,
 					isClassicDmLayoutRoute && styles.contentContainerClassicDm,
-					mobileLayout.enabled && !showGuildListOnMobile && styles.contentContainerMobile,
+					mobileLayout.enabled && styles.contentContainerMobile,
 					isMobileGuildChannelDetailRoute && styles.contentContainerMobile,
 				)}
 				style={
@@ -1572,6 +1822,7 @@ export const GuildsLayout = observer(({children}: {children: React.ReactNode}) =
 					</OutlineFrame>
 				</TopNagbarContext.Provider>
 			</div>
+			{shouldShowMobileCommunityDock && <MobileCommunityDock />}
 			<MobileFloatingVoiceWindow currentPathname={location.pathname} />
 		</div>
 	);

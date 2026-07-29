@@ -1,0 +1,10 @@
+{
+  "name": "telegram-emoji-gifs",
+  "source": "https://github.com/goforbg/telegram-emoji-gifs",
+  "downloadedAt": "2026-07-26",
+  "sourceCommit": "6c258b85684457426e8f8135da94ba9a3a317bfa",
+  "destination": "gif/",
+  "gifCount": 259,
+  "totalBytes": 549336846,
+  "license": "No explicit upstream license file found; confirm rights before production use."
+}

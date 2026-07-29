@@ -17,12 +17,15 @@
  * along with Astral. If not, see <https://www.gnu.org/licenses/>.
  */
 
+import {isAndroidFastMode} from '~/utils/AndroidWebViewUtils';
+
 /*
  * `prefers-reduced-motion` helper. Centralized so every animation/scroll
  * helper respects the user's motion preference consistently. Reads the match
  * media query; returns false when matchMedia is unavailable (older webviews).
  */
 export function prefersReducedMotion(): boolean {
+	if (isAndroidFastMode()) return true;
 	if (typeof window === 'undefined' || !window.matchMedia) return false;
 	return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

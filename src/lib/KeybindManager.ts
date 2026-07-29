@@ -20,7 +20,7 @@
 import type {I18n} from '@lingui/core';
 import {msg} from '@lingui/core/macro';
 import CombokeysImport from 'combokeys';
-import {autorun} from 'mobx';
+import {autorun, comparer, reaction} from 'mobx';
 import React from 'react';
 import * as CallActionCreators from '~/actions/CallActionCreators';
 import * as ModalActionCreators from '~/actions/ModalActionCreators';
@@ -186,6 +186,86 @@ const comboToCombokeysString = (combo: KeyCombo): string | null => {
 	return parts.join('+');
 };
 
+const comboToNativeMouseButton = (combo: KeyCombo): number | null => {
+	const raw = combo.code ?? combo.key;
+	if (!raw) return null;
+	const match = raw.match(/^Mouse\s?(\d+)$/i);
+	if (!match) return null;
+	const button = Number(match[1]);
+	return Number.isFinite(button) && button > 1 ? button : null;
+};
+
+const nativeMouseButtonToBrowserButton = (button: number): number | null => {
+	switch (button) {
+		case 1:
+			return 0;
+		case 2:
+			return 2;
+		case 3:
+			return 1;
+		default:
+			return button > 3 ? button - 1 : null;
+	}
+};
+
+const comboToNativeKeycode = (combo: KeyCombo): number | null => {
+	const candidates = [combo.code, combo.key].filter((value): value is string => Boolean(value));
+	for (const candidate of candidates) {
+		const keycode = jsKeyToUiohookKeycode(candidate);
+		if (keycode !== null) return keycode;
+	}
+	return null;
+};
+
+const getPushToTalkBindingSignature = (combo: KeyCombo): string =>
+	[
+		combo.key ?? '',
+		combo.code ?? '',
+		combo.ctrlOrMeta ? '1' : '0',
+		combo.ctrl ? '1' : '0',
+		combo.alt ? '1' : '0',
+		combo.shift ? '1' : '0',
+		combo.meta ? '1' : '0',
+		(combo.enabled ?? true) ? '1' : '0',
+		(combo.global ?? false) ? '1' : '0',
+	].join('|');
+
+const normalizeKeyValue = (key: string | undefined | null): string => {
+	if (!key) return '';
+	if (key === ' ' || key === 'Spacebar') return 'space';
+	return key.toLowerCase();
+};
+
+const eventMatchesKeyCombo = (event: KeyboardEvent, combo: KeyCombo): boolean => {
+	const raw = combo.code ?? combo.key;
+	if (!raw) return false;
+
+	if (combo.code) {
+		if (event.code !== combo.code) return false;
+	} else if (normalizeKeyValue(event.key) !== normalizeKeyValue(combo.key)) {
+		return false;
+	}
+
+	if (combo.ctrlOrMeta) {
+		if (!event.ctrlKey && !event.metaKey) return false;
+	} else {
+		if (event.ctrlKey !== !!combo.ctrl) return false;
+		if (event.metaKey !== !!combo.meta) return false;
+	}
+
+	if (combo.ctrl && !event.ctrlKey) return false;
+	if (combo.meta && !event.metaKey) return false;
+	if (event.altKey !== !!combo.alt) return false;
+	if (event.shiftKey !== !!combo.shift) return false;
+
+	return true;
+};
+
+const isKeybindRecorderTarget = (target: EventTarget | null): boolean => {
+	if (!(target instanceof HTMLElement)) return false;
+	return target.closest('[data-keybind-recorder="true"]') !== null;
+};
+
 class KeybindManager {
 	private handlers = new Map<KeybindAction, KeybindHandler>();
 	private initialized = false;
@@ -197,10 +277,16 @@ class KeybindManager {
 	private accessibilityStatus: 'unknown' | 'granted' | 'denied' = 'unknown';
 	private pttReleaseTimer: ReturnType<typeof setTimeout> | null = null;
 	private globalShortcutUnsubscribe: (() => void) | null = null;
+	private globalShortcutActionById = new Map<string, KeybindAction>();
 	private globalKeyHookUnsubscribes: Array<() => void> = [];
 	private globalKeyHookStarted = false;
 	private pttKeycode: number | null = null;
 	private pttMouseButton: number | null = null;
+	private pttLocalKeyboardCombo: KeyCombo | null = null;
+	private pttLocalMouseButton: number | null = null;
+	private pttPressed = false;
+	private pttBindingSignature: string | null = null;
+	private localInputHandlersInstalled = false;
 
 	private get currentChannelId(): string | null {
 		return SelectedChannelStore.currentChannelId;
@@ -269,6 +355,30 @@ class KeybindManager {
 		return this.combokeys;
 	}
 
+	private installLocalInputHandlers(): void {
+		if (this.localInputHandlersInstalled) return;
+		this.localInputHandlersInstalled = true;
+		window.addEventListener('keydown', this.handleLocalKeyDown, true);
+		window.addEventListener('keyup', this.handleLocalKeyUp, true);
+		window.addEventListener('mousedown', this.handleLocalMouseDown, true);
+		window.addEventListener('mouseup', this.handleLocalMouseUp, true);
+		window.addEventListener('auxclick', this.handleLocalAuxClick, true);
+		window.addEventListener('blur', this.handleLocalFocusLoss, true);
+		document.addEventListener('visibilitychange', this.handleVisibilityChange, true);
+	}
+
+	private removeLocalInputHandlers(): void {
+		if (!this.localInputHandlersInstalled) return;
+		this.localInputHandlersInstalled = false;
+		window.removeEventListener('keydown', this.handleLocalKeyDown, true);
+		window.removeEventListener('keyup', this.handleLocalKeyUp, true);
+		window.removeEventListener('mousedown', this.handleLocalMouseDown, true);
+		window.removeEventListener('mouseup', this.handleLocalMouseUp, true);
+		window.removeEventListener('auxclick', this.handleLocalAuxClick, true);
+		window.removeEventListener('blur', this.handleLocalFocusLoss, true);
+		document.removeEventListener('visibilitychange', this.handleVisibilityChange, true);
+	}
+
 	private async checkInputMonitoringPermission(): Promise<boolean> {
 		if (!isNativeMacOS()) return true;
 		if (this.accessibilityStatus === 'granted') return true;
@@ -292,6 +402,7 @@ class KeybindManager {
 		this.initialized = true;
 
 		this.ensureCombokeys();
+		this.installLocalInputHandlers();
 
 		this.registerDefaultHandlers(i18n);
 
@@ -310,9 +421,27 @@ class KeybindManager {
 		);
 
 		this.disposers.push(
-			autorun(() => {
-				MediaEngineStore.handlePushToTalkModeChange();
-			}),
+			reaction(
+				() => {
+					const voiceState = MediaEngineStore.getCurrentUserVoiceState();
+					return {
+						transmitMode: KeybindStore.transmitMode,
+						channelId: MediaEngineStore.channelId,
+						connectionId: MediaEngineStore.connectionId,
+						connected: MediaEngineStore.connected,
+						connecting: MediaEngineStore.connecting,
+						serverMute: voiceState?.mute ?? false,
+						serverSuppress: voiceState?.suppress ?? false,
+					};
+				},
+				({transmitMode}) => {
+					if (transmitMode !== 'push_to_talk') {
+						this.forceReleasePushToTalk();
+					}
+					MediaEngineStore.handlePushToTalkModeChange();
+				},
+				{fireImmediately: true, equals: comparer.structural},
+			),
 		);
 
 		this.disposers.push(
@@ -331,13 +460,19 @@ class KeybindManager {
 
 		const pttKeybind = KeybindStore.getByAction('push_to_talk');
 		const isPttEnabled = KeybindStore.isPushToTalkEnabled();
-		const hasPttKeybind = !!(pttKeybind.combo.key || pttKeybind.combo.code);
+		const isPttKeybindEnabled = pttKeybind.combo.enabled ?? true;
+		const hasPttKeybind = isPttKeybindEnabled && !!(pttKeybind.combo.key || pttKeybind.combo.code);
 		const shouldUseGlobalHook = isPttEnabled && hasPttKeybind && (pttKeybind.combo.global ?? false);
 
 		if (shouldUseGlobalHook) {
 			const started = await this.startGlobalKeyHook();
 			if (started) {
-				this.pttKeycode = jsKeyToUiohookKeycode(pttKeybind.combo.code ?? pttKeybind.combo.key);
+				this.pttMouseButton = comboToNativeMouseButton(pttKeybind.combo);
+				this.pttKeycode = this.pttMouseButton === null
+					? comboToNativeKeycode(pttKeybind.combo)
+					: null;
+			} else {
+				this.pttKeycode = null;
 				this.pttMouseButton = null;
 			}
 		} else {
@@ -352,6 +487,12 @@ class KeybindManager {
 		await this.refreshGlobalShortcuts();
 	}
 
+	async reapplyPushToTalkShortcuts() {
+		if (!this.initialized) return;
+		this.refreshLocalShortcuts();
+		await this.refreshGlobalKeyHook();
+	}
+
 	destroy() {
 		if (!this.initialized) return;
 		this.initialized = false;
@@ -363,6 +504,7 @@ class KeybindManager {
 			this.globalShortcutUnsubscribe();
 			this.globalShortcutUnsubscribe = null;
 		}
+		this.globalShortcutActionById.clear();
 
 		this.stopGlobalKeyHook();
 
@@ -375,6 +517,7 @@ class KeybindManager {
 
 		this.combokeys?.detach();
 		this.combokeys = null;
+		this.removeLocalInputHandlers();
 	}
 
 	async startGlobalKeyHook(): Promise<boolean> {
@@ -416,30 +559,116 @@ class KeybindManager {
 		}
 
 		this.globalKeyHookStarted = false;
+		this.forceReleasePushToTalk();
 	}
 
 	private handleGlobalKeyEvent(event: {type: 'keydown' | 'keyup'; keycode: number; keyName: string}): void {
 		if (this.pttKeycode !== null && event.keycode === this.pttKeycode) {
-			const handler = this.handlers.get('push_to_talk');
-			if (handler) {
-				handler({
-					type: event.type === 'keydown' ? 'press' : 'release',
-					source: 'global',
-				});
-			}
+			this.dispatchPushToTalk(event.type === 'keydown' ? 'press' : 'release', 'global');
 		}
 	}
 
 	private handleGlobalMouseEvent(event: {type: 'mousedown' | 'mouseup'; button: number}): void {
 		if (this.pttMouseButton !== null && event.button === this.pttMouseButton) {
-			const handler = this.handlers.get('push_to_talk');
-			if (handler) {
-				handler({
-					type: event.type === 'mousedown' ? 'press' : 'release',
-					source: 'global',
-				});
-			}
+			this.dispatchPushToTalk(event.type === 'mousedown' ? 'press' : 'release', 'global');
 		}
+	}
+
+	private handleLocalKeyDown = (event: KeyboardEvent): void => {
+		if (this.suspended || !KeybindStore.isPushToTalkEnabled() || this.pttLocalKeyboardCombo === null) return;
+		if (isKeybindRecorderTarget(event.target)) return;
+		if (!eventMatchesKeyCombo(event, this.pttLocalKeyboardCombo)) return;
+
+		event.preventDefault();
+		event.stopPropagation();
+		this.dispatchPushToTalk('press', 'local');
+	};
+
+	private handleLocalKeyUp = (event: KeyboardEvent): void => {
+		if (this.suspended || !KeybindStore.isPushToTalkEnabled() || this.pttLocalKeyboardCombo === null) return;
+		if (isKeybindRecorderTarget(event.target)) return;
+		if (!eventMatchesKeyCombo(event, this.pttLocalKeyboardCombo)) return;
+
+		event.preventDefault();
+		event.stopPropagation();
+		this.dispatchPushToTalk('release', 'local');
+	};
+
+	private handleLocalMouseDown = (event: MouseEvent): void => {
+		if (this.suspended || !KeybindStore.isPushToTalkEnabled() || this.pttLocalMouseButton === null) return;
+		if (isKeybindRecorderTarget(event.target)) return;
+		const browserButton = nativeMouseButtonToBrowserButton(this.pttLocalMouseButton);
+		if (browserButton === null || event.button !== browserButton) return;
+
+		event.preventDefault();
+		event.stopPropagation();
+		this.dispatchPushToTalk('press', 'local');
+	};
+
+	private handleLocalMouseUp = (event: MouseEvent): void => {
+		if (this.suspended || !KeybindStore.isPushToTalkEnabled() || this.pttLocalMouseButton === null) return;
+		if (isKeybindRecorderTarget(event.target)) return;
+		const browserButton = nativeMouseButtonToBrowserButton(this.pttLocalMouseButton);
+		if (browserButton === null || event.button !== browserButton) return;
+
+		event.preventDefault();
+		event.stopPropagation();
+		this.dispatchPushToTalk('release', 'local');
+	};
+
+	private handleLocalAuxClick = (event: MouseEvent): void => {
+		if (this.suspended || !KeybindStore.isPushToTalkEnabled() || this.pttLocalMouseButton === null) return;
+		if (isKeybindRecorderTarget(event.target)) return;
+		const browserButton = nativeMouseButtonToBrowserButton(this.pttLocalMouseButton);
+		if (browserButton === null || event.button !== browserButton) return;
+
+		event.preventDefault();
+		event.stopPropagation();
+	};
+
+	private handleLocalFocusLoss = (): void => {
+		if (this.pttPressed) {
+			this.forceReleasePushToTalk();
+		}
+	};
+
+	private handleVisibilityChange = (): void => {
+		if (document.visibilityState === 'hidden' && this.pttPressed) {
+			this.forceReleasePushToTalk();
+		}
+	};
+
+	private dispatchPushToTalk(type: 'press' | 'release', source: ShortcutSource): void {
+		const handler = this.handlers.get('push_to_talk');
+		if (!handler) return;
+
+		if (type === 'press') {
+			if (this.pttPressed) return;
+			this.pttPressed = true;
+		} else {
+			if (!this.pttPressed) return;
+			this.pttPressed = false;
+		}
+
+		handler({type, source});
+	}
+
+	private forceReleasePushToTalk(): void {
+		if (this.pttReleaseTimer) {
+			clearTimeout(this.pttReleaseTimer);
+			this.pttReleaseTimer = null;
+		}
+
+		this.pttPressed = false;
+		MediaEngineStore.applyPushToTalkHold(false);
+	}
+
+	private notePushToTalkBinding(combo: KeyCombo): void {
+		const signature = getPushToTalkBindingSignature(combo);
+		if (this.pttBindingSignature !== null && this.pttBindingSignature !== signature) {
+			this.forceReleasePushToTalk();
+		}
+		this.pttBindingSignature = signature;
 	}
 
 	setPttKeybind(keycode: number | null, mouseButton: number | null): void {
@@ -450,6 +679,7 @@ class KeybindManager {
 	suspend(): void {
 		this.suspended = true;
 		this.combokeys?.reset();
+		this.forceReleasePushToTalk();
 	}
 
 	resume(): void {
@@ -552,6 +782,7 @@ class KeybindManager {
 
 		this.register('toggle_push_to_talk_mode', ({type}) => {
 			if (type !== 'press') return;
+			this.forceReleasePushToTalk();
 			KeybindStore.setTransmitMode(KeybindStore.isPushToTalkEnabled() ? 'voice_activity' : 'push_to_talk');
 			MediaEngineStore.handlePushToTalkModeChange();
 		});
@@ -562,19 +793,13 @@ class KeybindManager {
 					clearTimeout(this.pttReleaseTimer);
 					this.pttReleaseTimer = null;
 				}
-				const shouldUnmute = KeybindStore.handlePushToTalkPress();
-				if (shouldUnmute) {
-					MediaEngineStore.applyPushToTalkHold(true);
-				}
+				MediaEngineStore.applyPushToTalkHold(true);
 			} else {
-				const shouldMute = KeybindStore.handlePushToTalkRelease();
-				if (shouldMute) {
-					const delay = KeybindStore.pushToTalkReleaseDelay;
-					this.pttReleaseTimer = setTimeout(() => {
-						this.pttReleaseTimer = null;
-						MediaEngineStore.applyPushToTalkHold(false);
-					}, delay);
-				}
+				const delay = KeybindStore.pushToTalkReleaseDelay;
+				this.pttReleaseTimer = setTimeout(() => {
+					this.pttReleaseTimer = null;
+					MediaEngineStore.applyPushToTalkHold(false);
+				}, delay);
 			}
 		});
 
@@ -880,6 +1105,7 @@ class KeybindManager {
 		if (!electronApi) return;
 		this.globalShortcutsEnabled = false;
 		this.registeredGlobalShortcutIds.clear();
+		this.globalShortcutActionById.clear();
 
 		const keybinds = this.activeGlobalKeybinds;
 
@@ -902,10 +1128,10 @@ class KeybindManager {
 		if (!this.globalShortcutUnsubscribe) {
 			this.globalShortcutUnsubscribe =
 				electronApi.onGlobalShortcut?.((id: string) => {
-					const keybind = keybinds.find((k) => comboToShortcutString(k.combo) === id);
-					if (!keybind) return;
+					const action = this.globalShortcutActionById.get(id);
+					if (!action) return;
 
-					const handler = this.handlers.get(keybind.action);
+					const handler = this.handlers.get(action);
 					if (!handler) return;
 
 					handler({
@@ -921,10 +1147,13 @@ class KeybindManager {
 
 		if (!shortcuts.length) return;
 
-		for (const {shortcut} of shortcuts) {
+		for (const {entry, shortcut} of shortcuts) {
 			try {
-				await electronApi.registerGlobalShortcut?.(shortcut, shortcut);
-				this.registeredGlobalShortcutIds.add(shortcut);
+				const registered = await electronApi.registerGlobalShortcut?.(shortcut, shortcut);
+				if (registered) {
+					this.registeredGlobalShortcutIds.add(shortcut);
+					this.globalShortcutActionById.set(shortcut, entry.action);
+				}
 			} catch (error) {
 				console.error(`Failed to register global shortcut ${shortcut}`, error);
 			}
@@ -936,7 +1165,10 @@ class KeybindManager {
 	private refreshLocalShortcuts() {
 		if (!this.combokeys || this.suspended) return;
 
+		this.notePushToTalkBinding(KeybindStore.getByAction('push_to_talk').combo);
 		this.combokeys.reset();
+		this.pttLocalKeyboardCombo = null;
+		this.pttLocalMouseButton = null;
 
 		this.activeKeybinds.forEach((entry) => this.bindLocalShortcut(entry));
 	}
@@ -946,6 +1178,21 @@ class KeybindManager {
 		const handler = this.handlers.get(action);
 		if (!handler) return;
 
+		const mouseButton = comboToNativeMouseButton(combo);
+		if (mouseButton !== null) {
+			if (action === 'push_to_talk' && KeybindStore.isPushToTalkEnabled()) {
+				this.pttLocalMouseButton = mouseButton;
+			}
+			return;
+		}
+
+		if (action === 'push_to_talk') {
+			if (KeybindStore.isPushToTalkEnabled() && (combo.key || combo.code)) {
+				this.pttLocalKeyboardCombo = combo;
+			}
+			return;
+		}
+
 		const shortcut = comboToCombokeysString(combo);
 		if (!shortcut) return;
 
@@ -953,7 +1200,6 @@ class KeybindManager {
 		const ignoreInEditable = isAltOnlyArrowCombo(combo);
 
 		const shouldIgnoreEvent = (event: KeyboardEvent): boolean => {
-			if (action === 'push_to_talk') return false;
 			const target = event.target ?? null;
 			if (!isEditableElement(target)) return false;
 			if (!hasModifier) return true;
@@ -964,7 +1210,6 @@ class KeybindManager {
 			if (!event) return;
 
 			if (shouldIgnoreEvent(event)) return;
-			if (action === 'push_to_talk' && event.repeat) return;
 
 			const globalShortcutId = comboToShortcutString(combo);
 			if (
@@ -986,12 +1231,6 @@ class KeybindManager {
 
 		const combokeys = this.ensureCombokeys();
 		if (combokeys) {
-			if (action === 'push_to_talk') {
-				combokeys.bind(shortcut, wrapHandler('press'), 'keydown');
-				combokeys.bind(shortcut, wrapHandler('release'), 'keyup');
-				return;
-			}
-
 			combokeys.bind(shortcut, wrapHandler('press'), 'keydown');
 			combokeys.bind(shortcut, wrapHandler('release'), 'keyup');
 		}

@@ -20,7 +20,8 @@
 -export([
     handle_voice_state_update/2,
     handle_voice_disconnect/1,
-    handle_voice_token_request/8
+    handle_voice_token_request/8,
+    handle_voice_token_request/9
 ]).
 
 handle_voice_state_update(Data, State) ->
@@ -155,7 +156,8 @@ handle_validated_voice_state_update(
         viewer_stream_key => ViewerStreamKey,
         is_mobile => IsMobile,
         latitude => Latitude,
-        longitude => Longitude
+        longitude => Longitude,
+        peer_ip => maps:get(peer_ip, State, undefined)
     },
 
     StateWithSessionPid = maps:put(session_pid, self(), State),
@@ -164,7 +166,8 @@ handle_validated_voice_state_update(
             SessionPid = self(),
             spawn(fun() ->
                 dm_voice:get_voice_token(
-                    ChannelId, UserId, SessionId, SessionPid, Latitude, Longitude
+                    ChannelId, UserId, SessionId, SessionPid, Latitude, Longitude,
+                    maps:get(peer_ip, State, undefined)
                 )
             end),
             CleanState = maps:remove(session_pid, NewState),
@@ -209,7 +212,8 @@ handle_validated_voice_state_update(
                 viewer_stream_key => ViewerStreamKey,
                 is_mobile => IsMobile,
                 latitude => Latitude,
-                longitude => Longitude
+                longitude => Longitude,
+                peer_ip => maps:get(peer_ip, State, undefined)
             },
             logger:debug(
                 "[session_voice] Calling guild process for voice state update: GuildId=~p, ChannelId=~p, ConnectionId=~p",
@@ -228,7 +232,8 @@ handle_validated_voice_state_update(
                             SessionId,
                             SessionPid,
                             Latitude,
-                            Longitude
+                            Longitude,
+                            maps:get(peer_ip, State, undefined)
                         )
                     end),
                     {reply, ok, State};
@@ -311,21 +316,38 @@ handle_voice_disconnect(State) ->
 handle_voice_token_request(
     GuildId, ChannelId, UserId, ConnectionId, _SessionId, SessionPid, Latitude, Longitude
 ) ->
-    Req = voice_utils:build_voice_token_rpc_request(
+    handle_voice_token_request(
+        GuildId, ChannelId, UserId, ConnectionId, _SessionId, SessionPid, Latitude, Longitude, null
+    ).
+
+handle_voice_token_request(
+    GuildId, ChannelId, UserId, ConnectionId, _SessionId, SessionPid, Latitude, Longitude, PeerIp
+) ->
+    %% build_voice_token_rpc_request/7 expects VoicePermissions (a map) as the
+    %% last argument — passing the IP there crashes with badmap. Attach the IP
+    %% through add_ip_to_request instead.
+    Req0 = voice_utils:build_voice_token_rpc_request(
         GuildId, ChannelId, UserId, ConnectionId, Latitude, Longitude
     ),
+    Req = voice_utils:add_ip_to_request(Req0, PeerIp),
 
     case rpc_client:call(Req) of
         {ok, Data} ->
             Token = maps:get(<<"token">>, Data),
             Endpoint = maps:get(<<"endpoint">>, Data),
+            IceServers = maps:get(<<"iceServers">>, Data, undefined),
 
-            VoiceServerUpdate = #{
+            VoiceServerUpdate0 = #{
                 <<"token">> => Token,
                 <<"endpoint">> => Endpoint,
                 <<"guild_id">> => integer_to_binary(GuildId),
                 <<"connection_id">> => ConnectionId
             },
+            VoiceServerUpdate =
+                case IceServers of
+                    [_ | _] = Servers -> maps:put(<<"ice_servers">>, Servers, VoiceServerUpdate0);
+                    _ -> VoiceServerUpdate0
+                end,
 
             gen_server:cast(SessionPid, {dispatch, voice_server_update, VoiceServerUpdate});
         {error, _Reason} ->

@@ -39,7 +39,7 @@ export const ModalStackContext = React.createContext<ModalStackContextValue>({
 	needsBackdrop: true,
 });
 
-export type ModalTransitionPreset = 'default' | 'instant';
+export type ModalTransitionPreset = 'default' | 'instant' | 'legacy';
 
 export interface ModalProps {
 	children: React.ReactNode;

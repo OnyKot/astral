@@ -419,11 +419,31 @@ export const TextareaInputField = React.forwardRef<HTMLTextAreaElement, Textarea
 		_ref,
 	) => {
 		useTextareaAutofocus(textareaRef, isMobile, !disabled);
-		const hasComposerEmoji = value.includes(EMOJI_DISPLAY_PLACEHOLDER) || MAY_CONTAIN_EMOJI_RE.test(value);
-		const hasOverlay = value.length > 0 && !voiceInteractionActive && hasComposerEmoji;
+		const isImeComposingRef = React.useRef(false);
+		const [hotValue, setHotValue] = React.useState(value);
+		const hotValueRef = React.useRef(value);
+
+		React.useEffect(() => {
+			if (value !== hotValueRef.current) {
+				hotValueRef.current = value;
+				setHotValue(value);
+			}
+		}, [value]);
+
+		const commitValue = React.useCallback(
+			(nextValue: string) => {
+				hotValueRef.current = nextValue;
+				setHotValue(nextValue);
+				onChange(nextValue);
+			},
+			[onChange],
+		);
+
+		const hasComposerEmoji = hotValue.includes(EMOJI_DISPLAY_PLACEHOLDER) || MAY_CONTAIN_EMOJI_RE.test(hotValue);
+		const hasOverlay = hotValue.length > 0 && !voiceInteractionActive && hasComposerEmoji;
 		const overlayNodes = React.useMemo(
-			() => (hasOverlay ? buildOverlayNodes(value, segments) : []),
-			[hasOverlay, value, segments],
+			() => (hasOverlay ? buildOverlayNodes(hotValue, segments) : []),
+			[hasOverlay, hotValue, segments],
 		);
 		const [overlayScrollTop, setOverlayScrollTop] = React.useState(0);
 		const clampedVoiceLevel = Math.max(0, Math.min(1, voiceInputLevel));
@@ -583,7 +603,20 @@ export const TextareaInputField = React.forwardRef<HTMLTextAreaElement, Textarea
 					)}
 					onBlur={onBlur}
 					onBeforeInput={onBeforeInput}
-					onChange={(event) => onChange(event.target.value)}
+					onCompositionStart={() => {
+						isImeComposingRef.current = true;
+					}}
+					onCompositionEnd={(event) => {
+						isImeComposingRef.current = false;
+						commitValue(event.currentTarget.value);
+					}}
+					onChange={(event) => {
+						const nativeEvent = event.nativeEvent as InputEvent;
+						if (isImeComposingRef.current || nativeEvent.isComposing) {
+							return;
+						}
+						commitValue(event.target.value);
+					}}
 					onContextMenu={handleTextareaContextMenu}
 					onFocus={onFocus}
 					onPointerDown={onPointerDown}
@@ -594,7 +627,7 @@ export const TextareaInputField = React.forwardRef<HTMLTextAreaElement, Textarea
 					placeholder={voiceInteractionActive ? '' : placeholder}
 					readOnly={voiceInteractionActive}
 					ref={textareaRef}
-					value={value}
+					value={hotValue}
 				/>
 			</div>
 		);

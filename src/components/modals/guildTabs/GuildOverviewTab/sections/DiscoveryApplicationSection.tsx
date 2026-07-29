@@ -29,22 +29,6 @@ import {Button} from '~/components/uikit/Button/Button';
 import {SettingsSection} from '../components/SettingsSection';
 import styles from './DiscoveryApplicationSection.module.css';
 
-const DISCOVERY_CATEGORIES: ReadonlyArray<SelectOption<string>> = [
-	{value: 'featured', label: 'Featured'},
-	{value: 'voice', label: 'Voice'},
-	{value: 'media', label: 'Media'},
-	{value: 'expressive', label: 'Expressive'},
-	{value: 'large', label: 'Large'},
-	{value: 'new', label: 'New'},
-];
-
-const STATUS_LABELS: Record<DiscoveryApplication['status'], string> = {
-	pending: 'Pending review',
-	approved: 'Approved',
-	rejected: 'Rejected',
-	withdrawn: 'Withdrawn',
-};
-
 interface Props {
 	guildId: string;
 	canManageGuild: boolean;
@@ -60,6 +44,34 @@ export const DiscoveryApplicationSection: React.FC<Props> = ({guildId, canManage
 	const [description, setDescription] = React.useState<string>('');
 	const [tagsRaw, setTagsRaw] = React.useState<string>('');
 	const [error, setError] = React.useState<string | null>(null);
+	const discoveryCategories = React.useMemo<ReadonlyArray<SelectOption<string>>>(
+		() => [
+			{value: 'featured', label: t`Featured`},
+			{value: 'voice', label: t`Voice`},
+			{value: 'media', label: t`Media`},
+			{value: 'expressive', label: t`Expressive`},
+			{value: 'large', label: t`Large`},
+			{value: 'new', label: t`New`},
+		],
+		[t],
+	);
+	const getStatusLabel = React.useCallback(
+		(status: DiscoveryApplication['status']) => {
+			switch (status) {
+				case 'pending':
+					return t`Pending review`;
+				case 'approved':
+					return t`Approved`;
+				case 'rejected':
+					return t`Rejected`;
+				case 'withdrawn':
+					return t`Withdrawn`;
+				default:
+					return status;
+			}
+		},
+		[t],
+	);
 
 	const loadApplication = React.useCallback(async () => {
 		try {
@@ -173,7 +185,7 @@ export const DiscoveryApplicationSection: React.FC<Props> = ({guildId, canManage
 				<div className={styles.container}>
 					{application && (
 						<div className={styles.statusBlock} data-status={application.status}>
-							<div className={styles.statusBadge}>{STATUS_LABELS[application.status]}</div>
+							<div className={styles.statusBadge}>{getStatusLabel(application.status)}</div>
 							{application.review_note && (
 								<p className={styles.reviewNote}>
 									<Trans>Reviewer note:</Trans> {application.review_note}
@@ -212,7 +224,7 @@ export const DiscoveryApplicationSection: React.FC<Props> = ({guildId, canManage
 							<Select<string>
 								label={t`Category`}
 								value={category}
-								options={DISCOVERY_CATEGORIES}
+								options={discoveryCategories}
 								onChange={(value) => setCategory(value)}
 								disabled={!canManageGuild || submitting}
 							/>

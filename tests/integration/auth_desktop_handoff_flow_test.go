@@ -76,7 +76,24 @@ func TestAuthDesktopHandoffFlow(t *testing.T) {
 	assertStatus(t, resp, http.StatusNoContent)
 	resp.Body.Close()
 
+	// Without control token, completed status must not leak the session.
 	resp, err = client.get(statusURL)
+	if err != nil {
+		t.Fatalf("failed to poll completed handoff status without control token: %v", err)
+	}
+	assertStatus(t, resp, http.StatusOK)
+	decodeJSONResponse(t, resp, &status)
+	if status.Status != "expired" {
+		t.Fatalf("expected expired status without control token, got %s", status.Status)
+	}
+	if status.Token != "" {
+		t.Fatalf("expected no token without control token")
+	}
+	resp.Body.Close()
+
+	resp, err = client.getWithHeaders(statusURL, map[string]string{
+		"X-Astral-Handoff-Control": initResp.ControlToken,
+	})
 	if err != nil {
 		t.Fatalf("failed to poll completed handoff status: %v", err)
 	}

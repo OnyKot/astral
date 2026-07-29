@@ -32,6 +32,8 @@ export interface GiftCodeRow {
 	visionary_sequence_number: Nullish<number>;
 	checkout_session_id: Nullish<string>;
 	version: number;
+	emoji: Nullish<string>;
+	background: Nullish<string>;
 }
 
 export interface PaymentRow {
@@ -122,6 +124,8 @@ export const GIFT_CODE_COLUMNS = [
 	'visionary_sequence_number',
 	'checkout_session_id',
 	'version',
+	'emoji',
+	'background',
 ] as const;
 
 export const GIFT_CODE_BY_CREATOR_COLUMNS = ['created_by_user_id', 'code'] as const;

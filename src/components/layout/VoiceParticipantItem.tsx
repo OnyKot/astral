@@ -219,7 +219,9 @@ export const VoiceParticipantItem = observer(function VoiceParticipantItem({
 		[dragRef],
 	);
 
-	const isSelfMuted = voiceState?.self_mute ?? (participant ? !participant.isMicrophoneEnabled : false);
+	const rawSelfMuted = voiceState?.self_mute ?? (participant ? !participant.isMicrophoneEnabled : false);
+	const muteReason = isLocalParticipant ? MediaEngineStore.getMuteReason(voiceState) : null;
+	const isSelfMuted = isLocalParticipant ? muteReason !== null : rawSelfMuted;
 	const isSelfDeafened = voiceState?.self_deaf ?? false;
 	const isGuildMuted = voiceState?.mute ?? false;
 	const isGuildDeafened = voiceState?.deaf ?? false;

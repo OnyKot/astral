@@ -24,11 +24,11 @@
 .previewContainer {
 	display: flex;
 	flex-direction: column;
-	height: 176px;
+	height: 132px;
 	overflow: hidden;
 	position: relative;
 	isolation: isolate;
-	padding: 2px 12px 6px;
+	padding: 0 10px;
 	padding-bottom: 0;
 	border-radius: 8px;
 	border: 1px solid var(--background-modifier-accent);
@@ -79,6 +79,7 @@
 	display: flex;
 	flex-direction: column;
 	--chat-horizontal-padding: 16px;
+	--message-action-bar-offset: 0px;
 	box-sizing: border-box;
 	overflow: hidden;
 	position: relative;
@@ -111,9 +112,9 @@
 	cursor: default;
 	content: '';
 	pointer-events: none;
-	height: 32px;
+	height: 44px;
 	background:
-		linear-gradient(transparent 0%, color-mix(in srgb, var(--background-primary) 78%, transparent) 100%);
+		linear-gradient(transparent 0%, color-mix(in srgb, var(--background-primary) 88%, transparent) 100%);
 }
 
 .buttonRowsContainer {

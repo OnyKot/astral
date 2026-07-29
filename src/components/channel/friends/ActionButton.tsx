@@ -46,6 +46,7 @@ export const ActionButton = observer(
 					title={tooltip}
 					className={clsx(styles.button, danger && styles.danger, !danger && className)}
 					onClick={(e) => {
+						e.preventDefault();
 						e.stopPropagation();
 						onClick(e);
 					}}

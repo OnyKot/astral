@@ -164,6 +164,38 @@ import {
 	type SavedMessageRow,
 	SCHEDULED_MESSAGE_COLUMNS,
 	type ScheduledMessageRow,
+	TWITCH_CHANNEL_EVENT_COLUMNS,
+	type TwitchChannelEventRow,
+	TWITCH_CONNECTION_BY_TWITCH_USER_ID_COLUMNS,
+	TWITCH_CONNECTION_COLUMNS,
+	type TwitchConnectionByTwitchUserIdRow,
+	type TwitchConnectionRow,
+	STEAM_CONNECTION_BY_STEAM_ID_COLUMNS,
+	STEAM_CONNECTION_COLUMNS,
+	type SteamConnectionBySteamIdRow,
+	type SteamConnectionRow,
+	TELEGRAM_CONNECTION_BY_TELEGRAM_USER_ID_COLUMNS,
+	TELEGRAM_CONNECTION_COLUMNS,
+	type TelegramConnectionByTelegramUserIdRow,
+	type TelegramConnectionRow,
+	RIOT_CONNECTION_COLUMNS,
+	RIOT_CONNECTION_BY_PUUID_COLUMNS,
+	type RiotConnectionRow,
+	type RiotConnectionByPuuidRow,
+	TWITCH_CREATOR_PROGRAM_BY_STATUS_COLUMNS,
+	TWITCH_CREATOR_PROGRAM_COLUMNS,
+	type TwitchCreatorProgramByStatusRow,
+	type TwitchCreatorProgramRow,
+	TWITCH_EVENT_SEEN_COLUMNS,
+	TWITCH_EVENTSUB_SUBSCRIPTION_COLUMNS,
+	type TwitchEventSeenRow,
+	type TwitchEventSubSubscriptionRow,
+	TWITCH_LIVE_STATE_COLUMNS,
+	type TwitchLiveStateRow,
+	TWITCH_SUBSCRIBER_PERK_GRANT_BY_VIEWER_COLUMNS,
+	TWITCH_SUBSCRIBER_PERK_GRANT_COLUMNS,
+	type TwitchSubscriberPerkGrantByViewerRow,
+	type TwitchSubscriberPerkGrantRow,
 	USER_BY_EMAIL_COLUMNS,
 	USER_BY_PHONE_COLUMNS,
 	USER_BY_STRIPE_CUSTOMER_ID_COLUMNS,
@@ -195,6 +227,7 @@ import {
 	type WebAuthnCredentialRow,
 	type WebhookRow,
 } from '~/database/CassandraTypes';
+import {PREMIUM_WAITLIST_COLUMNS, type PremiumWaitlistRow} from '~/database/types/PremiumWaitlistTypes';
 import {ATTACHMENT_DECAY_COLUMNS, type AttachmentDecayRow} from '~/types/AttachmentDecayTypes';
 
 export const Users = defineTable<UserRow, 'user_id'>({
@@ -255,6 +288,133 @@ export const UserSettings = defineTable<UserSettingsRow, 'user_id'>({
 	name: 'user_settings',
 	columns: USER_SETTINGS_COLUMNS,
 	primaryKey: ['user_id'],
+});
+
+export const TwitchConnections = defineTable<TwitchConnectionRow, 'user_id'>({
+	name: 'twitch_connections',
+	columns: TWITCH_CONNECTION_COLUMNS,
+	primaryKey: ['user_id'],
+});
+
+export const TwitchConnectionsByTwitchUserId = defineTable<
+	TwitchConnectionByTwitchUserIdRow,
+	'twitch_user_id'
+>({
+	name: 'twitch_connections_by_twitch_user_id',
+	columns: TWITCH_CONNECTION_BY_TWITCH_USER_ID_COLUMNS,
+	primaryKey: ['twitch_user_id'],
+});
+
+export const SteamConnections = defineTable<SteamConnectionRow, 'user_id'>({
+	name: 'steam_connections',
+	columns: STEAM_CONNECTION_COLUMNS,
+	primaryKey: ['user_id'],
+});
+
+export const SteamConnectionsBySteamId = defineTable<SteamConnectionBySteamIdRow, 'steam_id'>({
+	name: 'steam_connections_by_steam_id',
+	columns: STEAM_CONNECTION_BY_STEAM_ID_COLUMNS,
+	primaryKey: ['steam_id'],
+});
+
+export const TelegramConnections = defineTable<TelegramConnectionRow, 'user_id'>({
+	name: 'telegram_connections',
+	columns: TELEGRAM_CONNECTION_COLUMNS,
+	primaryKey: ['user_id'],
+});
+
+export const TelegramConnectionsByTelegramUserId = defineTable<
+	TelegramConnectionByTelegramUserIdRow,
+	'telegram_user_id'
+>({
+	name: 'telegram_connections_by_telegram_user_id',
+	columns: TELEGRAM_CONNECTION_BY_TELEGRAM_USER_ID_COLUMNS,
+	primaryKey: ['telegram_user_id'],
+});
+
+export const RiotConnections = defineTable<RiotConnectionRow, 'user_id'>({
+	name: 'riot_connections',
+	columns: RIOT_CONNECTION_COLUMNS,
+	primaryKey: ['user_id'],
+});
+
+export const RiotConnectionsByPuuid = defineTable<RiotConnectionByPuuidRow, 'puuid'>({
+	name: 'riot_connections_by_puuid',
+	columns: RIOT_CONNECTION_BY_PUUID_COLUMNS,
+	primaryKey: ['puuid'],
+});
+
+export const TwitchCreatorPrograms = defineTable<TwitchCreatorProgramRow, 'user_id'>({
+	name: 'twitch_creator_programs',
+	columns: TWITCH_CREATOR_PROGRAM_COLUMNS,
+	primaryKey: ['user_id'],
+});
+
+export const TwitchCreatorProgramsByStatus = defineTable<
+	TwitchCreatorProgramByStatusRow,
+	'status' | 'updated_at' | 'user_id',
+	'status'
+>({
+	name: 'twitch_creator_programs_by_status',
+	columns: TWITCH_CREATOR_PROGRAM_BY_STATUS_COLUMNS,
+	primaryKey: ['status', 'updated_at', 'user_id'],
+	partitionKey: ['status'],
+});
+
+export const TwitchEventSubSubscriptions = defineTable<
+	TwitchEventSubSubscriptionRow,
+	'broadcaster_user_id' | 'event_type',
+	'broadcaster_user_id'
+>({
+	name: 'twitch_eventsub_subscriptions',
+	columns: TWITCH_EVENTSUB_SUBSCRIPTION_COLUMNS,
+	primaryKey: ['broadcaster_user_id', 'event_type'],
+	partitionKey: ['broadcaster_user_id'],
+});
+
+export const TwitchEventsSeen = defineTable<TwitchEventSeenRow, 'message_id'>({
+	name: 'twitch_events_seen',
+	columns: TWITCH_EVENT_SEEN_COLUMNS,
+	primaryKey: ['message_id'],
+});
+
+export const TwitchChannelEvents = defineTable<
+	TwitchChannelEventRow,
+	'broadcaster_user_id' | 'event_timestamp' | 'message_id',
+	'broadcaster_user_id'
+>({
+	name: 'twitch_channel_events',
+	columns: TWITCH_CHANNEL_EVENT_COLUMNS,
+	primaryKey: ['broadcaster_user_id', 'event_timestamp', 'message_id'],
+	partitionKey: ['broadcaster_user_id'],
+});
+
+export const TwitchLiveStates = defineTable<TwitchLiveStateRow, 'broadcaster_user_id'>({
+	name: 'twitch_live_states',
+	columns: TWITCH_LIVE_STATE_COLUMNS,
+	primaryKey: ['broadcaster_user_id'],
+});
+
+export const TwitchSubscriberPerkGrants = defineTable<
+	TwitchSubscriberPerkGrantRow,
+	'creator_user_id' | 'viewer_user_id',
+	'creator_user_id'
+>({
+	name: 'twitch_subscriber_perk_grants',
+	columns: TWITCH_SUBSCRIBER_PERK_GRANT_COLUMNS,
+	primaryKey: ['creator_user_id', 'viewer_user_id'],
+	partitionKey: ['creator_user_id'],
+});
+
+export const TwitchSubscriberPerkGrantsByViewer = defineTable<
+	TwitchSubscriberPerkGrantByViewerRow,
+	'viewer_user_id' | 'creator_user_id',
+	'viewer_user_id'
+>({
+	name: 'twitch_subscriber_perk_grants_by_viewer',
+	columns: TWITCH_SUBSCRIBER_PERK_GRANT_BY_VIEWER_COLUMNS,
+	primaryKey: ['viewer_user_id', 'creator_user_id'],
+	partitionKey: ['viewer_user_id'],
 });
 
 export const UserGuildSettings = defineTable<UserGuildSettingsRow, 'user_id' | 'guild_id'>({
@@ -342,6 +502,12 @@ export const GuildDiscoveryApplications = defineTable<GuildDiscoveryApplicationR
 	name: 'guild_discovery_applications',
 	columns: GUILD_DISCOVERY_APPLICATION_COLUMNS,
 	primaryKey: ['guild_id'],
+});
+
+export const PremiumWaitlist = defineTable<PremiumWaitlistRow, 'user_id'>({
+	name: 'premium_waitlist',
+	columns: PREMIUM_WAITLIST_COLUMNS,
+	primaryKey: ['user_id'],
 });
 
 export const GuildJoinRequests = defineTable<GuildJoinRequestRow, 'guild_id' | 'user_id'>({

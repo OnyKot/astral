@@ -25,6 +25,7 @@ import * as v from 'valibot';
 import {Config} from '~/Config';
 import {toBodyData} from '~/lib/BinaryUtils';
 import {parseRange, setHeaders} from '~/lib/HttpUtils';
+import {ImageCache} from '~/lib/ImageCache';
 import {processImage} from '~/lib/ImageProcessing';
 import type {InMemoryCoalescer} from '~/lib/InMemoryCoalescer';
 import type {HonoEnv} from '~/lib/MediaTypes';
@@ -34,6 +35,10 @@ import {readS3Object} from '~/lib/S3Utils';
 import {ImageParamSchema, ImageQuerySchema} from '~/schemas/ValidationSchemas';
 
 const stripAnimationPrefix = (hash: string) => (hash.startsWith('a_') ? hash.substring(2) : hash);
+
+// Shared hot tier for transformed images. Keyed by the same content-addressed
+// cacheKey the routes already build, so entries are immutable and safe to reuse.
+const imageCache = new ImageCache();
 
 const processImageRequest = async (params: {
 	coalescer: InMemoryCoalescer;
@@ -48,31 +53,33 @@ const processImageRequest = async (params: {
 }): Promise<Response> => {
 	const {coalescer, ctx, cacheKey, s3Key, ext, aspectRatio, size, quality, animated} = params;
 
-	const result = await coalescer.coalesce(cacheKey, async () => {
-		const {data} = await readS3Object(Config.AWS_S3_BUCKET_CDN, s3Key);
-		assert(data instanceof Buffer);
+	const result = await imageCache.wrap(cacheKey, async () =>
+		coalescer.coalesce(cacheKey, async () => {
+			const {data} = await readS3Object(Config.AWS_S3_BUCKET_CDN, s3Key);
+			assert(data instanceof Buffer);
 
-		const metadata = await sharp(data).metadata();
-		const requestedWidth = Number(size);
-		const originalAspectRatio = (metadata.width || 1) / (metadata.height || 1);
-		const effectiveAspectRatio = aspectRatio === 0 ? originalAspectRatio : aspectRatio;
-		const requestedHeight = Math.floor(requestedWidth / effectiveAspectRatio);
+			const metadata = await sharp(data).metadata();
+			const requestedWidth = Number(size);
+			const originalAspectRatio = (metadata.width || 1) / (metadata.height || 1);
+			const effectiveAspectRatio = aspectRatio === 0 ? originalAspectRatio : aspectRatio;
+			const requestedHeight = Math.floor(requestedWidth / effectiveAspectRatio);
 
-		const width = Math.min(requestedWidth, metadata.width || 0);
-		const height = Math.min(requestedHeight, metadata.height || 0);
+			const width = Math.min(requestedWidth, metadata.width || 0);
+			const height = Math.min(requestedHeight, metadata.height || 0);
 
-		const image = await processImage({
-			buffer: data,
-			width,
-			height,
-			format: ext,
-			quality,
-			animated: ext === 'gif' || (ext === 'webp' && animated),
-		});
+			const image = await processImage({
+				buffer: data,
+				width,
+				height,
+				format: ext,
+				quality,
+				animated: ext === 'gif' || (ext === 'webp' && animated),
+			});
 
-		const mimeType = getMimeType(Buffer.from(''), `image.${ext}`) || 'application/octet-stream';
-		return {data: image, contentType: mimeType};
-	});
+			const mimeType = getMimeType(Buffer.from(''), `image.${ext}`) || 'application/octet-stream';
+			return {data: image, contentType: mimeType};
+		}),
+	);
 
 	const range = parseRange(ctx.req.header('Range') ?? '', result.data.length);
 	setHeaders(ctx, result.data.length, result.contentType, range);
@@ -132,34 +139,36 @@ const processSimpleImageRequest = async (params: {
 }): Promise<Response> => {
 	const {coalescer, ctx, cacheKey, s3Key, ext, aspectRatio, size, quality, animated} = params;
 
-	const result = await coalescer.coalesce(cacheKey, async () => {
-		const {data} = await readS3Object(Config.AWS_S3_BUCKET_CDN, s3Key);
-		assert(data instanceof Buffer);
+	const result = await imageCache.wrap(cacheKey, async () =>
+		coalescer.coalesce(cacheKey, async () => {
+			const {data} = await readS3Object(Config.AWS_S3_BUCKET_CDN, s3Key);
+			assert(data instanceof Buffer);
 
-		const metadata = await sharp(data).metadata();
-		const requestedWidth = Number(size);
-		const originalAspectRatio = (metadata.width || 1) / (metadata.height || 1);
-		const effectiveAspectRatio = aspectRatio === 0 ? originalAspectRatio : aspectRatio;
-		const requestedHeight = Math.floor(requestedWidth / effectiveAspectRatio);
+			const metadata = await sharp(data).metadata();
+			const requestedWidth = Number(size);
+			const originalAspectRatio = (metadata.width || 1) / (metadata.height || 1);
+			const effectiveAspectRatio = aspectRatio === 0 ? originalAspectRatio : aspectRatio;
+			const requestedHeight = Math.floor(requestedWidth / effectiveAspectRatio);
 
-		const width = Math.min(requestedWidth, metadata.width || 0);
-		const height = Math.min(requestedHeight, metadata.height || 0);
+			const width = Math.min(requestedWidth, metadata.width || 0);
+			const height = Math.min(requestedHeight, metadata.height || 0);
 
-		const shouldAnimate = ext === 'gif' ? true : ext === 'webp' && animated;
-		const image = await sharp(data, {animated: shouldAnimate})
-			.resize(width, height, {
-				fit: 'contain',
-				background: {r: 255, g: 255, b: 255, alpha: 0},
-				withoutEnlargement: true,
-			})
-			.toFormat(ext as keyof sharp.FormatEnum, {
-				quality: quality === 'high' ? 80 : quality === 'low' ? 20 : 100,
-			})
-			.toBuffer();
+			const shouldAnimate = ext === 'gif' ? true : ext === 'webp' && animated;
+			const image = await sharp(data, {animated: shouldAnimate})
+				.resize(width, height, {
+					fit: 'contain',
+					background: {r: 255, g: 255, b: 255, alpha: 0},
+					withoutEnlargement: true,
+				})
+				.toFormat(ext as keyof sharp.FormatEnum, {
+					quality: quality === 'high' ? 80 : quality === 'low' ? 20 : 100,
+				})
+				.toBuffer();
 
-		const mimeType = getMimeType(Buffer.from(''), `image.${ext}`) || 'application/octet-stream';
-		return {data: image, contentType: mimeType};
-	});
+			const mimeType = getMimeType(Buffer.from(''), `image.${ext}`) || 'application/octet-stream';
+			return {data: image, contentType: mimeType};
+		}),
+	);
 
 	const range = parseRange(ctx.req.header('Range') ?? '', result.data.length);
 	setHeaders(ctx, result.data.length, result.contentType, range);

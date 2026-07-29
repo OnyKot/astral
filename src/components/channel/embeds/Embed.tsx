@@ -68,6 +68,11 @@ import styles from './Embed.module.css';
 const THUMBNAIL_SIZE = 80;
 const MAX_GALLERY_MEDIA = 10;
 
+// Hosts whose `gifv` embeds render as a bare auto-playing GIF instead of a provider card.
+const BARE_GIFV_PROVIDER_HOSTS = new Set(['tenor.com', 'www.tenor.com', 'giphy.com', 'www.giphy.com']);
+const isBareGifvProviderHost = (hostname: string): boolean =>
+	BARE_GIFV_PROVIDER_HOSTS.has(hostname.toLowerCase());
+
 interface EmbedProps {
 	embed: MessageEmbed;
 	message: MessageRecord;
@@ -796,6 +801,9 @@ export const Embed: FC<EmbedProps> = observer(({embed, message, embedIndex, cont
 		return null;
 	}
 
+	// GIF providers whose `gifv` embeds should render as a bare auto-playing GIF rather than a
+	// provider card. Only tenor.com was listed, so Giphy embeds fell into the rich-card branch and
+	// came out as a click-to-play video with a "Giphy" header.
 	const hasRichContent = !!(
 		embed.title ||
 		embed.description ||
@@ -806,7 +814,7 @@ export const Embed: FC<EmbedProps> = observer(({embed, message, embedIndex, cont
 			!(
 				embed.type === MessageEmbedTypes.GIFV &&
 				embed.provider.url &&
-				new URL(embed.provider.url).hostname === 'tenor.com'
+				isBareGifvProviderHost(new URL(embed.provider.url).hostname)
 			))
 	);
 

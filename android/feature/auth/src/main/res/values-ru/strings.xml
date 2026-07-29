@@ -1,0 +1,57 @@
+<resources>
+    <string name="auth_title_login">С возвращением</string>
+    <string name="auth_title_register">Создать Astral ID</string>
+    <string name="auth_title_mfa">Двухфакторная проверка</string>
+
+    <string name="auth_subtitle_login">Безопасный вход в Astral.</string>
+    <string name="auth_subtitle_register">Создайте мобильный аккаунт Astral.</string>
+    <string name="auth_subtitle_mfa">Введите код безопасности для продолжения.</string>
+
+    <string name="auth_tab_login">Вход</string>
+    <string name="auth_tab_register">Регистрация</string>
+
+    <string name="auth_label_email">Email</string>
+    <string name="auth_label_password">Пароль</string>
+    <string name="auth_label_display_name">Отображаемое имя</string>
+    <string name="auth_label_username_optional">Имя пользователя (необязательно)</string>
+    <string name="auth_label_beta_code">Инвайт / бета-код</string>
+    <string name="auth_label_birth_date">Дата рождения</string>
+    <string name="auth_placeholder_birth_date">ГГГГ-ММ-ДД</string>
+    <string name="auth_label_totp_code">Код из приложения</string>
+    <string name="auth_label_sms_code">Код из SMS</string>
+
+    <string name="auth_consent">Я принимаю условия Astral</string>
+    <string name="auth_mfa_totp">Приложение</string>
+    <string name="auth_mfa_sms">SMS</string>
+    <string name="auth_send_sms_code">Отправить SMS-код</string>
+
+    <string name="auth_action_login">Войти</string>
+    <string name="auth_action_create_account">Создать аккаунт</string>
+    <string name="auth_action_verify_code">Подтвердить код</string>
+
+    <string name="auth_error_invalid_email">Введите корректный email.</string>
+    <string name="auth_error_password_short">Пароль должен быть не короче 6 символов.</string>
+    <string name="auth_error_beta_required">Требуется инвайт / бета-код.</string>
+    <string name="auth_error_birth_date_required">Выберите дату рождения.</string>
+    <string name="auth_error_birth_date_invalid">Формат даты рождения: ГГГГ-ММ-ДД.</string>
+    <string name="auth_error_consent_required">Примите условия Astral для продолжения.</string>
+    <string name="auth_error_mfa_code_required">Введите код подтверждения.</string>
+    <string name="auth_error_mfa_code_invalid">Введите корректный числовой код.</string>
+
+    <string name="auth_info_mfa_required">Для этого аккаунта включена MFA.</string>
+    <string name="auth_info_ip_authorization">Подтвердите вход через письмо на почте.</string>
+    <string name="auth_info_pending_verification">Аккаунт создан. Проверьте почту для верификации.</string>
+
+    <string name="welcome_logo_content_description">Логотип Astral</string>
+    <string name="welcome_brand">Astral</string>
+    <string name="welcome_native_mobile">Native mobile</string>
+    <string name="welcome_badge_beta">Бета</string>
+    <string name="welcome_hero_subtitle">голос, друзья, сообщества</string>
+    <string name="welcome_panel_title">Добро пожаловать в орбиту Astral</string>
+    <string name="welcome_panel_description">Быстрый нативный старт для чатов и звонков. Входите и продолжайте в классическом web-интерфейсе.</string>
+    <string name="welcome_feature_encrypted">Готово к шифрованию</string>
+    <string name="welcome_feature_low_friction">Быстрый вход</string>
+    <string name="welcome_action_continue">Продолжить</string>
+    <string name="welcome_action_create_account">Создать аккаунт</string>
+    <string name="welcome_footer_hint">Уже есть доступ? Кнопка «Продолжить» откроет вход.</string>
+</resources>

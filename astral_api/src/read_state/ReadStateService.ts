@@ -62,7 +62,21 @@ export class ReadStateService {
 		userId: UserID;
 		readStates: Array<{channelId: ChannelID; messageId: MessageID}>;
 	}): Promise<void> {
-		await Promise.all(readStates.map((readState) => this.ackMessage({...readState, userId, mentionCount: 0})));
+		// Single batched write (1 round-trip) instead of N per-channel patches.
+		// Presence dispatches are independent of the write and can fan out in parallel.
+		await Promise.all([
+			this.repository.bulkAckMessages(userId, readStates),
+			Promise.all(
+				readStates.map((readState) =>
+					this.dispatchMessageAck({
+						userId,
+						channelId: readState.channelId,
+						messageId: readState.messageId,
+						mentionCount: 0,
+					}),
+				),
+			),
+		]);
 		await this.gatewayService.invalidatePushBadgeCount({userId});
 	}
 

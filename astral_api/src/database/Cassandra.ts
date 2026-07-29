@@ -329,10 +329,37 @@ function normalizeExecuteArgs<P extends CassandraParams>(
 	return queryOrPrepared;
 }
 
-async function executeQuery<T = Record<string, unknown>, P extends CassandraParams = CassandraParams>(
+/**
+ * Row-count controls for a read.
+ *
+ * The driver hands back only the first page of a result set and silently drops the rest — `fetchSize`
+ * defaults to 5000 (`cassandra-driver/lib/client-options.js`) — so a read that can legitimately
+ * exceed that has to say so explicitly. Reads that do not opt in keep single-page semantics and are
+ * reported through the `cassandra.query.truncated` metric when rows were dropped.
+ */
+export interface FetchOptions {
+	/** Rows per page requested from the coordinator. Defaults to the driver's 5000. */
+	fetchSize?: number;
+	/**
+	 * Follow the driver's paging cursor until this many rows have been collected. Required to read
+	 * past one page; a CQL `LIMIT` alone does NOT lift the page cap.
+	 */
+	maxRows?: number;
+}
+
+interface PagedRows<T> {
+	rows: Array<T>;
+	cql: string;
+	queryType: string;
+	/** True when the coordinator still held rows that were not returned to the caller. */
+	hasMorePages: boolean;
+}
+
+async function executeQueryPaged<T = Record<string, unknown>, P extends CassandraParams = CassandraParams>(
 	queryOrPrepared: string | PreparedQuery<P>,
 	params?: P,
-): Promise<Array<T>> {
+	options?: FetchOptions,
+): Promise<PagedRows<T>> {
 	const {cql, params: bound} = normalizeExecuteArgs(queryOrPrepared, params);
 
 	if (isUnsafePreparedStatement(cql)) {
@@ -346,10 +373,30 @@ async function executeQuery<T = Record<string, unknown>, P extends CassandraPara
 	// one performance.now() call and a fire-and-forget metric emit.
 	const startTime = performance.now();
 	const queryType = getQueryType(cql);
+	const executeOptions: cassandra.QueryOptions = {prepare: true};
+	if (options?.fetchSize != null) {
+		executeOptions.fetchSize = options.fetchSize;
+	}
+	const maxRows = options?.maxRows;
 
 	try {
-		const result = await client.execute(cql, bound, {prepare: true});
+		let result = await client.execute(cql, bound, executeOptions);
 		const rows = (result.rows ?? []) as Array<T>;
+
+		/*
+		 * Follow the cursor only when the caller asked for it. Auto-paging every read would turn
+		 * full-partition scans (a 100k-member guild, the whole banned_ips table) into unbounded heap
+		 * allocations — trading a wrong answer for an outage.
+		 */
+		while (maxRows != null && rows.length < maxRows && result.pageState != null) {
+			result = await client.execute(cql, bound, {...executeOptions, pageState: result.pageState});
+			for (const row of (result.rows ?? []) as Array<T>) {
+				rows.push(row);
+			}
+		}
+
+		const overflowed = maxRows != null && rows.length > maxRows;
+		const boundedRows = overflowed ? rows.slice(0, maxRows) : rows;
 
 		const durationMs = performance.now() - startTime;
 		getMetricsService().histogram({
@@ -359,10 +406,10 @@ async function executeQuery<T = Record<string, unknown>, P extends CassandraPara
 		});
 
 		if (IS_DEV) {
-			logQuery(queryType, cql, bound as Record<string, unknown>, durationMs, rows.length);
+			logQuery(queryType, cql, bound as Record<string, unknown>, durationMs, boundedRows.length);
 		}
 
-		return rows;
+		return {rows: boundedRows, cql, queryType, hasMorePages: result.pageState != null || overflowed};
 	} catch (err: unknown) {
 		const durationMs = performance.now() - startTime;
 		getMetricsService().histogram({
@@ -394,6 +441,14 @@ async function executeQuery<T = Record<string, unknown>, P extends CassandraPara
 	}
 }
 
+async function executeQuery<T = Record<string, unknown>, P extends CassandraParams = CassandraParams>(
+	queryOrPrepared: string | PreparedQuery<P>,
+	params?: P,
+): Promise<Array<T>> {
+	const {rows} = await executeQueryPaged<T, P>(queryOrPrepared, params);
+	return rows;
+}
+
 export async function fetchOne<T = Record<string, unknown>, P extends CassandraParams = CassandraParams>(
 	queryOrPrepared: PreparedQuery<P> | string,
 	params?: P,
@@ -405,8 +460,28 @@ export async function fetchOne<T = Record<string, unknown>, P extends CassandraP
 export async function fetchMany<T = Record<string, unknown>, P extends CassandraParams = CassandraParams>(
 	queryOrPrepared: PreparedQuery<P> | string,
 	params?: P,
+	options?: FetchOptions,
 ): Promise<Array<T>> {
-	return executeQuery<T, P>(queryOrPrepared, params);
+	const {rows, cql, queryType, hasMorePages} = await executeQueryPaged<T, P>(queryOrPrepared, params, options);
+
+	/*
+	 * `fetchMany` means "give me the rows this query selects", so rows left behind by the page cap
+	 * are a wrong answer, not a policy. Callers that legitimately read past one page pass `maxRows`
+	 * and own the bound; everyone else gets a metric and a log line instead of silence — this is the
+	 * mechanism that pinned guild member_count at 5000 and dropped members from the gateway.
+	 */
+	if (hasMorePages && options?.maxRows == null) {
+		getMetricsService().counter({
+			name: 'cassandra.query.truncated',
+			dimensions: {op: queryType},
+		});
+		Logger.warn(
+			{query: cql, rows: rows.length},
+			'Cassandra read hit the page cap and may have dropped rows — pass fetchSize/maxRows to read past it',
+		);
+	}
+
+	return rows;
 }
 
 export async function fetchManyInChunks<
@@ -418,6 +493,7 @@ export async function fetchManyInChunks<
 	values: Array<V>,
 	paramsFactory: (chunk: Array<V>) => P,
 	chunkSize = DEFAULT_MAX_PARTITION_KEYS_PER_QUERY,
+	options?: FetchOptions,
 ): Promise<Array<T>> {
 	if (values.length === 0) return [];
 
@@ -426,15 +502,17 @@ export async function fetchManyInChunks<
 		chunks.map(async (chunk) => {
 			const params = paramsFactory(chunk);
 
+			// Routed through fetchMany so a chunk that hits the page cap is reported instead of
+			// silently returning a short result.
 			if (typeof query === 'string') {
-				return executeQuery<T, P>(query, params);
+				return fetchMany<T, P>(query, params, options);
 			}
 
 			if ((query as PreparedQuery<P>).params !== undefined) {
-				return executeQuery<T, P>(query as PreparedQuery<P>);
+				return fetchMany<T, P>(query as PreparedQuery<P>, undefined, options);
 			}
 
-			return executeQuery<T, P>((query as QueryTemplate<P>).bind(params));
+			return fetchMany<T, P>((query as QueryTemplate<P>).bind(params), undefined, options);
 		}),
 	);
 

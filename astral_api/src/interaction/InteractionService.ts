@@ -49,7 +49,11 @@
 import {createHmac} from 'node:crypto';
 import {type ChannelID, createUserID, type MessageID, type UserID} from '~/BrandedTypes';
 import type {ChannelService} from '~/channel/services/ChannelService';
-import {findComponentByCustomId, type MessageComponentRowChild} from '~/channel/ComponentTypes';
+import {
+	findComponentByCustomId,
+	type MessageComponentButton,
+	type MessageComponentSelect,
+} from '~/channel/ComponentTypes';
 import type {IChannelRepository} from '~/channel/IChannelRepository';
 import {InputValidationError, UnknownMessageError, UnknownWebhookError} from '~/Errors';
 import type {SnowflakeService} from '~/infrastructure/SnowflakeService';
@@ -223,7 +227,7 @@ export class InteractionService {
 		userId: UserID;
 		channel: {id: ChannelID; guildId: bigint | null};
 		message: {id: MessageID};
-		component: MessageComponentRowChild;
+		component: MessageComponentButton | MessageComponentSelect;
 		values: Array<string> | undefined;
 		requestCache: RequestCache;
 	}): Promise<InteractionPayload> {

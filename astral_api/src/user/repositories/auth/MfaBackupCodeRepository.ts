@@ -18,7 +18,7 @@
  */
 
 import {createMfaBackupCode, type UserID} from '~/BrandedTypes';
-import {BatchBuilder, Db, deleteOneOrMany, fetchMany, upsertOne} from '~/database/Cassandra';
+import {BatchBuilder, Db, deleteOneOrMany, executeConditional, fetchMany} from '~/database/Cassandra';
 import type {MfaBackupCodeRow} from '~/database/CassandraTypes';
 import {MfaBackupCode} from '~/Models';
 import {MfaBackupCodes} from '~/Tables';
@@ -55,15 +55,16 @@ export class MfaBackupCodeRepository {
 		await batch.execute();
 	}
 
-	async consumeMfaBackupCode(userId: UserID, code: string): Promise<void> {
-		await upsertOne(
-			MfaBackupCodes.patchByPk(
+	async consumeMfaBackupCode(userId: UserID, code: string): Promise<boolean> {
+		// LWT: only the first concurrent consumer may mark the code used.
+		const result = await executeConditional(
+			MfaBackupCodes.patchByPkIf(
 				{user_id: userId, code: createMfaBackupCode(code)},
-				{
-					consumed: Db.set(true),
-				},
+				{consumed: Db.set(true)},
+				{col: 'consumed', expectedParam: 'expected_consumed', expectedValue: false},
 			),
 		);
+		return result.applied;
 	}
 
 	async deleteAllMfaBackupCodes(userId: UserID): Promise<void> {

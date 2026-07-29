@@ -22,7 +22,6 @@ import {ArrowCounterClockwiseIcon, KeyboardIcon, PencilSimpleIcon, TrashIcon} fr
 import clsx from 'clsx';
 import React from 'react';
 import {Button} from '~/components/uikit/Button/Button';
-import {Popout} from '~/components/uikit/Popout/Popout';
 import type {KeybindAction, KeyCombo} from '~/stores/KeybindStore';
 import {formatKeyCombo} from '~/utils/KeybindUtils';
 import styles from './KeybindRecorder.module.css';
@@ -36,6 +35,7 @@ interface KeybindRecorderProps {
 	onClear?: () => void;
 	onReset?: () => void;
 	className?: string;
+	allowMouseButtons?: boolean;
 }
 
 const combosEqual = (a: KeyCombo | null | undefined, b: KeyCombo | null | undefined): boolean => {
@@ -71,47 +71,65 @@ const keyboardEventToCombo = (event: KeyboardEvent): KeyCombo => ({
 	shift: event.shiftKey,
 });
 
-interface KeybindEditorPopoutProps {
-	value: KeyCombo;
-	defaultValue: KeyCombo | null;
-	onSave: (combo: KeyCombo) => void;
-	onClear?: () => void;
-	onReset?: () => void;
-	onClose: () => void;
-}
+const browserMouseButtonToDisplayButton = (button: number): number => {
+	switch (button) {
+		case 0:
+			return 1;
+		case 2:
+			return 2;
+		case 1:
+			return 3;
+		default:
+			return button + 1;
+	}
+};
 
-const KeybindEditorPopout: React.FC<KeybindEditorPopoutProps> = ({
+const mouseEventToCombo = (event: MouseEvent): KeyCombo => {
+	const buttonNumber = browserMouseButtonToDisplayButton(event.button);
+	return {
+		key: `Mouse ${buttonNumber}`,
+		code: `Mouse${buttonNumber}`,
+		ctrlOrMeta: event.metaKey || event.ctrlKey,
+		ctrl: event.ctrlKey,
+		alt: event.altKey,
+		shift: event.shiftKey,
+	};
+};
+
+export const KeybindRecorder: React.FC<KeybindRecorderProps> = ({
+	action,
 	value,
-	defaultValue,
-	onSave,
+	defaultValue = null,
+	disabled = false,
+	onChange,
 	onClear,
 	onReset,
-	onClose,
+	className,
+	allowMouseButtons = false,
 }) => {
 	const {t} = useLingui();
+	const buttonRef = React.useRef<HTMLButtonElement | null>(null);
 	const [recording, setRecording] = React.useState(false);
-	const [previewCombo, setPreviewCombo] = React.useState<KeyCombo | null>(null);
+	const [draftCombo, setDraftCombo] = React.useState<KeyCombo | null>(null);
 
-	const currentCombo = previewCombo ?? value;
+	const currentCombo = draftCombo ?? value;
+	const isEmpty = !currentCombo?.key && !currentCombo?.code;
+	const hasValue = !isEmpty;
 	const displayValue = formatKeyCombo(currentCombo) || '';
-	const defaultDisplayValue = defaultValue ? formatKeyCombo(defaultValue) : null;
-	const currentHasValue = !!(currentCombo?.key || currentCombo?.code);
 	const currentIsModified = defaultValue ? !combosEqual(currentCombo, defaultValue) : false;
+	const canSave = hasValue && !combosEqual(currentCombo, value);
 
 	const cancelRecording = React.useCallback(() => {
 		setRecording(false);
-		setPreviewCombo(null);
-	}, []);
-
-	const finishRecording = React.useCallback((combo: KeyCombo) => {
-		setRecording(false);
-		setPreviewCombo(combo);
+		setDraftCombo(null);
 	}, []);
 
 	const startRecording = React.useCallback(() => {
-		setPreviewCombo(null);
+		if (disabled) return;
+		setDraftCombo(null);
 		setRecording(true);
-	}, []);
+		buttonRef.current?.focus();
+	}, [disabled]);
 
 	React.useEffect(() => {
 		if (!recording) return;
@@ -128,154 +146,129 @@ const KeybindEditorPopout: React.FC<KeybindEditorPopoutProps> = ({
 			event.stopPropagation();
 
 			const combo = keyboardEventToCombo(event);
-			setPreviewCombo(combo);
+			setDraftCombo({
+				...combo,
+				global: value.global,
+				enabled: true,
+			});
 
 			if (isModifierKey(event.key)) return;
 			if (!combo.key && !combo.code) return;
 
-			const savedCombo = {
-				...combo,
-				global: value.global,
-				enabled: true,
-			};
-			onSave(savedCombo);
-			finishRecording(savedCombo);
+			setRecording(false);
 		};
 
 		window.addEventListener('keydown', handleKeyDown, true);
+		const handleMouseDown = (event: MouseEvent) => {
+			if (!allowMouseButtons) return;
+			if (event.button === 0) return;
+
+			event.preventDefault();
+			event.stopPropagation();
+
+			setDraftCombo({
+				...mouseEventToCombo(event),
+				global: value.global,
+				enabled: true,
+			});
+			setRecording(false);
+		};
+
+		const handleContextMenu = (event: MouseEvent) => {
+			event.preventDefault();
+			event.stopPropagation();
+		};
+
+		window.addEventListener('mousedown', handleMouseDown, true);
+		window.addEventListener('contextmenu', handleContextMenu, true);
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown, true);
+			window.removeEventListener('mousedown', handleMouseDown, true);
+			window.removeEventListener('contextmenu', handleContextMenu, true);
 		};
-	}, [recording, onSave, cancelRecording, finishRecording, value.global]);
+	}, [recording, allowMouseButtons, cancelRecording, value.global]);
+
+	const handleSave = () => {
+		if (!canSave) return;
+		onChange({
+			...currentCombo,
+			global: value.global,
+			enabled: true,
+		});
+		setDraftCombo(null);
+		setRecording(false);
+	};
 
 	const handleClear = () => {
-		setPreviewCombo(null);
+		setDraftCombo(null);
+		setRecording(false);
 		onClear?.();
 	};
 
 	const handleReset = () => {
-		setPreviewCombo(null);
+		setDraftCombo(null);
+		setRecording(false);
 		onReset?.();
 	};
 
 	return (
-		<div className={styles.popout}>
-			<div className={styles.popoutHeader}>
-				<span className={styles.popoutTitle}>
-					<Trans>Edit Shortcut</Trans>
-				</span>
-				<span className={styles.popoutHint}>
-					<Trans>Click to record a new shortcut, or press Escape to cancel.</Trans>
-				</span>
-			</div>
-
-			<div
-				className={clsx(styles.recorderBox, recording && styles.recorderBoxRecording)}
+		<div className={clsx(styles.inlineEditor, className)}>
+			<button
+				ref={buttonRef}
+				type="button"
+				className={clsx(
+					styles.recorder,
+					hasValue && styles.hasValue,
+					recording && styles.recording,
+					canSave && styles.dirty,
+					disabled && styles.disabled,
+				)}
+				disabled={disabled}
+				data-keybind-recorder="true"
 				onClick={startRecording}
-				onKeyDown={(e) => {
-					if (e.key === 'Enter' || e.key === ' ') {
-						e.preventDefault();
+				onKeyDown={(event) => {
+					if (event.key === 'Enter' || event.key === ' ') {
+						event.preventDefault();
 						startRecording();
 					}
 				}}
-				tabIndex={0}
-				role="button"
-				aria-label={t`Record shortcut`}
-			>
-				<KeyboardIcon size={20} weight="bold" className={styles.recorderIcon} />
-				<span className={styles.recorderText}>
-					{recording ? <Trans>Press keys...</Trans> : currentHasValue ? displayValue : <Trans>Click to record</Trans>}
-				</span>
-			</div>
-
-			{defaultDisplayValue && (
-				<div className={styles.defaultRow}>
-					<span className={styles.defaultLabel}>
-						<Trans>Default:</Trans>
-					</span>
-					<span className={styles.defaultValue}>{defaultDisplayValue}</span>
-				</div>
-			)}
-
-			<div className={styles.popoutActions}>
-				<div className={styles.popoutActionsLeft}>
-					{onClear && currentHasValue && (
-						<Button variant="secondary" small type="button" onClick={handleClear} leftIcon={<TrashIcon size={16} />}>
-							<Trans>Clear</Trans>
-						</Button>
-					)}
-					{onReset && currentIsModified && (
-						<Button
-							variant="secondary"
-							small
-							type="button"
-							onClick={handleReset}
-							leftIcon={<ArrowCounterClockwiseIcon size={16} />}
-						>
-							<Trans>Reset</Trans>
-						</Button>
-					)}
-				</div>
-				<Button variant="secondary" small type="button" onClick={onClose}>
-					<Trans>Done</Trans>
-				</Button>
-			</div>
-		</div>
-	);
-};
-
-export const KeybindRecorder: React.FC<KeybindRecorderProps> = ({
-	action,
-	value,
-	defaultValue = null,
-	disabled = false,
-	onChange,
-	onClear,
-	onReset,
-	className,
-}) => {
-	const {t} = useLingui();
-	const triggerRef = React.useRef<HTMLButtonElement | null>(null);
-
-	const isEmpty = !value?.key && !value?.code;
-	const hasValue = !isEmpty;
-	const displayValue = formatKeyCombo(value) || '';
-
-	return (
-		<Popout
-			position="bottom"
-			offsetMainAxis={8}
-			offsetCrossAxis={0}
-			returnFocusRef={triggerRef}
-			render={({onClose}) => (
-				<KeybindEditorPopout
-					value={value}
-					defaultValue={defaultValue}
-					onSave={(combo) => {
-						onChange({...combo, global: value.global});
-					}}
-					onClear={onClear}
-					onReset={onReset}
-					onClose={onClose}
-				/>
-			)}
-		>
-			<button
-				ref={triggerRef}
-				type="button"
-				className={clsx(styles.recorder, hasValue && styles.hasValue, disabled && styles.disabled, className)}
-				disabled={disabled}
-				aria-label={t`Edit keyboard shortcut for ${action}`}
+				aria-label={recording ? t`Recording shortcut for ${action}` : t`Edit keyboard shortcut for ${action}`}
+				aria-pressed={recording}
 			>
 				<div className={styles.layout}>
 					<div className={styles.editIconLeft} aria-hidden>
-						<PencilSimpleIcon size={14} weight="bold" />
+						{recording ? <KeyboardIcon size={16} weight="bold" /> : <PencilSimpleIcon size={14} weight="bold" />}
 					</div>
 					<div className={styles.inputWrapper}>
-						<span className={styles.input}>{hasValue ? displayValue : t`No keybind set`}</span>
+						<span className={styles.input}>
+							{recording ? t`Press a key...` : hasValue ? displayValue : t`No keybind set`}
+						</span>
 					</div>
 				</div>
 			</button>
-		</Popout>
+			<div className={styles.inlineActions}>
+				{canSave && (
+					<Button variant="primary" small type="button" onClick={handleSave}>
+						<Trans>Save</Trans>
+					</Button>
+				)}
+				{onClear && hasValue && !canSave && (
+					<Button variant="secondary" small type="button" onClick={handleClear} leftIcon={<TrashIcon size={16} />}>
+						<Trans>Clear</Trans>
+					</Button>
+				)}
+				{onReset && currentIsModified && !canSave && (
+					<Button
+						variant="secondary"
+						small
+						type="button"
+						onClick={handleReset}
+						leftIcon={<ArrowCounterClockwiseIcon size={16} />}
+					>
+						<Trans>Reset</Trans>
+					</Button>
+				)}
+			</div>
+		</div>
 	);
 };

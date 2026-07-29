@@ -388,57 +388,58 @@ export const DesktopSettingsView: React.FC<DesktopSettingsViewProps> = observer(
 				</SettingsModalDesktopSidebar>
 
 				<SettingsModalDesktopContent ref={contentRef} tabpanelId={activeTabPanelId} labelledBy={activeTabId}>
-					<SettingsModalHeader
-						title={isSearchActive ? t`Search Results` : currentTab?.label || t`User Settings`}
-						showUnsavedBanner={showUnsavedBanner}
-						flashBanner={flashBanner}
-						tabData={tabData}
-						onClose={handleClose}
-					/>
+					<DesktopSettingsPanelTransition
+						panelKey={scrollKey}
+						direction={direction}
+						reducedMotion={prefersReducedMotion}
+						fadeOnly={isSearchActive}
+						className={settingsModalStyles.desktopPanelShellTransition}
+					>
+						<SettingsModalHeader
+							title={isSearchActive ? t`Search Results` : currentTab?.label || t`User Settings`}
+							showUnsavedBanner={showUnsavedBanner}
+							flashBanner={flashBanner}
+							tabData={tabData}
+							onClose={handleClose}
+						/>
 
-					<AnimatePresence mode="wait" initial={false}>
-						{!mobileLayout.enabled && selectedTab === 'appearance' && !isSearchActive && (
-							<motion.div
-								key="appearance-preview"
-								initial={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: 8}}
-								animate={{opacity: 1, y: 0}}
-								exit={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: -6}}
-								transition={prefersReducedMotion ? {duration: 0} : {duration: 0.24, ease: [0.22, 1, 0.36, 1]}}
-								className={styles.previewDivider}
-							>
-								<Sentry.ErrorBoundary fallback={<></>}>
-									<div className={settingsModalStyles.previewContainer}>
-										<AppearanceTabPreview />
-									</div>
-								</Sentry.ErrorBoundary>
-							</motion.div>
-						)}
-						{!mobileLayout.enabled && selectedTab === 'accessibility' && !isSearchActive && (
-							<motion.div
-								key="accessibility-preview"
-								initial={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: 8}}
-								animate={{opacity: 1, y: 0}}
-								exit={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: -6}}
-								transition={prefersReducedMotion ? {duration: 0} : {duration: 0.24, ease: [0.22, 1, 0.36, 1]}}
-								className={styles.previewDivider}
-							>
-								<Sentry.ErrorBoundary fallback={<></>}>
-									<div className={settingsModalStyles.previewContainer}>
-										<AccessibilityTabPreview />
-									</div>
-								</Sentry.ErrorBoundary>
-							</motion.div>
-						)}
-					</AnimatePresence>
+						<AnimatePresence mode="wait" initial={false}>
+							{!mobileLayout.enabled && selectedTab === 'appearance' && !isSearchActive && (
+								<motion.div
+									key="appearance-preview"
+									initial={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: 8}}
+									animate={{opacity: 1, y: 0}}
+									exit={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: -6}}
+									transition={prefersReducedMotion ? {duration: 0} : {duration: 0.24, ease: [0.22, 1, 0.36, 1]}}
+									className={styles.previewDivider}
+								>
+									<Sentry.ErrorBoundary fallback={<></>}>
+										<div className={settingsModalStyles.previewContainer}>
+											<AppearanceTabPreview />
+										</div>
+									</Sentry.ErrorBoundary>
+								</motion.div>
+							)}
+							{!mobileLayout.enabled && selectedTab === 'accessibility' && !isSearchActive && (
+								<motion.div
+									key="accessibility-preview"
+									initial={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: 8}}
+									animate={{opacity: 1, y: 0}}
+									exit={prefersReducedMotion ? {opacity: 1} : {opacity: 0, y: -6}}
+									transition={prefersReducedMotion ? {duration: 0} : {duration: 0.24, ease: [0.22, 1, 0.36, 1]}}
+									className={styles.previewDivider}
+								>
+									<Sentry.ErrorBoundary fallback={<></>}>
+										<div className={settingsModalStyles.previewContainer}>
+											<AccessibilityTabPreview />
+										</div>
+									</Sentry.ErrorBoundary>
+								</motion.div>
+							)}
+						</AnimatePresence>
 
-					<Sentry.ErrorBoundary fallback={tabRenderFallback}>
-						<SettingsModalDesktopScroll scrollKey={scrollKey} scrollerRef={scrollContainerRef}>
-							<DesktopSettingsPanelTransition
-								panelKey={scrollKey}
-								direction={direction}
-								reducedMotion={prefersReducedMotion}
-								fadeOnly={isSearchActive}
-							>
+						<Sentry.ErrorBoundary fallback={tabRenderFallback}>
+							<SettingsModalDesktopScroll scrollKey={scrollKey} scrollerRef={scrollContainerRef}>
 								{isSearchActive ? (
 									<AllSettingsRenderer
 										searchQuery={debouncedSearchQuery}
@@ -454,9 +455,9 @@ export const DesktopSettingsView: React.FC<DesktopSettingsViewProps> = observer(
 										...(initialSubtab ? {initialSubtab} : {}),
 									} as any)
 								)}
-							</DesktopSettingsPanelTransition>
-						</SettingsModalDesktopScroll>
-					</Sentry.ErrorBoundary>
+							</SettingsModalDesktopScroll>
+						</Sentry.ErrorBoundary>
+					</DesktopSettingsPanelTransition>
 				</SettingsModalDesktopContent>
 			</>
 		);

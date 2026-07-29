@@ -63,9 +63,9 @@ import type {IEmailService} from '~/infrastructure/IEmailService';
 import type {ILiveKitService} from '~/infrastructure/ILiveKitService';
 import {InMemoryVoiceRoomStore} from '~/infrastructure/InMemoryVoiceRoomStore';
 import type {IVoiceRoomStore} from '~/infrastructure/IVoiceRoomStore';
+import type {IVirusScanService} from '~/infrastructure/IVirusScanService';
 import {LiveKitService} from '~/infrastructure/LiveKitService';
-import {LiveKitWebhookService} from '~/infrastructure/LiveKitWebhookService';
-import {MediaService as ProdMediaService} from '~/infrastructure/MediaService';
+import {LiveKitWebhookService} from '~/infrastructure/LiveKitWebhookService';import {MediaService as ProdMediaService} from '~/infrastructure/MediaService';
 import {PendingJoinInviteStore} from '~/infrastructure/PendingJoinInviteStore';
 import {RateLimitService} from '~/infrastructure/RateLimitService';
 import {RedisAccountDeletionQueueService} from '~/infrastructure/RedisAccountDeletionQueueService';
@@ -80,6 +80,7 @@ import {UnfurlerService as ProdUnfurlerService} from '~/infrastructure/UnfurlerS
 import {UserCacheService} from '~/infrastructure/UserCacheService';
 import {VirusScanService as ProdVirusScanService} from '~/infrastructure/VirusScanService';
 import {VoiceRoomStore} from '~/infrastructure/VoiceRoomStore';
+import {TurnService} from '~/infrastructure/TurnService';
 import {SnowflakeReservationRepository} from '~/instance/SnowflakeReservationRepository';
 import {SnowflakeReservationService} from '~/instance/SnowflakeReservationService';
 import {InteractionService} from '~/interaction/InteractionService';
@@ -96,6 +97,7 @@ import {ApplicationRepository} from '~/oauth/repositories/ApplicationRepository'
 import {OAuth2TokenRepository} from '~/oauth/repositories/OAuth2TokenRepository';
 import {CloudPaymentsService} from '~/payments/cloudpayments/CloudPaymentsService';
 import {IntellectMoneyService} from '~/payments/intellectmoney/IntellectMoneyService';
+import {TBankService} from '~/payments/tbank/TBankService';
 import {WataService} from '~/payments/wata/WataService';
 import {PackRepository} from '~/pack/PackRepository';
 import {PackService} from '~/pack/PackService';
@@ -107,9 +109,11 @@ import {RpcService} from '~/rpc/RpcService';
 import {StripeService} from '~/stripe/StripeService';
 import {TenorService as ProdTenorService} from '~/tenor/TenorService';
 import {EmailChangeRepository} from '~/user/repositories/auth/EmailChangeRepository';
+import {PremiumWaitlistRepository} from '~/user/repositories/PremiumWaitlistRepository';
 import {ScheduledMessageRepository} from '~/user/repositories/ScheduledMessageRepository';
 import {UserContactChangeLogRepository} from '~/user/repositories/UserContactChangeLogRepository';
 import {EmailChangeService} from '~/user/services/EmailChangeService';
+import {PremiumWaitlistService} from '~/user/services/PremiumWaitlistService';
 import {UserContactChangeLogService} from '~/user/services/UserContactChangeLogService';
 import {UserRepository as ProdUserRepository} from '~/user/UserRepository';
 import {UserService} from '~/user/UserService';
@@ -152,6 +156,9 @@ const cloudflarePurgeQueue: ICloudflarePurgeQueue = Config.cloudflare.purgeEnabl
 	? new CloudflarePurgeQueue(redis)
 	: new NoopCloudflarePurgeQueue();
 const assetDeletionQueue: IAssetDeletionQueue = new AssetDeletionQueue(redis);
+const virusScanService: IVirusScanService = new VirusScanService(cacheService);
+let virusScanServiceInitialized = false;
+let virusScanInitializationPromise: Promise<void> | null = null;
 
 const featureFlagRepository = new FeatureFlagRepository();
 const featureFlagSubscriber = new Redis(Config.redis.url);
@@ -171,6 +178,34 @@ let liveKitServiceInstance: ILiveKitService | null = null;
 let voiceRoomStoreInstance: IVoiceRoomStore | null = null;
 let voiceConfigSubscriber: Redis | null = null;
 let voiceInitializationPromise: Promise<void> | null = null;
+
+async function ensureRequestPathSingletonsInitialized(): Promise<void> {
+	await snowflakeService.initialize();
+
+	if (!featureFlagServiceInitialized) {
+		await featureFlagService.initialize();
+		featureFlagServiceInitialized = true;
+	}
+
+	if (!snowflakeReservationServiceInitialized) {
+		await snowflakeReservationService.initialize();
+		snowflakeReservationServiceInitialized = true;
+	}
+
+	if (!virusScanServiceInitialized) {
+		if (!virusScanInitializationPromise) {
+			virusScanInitializationPromise = virusScanService
+				.initialize()
+				.then(() => {
+					virusScanServiceInitialized = true;
+				})
+				.finally(() => {
+					virusScanInitializationPromise = null;
+				});
+		}
+		await virusScanInitializationPromise;
+	}
+}
 
 export async function ensureVoiceResourcesInitialized(): Promise<void> {
 	if (!Config.voice.enabled) {
@@ -210,17 +245,7 @@ export async function ensureVoiceResourcesInitialized(): Promise<void> {
 }
 
 export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => {
-	await snowflakeService.initialize();
-
-	if (!featureFlagServiceInitialized) {
-		await featureFlagService.initialize();
-		featureFlagServiceInitialized = true;
-	}
-
-	if (!snowflakeReservationServiceInitialized) {
-		await snowflakeReservationService.initialize();
-		snowflakeReservationServiceInitialized = true;
-	}
+	await ensureRequestPathSingletonsInitialized();
 
 	const userRepository = new UserRepository();
 	const guildRepository = new GuildRepository();
@@ -254,8 +279,6 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 
 	const emailService: IEmailService = testEmailServiceInstance ?? new EmailService(userRepository);
 	const smsService = new SMSService();
-	const virusScanService = new VirusScanService(cacheService);
-	await virusScanService.initialize();
 
 	await ensureVoiceResourcesInitialized();
 	const liveKitService: ILiveKitService = liveKitServiceInstance ?? new DisabledLiveKitService();
@@ -386,6 +409,10 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 			? new LiveKitWebhookService(voiceRoomStore, gatewayService, userRepository, liveKitService, voiceTopology)
 			: undefined;
 
+	// TURN relay credentials are only meaningful when voice itself is on.
+	// The service is a cheap in-process cache; instantiate once per process.
+	const turnService = hasVoiceInfrastructure ? new TurnService() : undefined;
+
 	const voiceService =
 		hasVoiceInfrastructure && voiceAvailabilityService
 			? new VoiceService(
@@ -395,6 +422,7 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 					channelRepository,
 					voiceRoomStore,
 					voiceAvailabilityService,
+					turnService,
 				)
 			: undefined;
 
@@ -536,6 +564,9 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 		rateLimitService,
 	);
 
+	const premiumWaitlistRepository = new PremiumWaitlistRepository();
+	const premiumWaitlistService = new PremiumWaitlistService(premiumWaitlistRepository);
+
 	const userService = new UserService(
 		userRepository,
 		userRepository,
@@ -567,7 +598,7 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 	);
 
 	let stripeService: StripeService | null = null;
-	if (!Config.instance.selfHosted || Config.stripe.enabled || Config.cloudpayments.enabled || Config.intellectmoney.enabled || Config.wata.enabled) {
+	if (!Config.instance.selfHosted || Config.stripe.enabled || Config.cloudpayments.enabled || Config.intellectmoney.enabled || Config.tbank.enabled || Config.wata.enabled) {
 		stripeService = new StripeService(
 			userRepository,
 			authService,
@@ -606,6 +637,18 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 	let wataService: WataService | null = null;
 	if (Config.wata.enabled) {
 		wataService = new WataService(
+			userRepository,
+			cacheService,
+			gatewayService,
+			guildRepository,
+			guildService,
+			snowflakeService,
+		);
+	}
+
+	let tbankService: TBankService | null = null;
+	if (Config.tbank.enabled) {
+		tbankService = new TBankService(
 			userRepository,
 			cacheService,
 			gatewayService,
@@ -667,6 +710,7 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 	ctx.set('inviteService', inviteService);
 	ctx.set('packService', packService);
 	ctx.set('packRepository', packRepository);
+	ctx.set('premiumWaitlistService', premiumWaitlistService);
 	if (liveKitWebhookService) {
 		ctx.set('liveKitWebhookService', liveKitWebhookService);
 	}
@@ -692,6 +736,9 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 	}
 	if (wataService) {
 		ctx.set('wataService', wataService);
+	}
+	if (tbankService) {
+		ctx.set('tbankService', tbankService);
 	}
 	ctx.set('sudoModeValid', false);
 	ctx.set('tenorService', tenorService);

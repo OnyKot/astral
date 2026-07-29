@@ -20,7 +20,16 @@
 import type {MessageDescriptor} from '@lingui/core';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
-import {FilmSlateIcon, GifIcon, KeyboardIcon, MagnifyingGlassIcon, SmileyIcon, StickerIcon} from '@phosphor-icons/react';
+import {
+	FilmSlateIcon,
+	GifIcon,
+	KeyboardIcon,
+	MagnifyingGlassIcon,
+	SmileyIcon,
+	SparkleIcon,
+	StickerIcon,
+} from '@phosphor-icons/react';
+import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import React from 'react';
 import * as ExpressionPickerActionCreators from '~/actions/ExpressionPickerActionCreators';
@@ -29,10 +38,12 @@ import {MobileMemesPicker} from '~/components/channel/MobileMemesPicker';
 import {MobileStickersPicker} from '~/components/channel/MobileStickersPicker';
 import {GifPicker} from '~/components/channel/pickers/gif/GifPicker';
 import styles from '~/components/modals/ExpressionPickerSheet.module.css';
+import {StatusGifEmojiPicker} from '~/components/modals/StatusGifEmojiPicker';
 import {ExpressionPickerHeaderContext, type ExpressionPickerTabType} from '~/components/popouts/ExpressionPickerPopout';
 import {BottomSheet} from '~/components/uikit/BottomSheet/BottomSheet';
 import {type SegmentedTab, SegmentedTabs} from '~/components/uikit/SegmentedTabs/SegmentedTabs';
 import * as StickerSendUtils from '~/lib/StickerSendUtils';
+import type {StatusGifEmoji} from '~/lib/statusGifEmojis';
 import type {GuildStickerRecord} from '~/records/GuildStickerRecord';
 import type {Emoji} from '~/stores/EmojiStore';
 import ExpressionPickerStore from '~/stores/ExpressionPickerStore';
@@ -52,6 +63,8 @@ interface ExpressionPickerCategoryDescriptor {
 		searchActive?: boolean;
 		onSearchActiveChange?: (active: boolean) => void;
 		searchAutoFocusKey?: number;
+		onStatusGifEmojiSelect?: (emoji: StatusGifEmoji) => void;
+		selectedStatusGifEmojiValue?: string | null;
 	}) => React.ReactNode;
 }
 
@@ -119,6 +132,24 @@ const EXPRESSION_PICKER_CATEGORY_DESCRIPTORS: Array<ExpressionPickerCategoryDesc
 			</div>
 		),
 	},
+	{
+		type: 'status-gif-emojis' as const,
+		label: msg`Animated status emoji`,
+		shortLabel: msg`Animated`,
+		icon: SparkleIcon,
+		renderComponent: ({onClose, onStatusGifEmojiSelect, selectedStatusGifEmojiValue}) => (
+			<div className={styles.pickerContent}>
+				<StatusGifEmojiPicker
+					selectedValue={selectedStatusGifEmojiValue ?? null}
+					onSelect={(emoji) => {
+						onStatusGifEmojiSelect?.(emoji);
+						onClose();
+					}}
+					compact
+				/>
+			</div>
+		),
+	},
 ];
 
 const blurActiveEditableElement = () => {
@@ -136,6 +167,9 @@ const blurActiveEditableElement = () => {
 	}
 };
 
+const REACTION_PICKER_SNAP = 0.56;
+const REACTION_PICKER_SNAP_POINTS = [0, REACTION_PICKER_SNAP];
+
 interface ExpressionPickerSheetProps {
 	isOpen: boolean;
 	onClose: () => void;
@@ -147,6 +181,8 @@ interface ExpressionPickerSheetProps {
 	visibleTabs?: Array<ExpressionPickerTabType>;
 	selectedTab?: ExpressionPickerTabType;
 	onTabChange?: (tab: ExpressionPickerTabType) => void;
+	onStatusGifEmojiSelect?: (emoji: StatusGifEmoji) => void;
+	selectedStatusGifEmojiValue?: string | null;
 	zIndex?: number;
 	keyboardReplacement?: boolean;
 	reactionPicker?: boolean;
@@ -164,6 +200,8 @@ export const ExpressionPickerSheet = observer(
 		visibleTabs = ['gifs', 'memes', 'stickers', 'emojis'],
 		selectedTab: controlledSelectedTab,
 		onTabChange,
+		onStatusGifEmojiSelect,
+		selectedStatusGifEmojiValue,
 		zIndex,
 		keyboardReplacement = false,
 		reactionPicker = false,
@@ -192,8 +230,13 @@ export const ExpressionPickerSheet = observer(
 		const [emojiSearchAutoFocusKey, setEmojiSearchAutoFocusKey] = React.useState(0);
 		const [_hoveredEmoji, setHoveredEmoji] = React.useState<Emoji | null>(null);
 
-		const storeSelectedTab = ExpressionPickerStore.selectedTab;
-		const selectedTab = storeSelectedTab ?? controlledSelectedTab ?? internalSelectedTab;
+		const canUseStoreTab = Boolean(!reactionPicker && channelId && ExpressionPickerStore.channelId === channelId);
+		const preferredSelectedTab = canUseStoreTab
+			? ExpressionPickerStore.selectedTab
+			: controlledSelectedTab ?? internalSelectedTab;
+		const selectedTab = categories.some((category) => category.type === preferredSelectedTab)
+			? preferredSelectedTab
+			: categories[0]?.type || 'emojis';
 
 		const setSelectedTab = React.useCallback(
 			(tab: ExpressionPickerTabType) => {
@@ -206,24 +249,24 @@ export const ExpressionPickerSheet = observer(
 					return;
 				}
 
-				const pickerChannelId = ExpressionPickerStore.channelId;
-				if (pickerChannelId) {
+				if (canUseStoreTab) {
 					ExpressionPickerActionCreators.setTab(tab);
 				} else {
 					setInternalSelectedTab(tab);
 				}
 			},
-			[keyboardReplacement, onTabChange],
+			[canUseStoreTab, keyboardReplacement, onTabChange],
 		);
 
 		const selectedCategory = categories.find((category) => category.type === selectedTab) || categories[0];
 
 		React.useEffect(() => {
 			if (!isOpen) return;
+			if (reactionPicker) return;
 			if (channelId && ExpressionPickerStore.channelId !== channelId) {
 				ExpressionPickerActionCreators.open(channelId, selectedTab);
 			}
-		}, [isOpen, channelId, selectedTab]);
+		}, [isOpen, channelId, reactionPicker, selectedTab]);
 
 		const handleEmojiSelect = React.useCallback(
 			(emoji: Emoji, shiftKey?: boolean) => {
@@ -240,6 +283,9 @@ export const ExpressionPickerSheet = observer(
 		const showTabs = categories.length > 1;
 		const showEmojiSearchButton = keyboardReplacement && categories.some((category) => category.type === 'emojis');
 		const showEmojiSearchHeader = emojiSearchMode && selectedCategory?.type === 'emojis';
+		const resolvedSnapPoints = reactionPicker ? REACTION_PICKER_SNAP_POINTS : snapPoints;
+		const resolvedInitialSnap = reactionPicker ? REACTION_PICKER_SNAP : initialSnap;
+		const shouldAllowSwipeDismiss = reactionPicker && !keyboardReplacement;
 
 		const segmentedTabs: Array<SegmentedTab<ExpressionPickerTabType>> = React.useMemo(
 			() =>
@@ -248,6 +294,7 @@ export const ExpressionPickerSheet = observer(
 					label: category.shortLabel,
 					ariaLabel: category.label,
 					icon: category.icon,
+					tone: category.type === 'status-gif-emojis' ? ('animated' as const) : undefined,
 				})),
 			[categories],
 		);
@@ -302,27 +349,24 @@ export const ExpressionPickerSheet = observer(
 				<BottomSheet
 					isOpen={isOpen}
 					onClose={onClose}
-					snapPoints={snapPoints}
-					initialSnap={initialSnap}
+					snapPoints={resolvedSnapPoints}
+					initialSnap={resolvedInitialSnap}
 					disablePadding={true}
 					disableDefaultHeader={true}
 					headerSlot={headerContent}
 					showCloseButton={false}
-					showHandle={false}
-					disableDrag={true}
+					showHandle={shouldAllowSwipeDismiss}
+					disableDrag={!shouldAllowSwipeDismiss}
 					avoidKeyboard={!keyboardReplacement}
 					backdropOpacity={reactionPicker ? 0.48 : 0}
 					showBackdrop={true}
 					disableBackdropBlur={!reactionPicker}
 					animationPreset={keyboardReplacement ? 'keyboard-replacement' : 'default'}
 					zIndex={zIndex}
-					containerClassName={
-						keyboardReplacement
-							? styles.keyboardReplacementSheet
-							: reactionPicker
-								? styles.reactionPickerSheet
-								: undefined
-					}
+					containerClassName={clsx(
+						keyboardReplacement && styles.keyboardReplacementSheet,
+						reactionPicker && styles.reactionPickerSheet,
+					)}
 				>
 					<div className={styles.container}>
 						<div className={styles.contentContainer}>
@@ -345,6 +389,8 @@ export const ExpressionPickerSheet = observer(
 												}
 											: undefined,
 									searchAutoFocusKey: emojiSearchAutoFocusKey,
+									onStatusGifEmojiSelect,
+									selectedStatusGifEmojiValue,
 								})}
 							</div>
 						</div>

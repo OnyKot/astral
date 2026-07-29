@@ -32,6 +32,7 @@ import {Button} from '~/components/uikit/Button/Button';
 import {RadioGroup, type RadioOption} from '~/components/uikit/RadioGroup/RadioGroup';
 import {Slider} from '~/components/uikit/Slider';
 import {WarningAlert} from '~/components/uikit/WarningAlert/WarningAlert';
+import KeybindManager from '~/lib/KeybindManager';
 import KeybindStore, {getDefaultKeybind} from '~/stores/KeybindStore';
 import NativePermissionStore from '~/stores/NativePermissionStore';
 import NewDeviceMonitoringStore from '~/stores/NewDeviceMonitoringStore';
@@ -87,7 +88,6 @@ export const VoiceTab: React.FC<VoiceTabProps> = observer(
 		const isPushToTalk = transmitMode === 'push_to_talk';
 		const pttKeybind = KeybindStore.getByAction('push_to_talk');
 		const pttReleaseDelay = KeybindStore.pushToTalkReleaseDelay;
-		const pttLatching = KeybindStore.pushToTalkLatching;
 
 		const isPttLimited = !isNativeDesktop || (isNativeMac && !inputMonitoringGranted);
 		const defaultPttCombo = getDefaultKeybind('push_to_talk', i18n);
@@ -271,11 +271,15 @@ export const VoiceTab: React.FC<VoiceTabProps> = observer(
 											action="push_to_talk"
 											value={pttKeybind.combo}
 											defaultValue={defaultPttCombo}
+											allowMouseButtons
 											onChange={(combo) => {
 												KeybindStore.setKeybind('push_to_talk', {
 													...combo,
-													global: pttKeybind.combo.global,
+													global: isNativeDesktop && !isPttLimited ? true : pttKeybind.combo.global,
 												});
+												KeybindStore.setTransmitMode('push_to_talk');
+												MediaEngineStore.handlePushToTalkModeChange();
+												void KeybindManager.reapplyPushToTalkShortcuts();
 											}}
 											onReset={() => {
 												if (defaultPttCombo) {
@@ -283,6 +287,9 @@ export const VoiceTab: React.FC<VoiceTabProps> = observer(
 														...defaultPttCombo,
 														global: pttKeybind.combo.global,
 													});
+													KeybindStore.setTransmitMode('push_to_talk');
+													MediaEngineStore.handlePushToTalkModeChange();
+													void KeybindManager.reapplyPushToTalkShortcuts();
 												}
 											}}
 										/>
@@ -307,24 +314,6 @@ export const VoiceTab: React.FC<VoiceTabProps> = observer(
 									/>
 								</div>
 
-								<div className={styles.pttLatchingRow}>
-									<div className={styles.pttLatchingText}>
-										<div className={styles.pttSettingLabel}>
-											<Trans>Push-to-Talk Latching</Trans>
-										</div>
-										<p className={styles.pttSettingDescription}>
-											<Trans>
-												When enabled, quickly tapping your push-to-talk shortcut will keep your microphone on until
-												pressed again.
-											</Trans>
-										</p>
-									</div>
-									<Switch
-										value={pttLatching}
-										onChange={(value) => KeybindStore.setPushToTalkLatching(value)}
-										ariaLabel={t`Push-to-Talk Latching`}
-									/>
-								</div>
 							</div>
 						)}
 

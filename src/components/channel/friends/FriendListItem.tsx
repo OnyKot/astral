@@ -135,6 +135,7 @@ export const FriendListItem: React.FC<FriendListItemProps> = observer((props) =>
 
 	const createDMChannel = React.useCallback(
 		async (e: React.MouseEvent) => {
+			e.preventDefault();
 			e.stopPropagation();
 			try {
 				await PrivateChannelActionCreators.openDMChannel(userId);
@@ -147,6 +148,7 @@ export const FriendListItem: React.FC<FriendListItemProps> = observer((props) =>
 
 	const startVoiceCall = React.useCallback(
 		async (e: React.MouseEvent) => {
+			e.preventDefault();
 			e.stopPropagation();
 			const user = UserStore.getUser(userId);
 			if (user?.bot) return;
@@ -163,6 +165,7 @@ export const FriendListItem: React.FC<FriendListItemProps> = observer((props) =>
 
 	const ignoreIncomingFriendRequest = React.useCallback(
 		(e: React.MouseEvent) => {
+			e.preventDefault();
 			e.stopPropagation();
 			const user = UserStore.getUser(userId);
 			if (!user) return;
@@ -184,6 +187,7 @@ export const FriendListItem: React.FC<FriendListItemProps> = observer((props) =>
 
 	const cancelOutgoingFriendRequest = React.useCallback(
 		(e: React.MouseEvent) => {
+			e.preventDefault();
 			e.stopPropagation();
 			const user = UserStore.getUser(userId);
 			if (!user) return;
@@ -205,6 +209,7 @@ export const FriendListItem: React.FC<FriendListItemProps> = observer((props) =>
 
 	const acceptFriendRequest = React.useCallback(
 		(e: React.MouseEvent) => {
+			e.preventDefault();
 			e.stopPropagation();
 			RelationshipActionCreators.acceptFriendRequest(userId);
 		},
@@ -213,6 +218,7 @@ export const FriendListItem: React.FC<FriendListItemProps> = observer((props) =>
 
 	const handleContextMenuClick = React.useCallback(
 		(e: React.MouseEvent) => {
+			e.preventDefault();
 			e.stopPropagation();
 			const user = UserStore.getUser(userId);
 			if (!user) return;
@@ -396,6 +402,7 @@ export const FriendListItem: React.FC<FriendListItemProps> = observer((props) =>
 					tabIndex={0}
 					onKeyDown={(e) => {
 						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
 							openProfile(userId);
 						}
 					}}

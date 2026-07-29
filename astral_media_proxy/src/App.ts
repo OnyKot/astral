@@ -24,6 +24,7 @@ import {serve} from '@hono/node-server';
 import * as Sentry from '@sentry/node';
 import {Hono} from 'hono';
 import {HTTPException} from 'hono/http-exception';
+import {bodyLimit} from 'hono/body-limit';
 import {logger} from 'hono/logger';
 import * as v from 'valibot';
 import {Config} from '~/Config';
@@ -47,6 +48,7 @@ import {NSFWDetectionService} from '~/lib/NSFWDetectionService';
 import {InternalNetworkRequired} from '~/middleware/AuthMiddleware';
 import {createCloudflareFirewall} from '~/middleware/CloudflareFirewall';
 import {metricsMiddleware} from '~/middleware/MetricsMiddleware';
+import {createRateLimitMiddleware} from '~/middleware/RateLimitMiddleware';
 
 const app = new Hono<HonoEnv>({strict: true});
 app.use(logger(Logger.info.bind(Logger)));
@@ -110,26 +112,42 @@ if (Config.STATIC_MODE) {
 	const processExternalMedia = createExternalMediaHandler(coalescer);
 	const handleAttachmentsRoute = createAttachmentsHandler(coalescer);
 
-	app.post('/_metadata', InternalNetworkRequired, handleMetadataRequest(coalescer, nsfwDetectionService));
-	app.post('/_thumbnail', InternalNetworkRequired, handleThumbnailRequest);
+	// Cap the internal metadata/thumbnail request bodies. The metadata route
+	// accepts a base64-encoded media payload (favorite-meme ingestion), so it
+	// needs room for a real image, but an unbounded body lets a caller OOM the
+	// process. 50MB covers any legitimate single-image metadata request.
+	const metadataBodyLimit = bodyLimit({
+		maxSize: 50 * 1024 * 1024,
+		onError: (ctx) => ctx.text('Payload Too Large', {status: 413}),
+	});
 
-	app.get('/avatars/:id/:filename', async (ctx) => handleImageRoute(ctx, 'avatars'));
-	app.get('/icons/:id/:filename', async (ctx) => handleImageRoute(ctx, 'icons'));
-	app.get('/banners/:id/:filename', async (ctx) => handleImageRoute(ctx, 'banners'));
-	app.get('/splashes/:id/:filename', async (ctx) => handleImageRoute(ctx, 'splashes'));
-	app.get('/embed-splashes/:id/:filename', async (ctx) => handleImageRoute(ctx, 'embed-splashes'));
-	app.get('/emojis/:id', async (ctx) => handleSimpleImageRoute(ctx, 'emojis'));
-	app.get('/stickers/:id', handleStickerRoute);
-	app.get('/guilds/:guild_id/users/:user_id/avatars/:filename', async (ctx) =>
+	app.post('/_metadata', InternalNetworkRequired, metadataBodyLimit, handleMetadataRequest(coalescer, nsfwDetectionService));
+	app.post('/_thumbnail', InternalNetworkRequired, metadataBodyLimit, handleThumbnailRequest);
+
+	// Defense-in-depth rate limit for the unauthenticated public GET routes.
+	// The edge (Cloudflare/Caddy) is the primary limiter; this caps direct
+	// origin hits so a single client cannot exhaust the S3 socket pool or burn
+	// FFmpeg CPU. ~300 image fetches / minute / IP is well above any real
+	// client's feed-scroll rate and below the point where S3 reads queue up.
+	const publicRateLimit = createRateLimitMiddleware({windowMs: 60_000, maxRequests: 300});
+
+	app.get('/avatars/:id/:filename', publicRateLimit, async (ctx) => handleImageRoute(ctx, 'avatars'));
+	app.get('/icons/:id/:filename', publicRateLimit, async (ctx) => handleImageRoute(ctx, 'icons'));
+	app.get('/banners/:id/:filename', publicRateLimit, async (ctx) => handleImageRoute(ctx, 'banners'));
+	app.get('/splashes/:id/:filename', publicRateLimit, async (ctx) => handleImageRoute(ctx, 'splashes'));
+	app.get('/embed-splashes/:id/:filename', publicRateLimit, async (ctx) => handleImageRoute(ctx, 'embed-splashes'));
+	app.get('/emojis/:id', publicRateLimit, async (ctx) => handleSimpleImageRoute(ctx, 'emojis'));
+	app.get('/stickers/:id', publicRateLimit, handleStickerRoute);
+	app.get('/guilds/:guild_id/users/:user_id/avatars/:filename', publicRateLimit, async (ctx) =>
 		handleGuildMemberImageRoute(ctx, 'avatars'),
 	);
-	app.get('/guilds/:guild_id/users/:user_id/banners/:filename', async (ctx) =>
+	app.get('/guilds/:guild_id/users/:user_id/banners/:filename', publicRateLimit, async (ctx) =>
 		handleGuildMemberImageRoute(ctx, 'banners'),
 	);
-	app.get('/attachments/:channel_id/:attachment_id/:filename', handleAttachmentsRoute);
-	app.get('/themes/:id.css', handleThemeRequest);
+	app.get('/attachments/:channel_id/:attachment_id/:filename', publicRateLimit, handleAttachmentsRoute);
+	app.get('/themes/:id.css', publicRateLimit, handleThemeRequest);
 
-	app.get('/external/*', async (ctx) => {
+	app.get('/external/*', publicRateLimit, async (ctx) => {
 		const path = ctx.req.path.replace('/external/', '');
 		return processExternalMedia(ctx, path);
 	});

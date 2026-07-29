@@ -30,6 +30,7 @@ export const TooManyReactionsModal = observer(() => {
 			description={t`This is one heavy message. Some reactions need to be removed before you can add more.`}
 			primaryText={t`Understood`}
 			onPrimary={() => {}}
+			transitionPreset="legacy"
 		/>
 	);
 });

@@ -256,19 +256,24 @@
     z-index: 2;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 0.75rem;
     min-width: 0;
 }
 
 .callBannerTop .callBannerHeader {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
+    align-items: center;
+    text-align: center;
 }
 
 .dmCallCornerInfo {
+    position: absolute;
+    right: 0;
+    top: 0;
     display: flex;
     flex: 0 1 auto;
-    align-items: flex-start;
+    align-items: center;
     justify-content: flex-end;
     gap: 0.45rem;
     min-width: 0;
@@ -401,14 +406,20 @@
     grid-template-columns: repeat(4, 3.25rem);
     align-items: center;
     justify-content: center;
+    justify-items: center;
     gap: 0.72rem;
     width: min(100%, 18rem);
+    margin-inline: auto;
 }
 
 .mobileCallControlsMirror .dmCallControls {
-    width: min(100%, 20rem);
     grid-template-columns: repeat(4, 3.55rem);
+    width: fit-content;
+    max-width: 100%;
     gap: 0.78rem;
+    justify-content: center;
+    justify-items: center;
+    margin-inline: auto;
 }
 
 .dmCallControlButton {
@@ -707,19 +718,19 @@
 .mobileCallControlsMirror {
 	width: 100%;
 	max-width: 100%;
+	display: flex;
+	justify-content: center;
 	margin-inline: auto;
 	padding-top: 0.42rem;
 	overflow: visible;
 }
 
 .mobileCallControlsMirror :global([class*='container']) {
-	width: min(100%, 27rem);
+	width: fit-content;
+	max-width: 100%;
 	min-width: 0;
-	grid-template-columns: repeat(5, minmax(4.15rem, 4.15rem));
-	justify-content: center;
 	gap: 0.88rem;
 	padding-inline: 0.2rem;
-	align-items: end;
 	margin-inline: auto;
 }
 
@@ -969,7 +980,8 @@
 	}
 
 	.mobileCallControlsMirror :global([class*='container']) {
-		grid-template-columns: repeat(5, minmax(3.55rem, 3.55rem));
+		grid-template-columns: repeat(4, 3.55rem);
+		width: fit-content;
 		gap: 0.62rem;
 	}
 
@@ -1010,7 +1022,11 @@
 	.mobileCallFullSheetRoot,
 	.mobileCallControlsMirror :global([class*='container']),
 	.mobileCallControlsMirror :global([class*='button']) {
-		animation: none !important;
+		/* `animation: none !important` cannot be used in a CSS module — rspack
+		 * localizes the `important` keyword as a @keyframes name and emits
+		 * invalid CSS. See UserProfileBadges.module.css for the full note. */
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
 		transition: none !important;
 	}
 }
@@ -1035,7 +1051,10 @@
 :global(html.mobile-lite) .mobileCallControlsMirror :global([class*='container']),
 :global(html.mobile-lite) .mobileCallControlsMirror :global([class*='button']) {
 	transition: none !important;
-	animation: none !important;
+	/* See UserProfileBadges.module.css: `animation: none !important` emits
+	 * invalid CSS through rspack's CSS-modules transform. */
+	animation-duration: 0.01ms !important;
+	animation-iteration-count: 1 !important;
 }
 
 @keyframes dmCallAmbientDrift {

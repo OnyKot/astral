@@ -57,7 +57,10 @@ export const VoiceParticipantsList = observer(({guild, channel}: {guild: GuildRe
 
 			const connectionId = vs.connection_id ?? '';
 			const participant = MediaEngineStore.getParticipantByUserIdAndConnectionId(userId, connectionId);
-			const isSelfMuted = vs.self_mute ?? (participant ? !participant.isMicrophoneEnabled : false);
+			const isLocalConnection = entry.isCurrentUser && connectionId === MediaEngineStore.connectionId;
+			const rawSelfMuted = vs.self_mute ?? (participant ? !participant.isMicrophoneEnabled : false);
+			const muteReason = isLocalConnection ? MediaEngineStore.getMuteReason(vs) : null;
+			const isSelfMuted = isLocalConnection ? muteReason !== null : rawSelfMuted;
 			const isGuildMuted = vs.mute ?? false;
 			const speaking = !!(participant?.isSpeaking && !isSelfMuted && !isGuildMuted);
 			const live = vs.self_stream === true || (participant ? participant.isScreenShareEnabled : false);

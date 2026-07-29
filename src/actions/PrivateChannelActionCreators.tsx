@@ -24,6 +24,7 @@ import {Logger} from '~/lib/Logger';
 import {Routes} from '~/Routes';
 import type {Channel} from '~/records/ChannelRecord';
 import ChannelStore from '~/stores/ChannelStore';
+import UserPinnedDMStore from '~/stores/UserPinnedDMStore';
 import * as RouterUtils from '~/utils/RouterUtils';
 
 const logger = new Logger('PrivateChannelActionCreators');
@@ -99,22 +100,30 @@ export const openDMChannel = async (userId: string): Promise<void> => {
 };
 
 export const pinDmChannel = async (channelId: string): Promise<void> => {
+	const previousPinnedDMs = [...UserPinnedDMStore.pinnedDMs];
+
 	try {
+		UserPinnedDMStore.pin(channelId);
 		await http.put({
 			url: Endpoints.USER_CHANNEL_PIN(channelId),
 		});
 	} catch (error) {
+		UserPinnedDMStore.setPinnedDMs(previousPinnedDMs);
 		logger.error('Failed to pin DM channel:', error);
 		throw error;
 	}
 };
 
 export const unpinDmChannel = async (channelId: string): Promise<void> => {
+	const previousPinnedDMs = [...UserPinnedDMStore.pinnedDMs];
+
 	try {
+		UserPinnedDMStore.unpin(channelId);
 		await http.delete({
 			url: Endpoints.USER_CHANNEL_PIN(channelId),
 		});
 	} catch (error) {
+		UserPinnedDMStore.setPinnedDMs(previousPinnedDMs);
 		logger.error('Failed to unpin DM channel:', error);
 		throw error;
 	}

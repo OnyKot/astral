@@ -70,6 +70,7 @@ import UserSettingsStore from '~/stores/UserSettingsStore';
 import messageStyles from '~/styles/Message.module.css';
 import * as AvatarUtils from '~/utils/AvatarUtils';
 import {applyEmojiVisualNormalization, shouldUseNativeEmoji} from '~/utils/EmojiUtils';
+import {canAddNewReactionTypeToMessage, canAddReactionEmojiToMessage} from '~/utils/ReactionUtils';
 import {isStoryForwardPayload} from '~/utils/StoryForwardPayload';
 
 const shiftKeyManager = (() => {
@@ -320,6 +321,7 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 		const showShiftExpand = AccessibilityStore.showMessageActionBarShiftExpand;
 		const onlyMoreButton = AccessibilityStore.showMessageActionBarOnlyMoreButton;
 		const keyboardModeEnabled = KeyboardModeStore.keyboardModeEnabled;
+		const reactionPickerPosition = message.isCurrentUserAuthor() ? 'bottom-end' : 'bottom-start';
 
 		const isActionBarActive = isHovering || contextMenuOpen || emojiPickerOpen || moreMenuOpen;
 		const shouldListenForShift =
@@ -335,6 +337,7 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 			canPinMessage,
 			shouldRenderSuppressEmbeds,
 		} = permissions;
+		const canOpenReactionPicker = canAddReactions && canAddNewReactionTypeToMessage(message);
 
 		const handlers = createMessageActionHandlers(message);
 		const hasCopyableText = Boolean(message.content && !isStoryForwardPayload(message.content));
@@ -343,6 +346,10 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 			quickReactionManager.subscribe,
 			quickReactionManager.getSnapshot,
 			quickReactionManager.getServerSnapshot,
+		);
+		const visibleQuickReactionEmojis = React.useMemo(
+			() => quickReactionEmojis.filter((emoji) => canAddReactionEmojiToMessage(message, emoji)),
+			[message, quickReactionEmojis],
 		);
 
 		const blurEmojiPickerTrigger = React.useCallback(() => {
@@ -401,10 +408,10 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 		React.useEffect(() => {
 			const unsubscribe = ComponentDispatch.subscribe('EMOJI_PICKER_OPEN', (payload?: unknown) => {
 				const data = (payload ?? {}) as {messageId?: string};
-				if (data.messageId === message.id && emojiPickerButtonRef.current) {
+				if (data.messageId === message.id && emojiPickerButtonRef.current && canOpenReactionPicker) {
 					PopoutActionCreators.open({
 						key: `emoji-picker-${message.id}`,
-						position: 'left-start',
+						position: reactionPickerPosition,
 						render: ({onClose}) => (
 							<EmojiPickerPopout
 								channelId={message.channelId}
@@ -414,6 +421,7 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 						),
 						target: emojiPickerButtonRef.current,
 						animationType: 'none',
+						offsetMainAxis: 8,
 						onOpen: () => handleEmojiPickerToggle(true),
 						onClose: () => handleEmojiPickerToggle(false),
 					});
@@ -421,7 +429,14 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 			});
 
 			return () => unsubscribe();
-		}, [message.id, message.channelId, handlers.handleEmojiSelect, handleEmojiPickerToggle]);
+		}, [
+			message.id,
+			message.channelId,
+			handlers.handleEmojiSelect,
+			handleEmojiPickerToggle,
+			reactionPickerPosition,
+			canOpenReactionPicker,
+		]);
 
 		const handleMoreOptionsPointerDown = React.useCallback((event: React.PointerEvent) => {
 			const contextMenu = ContextMenuStore.contextMenu;
@@ -454,7 +469,7 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 				ContextMenuActionCreators.openFromEvent(event as React.MouseEvent, (props) => (
 					<>
 						<MenuGroup>
-							{canAddReactions && (
+							{canOpenReactionPicker && (
 								<MenuItem
 									icon={<AddReactionIcon />}
 									onClick={() => {
@@ -629,7 +644,7 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 				));
 			},
 			[
-				canAddReactions,
+				canOpenReactionPicker,
 				canSendMessages,
 				canEditMessage,
 				canPinMessage,
@@ -670,7 +685,7 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 								{!showFullActions &&
 									canAddReactions &&
 									showQuickReactions &&
-									quickReactionEmojis.map((emoji) => (
+									visibleQuickReactionEmojis.map((emoji) => (
 										<QuickReactionButton key={emoji.name} emoji={emoji} onReact={handlers.handleEmojiSelect} />
 									))}
 
@@ -736,7 +751,7 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 									</>
 								)}
 
-								{canAddReactions && (
+								{canOpenReactionPicker && (
 									<Popout
 										render={({onClose}) => (
 											<EmojiPickerPopout
@@ -745,7 +760,8 @@ const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observer(
 												onClose={onClose}
 											/>
 										)}
-										position="left-start"
+										position={reactionPickerPosition}
+										offsetMainAxis={8}
 										uniqueId={`emoji-picker-actionbar-${message.id}`}
 										animationType="none"
 										onOpen={handleEmojiPickerOpen}

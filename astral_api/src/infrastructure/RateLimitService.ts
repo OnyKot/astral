@@ -20,25 +20,15 @@
 import type {ICacheService} from './ICacheService';
 import type {BucketConfig, IRateLimitService, RateLimitConfig, RateLimitResult} from './IRateLimitService';
 
-interface RateLimitData {
-	attempts: number;
-	resetTime: Date;
-}
-
 export class RateLimitService implements IRateLimitService {
 	private static readonly GLOBAL_WINDOW_MS = 1000;
+	/**
+	 * Counters are now bare Redis integers instead of a JSON `{attempts, resetTime}` blob; the version
+	 * bump keeps keys still in flight under the old format from being misread as counts.
+	 */
+	private static readonly KEY_PREFIX = 'ratelimit:v2';
 
 	constructor(private cacheService: ICacheService) {}
-
-	private async getRateLimitData(key: string): Promise<RateLimitData | null> {
-		const rawData = await this.cacheService.get<RateLimitData>(key);
-		if (!rawData) return null;
-
-		return {
-			...rawData,
-			resetTime: rawData.resetTime instanceof Date ? rawData.resetTime : new Date(rawData.resetTime),
-		};
-	}
 
 	private async checkLimitInternal(
 		key: string,
@@ -46,99 +36,76 @@ export class RateLimitService implements IRateLimitService {
 		windowMs: number,
 		global?: boolean,
 	): Promise<RateLimitResult> {
-		const now = new Date();
-		const data = await this.getRateLimitData(key);
+		const {count, pttlMs} = await this.cacheService.incrWithWindow(key, windowMs);
+		// A non-positive PTTL would mean the key lost its expiry, which the script rules out; fall back to
+		// the full window so a missing TTL can never be read as "resets immediately".
+		const effectiveTtl = pttlMs > 0 ? pttlMs : windowMs;
+		const resetTime = new Date(Date.now() + effectiveTtl);
 
-		if (!data || now >= data.resetTime) {
-			const resetTime = new Date(now.getTime() + windowMs);
-			const newData: RateLimitData = {
-				attempts: 1,
-				resetTime,
-			};
-
-			await this.cacheService.set(key, newData, Math.ceil(windowMs / 1000));
-
-			return {
-				allowed: true,
-				limit,
-				remaining: limit - 1,
-				resetTime,
-				global,
-			};
-		}
-
-		if (data.attempts >= limit) {
-			const retryAfterDecimal = (data.resetTime.getTime() - now.getTime()) / 1000;
-			const retryAfter = Math.ceil(retryAfterDecimal);
+		if (count > limit) {
+			const retryAfterDecimal = effectiveTtl / 1000;
 			return {
 				allowed: false,
 				limit,
 				remaining: 0,
-				resetTime: data.resetTime,
-				retryAfter,
+				resetTime,
+				retryAfter: Math.ceil(retryAfterDecimal),
 				retryAfterDecimal,
 				global,
 			};
 		}
 
-		const updatedData: RateLimitData = {
-			...data,
-			attempts: data.attempts + 1,
-		};
-
-		const ttl = Math.ceil((data.resetTime.getTime() - now.getTime()) / 1000);
-		await this.cacheService.set(key, updatedData, ttl);
-
 		return {
 			allowed: true,
 			limit,
-			remaining: limit - updatedData.attempts,
-			resetTime: data.resetTime,
+			remaining: limit - count,
+			resetTime,
 			global,
 		};
 	}
 
 	async checkLimit(config: RateLimitConfig): Promise<RateLimitResult> {
-		const key = `ratelimit:${config.identifier}`;
+		const key = `${RateLimitService.KEY_PREFIX}:${config.identifier}`;
 		return this.checkLimitInternal(key, config.maxAttempts, config.windowMs);
 	}
 
 	async checkBucketLimit(bucket: string, config: BucketConfig): Promise<RateLimitResult> {
-		const key = `ratelimit:bucket:${bucket}`;
+		const key = `${RateLimitService.KEY_PREFIX}:bucket:${bucket}`;
 		return this.checkLimitInternal(key, config.limit, config.windowMs);
 	}
 
 	async checkGlobalLimit(identifier: string, limit: number): Promise<RateLimitResult> {
-		const key = `ratelimit:global:${identifier}`;
+		const key = `${RateLimitService.KEY_PREFIX}:global:${identifier}`;
 		return this.checkLimitInternal(key, limit, RateLimitService.GLOBAL_WINDOW_MS, true);
 	}
 
 	async resetLimit(identifier: string): Promise<void> {
-		const key = `ratelimit:${identifier}`;
+		const key = `${RateLimitService.KEY_PREFIX}:${identifier}`;
 		await this.cacheService.delete(key);
 	}
 
 	async getRemainingAttempts(identifier: string, _windowMs: number): Promise<number> {
-		const key = `ratelimit:${identifier}`;
-		const data = await this.getRateLimitData(key);
-		const now = new Date();
+		const key = `${RateLimitService.KEY_PREFIX}:${identifier}`;
+		// Expiry of the counter is what ends a window, so an absent key already means "no attempts used".
+		const count = await this.cacheService.get<number>(key);
 
-		if (!data || now >= data.resetTime) {
+		if (typeof count !== 'number' || !Number.isFinite(count)) {
 			return 0;
 		}
 
-		return Math.max(0, data.attempts);
+		return Math.max(0, count);
 	}
 
 	async getResetTime(identifier: string, _windowMs: number): Promise<Date> {
-		const key = `ratelimit:${identifier}`;
-		const data = await this.getRateLimitData(key);
+		const key = `${RateLimitService.KEY_PREFIX}:${identifier}`;
+		const ttlSeconds = await this.cacheService.ttl(key);
 		const now = new Date();
 
-		if (!data || now >= data.resetTime) {
+		// Redis answers -2 for a missing key and -1 for one without an expiry: nothing left to wait for.
+		if (ttlSeconds <= 0) {
 			return now;
 		}
 
-		return data.resetTime;
+		return new Date(now.getTime() + ttlSeconds * 1000);
 	}
 }

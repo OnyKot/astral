@@ -45,6 +45,7 @@ type ConfirmModalProps =
 			primaryVariant?: ConfirmModalPrimaryVariant;
 			secondaryText?: React.ReactNode | false;
 			size?: Modal.ModalProps['size'];
+			transitionPreset?: Modal.ModalProps['transitionPreset'];
 			onPrimary: (checkboxChecked?: boolean) => Promise<void> | void;
 			onSecondary?: (checkboxChecked?: boolean) => void;
 			checkboxContent?: React.ReactElement<ConfirmModalCheckboxProps>;
@@ -57,6 +58,7 @@ type ConfirmModalProps =
 			primaryVariant?: never;
 			secondaryText?: React.ReactNode | false;
 			size?: Modal.ModalProps['size'];
+			transitionPreset?: Modal.ModalProps['transitionPreset'];
 			onPrimary?: never;
 			onSecondary?: (checkboxChecked?: boolean) => void;
 			checkboxContent?: React.ReactElement<ConfirmModalCheckboxProps>;
@@ -71,6 +73,7 @@ export const ConfirmModal = observer(
 		primaryVariant = 'danger-primary',
 		secondaryText,
 		size = 'small',
+		transitionPreset,
 		onPrimary,
 		onSecondary,
 		checkboxContent,
@@ -116,7 +119,7 @@ export const ConfirmModal = observer(
 		}, [onSecondary, checkboxChecked]);
 
 		return (
-			<Modal.Root size={size} initialFocusRef={initialFocusRef} centered>
+			<Modal.Root size={size} initialFocusRef={initialFocusRef} centered transitionPreset={transitionPreset}>
 				<Modal.Header title={title} />
 				<Modal.Content className={styles.content}>
 					<div className={styles.descriptionText}>{description}</div>

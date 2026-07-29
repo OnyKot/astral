@@ -26,6 +26,7 @@ import {
 	verifyAuthenticationResponse,
 	verifyRegistrationResponse,
 } from '@simplewebauthn/server';
+import crypto from 'node:crypto';
 import {createUserID, type UserID} from '~/BrandedTypes';
 import {Config} from '~/Config';
 import {APIErrorCodes, UserAuthenticatorTypes} from '~/Constants';
@@ -86,14 +87,19 @@ export class AuthMfaService {
 			const isValidTotp = await totp.validateTotp(code);
 
 			if (isValidTotp) {
-				if (Config.dev.testModeEnabled) {
+				// Test mode short-circuits TOTP validation, but must never do so
+				// in production — an accidentally-set ASTRAL_TEST_MODE flag would
+				// disable MFA for every account. Gate it behind a non-production
+				// environment check.
+				if (Config.dev.testModeEnabled && Config.nodeEnv !== 'production') {
 					return true;
 				}
 
+				// Atomic single-use claim (SET NX). A get-then-set race allowed two
+				// concurrent requests to both accept the same valid TOTP window.
 				const reuseKey = `mfa-totp:${userId}:${code}`;
-				const isCodeUsed = await this.cacheService.get<number>(reuseKey);
-				if (!isCodeUsed) {
-					await this.cacheService.set(reuseKey, 1, 30);
+				const claimed = await this.cacheService.acquireLock(reuseKey, 30);
+				if (claimed) {
 					return true;
 				}
 			}
@@ -101,11 +107,22 @@ export class AuthMfaService {
 
 		if (allowBackup) {
 			const backupCodes = await this.repository.listMfaBackupCodes(userId);
-			const backupCode = backupCodes.find((bc) => bc.code === code && !bc.consumed);
+			// Compare backup codes in constant time. A plain `===` leaks how many
+			// leading characters match via timing, enabling a character-by-character
+			// brute-force of these single-use MFA secrets.
+			const providedBuffer = Buffer.from(code, 'utf8');
+			const matchingUnused = backupCodes.find((bc) => {
+				if (bc.consumed) return false;
+				const candidate = Buffer.from(bc.code, 'utf8');
+				if (candidate.length !== providedBuffer.length) return false;
+				return crypto.timingSafeEqual(candidate, providedBuffer);
+			});
 
-			if (backupCode) {
-				await this.repository.consumeMfaBackupCode(userId, code);
-				return true;
+			if (matchingUnused) {
+				const applied = await this.repository.consumeMfaBackupCode(userId, matchingUnused.code);
+				if (applied) {
+					return true;
+				}
 			}
 		}
 

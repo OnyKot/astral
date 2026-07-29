@@ -157,7 +157,7 @@ export const AuthController = (app: HonoApp) => {
 		},
 	);
 
-	app.post('/auth/logout', RateLimitMiddleware(RateLimitConfigs.AUTH_LOGOUT), async (ctx) => {
+	app.post('/auth/logout', RateLimitMiddleware(RateLimitConfigs.AUTH_LOGOUT), LoginRequiredAllowSuspicious, async (ctx) => {
 		const token = ctx.req.header('Authorization') ?? ctx.get('authToken');
 		if (token) {
 			await ctx.get('authService').revokeToken(token);

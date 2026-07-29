@@ -80,6 +80,13 @@ export abstract class ILiveKitService {
 	abstract updateParticipantPermissions(params: UpdateParticipantPermissionsParams): Promise<void>;
 	abstract disconnectParticipant(params: DisconnectParticipantParams): Promise<void>;
 	abstract evictStaleUserSessions(params: EvictStaleUserSessionsParams): Promise<number>;
+	abstract listParticipants(params: {
+		guildId?: GuildID;
+		channelId: ChannelID;
+		regionId: string;
+		serverId: string;
+		throwOnError?: boolean;
+	}): Promise<Array<{identity: string}>>;
 	abstract getDefaultRegionId(): string | null;
 	abstract getRegionMetadata(): Array<VoiceRegionMetadata>;
 	abstract getServer(regionId: string, serverId: string): VoiceServerRecord | null;

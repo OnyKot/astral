@@ -12,10 +12,10 @@
 		"backgroundColor": "#000000",
 		"allowMixedContent": false,
 		"overScrollMode": "never",
-		"webContentsDebuggingEnabled": true
+		"webContentsDebuggingEnabled": false
 	},
 	"server": {
-		"url": "https://astraof.com/login",
+		"url": "https://astraof.com/channels/@me",
 		"cleartext": false,
 		"allowNavigation": [
 			"astraof.com",

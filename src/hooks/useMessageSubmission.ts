@@ -24,8 +24,9 @@ import * as SlowmodeActionCreators from '~/actions/SlowmodeActionCreators';
 import {MessageStates, MessageTypes} from '~/Constants';
 import {ComponentDispatch} from '~/lib/ComponentDispatch';
 import type {ChannelRecord} from '~/records/ChannelRecord';
-import {type AllowedMentions, MessageRecord, type MessageStickerItem} from '~/records/MessageRecord';
+import {type AllowedMentions, type MessageEmbed, MessageRecord, type MessageStickerItem} from '~/records/MessageRecord';
 import UserStore from '~/stores/UserStore';
+import MessageStore from '~/stores/MessageStore';
 import * as MessageSubmitUtils from '~/utils/MessageSubmitUtils';
 import * as SnowflakeUtils from '~/utils/SnowflakeUtils';
 import {TypingUtils} from '~/utils/TypingUtils';
@@ -62,7 +63,7 @@ export const useMessageSubmission = ({channel, referencedMessage, replyingMessag
 					: undefined;
 
 			if (!channel) return;
-			const nonce = SnowflakeUtils.fromTimestamp(Date.now());
+			const nonce = SnowflakeUtils.nextClientNonce();
 			const messageReference = MessageSubmitUtils.prepareMessageReference(channel.id, referencedMessage);
 
 			TypingUtils.clear(channel.id);
@@ -96,6 +97,12 @@ export const useMessageSubmission = ({channel, referencedMessage, replyingMessag
 				uploadingAttachments,
 			);
 
+			// Sending while viewing history: jump toward present so optimistic/gateway
+			// messages are not dropped by hasMoreAfter.
+			if (!MessageStore.hasPresent(channel.id)) {
+				MessageActionCreators.jumpToPresent(channel.id);
+			}
+
 			MessageActionCreators.createOptimistic(channel.id, {
 				...message.toJSON(),
 				referenced_message: referencedMessage?.toJSON(),
@@ -126,6 +133,7 @@ export const useMessageSubmission = ({channel, referencedMessage, replyingMessag
 				content: string;
 				stickers?: Array<any>;
 				attachments?: Array<any>;
+				embeds?: Array<MessageEmbed>;
 			},
 			sendOptions: {
 				hasAttachments: boolean;
@@ -133,7 +141,7 @@ export const useMessageSubmission = ({channel, referencedMessage, replyingMessag
 			},
 		) => {
 			if (!channel) return;
-			const nonce = SnowflakeUtils.fromTimestamp(Date.now());
+			const nonce = SnowflakeUtils.nextClientNonce();
 
 			TypingUtils.clear(channel.id);
 			MessageActionCreators.stopReply(channel.id);
@@ -156,7 +164,15 @@ export const useMessageSubmission = ({channel, referencedMessage, replyingMessag
 				nonce,
 				attachments: messageData.attachments || [],
 				stickers: messageData.stickers || [],
+				// Optimistic embed (e.g. a GIF) so the message renders as playable
+				// media immediately instead of a bare link while the server unfurls
+				// the URL. The server MESSAGE_CREATE/UPDATE replaces this.
+				embeds: messageData.embeds || [],
 			});
+
+			if (!MessageStore.hasPresent(channel.id)) {
+				MessageActionCreators.jumpToPresent(channel.id);
+			}
 
 			MessageActionCreators.createOptimistic(channel.id, {
 				...message.toJSON(),

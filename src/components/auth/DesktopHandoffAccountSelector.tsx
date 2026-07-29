@@ -26,20 +26,25 @@ import {HandoffCodeDisplay} from '~/components/auth/HandoffCodeDisplay';
 import {SessionExpiredError} from '~/lib/SessionManager';
 import AccountManager, {type AccountSummary} from '~/stores/AccountManager';
 
-type HandoffState = 'selecting' | 'generating' | 'displaying' | 'error';
+type HandoffState = 'selecting' | 'generating' | 'done' | 'error';
 
 interface DesktopHandoffAccountSelectorProps {
 	excludeCurrentUser?: boolean;
+	handoffCode?: string | null;
 	onSelectNewAccount: () => void;
+}
+
+function normalizeHandoffCode(raw: string): string {
+	return raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
 }
 
 const DesktopHandoffAccountSelector = observer(function DesktopHandoffAccountSelector({
 	excludeCurrentUser = false,
+	handoffCode = null,
 	onSelectNewAccount,
 }: DesktopHandoffAccountSelectorProps) {
 	const {t} = useLingui();
 	const [handoffState, setHandoffState] = useState<HandoffState>('selecting');
-	const [handoffCode, setHandoffCode] = useState<string | null>(null);
 	const [handoffError, setHandoffError] = useState<string | null>(null);
 	const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
@@ -48,35 +53,44 @@ const DesktopHandoffAccountSelector = observer(function DesktopHandoffAccountSel
 	const accounts = excludeCurrentUser ? allAccounts.filter((account) => account.userId !== currentUserId) : allAccounts;
 	const isGenerating = handoffState === 'generating';
 
-	const handleSelectAccount = useCallback(async (account: AccountSummary) => {
-		setSelectedAccountId(account.userId);
-		setHandoffState('generating');
-		setHandoffError(null);
-
-		try {
-			const {token, userId} = await AccountManager.generateTokenForAccount(account.userId);
-			if (!token) {
-				throw new Error('Failed to generate token');
+	const handleSelectAccount = useCallback(
+		async (account: AccountSummary) => {
+			const normalized = normalizeHandoffCode(handoffCode ?? '');
+			if (normalized.length !== 8) {
+				setHandoffState('error');
+				setHandoffError(t`Missing handoff code from desktop. Open the browser link from the desktop app and try again.`);
+				return;
 			}
 
-			const result = await AuthenticationActionCreators.initiateDesktopHandoff();
-			await AuthenticationActionCreators.completeDesktopHandoff({
-				code: result.code,
-				token,
-				userId,
-			});
+			setSelectedAccountId(account.userId);
+			setHandoffState('generating');
+			setHandoffError(null);
 
-			setHandoffCode(result.code);
-			setHandoffState('displaying');
-		} catch (error) {
-			setHandoffState('error');
-			if (error instanceof SessionExpiredError) {
-				setHandoffError(t`Session expired. Please log in again.`);
-			} else {
-				setHandoffError(error instanceof Error ? error.message : t`Failed to generate handoff code`);
+			try {
+				const {token, userId} = await AccountManager.generateTokenForAccount(account.userId);
+				if (!token) {
+					throw new Error('Failed to generate token');
+				}
+
+				const formatted = `${normalized.slice(0, 4)}-${normalized.slice(4)}`;
+				await AuthenticationActionCreators.completeDesktopHandoff({
+					code: formatted,
+					token,
+					userId,
+				});
+
+				setHandoffState('done');
+			} catch (error) {
+				setHandoffState('error');
+				if (error instanceof SessionExpiredError) {
+					setHandoffError(t`Session expired. Please log in again.`);
+				} else {
+					setHandoffError(error instanceof Error ? error.message : t`Failed to complete desktop handoff`);
+				}
 			}
-		}
-	}, []);
+		},
+		[handoffCode, t],
+	);
 
 	const handleRetry = useCallback(() => {
 		if (selectedAccountId) {
@@ -91,11 +105,12 @@ const DesktopHandoffAccountSelector = observer(function DesktopHandoffAccountSel
 		setHandoffError(null);
 	}, [selectedAccountId, allAccounts, handleSelectAccount]);
 
-	if (handoffState === 'generating' || handoffState === 'displaying' || handoffState === 'error') {
+	if (handoffState === 'generating' || handoffState === 'done' || handoffState === 'error') {
 		return (
 			<HandoffCodeDisplay
-				code={handoffCode}
+				code={null}
 				isGenerating={handoffState === 'generating'}
+				success={handoffState === 'done'}
 				error={handoffState === 'error' ? handoffError : null}
 				onRetry={handleRetry}
 			/>

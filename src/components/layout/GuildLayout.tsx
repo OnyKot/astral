@@ -308,6 +308,7 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 		containerRef: edgeSwipeContainerRef,
 		stageStyle,
 		isActive: isMobileSwipeActive,
+		isPreviewVisible: isMobileSwipePreviewVisible,
 		progress: mobileSwipeProgress,
 	} = useEdgeSwipeBack({
 		enabled: Boolean(mobileLayout.enabled && channelId && effectiveGuild),
@@ -371,8 +372,8 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 					style={mobileSwipePreviewStyle}
 					{...gestureProps}
 				>
-					<div className={styles.guildMobileSwipePreview} aria-hidden={!isMobileSwipeActive}>
-						{effectiveGuild && <GuildNavbar guild={effectiveGuild} />}
+					<div className={styles.guildMobileSwipePreview} aria-hidden={!isMobileSwipePreviewVisible}>
+						{effectiveGuild && isMobileSwipePreviewVisible && <GuildNavbar guild={effectiveGuild} />}
 					</div>
 					<div
 						className={styles.guildMobileSwipeStage}

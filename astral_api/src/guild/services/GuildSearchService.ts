@@ -284,44 +284,45 @@ export class GuildSearchService {
 		const accessibleChannels = new Map<string, Channel>();
 		const unindexedChannelIds = new Set<string>();
 
-		for (const guildId of guildIds) {
-			const guildChannels = await this.channelRepository.listGuildChannels(guildId);
-			if (guildChannels.length === 0) {
-				continue;
-			}
-
-			const viewableChannelIds = new Set(
-				(
-					await this.gatewayService.getViewableChannels({
+		await Promise.all(
+			guildIds.map(async (guildId) => {
+				const [guildChannels, viewableChannelIdList] = await Promise.all([
+					this.channelRepository.listGuildChannels(guildId),
+					this.gatewayService.getViewableChannels({
 						guildId,
 						userId,
-					})
-				).map((channelId) => channelId.toString()),
-			);
-
-			for (const channel of guildChannels) {
-				const channelIdStr = channel.id.toString();
-				if (!viewableChannelIds.has(channelIdStr)) {
-					continue;
+					}),
+				]);
+				if (guildChannels.length === 0) {
+					return;
 				}
 
-				const hasPermission = await this.gatewayService.checkPermission({
-					guildId,
-					userId,
-					channelId: channel.id,
-					permission: Permissions.VIEW_CHANNEL | Permissions.READ_MESSAGE_HISTORY,
-				});
+				const viewableChannelIds = new Set(viewableChannelIdList.map((channelId) => channelId.toString()));
+				const candidates = guildChannels.filter((channel) => viewableChannelIds.has(channel.id.toString()));
+				const permissionResults = await Promise.all(
+					candidates.map(async (channel) => ({
+						channel,
+						hasPermission: await this.gatewayService.checkPermission({
+							guildId,
+							userId,
+							channelId: channel.id,
+							permission: Permissions.VIEW_CHANNEL | Permissions.READ_MESSAGE_HISTORY,
+						}),
+					})),
+				);
 
-				if (!hasPermission) {
-					continue;
+				for (const {channel, hasPermission} of permissionResults) {
+					if (!hasPermission) {
+						continue;
+					}
+					const channelIdStr = channel.id.toString();
+					accessibleChannels.set(channelIdStr, channel);
+					if (!channel.indexedAt) {
+						unindexedChannelIds.add(channelIdStr);
+					}
 				}
-
-				accessibleChannels.set(channelIdStr, channel);
-				if (!channel.indexedAt) {
-					unindexedChannelIds.add(channelIdStr);
-				}
-			}
-		}
+			}),
+		);
 
 		return {accessibleChannels, unindexedChannelIds};
 	}

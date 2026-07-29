@@ -23,6 +23,7 @@ import React from 'react';
 import {MessageStates} from '~/Constants';
 import type {MessageRecord} from '~/records/MessageRecord';
 import ReadStateStore from '~/stores/ReadStateStore';
+import {compare as compareSnowflakes} from '~/utils/SnowflakeUtils';
 import styles from './MessageStatusIcon.module.css';
 
 interface Props {
@@ -31,35 +32,30 @@ interface Props {
 }
 
 /**
- * Shows sending/sent/read status for own DM messages.
- * - Spinning clock: message is being sent (optimistic)
- * - Single check: sent, not yet read by recipient
- * - Double check: read (recipient's ack is at or after this message)
+ * Shows sending/sent/read status for own private-channel messages.
+ * The current client has channel ack state; recipient-specific receipts can
+ * plug into this component when the API starts sending them.
  */
 export const MessageStatusIcon: React.FC<Props> = observer(({message, channelId}) => {
 	if (!message.isCurrentUserAuthor()) return null;
 
 	if (message.state === MessageStates.SENDING) {
 		return (
-			<span className={styles.statusIcon} aria-label="Отправляется">
+			<span className={styles.statusIcon} aria-label="Sending">
 				<CircleNotchIcon className={styles.spinning} weight="bold" />
 			</span>
 		);
 	}
 
 	if (message.state === MessageStates.FAILED) {
-		return null; // failed state handled elsewhere with red indicator
+		return null;
 	}
 
-	// Check if recipient has read up to this message
 	const ackMessageId = ReadStateStore.ackMessageId(channelId);
-	const isRead = ackMessageId !== null && BigInt(ackMessageId) >= BigInt(message.id);
+	const isRead = ackMessageId !== null && compareSnowflakes(ackMessageId, message.id) >= 0;
 
 	return (
-		<span
-			className={`${styles.statusIcon} ${isRead ? styles.read : styles.sent}`}
-			aria-label={isRead ? 'Прочитано' : 'Доставлено'}
-		>
+		<span className={`${styles.statusIcon} ${isRead ? styles.read : styles.sent}`} aria-label={isRead ? 'Read' : 'Delivered'}>
 			{isRead ? <ChecksIcon weight="bold" /> : <CheckIcon weight="bold" />}
 		</span>
 	);

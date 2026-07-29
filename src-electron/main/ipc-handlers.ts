@@ -61,6 +61,7 @@ import type {
 	WebAuthnMacAddon,
 } from 'electron-webauthn-mac';
 import {BUILD_CHANNEL} from '../common/build-channel.js';
+import {assertSafeProxyTarget} from '../common/safe-proxy-target.js';
 import type {
 	DesktopInfo,
 	DownloadFileResult,
@@ -76,6 +77,8 @@ import {setWindowsBadgeOverlay} from './windows-badge.js';
 import {getWsProxyUrl} from './ws-proxy-server.js';
 
 const registeredShortcuts = new Map<string, string>();
+
+const MAX_DOWNLOAD_REDIRECTS = 5;
 
 interface ActiveNotification {
 	notification: Notification;
@@ -567,6 +570,9 @@ export function registerIpcHandlers(): void {
 			}
 
 			try {
+				// Reject file://, custom schemes and LAN destinations before a save dialog is ever shown.
+				await assertSafeRendererUrl(options.url);
+
 				const result = await dialog.showSaveDialog(win, {
 					defaultPath: options.defaultPath,
 				});
@@ -702,7 +708,9 @@ export function registerIpcHandlers(): void {
 						notificationOpts.icon = nativeImage.createFromBuffer(iconBuffer);
 					}
 				} else {
-					notificationOpts.icon = options.icon;
+					// Anything else would hand a renderer-controlled path straight to the filesystem; the
+					// renderer only ever sends http(s) or data: icons.
+					console.warn('[Notification] Ignoring icon with unsupported scheme');
 				}
 			} catch (error) {
 				console.warn('[Notification] Failed to load icon:', error);
@@ -812,69 +820,148 @@ export function registerIpcHandlers(): void {
 	);
 }
 
-function downloadToBuffer(url: string): Promise<Buffer> {
-	return new Promise((resolve, reject) => {
-		const protocol = url.startsWith('https://') ? https : http;
-		protocol
-			.get(url, (response) => {
-				if (response.statusCode === 301 || response.statusCode === 302) {
-					const redirectUrl = response.headers.location;
-					if (redirectUrl) {
-						downloadToBuffer(redirectUrl).then(resolve).catch(reject);
-						return;
-					}
-				}
+/**
+ * The main process fetches with the machine's full ambient network access, so a renderer XSS that
+ * reaches one of these handlers would otherwise be able to probe the user's LAN, router or cloud
+ * metadata endpoints. Only https destinations that resolve to public addresses are accepted; the
+ * single http exception is the app's own loopback media proxy, which applies this very same
+ * destination check to the upstream it forwards to.
+ */
+const isLocalMediaProxyUrl = (parsed: URL): boolean => {
+	const base = getMediaProxyUrl();
+	if (!base) return false;
 
-				if (response.statusCode !== 200) {
-					reject(new Error(`HTTP ${response.statusCode}`));
-					return;
-				}
+	try {
+		const baseUrl = new URL(base);
+		return parsed.origin === baseUrl.origin && parsed.pathname === baseUrl.pathname;
+	} catch {
+		return false;
+	}
+};
 
-				const chunks: Array<Buffer> = [];
-				response.on('data', (chunk: Buffer) => chunks.push(chunk));
-				response.on('end', () => resolve(Buffer.concat(chunks)));
-				response.on('error', reject);
-			})
-			.on('error', reject);
+const assertSafeRendererUrl = async (rawUrl: string): Promise<URL> => {
+	let parsed: URL;
+	try {
+		parsed = new URL(rawUrl);
+	} catch {
+		throw new Error('Invalid URL');
+	}
+
+	if (isLocalMediaProxyUrl(parsed)) {
+		return parsed;
+	}
+
+	if (parsed.protocol !== 'https:') {
+		throw new Error('Unsupported protocol');
+	}
+
+	await assertSafeProxyTarget(parsed.toString());
+	return parsed;
+};
+
+const requestSafeUrl = (url: URL): Promise<http.IncomingMessage> =>
+	new Promise((resolve, reject) => {
+		const agent = url.protocol === 'https:' ? https : http;
+		agent.get(url.toString(), resolve).on('error', reject);
 	});
-}
 
-function downloadFile(url: string, destPath: string): Promise<void> {
-	return new Promise((resolve, reject) => {
-		const protocol = url.startsWith('https://') ? https : http;
+// Only permanent/temporary moves are followed, matching the previous behaviour of these helpers.
+const getRedirectLocation = (response: http.IncomingMessage): string | null => {
+	if (response.statusCode !== 301 && response.statusCode !== 302) return null;
+	const location = response.headers.location;
+	return typeof location === 'string' && location ? location : null;
+};
+
+const resolveRedirectTarget = (location: string, currentUrl: URL): string => {
+	try {
+		return new URL(location, currentUrl).toString();
+	} catch {
+		throw new Error('Invalid redirect location');
+	}
+};
+
+const readResponseBody = (response: http.IncomingMessage): Promise<Buffer> =>
+	new Promise((resolve, reject) => {
+		const chunks: Array<Buffer> = [];
+		response.on('data', (chunk: Buffer) => chunks.push(chunk));
+		response.on('end', () => resolve(Buffer.concat(chunks)));
+		response.on('error', reject);
+	});
+
+const writeResponseToFile = (response: http.IncomingMessage, destPath: string): Promise<void> =>
+	new Promise((resolve, reject) => {
 		const file = fs.createWriteStream(destPath);
 
-		protocol
-			.get(url, (response) => {
-				if (response.statusCode === 301 || response.statusCode === 302) {
-					const redirectUrl = response.headers.location;
-					if (redirectUrl) {
-						file.close();
-						fs.unlinkSync(destPath);
-						downloadFile(redirectUrl, destPath).then(resolve).catch(reject);
-						return;
-					}
-				}
+		const fail = (error: Error): void => {
+			file.destroy();
+			// Never leave a half-written file behind for the path the user picked in the save dialog.
+			fs.unlink(destPath, () => {});
+			reject(error);
+		};
 
-				if (response.statusCode !== 200) {
-					file.close();
-					fs.unlinkSync(destPath);
-					reject(new Error(`HTTP ${response.statusCode}`));
+		response.on('error', fail);
+		file.on('error', fail);
+		file.on('finish', () => {
+			file.close((closeError) => {
+				if (closeError) {
+					fail(closeError);
 					return;
 				}
-
-				response.pipe(file);
-				file.on('finish', () => {
-					file.close();
-					resolve();
-				});
-			})
-			.on('error', (err) => {
-				file.close();
-				fs.unlink(destPath, () => {});
-				reject(err);
+				resolve();
 			});
+		});
+
+		response.pipe(file);
 	});
+
+async function downloadToBuffer(url: string): Promise<Buffer> {
+	let currentUrl = await assertSafeRendererUrl(url);
+
+	for (let hop = 0; hop <= MAX_DOWNLOAD_REDIRECTS; hop++) {
+		const response = await requestSafeUrl(currentUrl);
+
+		const location = getRedirectLocation(response);
+		if (location) {
+			response.resume();
+			// Every hop is re-validated: a public https host can still redirect into the LAN.
+			currentUrl = await assertSafeRendererUrl(resolveRedirectTarget(location, currentUrl));
+			continue;
+		}
+
+		if (response.statusCode !== 200) {
+			response.resume();
+			throw new Error(`HTTP ${response.statusCode}`);
+		}
+
+		return readResponseBody(response);
+	}
+
+	throw new Error('Too many redirects');
+}
+
+async function downloadFile(url: string, destPath: string): Promise<void> {
+	let currentUrl = await assertSafeRendererUrl(url);
+
+	for (let hop = 0; hop <= MAX_DOWNLOAD_REDIRECTS; hop++) {
+		const response = await requestSafeUrl(currentUrl);
+
+		const location = getRedirectLocation(response);
+		if (location) {
+			response.resume();
+			currentUrl = await assertSafeRendererUrl(resolveRedirectTarget(location, currentUrl));
+			continue;
+		}
+
+		if (response.statusCode !== 200) {
+			response.resume();
+			throw new Error(`HTTP ${response.statusCode}`);
+		}
+
+		await writeResponseToFile(response, destPath);
+		return;
+	}
+
+	throw new Error('Too many redirects');
 }
 
 export function cleanupIpcHandlers(): void {

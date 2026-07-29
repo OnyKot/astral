@@ -55,33 +55,44 @@ export const getSortedDmChannels = (
 ): Array<ChannelRecord> => {
 	const pinnedOrder = new Map(UserPinnedDMStore.pinnedDMs.map((id, index) => [id, index]));
 
-	const compareChannelIds = (a: ChannelRecord, b: ChannelRecord): number => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+	const compareChannelIds = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
-	return dmChannels
+	/*
+	 * Decorate before sorting: the pin lookup and the sort snowflake (relationship
+	 * lookup + BigInt snowflake math) are otherwise recomputed on every one of the
+	 * O(n log n) comparisons. Both are pure with respect to state that cannot
+	 * change mid-sort, so hoisting them out preserves the exact total order.
+	 */
+	const decorated = dmChannels
 		.filter((channel) => !(channel.type === ChannelTypes.DM_PERSONAL_NOTES || channel.id === currentUserId))
-		.sort((a, b) => {
-			const aIndex = pinnedOrder.get(a.id);
-			const bIndex = pinnedOrder.get(b.id);
-			const aIsPinned = aIndex !== undefined;
-			const bIsPinned = bIndex !== undefined;
+		.map((channel) => ({
+			channel,
+			// -1 marks an unpinned channel; real pin indices are always >= 0.
+			pinIndex: pinnedOrder.get(channel.id) ?? -1,
+			sortSnowflake: getChannelSortSnowflake(channel),
+		}));
 
-			if (aIsPinned && bIsPinned) {
-				const diff = aIndex - bIndex;
-				if (diff !== 0) {
-					return diff;
-				}
-				return compareChannelIds(a, b);
-			}
-			if (aIsPinned !== bIsPinned) {
-				return aIsPinned ? -1 : 1;
-			}
+	decorated.sort((a, b) => {
+		const aIsPinned = a.pinIndex >= 0;
+		const bIsPinned = b.pinIndex >= 0;
 
-			const aSortSnowflake = getChannelSortSnowflake(a);
-			const bSortSnowflake = getChannelSortSnowflake(b);
-			const sortDiff = SnowflakeUtil.compare(bSortSnowflake, aSortSnowflake);
-			if (sortDiff !== 0) {
-				return sortDiff;
+		if (aIsPinned && bIsPinned) {
+			const diff = a.pinIndex - b.pinIndex;
+			if (diff !== 0) {
+				return diff;
 			}
-			return compareChannelIds(a, b);
-		});
+			return compareChannelIds(a.channel.id, b.channel.id);
+		}
+		if (aIsPinned !== bIsPinned) {
+			return aIsPinned ? -1 : 1;
+		}
+
+		const sortDiff = SnowflakeUtil.compare(b.sortSnowflake, a.sortSnowflake);
+		if (sortDiff !== 0) {
+			return sortDiff;
+		}
+		return compareChannelIds(a.channel.id, b.channel.id);
+	});
+
+	return decorated.map((entry) => entry.channel);
 };

@@ -87,6 +87,16 @@ export class DisabledLiveKitService implements ILiveKitService {
 		return 0;
 	}
 
+	async listParticipants(_params: {
+		guildId?: GuildID;
+		channelId: ChannelID;
+		regionId: string;
+		serverId: string;
+		throwOnError?: boolean;
+	}): Promise<Array<{identity: string}>> {
+		return [];
+	}
+
 	getDefaultRegionId(): string | null {
 		return null;
 	}

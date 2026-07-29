@@ -61,6 +61,7 @@ import type {GuildAuditLogService} from '../GuildAuditLogService';
 import type {
 	GuildBanResponse,
 	GuildCreateRequest,
+	GuildCountsResponse,
 	GuildDiscoveryResponse,
 	GuildEmojiResponse,
 	GuildEmojiWithUserResponse,
@@ -282,6 +283,10 @@ export class GuildService {
 
 	async getGuild({userId, guildId}: {userId: UserID; guildId: GuildID}): Promise<GuildResponse> {
 		return this.data.getGuild({userId, guildId});
+	}
+
+	async getGuildCounts({userId, guildId}: {userId: UserID; guildId: GuildID}): Promise<GuildCountsResponse> {
+		return this.data.getGuildCounts({userId, guildId});
 	}
 
 	async getUserGuilds(userId: UserID): Promise<Array<GuildResponse>> {

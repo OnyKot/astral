@@ -215,17 +215,20 @@
 	display: block;
 	width: 100%;
 	max-width: 550px;
+	min-width: 0;
 	--media-border-radius: 14px;
 }
 
 .singleMosaicContainerWrapper {
 	width: fit-content;
 	max-width: min(100%, 550px);
+	min-width: 0;
 }
 
 .singleMosaicContainerWrapper .mosaicContainer {
 	width: fit-content;
 	max-width: min(100%, 550px);
+	min-width: 0;
 }
 
 .mosaicExpiryBadge {
@@ -376,6 +379,13 @@
 }
 
 @media (max-width: 640px) {
+	.mosaicContainerWrapper,
+	.singleMosaicContainerWrapper,
+	.singleMosaicContainerWrapper .mosaicContainer {
+		width: 100%;
+		max-width: 100%;
+	}
+
 	.mosaicContainer {
 		max-width: 100%;
 	}

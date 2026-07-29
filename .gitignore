@@ -25,6 +25,7 @@
 # Environment and credentials
 **/.env
 **/.env.local
+deploy/woodpecker/.env
 **/.env.*.local
 **/.dev.vars
 **/*.jks
@@ -37,9 +38,13 @@
 **/astral.env
 **/secrets.env
 /dev/astral.env
-/astral_app/android/signing/*.env
-/astral_app/android/signing/*.pem
-/astral_app/android/signing/*-info.txt
+# Integration test env files hold real secrets; only the .example templates are tracked.
+tests/integration/env/api.env
+tests/integration/env/secrets.env
+tests/integration/env/.env.integration.local
+/android/signing/*.env
+/android/signing/*.pem
+/android/signing/*-info.txt
 
 # Logs, temporary files, and binaries
 **/*.beam
@@ -81,18 +86,18 @@ next-env.d.ts
 
 # Project-specific artifacts
 /astral_admin/priv/static/app.css
-/astral_app/src/assets/emoji-sprites/
-/astral_app/src/locales/*/messages.js
-/astral_app/src/locales/*/messages.mjs
-/astral_app/dist-electron
-/astral_app/dist-electron-*/
-/astral_app/dist-installer-*/
-/astral_app/release
-/astral_app/android/app/build/
-/astral_app/android/build/
-/astral_app/android/.gradle/
-/astral_app/android/capacitor-cordova-android-plugins/
-/astral_app/android/local.properties
+/src/assets/emoji-sprites/
+/src/locales/*/messages.js
+/src/locales/*/messages.mjs
+/dist-electron
+/dist-electron-*/
+/dist-installer-*/
+/release
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/capacitor-cordova-android-plugins/
+/android/local.properties
 /astral_gateway/config/sys.config
 /astral_gateway/config/vm.args
 /astral_marketing/priv/static/app.css
@@ -107,11 +112,27 @@ astral.yaml
 **/*.css.d.ts
 
 # Generated UI components
-/astral_app/src/components/uikit/AvatarStatusGeometry.ts
-/astral_app/src/components/uikit/SVGMasks.tsx
+/src/components/uikit/AvatarStatusGeometry.ts
+/src/components/uikit/SVGMasks.tsx
 
 # Local-only data and test artifacts
 /backend/data/
 /output/
 /.tmp_*.html
+/.cicd/
 node_modules
+dist-electron/win-unpacked/resources/app.asar
+
+__pycache__/
+
+# Release rollout state (server-local)
+.release-waves.json
+
+# Harness / CI local credentials (never commit)
+/harness_tok.txt
+/harness_pat.txt
+/harness_admin.json
+/deploy_pipeline.yaml
+
+# Internal wiki deploy credentials (local only)
+/openwiki/.deploy-credentials.local

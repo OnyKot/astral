@@ -55,6 +55,7 @@ export class UserSettings {
 	readonly incomingCallFlags: number;
 	readonly groupDmAddPermissionFlags: number;
 	readonly defaultGuildsRestricted: boolean;
+	readonly hideOnlineTime: boolean;
 	readonly restrictedGuilds: Set<GuildID>;
 	readonly guildPositions: Array<GuildID>;
 	readonly guildFolders: Array<UserGuildFolder>;
@@ -74,7 +75,10 @@ export class UserSettings {
 		this.compactMessageDisplay = row.message_display_compact ?? false;
 		this.animateEmoji = row.animate_emoji ?? false;
 		this.animateStickers = row.animate_stickers ?? 0;
-		this.gifAutoPlay = row.gif_auto_play ?? false;
+		// Default on, matching the client store's own default (UserSettingsStore.gifAutoPlay = true).
+		// With `?? false` the server overwrote that on load, so GIF embeds never auto-played for
+		// accounts that had never touched the setting.
+		this.gifAutoPlay = row.gif_auto_play ?? true;
 		this.renderEmbeds = row.render_embeds ?? false;
 		this.renderReactions = row.render_reactions ?? false;
 		this.renderSpoilers = row.render_spoilers ?? 0;
@@ -85,6 +89,7 @@ export class UserSettings {
 		this.incomingCallFlags = row.incoming_call_flags ?? 0;
 		this.groupDmAddPermissionFlags = row.group_dm_add_permission_flags ?? 0;
 		this.defaultGuildsRestricted = row.default_guilds_restricted ?? false;
+		this.hideOnlineTime = row.hide_online_time ?? false;
 		this.restrictedGuilds = row.restricted_guilds ?? new Set();
 		this.guildPositions = row.guild_positions ?? [];
 		this.guildFolders = (row.guild_folders ?? []).map((folder) => new UserGuildFolder(folder));
@@ -117,6 +122,7 @@ export class UserSettings {
 			incoming_call_flags: this.incomingCallFlags,
 			group_dm_add_permission_flags: this.groupDmAddPermissionFlags,
 			default_guilds_restricted: this.defaultGuildsRestricted,
+			hide_online_time: this.hideOnlineTime,
 			restricted_guilds: this.restrictedGuilds.size > 0 ? this.restrictedGuilds : null,
 			guild_positions: this.guildPositions.length > 0 ? this.guildPositions : null,
 			guild_folders: this.guildFolders.length > 0 ? this.guildFolders.map((folder) => folder.toGuildFolder()) : null,
@@ -167,6 +173,7 @@ export class UserSettings {
 			incoming_call_flags: IncomingCallFlags.FRIENDS_ONLY,
 			group_dm_add_permission_flags: GroupDmAddPermissionFlags.FRIENDS_ONLY,
 			default_guilds_restricted: false,
+			hide_online_time: false,
 			restricted_guilds: new Set(),
 			guild_positions: [],
 			guild_folders: [],

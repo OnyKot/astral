@@ -20,6 +20,25 @@
 .forwardedContainer {
 	display: flex;
 	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.forwardedContainerSelf {
+	flex-direction: row-reverse;
+	width: fit-content;
+	justify-self: flex-end;
+}
+
+.forwardedStoryOnlyContainer {
+	display: grid;
+	width: fit-content;
+	max-width: 100%;
+	justify-self: flex-start;
+}
+
+.forwardedStoryOnlyContainerSelf {
+	justify-self: flex-end;
 }
 
 .forwardedBar {
@@ -30,8 +49,15 @@
 	margin-right: 0.75rem;
 }
 
+.forwardedContainerSelf .forwardedBar {
+	margin-right: 0;
+	margin-left: 0.75rem;
+}
+
 .forwardedContent {
 	flex: 1;
+	min-width: 0;
+	max-width: 100%;
 	padding-top: 0.25rem;
 	padding-bottom: 0.25rem;
 }
@@ -44,6 +70,10 @@
 	font-size: 0.75rem;
 	line-height: 1rem;
 	color: var(--text-chat-muted);
+}
+
+.forwardedContainerSelf .forwardedHeader {
+	justify-content: flex-end;
 }
 
 .forwardedIcon {
@@ -61,6 +91,13 @@
 	gap: 0.5rem;
 	align-items: flex-start;
 	margin-top: var(--message-container-gap, 0.25rem);
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.forwardedContainerSelf .attachmentsContainer {
+	align-items: flex-end;
 }
 
 .forwardedSourceButton {
@@ -81,6 +118,10 @@
 	justify-content: flex-start;
 	width: fit-content;
 	max-width: 100%;
+}
+
+.forwardedContainerSelf .forwardedSourceButton {
+	align-self: flex-end;
 }
 
 .forwardedSourceButton:hover {
@@ -147,6 +188,8 @@
 	flex-wrap: wrap;
 	gap: 0.5rem;
 	margin-top: 0.25rem;
+	max-width: 100%;
+	min-width: 0;
 }
 
 .stickerWrapper {
@@ -191,8 +234,13 @@
 }
 
 @media (max-width: 640px) {
+	.forwardedContainer {
+		align-items: stretch;
+	}
+
 	.forwardedSourceButton {
 		width: 100%;
+		min-width: 0;
 	}
 
 	.forwardedSourceInfo {
@@ -205,6 +253,10 @@
 		margin-right: 0.5rem;
 	}
 
+	.forwardedHeader {
+		min-width: 0;
+	}
+
 	.forwardedSourceButton {
 		padding: 0.3125rem 0.4375rem;
 		font-size: 0.6875rem;
@@ -215,7 +267,7 @@
 	}
 
 	.stickerWrapper {
-		height: 8rem;
-		width: 8rem;
+		width: min(8rem, calc((100vw - 5.5rem) / 2));
+		height: min(8rem, calc((100vw - 5.5rem) / 2));
 	}
 }

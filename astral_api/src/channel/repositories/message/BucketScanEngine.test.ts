@@ -63,7 +63,19 @@ describe('scanBucketsWithIndex', () => {
 		);
 
 		expect(listBucketsFromIndex).toHaveBeenCalledTimes(1);
-		expect(fetchRowsForBucket.mock.calls.map((c) => c[0])).toEqual([5, 4, 3]);
+
+		/*
+		 * Buckets are fetched in a parallel window (BUCKET_FETCH_CONCURRENCY) and
+		 * only applied while rows are still needed, so the scan may read one or
+		 * more buckets past the one that satisfies the limit. That overshoot is
+		 * the point of the window — it trades a bounded extra read for fewer
+		 * sequential round trips. What must hold is that the scan starts at the
+		 * newest buckets and never degenerates into walking the whole range.
+		 */
+		const fetchedBuckets = fetchRowsForBucket.mock.calls.map((c) => c[0]);
+		expect(fetchedBuckets.slice(0, 3)).toEqual([5, 4, 3]);
+		expect(fetchedBuckets.length).toBeLessThanOrEqual(4);
+
 		expect(result.rows.map((r) => r.id)).toEqual([5n, 4n, 3n]);
 
 		const processed = trace.filter((e) => e.kind === BucketScanTraceKind.ProcessBucket).map((e) => e.bucket);

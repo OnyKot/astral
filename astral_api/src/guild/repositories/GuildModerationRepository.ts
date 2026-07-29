@@ -74,8 +74,15 @@ export class GuildModerationRepository extends IGuildModerationRepository {
 		return ban ? new GuildBan(ban) : null;
 	}
 
-	async listBans(guildId: GuildID): Promise<Array<GuildBan>> {
-		const bans = await fetchMany<GuildBanRow>(FETCH_GUILD_BANS_BY_GUILD_ID_QUERY, {
+	async listBans(guildId: GuildID, options?: {limit?: number}): Promise<Array<GuildBan>> {
+		const query =
+			options?.limit != null
+				? GuildBans.selectCql({
+						where: GuildBans.where.eq('guild_id'),
+						limit: options.limit,
+					})
+				: FETCH_GUILD_BANS_BY_GUILD_ID_QUERY;
+		const bans = await fetchMany<GuildBanRow>(query, {
 			guild_id: guildId,
 		});
 		return bans.map((ban) => new GuildBan(ban));

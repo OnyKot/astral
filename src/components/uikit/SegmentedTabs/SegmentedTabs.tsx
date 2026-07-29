@@ -27,6 +27,7 @@ export type SegmentedTab<T extends string = string> = {
 	label: string;
 	ariaLabel?: string;
 	icon?: React.ComponentType<{className?: string; weight?: 'regular' | 'bold' | 'fill'}>;
+	tone?: 'default' | 'animated';
 };
 
 type SegmentedTabsProps<T extends string = string> = {
@@ -66,7 +67,11 @@ export function SegmentedTabs<T extends string = string>({
 							aria-selected={selectedTab === tab.id}
 							onPointerDown={handlePointerDown}
 							onClick={() => onTabChange(tab.id)}
-							className={clsx(styles.tab, selectedTab === tab.id ? styles.tabActive : styles.tabInactive)}
+							className={clsx(
+								styles.tab,
+								tab.tone === 'animated' && styles.tabAnimated,
+								selectedTab === tab.id ? styles.tabActive : styles.tabInactive,
+							)}
 						>
 							{Icon ? <Icon className={styles.tabIcon} weight={selectedTab === tab.id ? 'bold' : 'regular'} /> : null}
 							<span className={styles.tabLabel}>{tab.label}</span>

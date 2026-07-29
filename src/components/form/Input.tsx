@@ -18,7 +18,7 @@
  */
 
 import {useLingui} from '@lingui/react/macro';
-import {EyeIcon, EyeSlashIcon} from '@phosphor-icons/react';
+import {EyeIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import lodash from 'lodash';
 import React, {useState} from 'react';
@@ -132,6 +132,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 		const hasLeftIcon = !!leftIcon;
 		const inputRef = React.useRef<HTMLInputElement | null>(null);
 		const inputWrapperRef = React.useRef<HTMLDivElement | null>(null);
+		const visibleValue = props.value == null ? '' : String(props.value);
+		const smoothTextValue = isPasswordType && !showPassword ? '\u2022'.repeat(visibleValue.length) : visibleValue;
 
 		const setInputRefs = React.useCallback(
 			(node: HTMLInputElement | null) => {
@@ -181,16 +183,29 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 				{leftElement && <div className={styles.leftElement}>{leftElement}</div>}
 				{leftIcon && !leftElement && <div className={styles.leftIcon}>{leftIcon}</div>}
 				{renderedInput}
+				{smoothTextValue ? (
+					<div className={styles.smoothTextLayer} aria-hidden="true">
+						{Array.from(smoothTextValue).map((char, index) => (
+							<span key={`${index}-${char}`} className={styles.smoothTextChar}>
+								{char === ' ' ? '\u00a0' : char}
+							</span>
+						))}
+					</div>
+				) : null}
 				{isPasswordType && (
 					<FocusRing offset={-2}>
 						<button
 							type="button"
-							className={styles.passwordToggle}
+							className={clsx(styles.passwordToggle, 'no-press-feedback')}
 							onClick={() => setShowPassword(!showPassword)}
 							aria-label={showPassword ? t`Hide password` : t`Show password`}
 							aria-pressed={showPassword}
+							data-visible={showPassword ? 'true' : 'false'}
 						>
-							{showPassword ? <EyeSlashIcon size={18} weight="fill" /> : <EyeIcon size={18} weight="fill" />}
+							<span className={styles.passwordToggleIcon} aria-hidden="true">
+								<EyeIcon size={18} weight="fill" className={styles.passwordToggleEye} />
+								<span className={styles.passwordToggleSlash} />
+							</span>
 						</button>
 					</FocusRing>
 				)}

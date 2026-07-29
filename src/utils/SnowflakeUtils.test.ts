@@ -23,6 +23,7 @@ import {
 	extractTimestamp,
 	fromTimestamp,
 	fromTimestampWithSequence,
+	nextClientNonce,
 	SnowflakeSequence,
 } from '~/utils/SnowflakeUtils';
 
@@ -48,6 +49,18 @@ describe('SnowflakeUtils', () => {
 
 		expect(extractTimestamp(first)).toBe(timestamp);
 		expect(extractTimestamp(second)).toBe(timestamp);
+		expect(compare(second, first)).toBeGreaterThan(0);
+	});
+
+	test('nextClientNonce is unique within the same millisecond', () => {
+		const timestamp = Date.now();
+		const first = nextClientNonce(timestamp);
+		const second = nextClientNonce(timestamp);
+		const third = nextClientNonce(timestamp);
+
+		expect(first).not.toBe(second);
+		expect(second).not.toBe(third);
+		expect(extractTimestamp(first)).toBe(timestamp);
 		expect(compare(second, first)).toBeGreaterThan(0);
 	});
 
